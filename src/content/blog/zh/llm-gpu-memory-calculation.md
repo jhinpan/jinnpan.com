@@ -7,11 +7,11 @@ category: "Technical"
 lang: "zh"
 ---
 
-搞清楚一个 LLM 需要多少显存，是做任何训练或推理方案之前必须回答的问题。这篇文章把显存拆成几块，给出每一块的计算公式，再看分布式策略（DP、TP、PP、EP）怎么分摊它们。
+搞清楚一个 LLM 需要多少显存， 是做任何训练或推理方案之前必须回答的问题。 这篇文章把显存拆成几块， 给出每一块的计算公式， 再看分布式策略（DP、TP、PP、EP）怎么分摊它们。
 
 ## 1. 显存的六大组成
 
-训练和推理阶段，GPU 显存里装的东西不一样。训练阶段六大块都有，推理阶段主要是模型权重和 KV Cache。
+训练和推理阶段， GPU 显存里装的东西不一样。 训练阶段六大块都有， 推理阶段主要是模型权重和 KV Cache。
 
 | 组件 | 符号 | 训练 | 推理 |
 |------|------|------|------|
@@ -24,7 +24,7 @@ lang: "zh"
 
 ## 2. 基础变量
 
-设模型参数量为 $P$（单位：个），浮点格式占 $b$ 字节。
+设模型参数量为 $P$（单位： 个）， 浮点格式占 $b$ 字节。
 
 | 符号 | 含义 | 示例 |
 |------|------|------|
@@ -55,10 +55,10 @@ $$
 
 ### 3.2 优化器状态（训练）
 
-以 AdamW 为例，每个参数需要存储：
+以 AdamW 为例， 每个参数需要存储：
 - 一阶矩估计 $m$（FP32）
 - 二阶矩估计 $v$（FP32）
-- 主权重副本（如果混合精度，需要 FP32 副本）
+- 主权重副本（如果混合精度， 需要 FP32 副本）
 
 $$
 M_{optim} = P \times (4 + 4 + 4) = 12P \quad \text{(mixed-precision AdamW)}
@@ -70,33 +70,33 @@ $$
 M_{optim} = P \times (4 + 4) = 8P \quad \text{(FP32 AdamW, 权重已算在 } M_{params} \text{)}
 $$
 
-> **混合精度训练的显存开销：** 一个 7B 模型用 mixed-precision AdamW，光优化器状态就要 $7B \times 12 = 84$ GB。这就是为什么训练 7B 模型至少需要一张 80GB A100/H100。
+> **混合精度训练的显存开销： ** 一个 7B 模型用 mixed-precision AdamW， 光优化器状态就要 $7B \times 12 = 84$ GB。 这就是为什么训练 7B 模型至少需要一张 80GB A100/H100。
 
 ### 3.3 梯度（训练）
 
-每个参数的梯度，精度与训练精度一致：
+每个参数的梯度， 精度与训练精度一致：
 
 $$
 M_{grad} = P \times b_{grad}
 $$
 
-FP16 训练时 $b_{grad} = 2$，FP32 训练时 $b_{grad} = 4$。
+FP16 训练时 $b_{grad} = 2$， FP32 训练时 $b_{grad} = 4$。
 
 ### 3.4 激活值（训练）
 
-激活值是 forward pass 中需要保存供 backward 使用的中间结果。粗略估算（不使用激活重计算）：
+激活值是 forward pass 中需要保存供 backward 使用的中间结果。 粗略估算（不使用激活重计算）：
 
 $$
 M_{act} \approx 2 \times B \times N \times d \times L \times b_{act}
 $$
 
-这是一个近似值。实际上每层 attention 的 $O(BN^2n_h)$ 注意力矩阵也会贡献显存，完整公式：
+这是一个近似值。 实际上每层 attention 的 $O(BN^2n_h)$ 注意力矩阵也会贡献显存， 完整公式：
 
 $$
 M_{act} \approx L \times B \times N \times (34d + 5n_h N) \times b_{act}
 $$
 
-其中 $34d$ 来自各层的中间激活（Q、K、V、FFN 中间层等），$5n_h N$ 来自注意力矩阵（softmax 前后都要存）。
+其中 $34d$ 来自各层的中间激活（Q、K、V、FFN 中间层等）， $5n_h N$ 来自注意力矩阵（softmax 前后都要存）。
 
 **激活重计算（Activation Checkpointing）** 可以显著降低 $M_{act}$：
 
@@ -114,11 +114,11 @@ $$
 
 其中 $d_h = d / n_h$。
 
-使用 GQA（Grouped-Query Attention）时，$n_{kv} < n_h$，KV Cache 相应缩小。
+使用 GQA（Grouped-Query Attention）时， $n_{kv} < n_h$， KV Cache 相应缩小。
 
 ### 3.6 临时缓冲区
 
-NCCL 通信缓冲区、CUDA workspace 等，通常约 1-2 GB，在总量中占比不大，但需要预留。
+NCCL 通信缓冲区、CUDA workspace 等， 通常约 1-2 GB， 在总量中占比不大， 但需要预留。
 
 ## 4. 训练总显存估算
 
@@ -137,7 +137,7 @@ $$
 | Buffers | ~2 GB |
 | **总计** | **~174 GB** |
 
-> **一张 80GB 的 A100/H100 装不下。** 这就是为什么训练 7B 模型需要分布式策略。
+> **一张 80GB 的 A100/H100 装不下。 ** 这就是为什么训练 7B 模型需要分布式策略。
 
 ## 5. 推理总显存估算
 
@@ -158,9 +158,9 @@ $$
 | Gradients | $P \times b_g$ | $P \times b_g$ (每卡完整) |
 | Activations | $M_{act}(B)$ | $M_{act}(B / N_{dp})$ (batch 切分) |
 
-DP 不减少权重和优化器的显存，只减少激活值（因为 batch 被切分了）。
+DP 不减少权重和优化器的显存， 只减少激活值（因为 batch 被切分了）。
 
-**ZeRO 优化：** DeepSpeed 的 ZeRO 在 DP 基础上把优化器状态、梯度、参数分片到各卡：
+**ZeRO 优化： ** DeepSpeed 的 ZeRO 在 DP 基础上把优化器状态、梯度、参数分片到各卡：
 
 | ZeRO Stage | 分片内容 | 显存节省 |
 |------------|---------|---------|
@@ -177,7 +177,7 @@ DP 不减少权重和优化器的显存，只减少激活值（因为 batch 被�
 | Gradients | $P \times b_g$ | $P \times b_g / N_{tp}$ |
 | Activations | $M_{act}$ | $\approx M_{act} / N_{tp}$ |
 
-TP 把每一层的参数矩阵沿 hidden dimension 切分，每卡只存 $1/N_{tp}$ 的参数。代价是每层需要 2 次 all-reduce 通信。
+TP 把每一层的参数矩阵沿 hidden dimension 切分， 每卡只存 $1/N_{tp}$ 的参数。 代价是每层需要 2 次 all-reduce 通信。
 
 ### 6.3 流水线并行（PP）
 
@@ -187,17 +187,17 @@ TP 把每一层的参数矩阵沿 hidden dimension 切分，每卡只存 $1/N_{t
 | Optimizer states | $12P$ | $12P / N_{pp}$ |
 | Activations | $M_{act}(L)$ | $M_{act}(L / N_{pp})$ + bubble |
 
-PP 按层切分模型，每卡只放 $L / N_{pp}$ 层。代价是流水线气泡（bubble）导致的 GPU 空闲时间。
+PP 按层切分模型， 每卡只放 $L / N_{pp}$ 层。 代价是流水线气泡（bubble）导致的 GPU 空闲时间。
 
 ### 6.4 专家并行（EP）
 
-对于 MoE 模型，EP 把不同的 expert 放在不同的卡上：
+对于 MoE 模型， EP 把不同的 expert 放在不同的卡上：
 
 $$
 M_{expert\_per\_card} = \frac{E \times P_{expert}}{N_{ep}} \times b
 $$
 
-其中 $E$ 是总 expert 数，$P_{expert}$ 是每个 expert 的参数量。
+其中 $E$ 是总 expert 数， $P_{expert}$ 是每个 expert 的参数量。
 
 共享参数（attention、embedding 等）仍然在每张卡上都有：
 
@@ -207,7 +207,7 @@ $$
 
 ### 6.5 组合策略
 
-实际部署通常组合多种策略。例如 8 张 GPU：
+实际部署通常组合多种策略。 例如 8 张 GPU：
 
 $$
 \text{Total GPUs} = N_{dp} \times N_{tp} \times N_{pp} \times N_{ep}
@@ -219,16 +219,16 @@ $$
 M_{card} = \frac{M_{params}}{N_{tp} \times N_{pp}} + \frac{M_{optim}}{N_{tp} \times N_{pp} \times N_{dp}^{ZeRO}} + M_{act}(B_{local}, L_{local}) + M_{buf}
 $$
 
-## 7. 具体案例：Qwen-2.5-7B 在 H100 上
+## 7. 具体案例： Qwen-2.5-7B 在 H100 上
 
-**模型参数：**
-- 参数量：7.6B
-- 层数：32，hidden dimension：4096
-- FFN intermediate：11008
-- Attention heads：32，KV heads：8（GQA）
-- 词表：152000
+**模型参数： **
+- 参数量： 7.6B
+- 层数： 32， hidden dimension： 4096
+- FFN intermediate： 11008
+- Attention heads： 32， KV heads： 8（GQA）
+- 词表： 152000
 
-**场景：4x H100 80GB，FP16 推理，max context 32K**
+**场景： 4x H100 80GB， FP16 推理， max context 32K**
 
 单卡推理显存：
 
@@ -239,9 +239,9 @@ $$
 | Buffers | — | ~2 GB |
 | **Total** | | **~50 GB** |
 
-一张 H100 80GB 能装下。但如果 batch 更大或序列更长，就需要分卡。
+一张 H100 80GB 能装下。 但如果 batch 更大或序列更长， 就需要分卡。
 
-**4 卡优化方案：**
+**4 卡优化方案： **
 
 | 方案 | TP | 权重/卡 | KV Cache/卡 | 总/卡 | 可用 batch |
 |------|-----|---------|------------|-------|-----------|
@@ -249,7 +249,7 @@ $$
 | TP=2, 2 实例 | 2 | 7.6 GB | 按需 | ~40 GB | B=32 per pair |
 | TP=4, 1 实例 | 4 | 3.8 GB | 按需 | ~35 GB | B=64 |
 
-> **TP 的取舍：** TP=4 时每卡权重最小（3.8 GB），留更多空间给 KV Cache，能跑更大 batch。但 TP 通信开销（每层 2 次 all-reduce）在 4 卡时已经比较明显，尤其是 decode 阶段（计算量小，通信占比高）。实际选择取决于目标是最大 throughput 还是最低 latency。
+> **TP 的取舍： ** TP=4 时每卡权重最小（3.8 GB）， 留更多空间给 KV Cache， 能跑更大 batch。 但 TP 通信开销（每层 2 次 all-reduce）在 4 卡时已经比较明显， 尤其是 decode 阶段（计算量小， 通信占比高）。 实际选择取决于目标是最大 throughput 还是最低 latency。
 
 ## 8. 显存优化路径
 
@@ -276,10 +276,10 @@ graph TD
 
 几个值得记住的经验数字：
 
-- **FP16 推理**：模型每 1B 参数 ≈ 2 GB
-- **Mixed-precision 训练**：模型每 1B 参数 ≈ 18-20 GB（包含优化器状态和梯度）
-- **KV Cache**：Llama-7B 在 4K 上下文、batch=1 时约 2 GB；128K 时约 64 GB
-- **TP 通信**：TP=2 和 TP=4 之间，通信量翻倍，收益递减
-- **ZeRO Stage 2** 是训练的默认选择，Stage 3 只在单卡完全放不下模型时使用
+- **FP16 推理**： 模型每 1B 参数 ≈ 2 GB
+- **Mixed-precision 训练**： 模型每 1B 参数 ≈ 18-20 GB（包含优化器状态和梯度）
+- **KV Cache**： Llama-7B 在 4K 上下文、batch=1 时约 2 GB；128K 时约 64 GB
+- **TP 通信**： TP=2 和 TP=4 之间， 通信量翻倍， 收益递减
+- **ZeRO Stage 2** 是训练的默认选择， Stage 3 只在单卡完全放不下模型时使用
 
-显存计算不是精确科学 —— 框架本身的 overhead、内存碎片、CUDA context 都会额外占用。但掌握这些公式，至少能在规划硬件和配置方案时给出 80% 准确度的估算。
+显存计算不是精确科学 —— 框架本身的 overhead、内存碎片、CUDA context 都会额外占用。 但掌握这些公式， 至少能在规划硬件和配置方案时给出 80% 准确度的估算。

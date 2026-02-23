@@ -7,7 +7,7 @@ category: "Technical"
 lang: "zh"
 ---
 
-这篇文章从数学公式、PyTorch 代码、逻辑结构三个角度拆解 Transformer 的核心组件：Self-Attention、LayerNorm 和 MLP。每个组件先给公式，再给代码，最后讲它在整个架构中的角色。
+这篇文章从数学公式、PyTorch 代码、逻辑结构三个角度拆解 Transformer 的核心组件： Self-Attention、LayerNorm 和 MLP。 每个组件先给公式， 再给代码， 最后讲它在整个架构中的角色。
 
 ## 1. 宏观架构
 
@@ -23,7 +23,7 @@ LayerNorm → MLP (FFN) → Residual Add
 Output
 ```
 
-这是 Pre-LN 架构（GPT-2、Llama 等采用）。原始 Transformer 用 Post-LN（LayerNorm 在 residual 之后），但 Pre-LN 训练更稳定。
+这是 Pre-LN 架构（GPT-2、Llama 等采用）。 原始 Transformer 用 Post-LN（LayerNorm 在 residual 之后）， 但 Pre-LN 训练更稳定。
 
 完整的一层：
 
@@ -34,11 +34,11 @@ x' &= x + \text{MultiHeadAttn}(\text{LN}(x)) \\
 \end{aligned}
 $$
 
-## 2. Self-Attention：数学与代码
+## 2. Self-Attention： 数学与代码
 
 ### 2.1 Scaled Dot-Product Attention
 
-**数学公式：**
+**数学公式： **
 
 $$
 \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V
@@ -46,15 +46,15 @@ $$
 
 分步骤拆解：
 
-1. **线性投影**：$Q = XW^Q$，$K = XW^K$，$V = XW^V$
-2. **相似度计算**：$S = QK^T \in \mathbb{R}^{N \times N}$
-3. **缩放**：$S = S / \sqrt{d_k}$（防止 softmax 梯度消失）
-4. **归一化**：$A = \text{softmax}(S)$，每行归一化
-5. **加权求和**：$O = AV$
+1. **线性投影**： $Q = XW^Q$， $K = XW^K$， $V = XW^V$
+2. **相似度计算**： $S = QK^T \in \mathbb{R}^{N \times N}$
+3. **缩放**： $S = S / \sqrt{d_k}$（防止 softmax 梯度消失）
+4. **归一化**： $A = \text{softmax}(S)$， 每行归一化
+5. **加权求和**： $O = AV$
 
-> **为什么要缩放 $\sqrt{d_k}$？** 假设 $q$ 和 $k$ 的每个分量都是均值 0、方差 1 的独立随机变量。那么 $q \cdot k = \sum_{i=1}^{d_k} q_i k_i$ 的方差是 $d_k$。当 $d_k$ 很大时，$q \cdot k$ 的绝对值很大，softmax 的输出趋近于 one-hot，梯度趋近于零。除以 $\sqrt{d_k}$ 把方差归一化为 1。
+> **为什么要缩放 $\sqrt{d_k}$？** 假设 $q$ 和 $k$ 的每个分量都是均值 0、方差 1 的独立随机变量。 那么 $q \cdot k = \sum_{i=1}^{d_k} q_i k_i$ 的方差是 $d_k$。 当 $d_k$ 很大时， $q \cdot k$ 的绝对值很大， softmax 的输出趋近于 one-hot， 梯度趋近于零。 除以 $\sqrt{d_k}$ 把方差归一化为 1。
 
-**PyTorch 代码：**
+**PyTorch 代码： **
 
 ```python
 import torch
@@ -91,7 +91,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
 
 ### 2.2 Multi-Head Attention
 
-**数学公式：**
+**数学公式： **
 
 $$
 \text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h) W^O
@@ -102,13 +102,13 @@ $$
 $$
 
 参数维度：
-- $W_i^Q, W_i^K \in \mathbb{R}^{d_{model} \times d_k}$，其中 $d_k = d_{model} / h$
-- $W_i^V \in \mathbb{R}^{d_{model} \times d_v}$，通常 $d_v = d_k$
+- $W_i^Q, W_i^K \in \mathbb{R}^{d_{model} \times d_k}$， 其中 $d_k = d_{model} / h$
+- $W_i^V \in \mathbb{R}^{d_{model} \times d_v}$， 通常 $d_v = d_k$
 - $W^O \in \mathbb{R}^{h \cdot d_v \times d_{model}}$
 
-> **为什么用多头？** 单头 attention 只能学一种"关注模式"。多头让模型同时关注不同位置的不同类型的信息（如语法关系、语义相似度、位置邻近等）。
+> **为什么用多头？** 单头 attention 只能学一种"关注模式"。 多头让模型同时关注不同位置的不同类型的信息（如语法关系、语义相似度、位置邻近等）。
 
-**PyTorch 代码：**
+**PyTorch 代码： **
 
 ```python
 class MultiHeadAttention(nn.Module):
@@ -159,7 +159,7 @@ class MultiHeadAttention(nn.Module):
 
 ### 2.3 Causal Mask
 
-自回归模型（GPT、Llama）需要确保位置 $i$ 只能看到位置 $\leq i$ 的 token，通过上三角掩码实现：
+自回归模型（GPT、Llama）需要确保位置 $i$ 只能看到位置 $\leq i$ 的 token， 通过上三角掩码实现：
 
 ```python
 def create_causal_mask(seq_len):
@@ -172,7 +172,7 @@ def create_causal_mask(seq_len):
 # scores = scores.masked_fill(mask, float('-inf'))
 ```
 
-## 3. LayerNorm：数学与代码
+## 3. LayerNorm： 数学与代码
 
 ### 3.1 数学公式
 
@@ -183,7 +183,7 @@ $$
 $$
 
 其中：
-- $\mu = \frac{1}{d} \sum_{i=1}^{d} x_i$（均值，沿 hidden dimension 计算）
+- $\mu = \frac{1}{d} \sum_{i=1}^{d} x_i$（均值， 沿 hidden dimension 计算）
 - $\sigma^2 = \frac{1}{d} \sum_{i=1}^{d} (x_i - \mu)^2$（方差）
 - $\gamma, \beta \in \mathbb{R}^d$ 是可学习的缩放和偏移参数
 - $\epsilon$ 是数值稳定项（如 $10^{-5}$）
@@ -198,7 +198,7 @@ $$
 | 对 batch size 敏感 | 否 | 是 |
 | 适用场景 | NLP、序列模型 | CV、固定大小输入 |
 
-> **为什么 Transformer 用 LayerNorm 不用 BatchNorm？** 两个原因：(1) 序列长度可变，batch 内不同样本的长度不同，BatchNorm 的统计量不稳定；(2) 自回归推理是逐 token 的（batch=1），BatchNorm 的 running statistics 不适用。
+> **为什么 Transformer 用 LayerNorm 不用 BatchNorm？** 两个原因： (1) 序列长度可变， batch 内不同样本的长度不同， BatchNorm 的统计量不稳定；(2) 自回归推理是逐 token 的（batch=1）， BatchNorm 的 running statistics 不适用。
 
 ### 3.3 PyTorch 代码
 
@@ -227,7 +227,7 @@ class LayerNorm(nn.Module):
 
 ### 3.4 RMSNorm
 
-Llama 等现代模型使用 RMSNorm（Root Mean Square Normalization），去掉了均值中心化：
+Llama 等现代模型使用 RMSNorm（Root Mean Square Normalization）， 去掉了均值中心化：
 
 $$
 \text{RMSNorm}(x) = \gamma \odot \frac{x}{\text{RMS}(x) + \epsilon}
@@ -249,23 +249,23 @@ class RMSNorm(nn.Module):
         return self.gamma * (x / rms)
 ```
 
-> **RMSNorm 的优势：** 去掉均值计算后减少了一次 reduce 操作。在 GPU 上，reduce 操作涉及线程间同步，是性能瓶颈之一。实测 RMSNorm 比 LayerNorm 快约 10-15%，且对模型质量几乎无影响。
+> **RMSNorm 的优势： ** 去掉均值计算后减少了一次 reduce 操作。 在 GPU 上， reduce 操作涉及线程间同步， 是性能瓶颈之一。 实测 RMSNorm 比 LayerNorm 快约 10-15%， 且对模型质量几乎无影响。
 
-## 4. MLP / FFN：数学与代码
+## 4. MLP / FFN： 数学与代码
 
 ### 4.1 标准 FFN
 
-**数学公式：**
+**数学公式： **
 
 $$
 \text{FFN}(x) = W_2 \cdot \text{GELU}(W_1 x + b_1) + b_2
 $$
 
-- $W_1 \in \mathbb{R}^{d_{model} \times d_{ff}}$：up projection，扩展维度
-- $W_2 \in \mathbb{R}^{d_{ff} \times d_{model}}$：down projection，压缩回去
+- $W_1 \in \mathbb{R}^{d_{model} \times d_{ff}}$： up projection， 扩展维度
+- $W_2 \in \mathbb{R}^{d_{ff} \times d_{model}}$： down projection， 压缩回去
 - $d_{ff}$ 通常是 $4 \times d_{model}$
 
-**GELU 激活函数：**
+**GELU 激活函数： **
 
 $$
 \text{GELU}(x) = x \cdot \Phi(x) \approx 0.5x\left(1 + \tanh\left[\sqrt{2/\pi}(x + 0.044715x^3)\right]\right)
@@ -273,20 +273,20 @@ $$
 
 ### 4.2 SwiGLU FFN
 
-Llama、Qwen 等使用 SwiGLU 变体，加了一个 gate：
+Llama、Qwen 等使用 SwiGLU 变体， 加了一个 gate：
 
 $$
 \text{SwiGLU}(x) = W_2 \cdot \left[\text{SiLU}(W_{gate} x) \odot (W_{up} x)\right]
 $$
 
-- $W_{gate} \in \mathbb{R}^{d_{model} \times d_{ff}}$：gate projection
-- $W_{up} \in \mathbb{R}^{d_{model} \times d_{ff}}$：up projection
-- $W_2 \in \mathbb{R}^{d_{ff} \times d_{model}}$：down projection
+- $W_{gate} \in \mathbb{R}^{d_{model} \times d_{ff}}$： gate projection
+- $W_{up} \in \mathbb{R}^{d_{model} \times d_{ff}}$： up projection
+- $W_2 \in \mathbb{R}^{d_{ff} \times d_{model}}$： down projection
 - $\text{SiLU}(x) = x \cdot \sigma(x)$
 
-> **SwiGLU 为什么好？** 经验上 SwiGLU 比 GELU FFN 在同样参数量下效果更好。代价是多了一个 gate 投影矩阵（参数量从 $2 \times d \times d_{ff}$ 变成 $3 \times d \times d_{ff}$），但通常把 $d_{ff}$ 缩小一些来保持总参数量不变（如 Llama 的 $d_{ff} = 2/3 \times 4d$）。
+> **SwiGLU 为什么好？** 经验上 SwiGLU 比 GELU FFN 在同样参数量下效果更好。 代价是多了一个 gate 投影矩阵（参数量从 $2 \times d \times d_{ff}$ 变成 $3 \times d \times d_{ff}$）， 但通常把 $d_{ff}$ 缩小一些来保持总参数量不变（如 Llama 的 $d_{ff} = 2/3 \times 4d$）。
 
-**PyTorch 代码：**
+**PyTorch 代码： **
 
 ```python
 class SwiGLU_FFN(nn.Module):
@@ -372,22 +372,22 @@ Output: (32, 2048, 4096)
 
 **Q: 为什么 Transformer 用加法 residual connection 而不是 concatenation？**
 
-A: 加法保持维度不变（不像 concatenation 会倍增维度），使得任意层数的堆叠成为可能。数学上，residual connection 让梯度可以直接流过（$\partial(x + f(x))/\partial x = 1 + \partial f/\partial x$），缓解深层网络的梯度消失问题。
+A: 加法保持维度不变（不像 concatenation 会倍增维度）， 使得任意层数的堆叠成为可能。 数学上， residual connection 让梯度可以直接流过（$\partial(x + f(x))/\partial x = 1 + \partial f/\partial x$）， 缓解深层网络的梯度消失问题。
 
 **Q: Attention 的 $O(N^2)$ 具体体现在哪？**
 
-A: 体现在 $QK^T$ 这一步。$Q \in \mathbb{R}^{N \times d_k}$, $K \in \mathbb{R}^{N \times d_k}$，相乘得到 $\mathbb{R}^{N \times N}$ 的注意力矩阵。存储这个矩阵需要 $O(N^2)$ 空间，计算它需要 $O(N^2 d_k)$ 时间。
+A: 体现在 $QK^T$ 这一步。 $Q \in \mathbb{R}^{N \times d_k}$, $K \in \mathbb{R}^{N \times d_k}$， 相乘得到 $\mathbb{R}^{N \times N}$ 的注意力矩阵。 存储这个矩阵需要 $O(N^2)$ 空间， 计算它需要 $O(N^2 d_k)$ 时间。
 
 **Q: Multi-Head Attention 的参数量是多少？**
 
-A: $3 \times d_{model}^2 + d_{model}^2 = 4d_{model}^2$。三个 QKV 投影矩阵各 $d_{model} \times d_{model}$，输出投影 $d_{model} \times d_{model}$。注意这和 head 数量无关（head 数量只影响 $d_k$，不影响总参数量）。
+A: $3 \times d_{model}^2 + d_{model}^2 = 4d_{model}^2$。 三个 QKV 投影矩阵各 $d_{model} \times d_{model}$， 输出投影 $d_{model} \times d_{model}$。 注意这和 head 数量无关（head 数量只影响 $d_k$， 不影响总参数量）。
 
 **Q: Pre-LN 和 Post-LN 的区别？**
 
 A:
-- Post-LN（原始 Transformer）：$x + \text{LN}(\text{SubLayer}(x))$。梯度经过 LN 时会被缩放，深层时训练不稳定，需要 warmup。
-- Pre-LN：$x + \text{SubLayer}(\text{LN}(x))$。residual 路径上没有非线性变换，梯度流更稳定。缺点是深层（> 100层）时可能出现梯度爆炸，但对于常见深度（32-96层）效果很好。
+- Post-LN（原始 Transformer）： $x + \text{LN}(\text{SubLayer}(x))$。 梯度经过 LN 时会被缩放， 深层时训练不稳定， 需要 warmup。
+- Pre-LN： $x + \text{SubLayer}(\text{LN}(x))$。 residual 路径上没有非线性变换， 梯度流更稳定。 缺点是深层（> 100 层）时可能出现梯度爆炸， 但对于常见深度（32-96 层）效果很好。
 
 **Q: 为什么 Embedding 和 LM Head 常常共享权重（Weight Tying）？**
 
-A: 两者维度相同（$V \times d_{model}$），共享可以减少参数量。直觉上，如果两个词在 embedding 空间中相近，那么在输出时它们的概率也应该相近。实测对模型质量几乎没有负面影响，节省了 $V \times d_{model}$ 个参数（对于 Llama-7B，这是 ~131M 参数）。
+A: 两者维度相同（$V \times d_{model}$）， 共享可以减少参数量。 直觉上， 如果两个词在 embedding 空间中相近， 那么在输出时它们的概率也应该相近。 实测对模型质量几乎没有负面影响， 节省了 $V \times d_{model}$ 个参数（对于 Llama-7B， 这是 ~131M 参数）。

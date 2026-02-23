@@ -7,26 +7,26 @@ category: "Technical"
 lang: "zh"
 ---
 
-理解 KV Cache 和 Model Weights 的区别与关联，是搞懂大模型推理优化的第一步。这篇文章从训练阶段和推理阶段两个角度，拆解这两个核心概念。
+理解 KV Cache 和 Model Weights 的区别与关联， 是搞懂大模型推理优化的第一步。 这篇文章从训练阶段和推理阶段两个角度， 拆解这两个核心概念。
 
 ## 核心概念一览
 
 | 概念 | 本质 | 生成阶段 | 生命周期 | 大小与什么相关 |
 |------|------|---------|---------|--------------|
-| Model Weights | 网络参数 | 训练阶段学到 | 长期，存在磁盘/GPU | 模型架构（层数、hidden size） |
-| KV Cache | 中间计算缓存 | 推理阶段动态生成 | 短期，随请求创建和销毁 | 序列长度、batch size |
+| Model Weights | 网络参数 | 训练阶段学到 | 长期， 存在磁盘/GPU | 模型架构（层数、hidden size） |
+| KV Cache | 中间计算缓存 | 推理阶段动态生成 | 短期， 随请求创建和销毁 | 序列长度、batch size |
 
-## 1. 训练阶段：Model Weights 的诞生
+## 1. 训练阶段： Model Weights 的诞生
 
 ### 1.1 什么是 Model Weights
 
-Model Weights（模型权重）是神经网络中所有可学习参数的总称。对于一个 Transformer 模型，这些参数包括：
+Model Weights（模型权重）是神经网络中所有可学习参数的总称。 对于一个 Transformer 模型， 这些参数包括：
 
-- **Embedding 层**：token embedding $W_E \in \mathbb{R}^{V \times d}$，位置编码参数
-- **Attention 层**：$W^Q, W^K, W^V \in \mathbb{R}^{d \times d_k}$，$W^O \in \mathbb{R}^{d \times d}$
-- **FFN 层**：$W_1 \in \mathbb{R}^{d \times d_{ff}}$，$W_2 \in \mathbb{R}^{d_{ff} \times d}$
-- **LayerNorm**：$\gamma, \beta \in \mathbb{R}^{d}$
-- **LM Head**：通常和 embedding 层共享权重（weight tying）
+- **Embedding 层**： token embedding $W_E \in \mathbb{R}^{V \times d}$， 位置编码参数
+- **Attention 层**： $W^Q, W^K, W^V \in \mathbb{R}^{d \times d_k}$， $W^O \in \mathbb{R}^{d \times d}$
+- **FFN 层**： $W_1 \in \mathbb{R}^{d \times d_{ff}}$， $W_2 \in \mathbb{R}^{d_{ff} \times d}$
+- **LayerNorm**： $\gamma, \beta \in \mathbb{R}^{d}$
+- **LM Head**： 通常和 embedding 层共享权重（weight tying）
 
 ### 1.2 参数量估算
 
@@ -55,23 +55,23 @@ $$
 \theta_{t+1} = \theta_t - \eta \cdot \nabla_\theta \mathcal{L}
 $$
 
-训练完成后，权重被保存到磁盘（如 safetensors 格式），推理时加载到 GPU 显存。
+训练完成后， 权重被保存到磁盘（如 safetensors 格式）， 推理时加载到 GPU 显存。
 
-## 2. 推理阶段：KV Cache 的诞生
+## 2. 推理阶段： KV Cache 的诞生
 
 ### 2.1 为什么需要 KV Cache
 
 自回归生成的过程是逐 token 的：
 
-1. 输入 prompt，得到第一个输出 token
-2. 把输出 token append 到序列，再次前向传播
+1. 输入 prompt， 得到第一个输出 token
+2. 把输出 token append 到序列， 再次前向传播
 3. 重复直到生成结束
 
-问题在于：每次生成新 token 时，attention 需要用当前 query 与**所有之前 token 的 key 和 value** 做计算。如果不缓存，每个 token 都要重新计算之前所有 token 的 K 和 V，这是 $O(N^2)$ 的重复工作。
+问题在于： 每次生成新 token 时， attention 需要用当前 query 与**所有之前 token 的 key 和 value** 做计算。 如果不缓存， 每个 token 都要重新计算之前所有 token 的 K 和 V， 这是 $O(N^2)$ 的重复工作。
 
 ### 2.2 KV Cache 的解决方案
 
-KV Cache 的核心想法：**之前 token 的 K 和 V 不会变，缓存起来就行。**
+KV Cache 的核心想法： **之前 token 的 K 和 V 不会变， 缓存起来就行。 **
 
 ```python
 class AttentionWithKVCache(nn.Module):
@@ -108,11 +108,11 @@ $$
 $$
 
 其中：
-- $2$：K 和 V 各一份
-- $B$：batch size
-- $N$：当前序列长度
-- $n_h$：attention head 数量
-- $d_h$：每个 head 的维度（$d_{model} / n_h$）
+- $2$： K 和 V 各一份
+- $B$： batch size
+- $N$： 当前序列长度
+- $n_h$： attention head 数量
+- $d_h$： 每个 head 的维度（$d_{model} / n_h$）
 
 总 KV Cache = per layer * 层数 $L$：
 
@@ -120,7 +120,7 @@ $$
 \text{Total KV Cache} = 2 \times B \times N \times n_h \times d_h \times L \times \text{bytes}
 $$
 
-**Llama-7B 的 KV Cache 估算：**
+**Llama-7B 的 KV Cache 估算： **
 
 | 参数 | 值 |
 |------|-----|
@@ -132,7 +132,7 @@ $$
 | 精度 | FP16 (2 bytes) |
 | **KV Cache 总量** | 2 * 1 * 4096 * 32 * 128 * 32 * 2 = **2 GB** |
 
-> **序列长度的影响：** KV Cache 与序列长度成正比。同样的模型，从 4K 到 128K 上下文，KV Cache 从 2 GB 涨到 64 GB，直接超过了 7B 模型权重本身（~14 GB FP16）。这就是为什么长上下文场景下，KV Cache 而不是模型权重成为显存瓶颈。
+> **序列长度的影响： ** KV Cache 与序列长度成正比。 同样的模型， 从 4K 到 128K 上下文， KV Cache 从 2 GB 涨到 64 GB， 直接超过了 7B 模型权重本身（~14 GB FP16）。 这就是为什么长上下文场景下， KV Cache 而不是模型权重成为显存瓶颈。
 
 ## 3. Model Weights 与 KV Cache 的关系
 
@@ -148,30 +148,30 @@ Hidden State --> W_Q (weights) --> Query --> 不缓存，只用一次
 本质关系：
 - **Model Weights** 定义了计算图（怎么从输入得到 K、V）
 - **KV Cache** 存储了计算结果（具体的 K、V 向量）
-- Weights 是静态的，所有请求共享
-- KV Cache 是动态的，每个请求独立
+- Weights 是静态的， 所有请求共享
+- KV Cache 是动态的， 每个请求独立
 
 ## 4. 进阶话题
 
 ### 4.1 优化技巧
 
-**针对 Model Weights 的优化：**
+**针对 Model Weights 的优化： **
 
 | 技术 | 原理 | 显存节省 |
 |------|------|---------|
 | 量化 (INT8/INT4) | 降低权重精度 | 2-4x |
 | Weight Tying | Embedding 和 LM Head 共享 | ~节省 $V \times d$ |
 | Pruning | 删除不重要的权重 | 取决于稀疏率 |
-| LoRA | 低秩适配，不改原始权重 | 训练时大幅节省 |
+| LoRA | 低秩适配， 不改原始权重 | 训练时大幅节省 |
 
-**针对 KV Cache 的优化：**
+**针对 KV Cache 的优化： **
 
 | 技术 | 原理 | 显存节省 |
 |------|------|---------|
 | Multi-Query Attention (MQA) | 所有 head 共享 K/V | $n_h$ 倍 |
 | Grouped-Query Attention (GQA) | 分组共享 K/V | $n_h / g$ 倍 |
 | KV Cache 量化 | INT8/FP8 存储 cache | 2x |
-| PagedAttention | 分页管理，减少碎片 | 减少浪费 |
+| PagedAttention | 分页管理， 减少碎片 | 减少浪费 |
 | Sliding Window | 只保留最近 $w$ 个 token 的 cache | $N/w$ 倍 |
 | Token Eviction | 动态淘汰不重要的 token | 取决于策略 |
 
@@ -180,19 +180,19 @@ Hidden State --> W_Q (weights) --> Query --> 不缓存，只用一次
 **Q: 推理时 GPU 显存里都装了什么？**
 
 A: 主要三部分：
-1. Model Weights：静态，启动时加载
-2. KV Cache：动态，随请求增长
-3. Activation memory：中间激活值（forward pass 临时使用，量远小于前两者）
+1. Model Weights： 静态， 启动时加载
+2. KV Cache： 动态， 随请求增长
+3. Activation memory： 中间激活值（forward pass 临时使用， 量远小于前两者）
 
-**Q: 为什么 batch size 越大，throughput 越高？**
+**Q: 为什么 batch size 越大， throughput 越高？**
 
-A: Model Weights 是所有请求共享的。batch 从 1 到 32，weights 的显存开销不变（只读一次），但 GPU 的 Tensor Core 利用率从极低到较高（矩阵更大，计算密度更高）。KV Cache 随 batch 线性增长，但只要显存装得下，throughput 近似线性提升。
+A: Model Weights 是所有请求共享的。 batch 从 1 到 32， weights 的显存开销不变（只读一次）， 但 GPU 的 Tensor Core 利用率从极低到较高（矩阵更大， 计算密度更高）。 KV Cache 随 batch 线性增长， 但只要显存装得下， throughput 近似线性提升。
 
 **Q: Prefill 和 Decode 阶段有什么区别？**
 
 A:
-- **Prefill（首次填充）**：处理整个 prompt，一次性生成所有 KV Cache。计算密集，GPU 利用率高。
-- **Decode（逐 token 生成）**：每步只处理一个 token，从 KV Cache 读取历史。访存密集，GPU 利用率低。
+- **Prefill（首次填充）**： 处理整个 prompt， 一次性生成所有 KV Cache。 计算密集， GPU 利用率高。
+- **Decode（逐 token 生成）**： 每步只处理一个 token， 从 KV Cache 读取历史。 访存密集， GPU 利用率低。
 - 这两个阶段的特性差异是 SGLang、vLLM 等推理引擎做调度优化的基础。
 
 ## 5. Llama1 Attention KV Cache 代码详解
@@ -263,16 +263,16 @@ class Attention(nn.Module):
 代码中的关键点：
 
 1. `self.cache_k` 和 `self.cache_v` 在初始化时预分配了最大序列长度的空间
-2. `start_pos` 跟踪当前写入位置，每次只写入新 token 的 K/V
+2. `start_pos` 跟踪当前写入位置， 每次只写入新 token 的 K/V
 3. 读取时用 `[:start_pos + seqlen]` 获取全部历史 K/V
-4. Q 只有当前 token，K/V 是全部历史 —— 这就是 KV Cache 的核心模式
+4. Q 只有当前 token， K/V 是全部历史 —— 这就是 KV Cache 的核心模式
 
-> **注意：** 这是 Llama1 的简化实现。生产级推理引擎（如 SGLang、vLLM）使用 PagedAttention 来管理 KV Cache，避免预分配带来的显存浪费。
+> **注意： ** 这是 Llama1 的简化实现。 生产级推理引擎（如 SGLang、vLLM）使用 PagedAttention 来管理 KV Cache， 避免预分配带来的显存浪费。
 
 ## 总结
 
-- Model Weights 是训练阶段的产物，定义了模型"怎么计算"
-- KV Cache 是推理阶段的产物，存储了 attention 的中间结果
-- 短序列场景，weights 占显存大头；长序列场景，KV Cache 反而是瓶颈
-- 优化两者的策略不同：weights 靠量化/剪枝，KV Cache 靠 GQA/PagedAttention/eviction
-- 理解这个区分，是搞懂 LLM 推理系统（SGLang、vLLM）调度逻辑的前提
+- Model Weights 是训练阶段的产物， 定义了模型"怎么计算"
+- KV Cache 是推理阶段的产物， 存储了 attention 的中间结果
+- 短序列场景， weights 占显存大头；长序列场景， KV Cache 反而是瓶颈
+- 优化两者的策略不同： weights 靠量化/剪枝， KV Cache 靠 GQA/PagedAttention/eviction
+- 理解这个区分， 是搞懂 LLM 推理系统（SGLang、vLLM）调度逻辑的前提
