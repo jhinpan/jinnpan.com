@@ -1,0 +1,42 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import ArrowCard from "@components/ArrowCard.astro";
+import { PROJECTS } from "@consts";
+import type { Lang } from "@lib/utils";
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: "zh" } },
+    { params: { lang: "en" } },
+  ];
+}
+
+const { lang } = Astro.params as { lang: Lang };
+
+const projects = (await getCollection("projects"))
+  .filter((project) => !project.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<Layout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION} lang={lang}>
+  <Container>
+    <aside data-pagefind-ignore>
+      <div class="space-y-10">
+        <div class="animate font-semibold text-black dark:text-white">
+          {lang === "zh" ? "Projects" : "Projects"}
+        </div>
+        <ul class="animate not-prose flex flex-col gap-4">
+          {
+            projects.map((project) => (
+              <li>
+                <ArrowCard entry={project} />
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </aside>
+  </Container>
+</Layout>

@@ -1,0 +1,148 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import { SITE, HOME, SOCIALS } from "@consts";
+import ArrowCard from "@components/ArrowCard.astro";
+import Link from "@components/Link.astro";
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { getPostLang } from "@lib/utils";
+import type { Lang } from "@lib/utils";
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: "zh" } },
+    { params: { lang: "en" } },
+  ];
+}
+
+const { lang } = Astro.params as { lang: Lang };
+
+const blog = (await getCollection("blog"))
+  .filter((post) => !post.data.draft && getPostLang(post.id) === lang)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, SITE.NUM_POSTS_ON_HOMEPAGE);
+
+const projects: CollectionEntry<"projects">[] = (
+  await getCollection("projects")
+)
+  .filter((project) => !project.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, SITE.NUM_PROJECTS_ON_HOMEPAGE);
+
+const i18n = {
+  zh: {
+    greeting: "Jhin Pan",
+    tagline: "RL Infra / LLM Inference / Kernel Automation",
+    bio: "AMD Spring 2026 intern. Building multi-agent systems for kernel optimization on MI300X/MI355X. Writing about MLSys, LLM inference, and GPU programming.",
+    latestPosts: "Recent Posts",
+    seeAll: "See all posts",
+    recentProjects: "Recent Projects",
+    seeAllProjects: "See all projects",
+    connect: "Contact",
+    connectText: "Find me on social media or send an email.",
+  },
+  en: {
+    greeting: "Jhin Pan",
+    tagline: "RL Infra / LLM Inference / Kernel Automation",
+    bio: "AMD Spring 2026 intern. Building multi-agent systems for kernel optimization on MI300X/MI355X. Writing about MLSys, LLM inference, and GPU programming.",
+    latestPosts: "Recent Posts",
+    seeAll: "See all posts",
+    recentProjects: "Recent Projects",
+    seeAllProjects: "See all projects",
+    connect: "Contact",
+    connectText: "Find me on social media or send an email.",
+  },
+};
+
+const t = i18n[lang];
+---
+
+<Layout title={HOME.TITLE} description={HOME.DESCRIPTION} lang={lang}>
+  <Container>
+    <aside data-pagefind-ignore>
+      <h1 class="font-semibold text-black dark:text-white">
+        {t.greeting}
+      </h1>
+      <div class="space-y-16">
+        <section>
+          <article class="space-y-4">
+            <p class="animate">
+              {t.tagline}
+            </p>
+            <p class="animate">
+              {t.bio}
+            </p>
+          </article>
+        </section>
+
+        {blog.length > 0 && (
+          <section class="animate space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-y-2">
+              <h2 class="font-semibold text-black dark:text-white">
+                {t.latestPosts}
+              </h2>
+              <Link href={`/${lang}/blog`}>{t.seeAll}</Link>
+            </div>
+            <ul class="not-prose flex flex-col gap-4">
+              {blog.map((post) => (
+                <li>
+                  <ArrowCard entry={post} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {projects.length > 0 && (
+          <section class="animate space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-y-2">
+              <h2 class="font-semibold text-black dark:text-white">
+                {t.recentProjects}
+              </h2>
+              <Link href={`/${lang}/projects`}>{t.seeAllProjects}</Link>
+            </div>
+            <ul class="not-prose flex flex-col gap-4">
+              {projects.map((project) => (
+                <li>
+                  <ArrowCard entry={project} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section class="animate space-y-4">
+          <h2 class="font-semibold text-black dark:text-white">
+            {t.connect}
+          </h2>
+          <article>
+            <p>{t.connectText}</p>
+          </article>
+          <ul class="not-prose flex flex-wrap gap-2">
+            {SOCIALS.map((SOCIAL) => (
+              <li class="flex gap-x-2 text-nowrap">
+                <Link
+                  href={SOCIAL.HREF}
+                  external
+                  aria-label={`${SITE.TITLE} on ${SOCIAL.NAME}`}
+                >
+                  {SOCIAL.NAME}
+                </Link>
+                {"/"}
+              </li>
+            ))}
+            <li class="line-clamp-1">
+              <Link
+                href={`mailto:${SITE.EMAIL}`}
+                aria-label={`Email ${SITE.TITLE}`}
+              >
+                {SITE.EMAIL}
+              </Link>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </aside>
+  </Container>
+</Layout>
