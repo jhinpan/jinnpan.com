@@ -1,6 +1,6 @@
 ---
 title: "SFT 与 RL 训练指南"
-description: "SFT和RL的核心区别、Loss计算、数据构建到RLHF实战的完整指南"
+description: "SFT 和 RL 的核心区别、Loss 计算、数据构建到 RLHF 实战的完整指南"
 date: 2025-08-06
 tags: ["SFT", "RL", "RLHF", "training"]
 category: "Technical"

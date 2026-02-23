@@ -1,6 +1,6 @@
 ---
 title: "注意力机制详解 — Full, Sparse, Linear, NSA & GLA"
-description: "从Full Attention出发，拆解Sparse和Linear两条路线，直到DeepSeek NSA和Gated Linear Attention"
+description: "从 Full Attention 出发，拆解 Sparse 和 Linear 两条路线，直到 DeepSeek NSA 和 Gated Linear Attention"
 date: 2026-02-18
 tags: ["attention", "MLSys", "kernel"]
 category: "Technical"

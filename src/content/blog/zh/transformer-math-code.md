@@ -1,6 +1,6 @@
 ---
 title: "Transformer 详解 (数学 + 代码)"
-description: "从数学原理、代码实现、逻辑结构三个维度拆解Transformer的Self-Attention、LayerNorm和MLP"
+description: "从数学原理、代码实现、逻辑结构三个维度拆解 Transformer 的 Self-Attention、LayerNorm 和 MLP"
 date: 2025-03-09
 tags: ["transformer", "deep-learning", "MLSys"]
 category: "Technical"

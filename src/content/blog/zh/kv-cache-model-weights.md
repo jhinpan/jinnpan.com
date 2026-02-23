@@ -1,6 +1,6 @@
 ---
 title: "KV Cache 与模型权重"
-description: "理解KV Cache和Model Weights的区别与关联，掌握大模型推理优化的第一步"
+description: "理解 KV Cache 和 Model Weights 的区别与关联，掌握大模型推理优化的第一步"
 date: 2025-06-23
 tags: ["inference", "KV-cache", "LLM"]
 category: "Technical"

@@ -1,6 +1,6 @@
 ---
 title: "Benchmark: Qwen3-Coder-30B-A3B + EAGLE3 投机解码"
-description: "EAGLE3投机解码在Qwen3-Coder上的性能评测，代码生成场景1.87x加速"
+description: "EAGLE3 投机解码在 Qwen3-Coder 上的性能评测，代码生成场景 1.87x 加速"
 date: 2025-11-25
 tags: ["speculative-decoding", "benchmark", "SGLang"]
 category: "Technical"

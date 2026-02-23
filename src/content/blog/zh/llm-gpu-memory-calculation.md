@@ -1,6 +1,6 @@
 ---
 title: "LLM 在 GPU 上的显存计算"
-description: "详解LLM训练和推理的显存估算，包括DP/TP/PP/EP分布式策略的显存分摊"
+description: "详解 LLM 训练和推理的显存估算，包括 DP/TP/PP/EP 分布式策略的显存分摊"
 date: 2025-06-02
 tags: ["GPU", "memory", "distributed-training"]
 category: "Technical"

@@ -1,6 +1,6 @@
 ---
-title: "NeMo-RL vs slime：RL训练框架对比"
-description: "两个主流RL训练框架的深度对比：算法、工程质量、MoE支持、ROCm兼容性"
+title: "NeMo-RL vs slime：RL 训练框架对比"
+description: "两个主流 RL 训练框架的深度对比：算法、工程质量、MoE 支持、ROCm 兼容性"
 date: 2025-11-10
 tags: ["RL", "training", "framework"]
 category: "Technical"
