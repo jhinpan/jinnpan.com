@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import { SITE, HOME, SOCIALS } from "@consts";
+import { SITE, HOME, SOCIALS, ABOUT } from "@consts";
 import ArrowCard from "@components/ArrowCard.astro";
 import Link from "@components/Link.astro";
 import { getCollection } from "astro:content";
@@ -32,20 +32,22 @@ const projects: CollectionEntry<"projects">[] = (
 
 const i18n = {
   zh: {
-    greeting: "Jhin Pan",
-    tagline: "RL Infra / LLM Inference / Kernel Automation",
-    bio: "AMD Spring 2026 intern. Building multi-agent systems for kernel optimization on MI300X/MI355X. Writing about MLSys, LLM inference, and GPU programming.",
-    latestPosts: "Recent Posts",
-    seeAll: "See all posts",
-    recentProjects: "Recent Projects",
-    seeAllProjects: "See all projects",
-    connect: "Contact",
-    connectText: "Find me on social media or send an email.",
+    greeting: "Jin Pan",
+    tagline: "ML Systems / LLM Inference / RL Infrastructure",
+    bio: "威斯康星大学麦迪逊分校计算机科学 MS/PhD 学生，研究方向为 ML Systems。SGLang 社区贡献者，目前在 AMD GenAI 团队实习，专注 RL 系统和 GPU 核函数优化。",
+    moreAbout: "更多关于我",
+    latestPosts: "最新文章",
+    seeAll: "查看全部",
+    recentProjects: "近期项目",
+    seeAllProjects: "查看全部项目",
+    connect: "联系方式",
+    connectText: "通过社交媒体或邮件联系我。",
   },
   en: {
-    greeting: "Jhin Pan",
-    tagline: "RL Infra / LLM Inference / Kernel Automation",
-    bio: "AMD Spring 2026 intern. Building multi-agent systems for kernel optimization on MI300X/MI355X. Writing about MLSys, LLM inference, and GPU programming.",
+    greeting: "Jin Pan",
+    tagline: "ML Systems / LLM Inference / RL Infrastructure",
+    bio: "MS/PhD student in Computer Sciences at UW-Madison, working on ML Systems. SGLang community contributor. Currently interning at AMD GenAI, focusing on RL systems and GPU kernel optimization.",
+    moreAbout: "More about me",
     latestPosts: "Recent Posts",
     seeAll: "See all posts",
     recentProjects: "Recent Projects",
@@ -72,6 +74,9 @@ const t = i18n[lang];
             </p>
             <p class="animate">
               {t.bio}
+            </p>
+            <p class="animate">
+              <Link href={`/${lang}/about`}>{t.moreAbout} &rarr;</Link>
             </p>
           </article>
         </section>

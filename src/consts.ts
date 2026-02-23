@@ -1,16 +1,16 @@
 import type { Metadata, Site, Socials } from "@types";
 
 export const SITE: Site = {
-  TITLE: "Jhin Pan",
-  DESCRIPTION: "RL Infra / LLM Inference / Kernel Automation",
-  EMAIL: "jhinpan@outlook.com",
+  TITLE: "Jin Pan",
+  DESCRIPTION: "ML Systems / LLM Inference / RL Infrastructure",
+  EMAIL: "jpan236@wisc.edu",
   NUM_POSTS_ON_HOMEPAGE: 5,
-  NUM_PROJECTS_ON_HOMEPAGE: 3,
+  NUM_PROJECTS_ON_HOMEPAGE: 5,
 };
 
 export const HOME: Metadata = {
   TITLE: "Home",
-  DESCRIPTION: "RL Infra / LLM Inference / Kernel Automation",
+  DESCRIPTION: "ML Systems / LLM Inference / RL Infrastructure",
 };
 
 export const BLOG: Metadata = {
@@ -21,6 +21,11 @@ export const BLOG: Metadata = {
 export const PROJECTS: Metadata = {
   TITLE: "Projects",
   DESCRIPTION: "A collection of my projects with links to repositories and demos.",
+};
+
+export const ABOUT: Metadata = {
+  TITLE: "About",
+  DESCRIPTION: "About Jin Pan — ML Systems researcher and engineer.",
 };
 
 export const SOCIALS: Socials = [

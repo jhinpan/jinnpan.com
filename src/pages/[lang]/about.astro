@@ -1,0 +1,140 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import Link from "@components/Link.astro";
+import { ABOUT, SOCIALS, SITE } from "@consts";
+import type { Lang } from "@lib/utils";
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: "zh" } },
+    { params: { lang: "en" } },
+  ];
+}
+
+const { lang } = Astro.params as { lang: Lang };
+
+const i18n = {
+  zh: {
+    title: "关于我",
+    intro: "我是潘锦（Jin Pan），威斯康星大学麦迪逊分校计算机科学系 MS/PhD 学生。我的研究方向是 ML Systems —— 让大模型跑得更快、训练更高效。",
+    current: "当前工作",
+    currentText: "我目前在 AMD GenAI 团队实习（2026 Spring），做 RL 基础设施和 GPU 核函数优化方面的工作。具体来说，我在 MI300X/MI355X 上构建多智能体系统（MAS）来自动优化 GPU 内核。",
+    research: "研究兴趣",
+    researchItems: [
+      "ML Systems：LLM 推理优化、serving 框架（SGLang）、GPU 编程",
+      "RL Infrastructure：大模型后训练（SFT/RLHF/GRPO）系统设计和扩展",
+      "Kernel Optimization：Triton/CK 核函数自动生成与优化、AMD ROCm 生态",
+    ],
+    education: "教育背景",
+    eduItems: [
+      { degree: "MS/PhD, Computer Sciences", school: "University of Wisconsin-Madison", year: "2024 — present" },
+      { degree: "BSE, Computer Science Engineering", school: "University of Michigan", year: "— 2024" },
+      { degree: "BE, Electrical and Computer Engineering", school: "Shanghai Jiao Tong University", year: "— 2024" },
+    ],
+    oss: "开源贡献",
+    ossText: "我是 SGLang 社区的活跃贡献者，也参与了 slime、TritonForge、APRIL 等项目。",
+    motto: "座右铭",
+    mottoText: "Hinc itur ad astra.",
+    connect: "联系方式",
+  },
+  en: {
+    title: "About Me",
+    intro: "I'm Jin Pan, an MS/PhD student in Computer Sciences at the University of Wisconsin-Madison. My research focuses on ML Systems — making large models run faster and train more efficiently.",
+    current: "Current Work",
+    currentText: "I'm currently interning at AMD GenAI (Spring 2026), working on RL infrastructure and GPU kernel optimization. Specifically, I'm building multi-agent systems (MAS) to automatically optimize GPU kernels on MI300X/MI355X.",
+    research: "Research Interests",
+    researchItems: [
+      "ML Systems: LLM inference optimization, serving frameworks (SGLang), GPU programming",
+      "RL Infrastructure: LLM post-training (SFT/RLHF/GRPO) system design and scaling",
+      "Kernel Optimization: Triton/CK kernel auto-generation and optimization, AMD ROCm ecosystem",
+    ],
+    education: "Education",
+    eduItems: [
+      { degree: "MS/PhD, Computer Sciences", school: "University of Wisconsin-Madison", year: "2024 — present" },
+      { degree: "BSE, Computer Science Engineering", school: "University of Michigan", year: "— 2024" },
+      { degree: "BE, Electrical and Computer Engineering", school: "Shanghai Jiao Tong University", year: "— 2024" },
+    ],
+    oss: "Open Source",
+    ossText: "I'm an active contributor to the SGLang community, and also contribute to slime, TritonForge, APRIL, and other projects.",
+    motto: "Motto",
+    mottoText: "Hinc itur ad astra.",
+    connect: "Contact",
+  },
+};
+
+const t = i18n[lang];
+---
+
+<Layout title={ABOUT.TITLE} description={ABOUT.DESCRIPTION} lang={lang}>
+  <Container>
+    <div class="space-y-10" data-pagefind-ignore>
+      <h1 class="animate font-semibold text-black dark:text-white">
+        {t.title}
+      </h1>
+
+      <section class="animate space-y-4">
+        <p>{t.intro}</p>
+      </section>
+
+      <section class="animate space-y-4">
+        <h2 class="font-semibold text-black dark:text-white">{t.current}</h2>
+        <p>{t.currentText}</p>
+      </section>
+
+      <section class="animate space-y-4">
+        <h2 class="font-semibold text-black dark:text-white">{t.research}</h2>
+        <ul class="list-disc space-y-1 pl-5">
+          {t.researchItems.map((item) => <li>{item}</li>)}
+        </ul>
+      </section>
+
+      <section class="animate space-y-4">
+        <h2 class="font-semibold text-black dark:text-white">{t.education}</h2>
+        <ul class="space-y-3">
+          {t.eduItems.map((edu) => (
+            <li>
+              <div class="font-medium">{edu.degree}</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                {edu.school} &middot; {edu.year}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="animate space-y-4">
+        <h2 class="font-semibold text-black dark:text-white">{t.oss}</h2>
+        <p>{t.ossText}</p>
+        <p>
+          <Link href={`/${lang}/projects`}>
+            {lang === "zh" ? "查看全部项目 →" : "See all projects →"}
+          </Link>
+        </p>
+      </section>
+
+      <section class="animate space-y-4">
+        <h2 class="font-semibold text-black dark:text-white italic">{t.mottoText}</h2>
+      </section>
+
+      <section class="animate space-y-4">
+        <h2 class="font-semibold text-black dark:text-white">{t.connect}</h2>
+        <ul class="not-prose flex flex-wrap gap-2">
+          {SOCIALS.map((SOCIAL) => (
+            <li class="flex gap-x-2 text-nowrap">
+              <Link href={SOCIAL.HREF} external aria-label={`${SITE.TITLE} on ${SOCIAL.NAME}`}>
+                {SOCIAL.NAME}
+              </Link>
+              {"/"}
+            </li>
+          ))}
+          <li class="line-clamp-1">
+            <Link href={`mailto:${SITE.EMAIL}`} aria-label={`Email ${SITE.TITLE}`}>
+              {SITE.EMAIL}
+            </Link>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </Container>
+</Layout>
