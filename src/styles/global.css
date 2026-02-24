@@ -34,10 +34,18 @@
     overflow-y: auto;
     color-scheme: light;
     scroll-padding-top: 100px;
+    --color-accent: #C96B4F;
+    --color-accent-light: #D4876F;
+    --color-bg: #FAF8F5;
+    --color-bg-glass: rgba(250, 248, 245, 0.75);
   }
 
   html.dark {
     color-scheme: dark;
+    --color-accent: #D4876F;
+    --color-accent-light: #E0A08A;
+    --color-bg: #1A1816;
+    --color-bg-glass: rgba(26, 24, 22, 0.75);
   }
 
   html,
@@ -48,13 +56,13 @@
   body {
     @apply font-sans antialiased;
     @apply flex flex-col;
-    @apply bg-neutral-100 dark:bg-neutral-900;
+    background-color: var(--color-bg);
     @apply text-black/75 dark:text-white/75;
   }
 
   header {
     @apply fixed left-0 right-0 top-0 z-50 py-6;
-    @apply bg-neutral-100/75 dark:bg-neutral-900/75;
+    background-color: var(--color-bg-glass);
     @apply saturate-200 backdrop-blur-xs;
   }
 
@@ -80,9 +88,23 @@
     @apply transition-colors duration-300 ease-in-out;
   }
   article a:hover {
-    @apply text-black dark:text-white;
+    color: var(--color-accent);
     @apply decoration-black/50 dark:decoration-white/50;
   }
+}
+
+.link-accent:hover,
+.link-accent:focus-visible {
+  color: var(--color-accent) !important;
+}
+
+.lang-toggle {
+  background-color: var(--color-bg);
+}
+.lang-toggle:hover,
+.lang-toggle:focus-visible {
+  color: var(--color-accent) !important;
+  border-color: var(--color-accent);
 }
 
 .animate {
@@ -137,7 +159,8 @@ pre {
 
 /* copy code button on codeblocks */
 .copy-code {
-  @apply absolute right-3 top-3 grid size-9 place-content-center rounded-sm border border-black/15 bg-neutral-100 text-center duration-300 ease-in-out dark:border-white/20 dark:bg-neutral-900;
+  @apply absolute right-3 top-3 grid size-9 place-content-center rounded-sm border border-black/15 text-center duration-300 ease-in-out dark:border-white/20;
+  background-color: var(--color-bg);
 }
 
 .copy-code:hover {

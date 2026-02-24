@@ -13,10 +13,11 @@ const otherLangLabel = lang === "zh" ? "EN" : "ZH";
 
 // Build the language-switched URL
 const currentPath = Astro.url.pathname;
-const switchedPath = currentPath.replace(`/${lang}/`, `/${otherLang}/`).replace(`/${lang}`, `/${otherLang}`) || `/${otherLang}/`;
+const pathWithoutLang = currentPath.replace(new RegExp(`^/${lang}(/|$)`), '/');
+const switchedPath = `/${otherLang}${pathWithoutLang === '/' ? '/' : pathWithoutLang}`;
 ---
 
-<header transition:persist>
+<header>
   <Container>
     <div class="flex flex-wrap justify-between gap-y-2">
       <Link href={`/${lang}/`} underline={false}>
@@ -33,7 +34,7 @@ const switchedPath = currentPath.replace(`/${lang}/`, `/${otherLang}/`).replace(
         <span>{`/`}</span>
         <a
           href={switchedPath}
-          class="rounded-sm border border-black/15 bg-neutral-100 px-2 py-1 text-xs transition-colors duration-300 ease-in-out hover:bg-black/5 hover:text-black focus-visible:bg-black/5 focus-visible:text-black dark:border-white/20 dark:bg-neutral-900 dark:hover:bg-white/5 dark:hover:text-white dark:focus-visible:bg-white/5 dark:focus-visible:text-white"
+          class="lang-toggle rounded-sm border border-black/15 px-2 py-1 text-xs transition-colors duration-300 ease-in-out dark:border-white/20"
         >
           {otherLangLabel}
         </a>
@@ -41,7 +42,7 @@ const switchedPath = currentPath.replace(`/${lang}/`, `/${otherLang}/`).replace(
         <button
           id="magnifying-glass"
           aria-label="Search"
-          class="flex items-center rounded-sm border border-black/15 bg-neutral-100 px-2 py-1 text-xs transition-colors duration-300 ease-in-out hover:bg-black/5 hover:text-black focus-visible:bg-black/5 focus-visible:text-black dark:border-white/20 dark:bg-neutral-900 dark:hover:bg-white/5 dark:hover:text-white dark:focus-visible:bg-white/5 dark:focus-visible:text-white"
+          class="lang-toggle flex items-center rounded-sm border border-black/15 px-2 py-1 text-xs transition-colors duration-300 ease-in-out dark:border-white/20"
         >
           <svg
             height="16"
