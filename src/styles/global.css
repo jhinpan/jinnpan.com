@@ -79,6 +79,14 @@
     @apply prose-headings:font-semibold;
     @apply prose-headings:text-black dark:prose-headings:text-white;
   }
+
+  /* CJK typography: put CJK-aware fonts first for zh pages so space
+     characters and Latin glyphs use metrics designed for mixed text. */
+  html[lang="zh"] body {
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+      'Noto Sans SC', Geist Sans, ui-sans-serif, system-ui, sans-serif,
+      'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  }
 }
 
 @layer utilities {
