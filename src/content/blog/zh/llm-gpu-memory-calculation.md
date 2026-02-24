@@ -1,6 +1,6 @@
 ---
 title: "LLM 在 GPU 上的显存计算"
-description: "详解 LLM 训练和推理的显存估算，包括 DP/TP/PP/EP 分布式策略的显存分摊"
+description: "详解 LLM 训练和推理的显存估算，包括 DP / TP / PP / EP 分布式策略的显存分摊"
 date: 2025-06-02
 tags: ["GPU", "memory", "distributed-training"]
 category: "Technical"
@@ -29,7 +29,7 @@ lang: "zh"
 | 符号 | 含义 | 示例 |
 |------|------|------|
 | $P$ | 模型参数量 | 7B = $7 \times 10^9$ |
-| $b$ | 每个参数占的字节数 | FP32=4, FP16/BF16=2, INT8=1, INT4=0.5 |
+| $b$ | 每个参数占的字节数 | FP32=4, FP16 / BF16=2, INT8=1, INT4=0.5 |
 | $L$ | Transformer 层数 | 32 |
 | $d$ | hidden dimension | 4096 |
 | $d_{ff}$ | FFN 中间维度 | 11008 |
@@ -70,7 +70,7 @@ $$
 M_{optim} = P \times (4 + 4) = 8P \quad \text{(FP32 AdamW, 权重已算在 } M_{params} \text{)}
 $$
 
-> **混合精度训练的显存开销： ** 一个 7B 模型用 mixed-precision AdamW， 光优化器状态就要 $7B \times 12 = 84$ GB。 这就是为什么训练 7B 模型至少需要一张 80GB A100/H100。
+> **混合精度训练的显存开销： ** 一个 7B 模型用 mixed-precision AdamW， 光优化器状态就要 $7B \times 12 = 84$ GB。 这就是为什么训练 7B 模型至少需要一张 80GB A100 / H100。
 
 ### 3.3 梯度（训练）
 
@@ -137,7 +137,7 @@ $$
 | Buffers | ~2 GB |
 | **总计** | **~174 GB** |
 
-> **一张 80GB 的 A100/H100 装不下。 ** 这就是为什么训练 7B 模型需要分布式策略。
+> **一张 80GB 的 A100 / H100 装不下。 ** 这就是为什么训练 7B 模型需要分布式策略。
 
 ## 5. 推理总显存估算
 
@@ -145,7 +145,7 @@ $$
 M_{infer} = M_{params} + M_{kv} + M_{buf}
 $$
 
-推理时的显存主要取决于模型精度和序列长度/batch size。
+推理时的显存主要取决于模型精度和序列长度 / batch size。
 
 ## 6. 分布式策略的显存分摊
 
@@ -243,7 +243,7 @@ $$
 
 **4 卡优化方案： **
 
-| 方案 | TP | 权重/卡 | KV Cache/卡 | 总/卡 | 可用 batch |
+| 方案 | TP | 权重 / 卡 | KV Cache / 卡 | 总 / 卡 | 可用 batch |
 |------|-----|---------|------------|-------|-----------|
 | TP=1, 独立 4 实例 | 1 | 15.2 GB | 按需 | ~50 GB | B=16 per card |
 | TP=2, 2 实例 | 2 | 7.6 GB | 按需 | ~40 GB | B=32 per pair |

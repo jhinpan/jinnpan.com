@@ -115,7 +115,7 @@ $$
 
 > **硬件不友好： ** GPU 的 Tensor Core 针对稠密矩阵乘法优化。 稀疏的注意力模式意味着不规则的内存访问， 很难利用硬件的全部带宽。 FlashAttention 的 block-sparse 变体是目前最好的折中方案， 但仍然需要稀疏模式在 block 级别对齐。
 
-- 稀疏模式需要在编译期/初始化期确定， 动态稀疏更难优化
+- 稀疏模式需要在编译期 / 初始化期确定， 动态稀疏更难优化
 - 不同层可能需要不同的稀疏模式
 - 推理时 KV Cache 仍然是 $O(N)$， 稀疏只帮了计算不帮存储
 
@@ -424,9 +424,9 @@ graph LR
 
 3. **GLA 的 chunk-wise 训练本质上是"小 FlashAttention + RNN 递推"。 ** chunk 内的 attention 矩阵大小是 $C \times C$（如 $64 \times 64$）， 完全可以放进 SRAM。 chunk 间的状态传递是矩阵乘法， 适合 Tensor Core。
 
-4. **Hybrid 架构（Full + GLA/Mamba）是当前工程最优解。 ** 用少量 Full Attention 层保证信息完整性， 大量 Linear 层降低推理成本。 这种架构的 kernel 开发需要同时支持两种 attention 模式。
+4. **Hybrid 架构（Full + GLA / Mamba）是当前工程最优解。 ** 用少量 Full Attention 层保证信息完整性， 大量 Linear 层降低推理成本。 这种架构的 kernel 开发需要同时支持两种 attention 模式。
 
-5. **AMD MI300X/MI355X 上的部署考虑： **
+5. **AMD MI300X / MI355X 上的部署考虑： **
    - FlashAttention： CK 已有高度优化的实现
    - NSA： 需要自定义 kernel（block-wise 压缩 + 选择）
    - GLA： Triton for ROCm 可以写 chunk-wise 训练 kernel， 但推理 kernel 需要手写 CK 来达到最优性能

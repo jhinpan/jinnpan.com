@@ -7,7 +7,7 @@ category: "Technical"
 lang: "zh"
 ---
 
-这篇文章从 SFT 和 RL 的核心区别出发， 依次拆解 SFT Loss 计算、数据构建、训练流程， 再到 RLHF（PPO/GRPO）的集成。 目标是给出一个从零到实战的完整路径。
+这篇文章从 SFT 和 RL 的核心区别出发， 依次拆解 SFT Loss 计算、数据构建、训练流程， 再到 RLHF（PPO / GRPO）的集成。 目标是给出一个从零到实战的完整路径。
 
 ## 1. SFT vs RL： 核心区别
 
@@ -15,10 +15,10 @@ lang: "zh"
 |------|-----------------------------|-----------------------------|
 | 学习信号 | 人工标注的 (input, output) 对 | reward signal (标量分数) |
 | 目标函数 | 最小化 cross-entropy loss | 最大化期望 reward |
-| 数据需求 | 高质量标注数据 | prompt + reward function/model |
+| 数据需求 | 高质量标注数据 | prompt + reward function / model |
 | 探索能力 | 无（只模仿标注） | 有（生成多样 rollout） |
 | 训练稳定性 | 高（标准监督学习） | 低（reward hacking, mode collapse） |
-| 计算成本 | 低（单模型 forward/backward） | 高（多模型协调 + rollout 生成） |
+| 计算成本 | 低（单模型 forward / backward） | 高（多模型协调 + rollout 生成） |
 | 适合场景 | 指令跟随、格式对齐 | 推理能力、创造性、偏好对齐 |
 
 > **SFT 教模型"怎么说"， RL 教模型"说什么好"。 ** SFT 让模型学会特定的输入-输出映射， RL 让模型学会在给定约束下最大化某个目标。 两者是互补的： 先 SFT 让模型学会基础格式， 再 RL 让模型学会最优策略。
@@ -283,13 +283,13 @@ def compute_reward(prompt, response):
 ### 5.2 RL 阶段
 
 - **Reward hacking**： 模型学会"钻空子"获取高 reward。 比如数学任务中直接输出答案不给推理过程， 代码任务中输出空程序通过空测试集。 解法： 加 format reward、加 process reward。
-- **KL 系数过大/过小**： $\beta$ 太大， 模型不敢探索， 退化成 SFT 模型；$\beta$ 太小， 模型偏离太远， 生成不可控。 建议从 0.05 开始， 动态调整。
+- **KL 系数过大 / 过小**： $\beta$ 太大， 模型不敢探索， 退化成 SFT 模型；$\beta$ 太小， 模型偏离太远， 生成不可控。 建议从 0.05 开始， 动态调整。
 - **Rollout 质量差**： 如果 SFT 模型本身很差， RL 阶段生成的 rollout 质量低， reward signal 噪声大， 训练不稳定。 RL 的上限取决于 SFT 的下限。
 
 ### 5.3 工程层面
 
 - **显存管理**： PPO 需要同时在 GPU 上维护 actor、critic、reference 三个模型。 一个 7B 模型用 FP16 就是 14 GB， 三个就是 42 GB， 加上 optimizer states 和 KV Cache 轻松爆 80 GB。 解法： 用 LoRA 减少 trainable 参数、offload 到 CPU、用更小的 critic。
-- **Rollout 速度**： RL 训练的瓶颈通常是 rollout 生成（需要做推理）。 用 SGLang/vLLM 做高效推理， 用 continuous batching 提升吞吐。
+- **Rollout 速度**： RL 训练的瓶颈通常是 rollout 生成（需要做推理）。 用 SGLang / vLLM 做高效推理， 用 continuous batching 提升吞吐。
 - **Checkpoint 保存频率**： RL 训练不稳定， reward 可能突然掉。 建议每 50-100 步保存一次 checkpoint， 方便回滚。
 
 ## 6. 完整 Pipeline

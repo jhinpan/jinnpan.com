@@ -194,7 +194,7 @@ $$
 |------|-----------|-----------|
 | 归一化方向 | 沿 hidden dimension (d) | 沿 batch dimension (B) |
 | 统计量 | 每个 sample 独立计算 | 跨 batch 计算 |
-| 推理时 | 无需额外统计量 | 需要 running mean/var |
+| 推理时 | 无需额外统计量 | 需要 running mean / var |
 | 对 batch size 敏感 | 否 | 是 |
 | 适用场景 | NLP、序列模型 | CV、固定大小输入 |
 

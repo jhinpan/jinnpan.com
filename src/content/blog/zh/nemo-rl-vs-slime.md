@@ -13,7 +13,7 @@ lang: "zh"
 
 ### 1.1 为什么需要 RL 训练框架
 
-SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 RL（RLHF/GRPO/PPO）训练涉及多个角色的协调：
+SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 RL（RLHF / GRPO / PPO）训练涉及多个角色的协调：
 
 - **Actor**： 生成 rollout（需要推理能力）
 - **Critic / Reward Model**： 打分（另一个模型或规则）
@@ -26,9 +26,9 @@ SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 R
 
 | 框架 | 维护方 | 首次发布 | Stars | 核心定位 |
 |------|--------|---------|-------|---------|
-| NeMo-RL | NVIDIA | 2024-Q3 | ~2.5K | 生产级 RL 训练， 深度集成 NeMo/Megatron |
+| NeMo-RL | NVIDIA | 2024-Q3 | ~2.5K | 生产级 RL 训练， 深度集成 NeMo / Megatron |
 | slime | 社区 (字节 & 学界) | 2024-Q4 | ~1.8K | 轻量灵活的 RL 训练， 研究友好 |
-| OpenRLHF | 社区 | 2023-Q2 | ~5K | 早期框架， PPO/DPO |
+| OpenRLHF | 社区 | 2023-Q2 | ~5K | 早期框架， PPO / DPO |
 | TRL | HuggingFace | 2022-Q4 | ~10K | 入门级， 集成 Transformers 生态 |
 
 本文聚焦 NeMo-RL 和 slime， 因为它们是目前工程质量和 MoE 支持最好的两个选择。
@@ -73,7 +73,7 @@ SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 R
 ```
 
 特点：
-- 基于 Megatron-Core 做分布式， 直接支持 TP/PP/EP
+- 基于 Megatron-Core 做分布式， 直接支持 TP / PP / EP
 - Actor 的推理（rollout 生成）走 vLLM engine
 - 训练更新走 Megatron 的 optimizer
 - 配置驱动（Hydra YAML）， 改算法需要改 config 而非代码
@@ -122,7 +122,7 @@ SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 R
 
 ## 5. ROCm 兼容性
 
-这是另一个关键维度。 我们的硬件是 MI300X/MI355X， 跑的是 ROCm 7.0。
+这是另一个关键维度。 我们的硬件是 MI300X / MI355X， 跑的是 ROCm 7.0。
 
 | 维度 | NeMo-RL | slime |
 |------|---------|-------|
@@ -142,12 +142,12 @@ SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 R
 | 安装 | `pip install nemo-rl`（但 Megatron-Core 要单独装） | `pip install slime-rl` |
 | 最小可运行示例 | ~50 行 YAML | ~30 行 Python |
 | 文档 | 好（NVIDIA 风格， 完整但密） | 中等（README + examples） |
-| Wandb/TensorBoard | 内置 | 内置 |
+| Wandb / TensorBoard | 内置 | 内置 |
 | Checkpoint 格式 | Megatron 格式（需要转换） | HuggingFace 格式（直接用） |
 | 复现论文结果 | 有 benchmark suite | 有 recipe 脚本 |
 | Debug 友好度 | 难（Megatron 层数多） | 好（代码简单） |
 
-> **slime 的 DX 更好。 ** HuggingFace 格式的 checkpoint 意味着不需要做格式转换就能和推理引擎对接。 NeMo-RL 的 Megatron checkpoint 需要转成 HF 格式才能在 SGLang/vLLM 上推理， 这一步有时候很痛苦（尤其是 MoE 模型）。
+> **slime 的 DX 更好。 ** HuggingFace 格式的 checkpoint 意味着不需要做格式转换就能和推理引擎对接。 NeMo-RL 的 Megatron checkpoint 需要转成 HF 格式才能在 SGLang / vLLM 上推理， 这一步有时候很痛苦（尤其是 MoE 模型）。
 
 ## 7. 迁移方案
 
@@ -169,7 +169,7 @@ graph TD
     Q4 -->|No| S2
 ```
 
-对于我们的场景（AMD MI300X/MI355X， MoE 模型， 研究迭代为主）：
+对于我们的场景（AMD MI300X / MI355X， MoE 模型， 研究迭代为主）：
 
 1. **短期（1-2 月）**： 用 slime + SGLang + DeepSpeed on ROCm
 2. **中期（3-6 月）**： 贡献 slime 的 ROCm + CK 优化 patch， 建立 benchmark baseline

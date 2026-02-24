@@ -13,7 +13,7 @@ lang: "zh"
 
 | 概念 | 本质 | 生成阶段 | 生命周期 | 大小与什么相关 |
 |------|------|---------|---------|--------------|
-| Model Weights | 网络参数 | 训练阶段学到 | 长期， 存在磁盘/GPU | 模型架构（层数、hidden size） |
+| Model Weights | 网络参数 | 训练阶段学到 | 长期， 存在磁盘 / GPU | 模型架构（层数、hidden size） |
 | KV Cache | 中间计算缓存 | 推理阶段动态生成 | 短期， 随请求创建和销毁 | 序列长度、batch size |
 
 ## 1. 训练阶段： Model Weights 的诞生
@@ -159,7 +159,7 @@ Hidden State --> W_Q (weights) --> Query --> 不缓存，只用一次
 
 | 技术 | 原理 | 显存节省 |
 |------|------|---------|
-| 量化 (INT8/INT4) | 降低权重精度 | 2-4x |
+| 量化 (INT8 / INT4) | 降低权重精度 | 2-4x |
 | Weight Tying | Embedding 和 LM Head 共享 | ~节省 $V \times d$ |
 | Pruning | 删除不重要的权重 | 取决于稀疏率 |
 | LoRA | 低秩适配， 不改原始权重 | 训练时大幅节省 |
@@ -170,7 +170,7 @@ Hidden State --> W_Q (weights) --> Query --> 不缓存，只用一次
 |------|------|---------|
 | Multi-Query Attention (MQA) | 所有 head 共享 K/V | $n_h$ 倍 |
 | Grouped-Query Attention (GQA) | 分组共享 K/V | $n_h / g$ 倍 |
-| KV Cache 量化 | INT8/FP8 存储 cache | 2x |
+| KV Cache 量化 | INT8 / FP8 存储 cache | 2x |
 | PagedAttention | 分页管理， 减少碎片 | 减少浪费 |
 | Sliding Window | 只保留最近 $w$ 个 token 的 cache | $N/w$ 倍 |
 | Token Eviction | 动态淘汰不重要的 token | 取决于策略 |
@@ -274,5 +274,5 @@ class Attention(nn.Module):
 - Model Weights 是训练阶段的产物， 定义了模型"怎么计算"
 - KV Cache 是推理阶段的产物， 存储了 attention 的中间结果
 - 短序列场景， weights 占显存大头；长序列场景， KV Cache 反而是瓶颈
-- 优化两者的策略不同： weights 靠量化/剪枝， KV Cache 靠 GQA/PagedAttention/eviction
+- 优化两者的策略不同： weights 靠量化 / 剪枝， KV Cache 靠 GQA / PagedAttention / eviction
 - 理解这个区分， 是搞懂 LLM 推理系统（SGLang、vLLM）调度逻辑的前提
