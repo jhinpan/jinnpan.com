@@ -21,7 +21,7 @@ $$
 - $Q \in \mathbb{R}^{N \times d_k}$， $K \in \mathbb{R}^{N \times d_k}$， $V \in \mathbb{R}^{N \times d_v}$
 - $N$ 是序列长度， $d_k$ 是 key 的维度
 
-**复杂度分析： **
+**复杂度分析：**
 
 | 维度 | 复杂度 |
 |------|--------|
@@ -29,7 +29,7 @@ $$
 | 空间复杂度（注意力矩阵） | $O(N^2)$ |
 | KV Cache（推理） | $O(N \cdot d)$ per layer |
 
-> **核心问题： ** $O(N^2)$ 意味着序列长度翻倍， 计算量翻四倍。 当 $N$ 到达 128K 甚至 1M 时， 这个二次方的代价变得不可承受。
+> **核心问题：** $O(N^2)$ 意味着序列长度翻倍， 计算量翻四倍。 当 $N$ 到达 128K 甚至 1M 时， 这个二次方的代价变得不可承受。
 
 Multi-Head Attention 把 $d_{model}$ 拆成 $h$ 个头， 每个头独立做 attention 再拼接：
 
@@ -113,7 +113,7 @@ $$
 
 稀疏模式在理论上很美， 但工程上有几个硬问题：
 
-> **硬件不友好： ** GPU 的 Tensor Core 针对稠密矩阵乘法优化。 稀疏的注意力模式意味着不规则的内存访问， 很难利用硬件的全部带宽。 FlashAttention 的 block-sparse 变体是目前最好的折中方案， 但仍然需要稀疏模式在 block 级别对齐。
+> **硬件不友好：** GPU 的 Tensor Core 针对稠密矩阵乘法优化。 稀疏的注意力模式意味着不规则的内存访问， 很难利用硬件的全部带宽。 FlashAttention 的 block-sparse 变体是目前最好的折中方案， 但仍然需要稀疏模式在 block 级别对齐。
 
 - 稀疏模式需要在编译期 / 初始化期确定， 动态稀疏更难优化
 - 不同层可能需要不同的稀疏模式
@@ -155,7 +155,7 @@ $$
 - 每个 $o_i$ 的计算： $O(D d_v)$
 - 总复杂度： $O(N D d_v) = O(N d^2)$（当 $D = O(d)$ 时）
 
-> **从 $O(N^2 d)$ 到 $O(N d^2)$： ** 当 $N \gg d$ 时（长序列）， 这是质的飞跃。 128K 序列、$d=128$ 的场景下， $N^2 / d \approx 128K$ 倍的加速。
+> **从 $O(N^2 d)$ 到 $O(N d^2)$：** 当 $N \gg d$ 时（长序列）， 这是质的飞跃。 128K 序列、$d=128$ 的场景下， $N^2 / d \approx 128K$ 倍的加速。
 
 ### 4.3 RNN 等价形式
 
@@ -186,7 +186,7 @@ RNN 形式揭示了一个致命问题： $S_t = S_{t-1} + \phi(k_t) v_t^T$。
 - 新 token 的信号被稀释
 - 实际表现： 序列超过一定长度后， 质量急剧下降
 
-> **这就是为什么纯 Linear Attention 在实践中表现不如 Full Attention。 ** 后续的改进（RetNet、GLA、Mamba）本质上都是在解决这个遗忘问题。
+> **这就是为什么纯 Linear Attention 在实践中表现不如 Full Attention。** 后续的改进（RetNet、GLA、Mamba）本质上都是在解决这个遗忘问题。
 
 ## 5. DeepSeek NSA（Native Sparse Attention）
 
@@ -361,7 +361,7 @@ def gla_chunk_forward(Q, K, V, alpha, chunk_size=64):
 | Mamba (S6) | 数据依赖 | $d \times N_{state}$ | scan | 2024 |
 | Mamba2 | 数据依赖 | $d \times d_v$ | chunk-wise | 2024 |
 
-> **趋势： ** 从固定衰减到数据依赖遗忘门， 从纯 RNN 训练到 chunk-wise 并行， Linear Attention 家族在逐步逼近"训练时像 Transformer， 推理时像 RNN"的理想状态。
+> **趋势：** 从固定衰减到数据依赖遗忘门， 从纯 RNN 训练到 chunk-wise 并行， Linear Attention 家族在逐步逼近"训练时像 Transformer， 推理时像 RNN"的理想状态。
 
 ### 6.4 在 Qwen3-Coder-Next 中的部署
 
@@ -416,17 +416,17 @@ graph LR
 
 ## 9. 工程落地要点
 
-**对 kernel 工程师来说， 最重要的几个结论： **
+**对 kernel 工程师来说， 最重要的几个结论：**
 
-1. **FlashAttention 是 Full Attention 的终极优化， 但它不改变 $O(N^2)$ 的本质。 ** 它把显存从 $O(N^2)$ 降到 $O(N)$， 但计算量不变。 长上下文场景仍然需要 Sparse 或 Linear。
+1. **FlashAttention 是 Full Attention 的终极优化， 但它不改变 $O(N^2)$ 的本质。** 它把显存从 $O(N^2)$ 降到 $O(N)$， 但计算量不变。 长上下文场景仍然需要 Sparse 或 Linear。
 
-2. **NSA 的三分支设计天然适配 block-wise kernel。 ** 压缩分支是 block reduce + MLP， 选择分支是 block gather + FlashAttention， 滑动窗口是标准 FlashAttention 的窗口变体。 三者都可以用现有的高效 kernel 实现。
+2. **NSA 的三分支设计天然适配 block-wise kernel。** 压缩分支是 block reduce + MLP， 选择分支是 block gather + FlashAttention， 滑动窗口是标准 FlashAttention 的窗口变体。 三者都可以用现有的高效 kernel 实现。
 
-3. **GLA 的 chunk-wise 训练本质上是"小 FlashAttention + RNN 递推"。 ** chunk 内的 attention 矩阵大小是 $C \times C$（如 $64 \times 64$）， 完全可以放进 SRAM。 chunk 间的状态传递是矩阵乘法， 适合 Tensor Core。
+3. **GLA 的 chunk-wise 训练本质上是"小 FlashAttention + RNN 递推"。** chunk 内的 attention 矩阵大小是 $C \times C$（如 $64 \times 64$）， 完全可以放进 SRAM。 chunk 间的状态传递是矩阵乘法， 适合 Tensor Core。
 
-4. **Hybrid 架构（Full + GLA / Mamba）是当前工程最优解。 ** 用少量 Full Attention 层保证信息完整性， 大量 Linear 层降低推理成本。 这种架构的 kernel 开发需要同时支持两种 attention 模式。
+4. **Hybrid 架构（Full + GLA / Mamba）是当前工程最优解。** 用少量 Full Attention 层保证信息完整性， 大量 Linear 层降低推理成本。 这种架构的 kernel 开发需要同时支持两种 attention 模式。
 
-5. **AMD MI300X / MI355X 上的部署考虑： **
+5. **AMD MI300X / MI355X 上的部署考虑：**
    - FlashAttention： CK 已有高度优化的实现
    - NSA： 需要自定义 kernel（block-wise 压缩 + 选择）
    - GLA： Triton for ROCm 可以写 chunk-wise 训练 kernel， 但推理 kernel 需要手写 CK 来达到最优性能

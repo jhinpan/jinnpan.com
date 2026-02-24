@@ -62,7 +62,7 @@ Qwen3-Coder-30B-A3B 是一个 MoE 模型（30B 总参数， 3B 激活参数）�
 
 ### 2.3 启动命令
 
-**Baseline（无投机解码）： **
+**Baseline（无投机解码）：**
 
 ```bash
 python -m sglang.launch_server \
@@ -74,7 +74,7 @@ python -m sglang.launch_server \
     --port 30000
 ```
 
-**EAGLE3 投机解码： **
+**EAGLE3 投机解码：**
 
 ```bash
 python -m sglang.launch_server \
@@ -91,7 +91,7 @@ python -m sglang.launch_server \
     --port 30000
 ```
 
-**Benchmark 命令： **
+**Benchmark 命令：**
 
 ```bash
 python -m sglang.bench_serving \

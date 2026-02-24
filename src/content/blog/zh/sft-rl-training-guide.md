@@ -21,7 +21,7 @@ lang: "zh"
 | 计算成本 | 低（单模型 forward / backward） | 高（多模型协调 + rollout 生成） |
 | 适合场景 | 指令跟随、格式对齐 | 推理能力、创造性、偏好对齐 |
 
-> **SFT 教模型"怎么说"， RL 教模型"说什么好"。 ** SFT 让模型学会特定的输入-输出映射， RL 让模型学会在给定约束下最大化某个目标。 两者是互补的： 先 SFT 让模型学会基础格式， 再 RL 让模型学会最优策略。
+> **SFT 教模型"怎么说"， RL 教模型"说什么好"。** SFT 让模型学会特定的输入-输出映射， RL 让模型学会在给定约束下最大化某个目标。 两者是互补的： 先 SFT 让模型学会基础格式， 再 RL 让模型学会最优策略。
 
 ## 2. SFT Loss 详解
 
@@ -98,7 +98,7 @@ def create_labels(input_ids, prompt_length):
 }
 ```
 
-**数据质量 checklist： **
+**数据质量 checklist：**
 
 - 多样性： 覆盖目标任务的各种 pattern
 - 一致性： 相似的问题应该有一致风格的回答
@@ -239,7 +239,7 @@ $$
 \hat{A}_i = \frac{r_i - \text{mean}(r_1, \dots, r_G)}{\text{std}(r_1, \dots, r_G)}
 $$
 
-> **GRPO 的优势： ** 不需要训练 critic model（省显存、省计算）， advantage 直接从 group 内的 reward 分布估算。 在代码和数学任务上（reward 信号明确： 代码能跑 / 数学答案对）， GRPO 通常和 PPO 效果接近甚至更好。
+> **GRPO 的优势：** 不需要训练 critic model（省显存、省计算）， advantage 直接从 group 内的 reward 分布估算。 在代码和数学任务上（reward 信号明确： 代码能跑 / 数学答案对）， GRPO 通常和 PPO 效果接近甚至更好。
 
 ### 4.4 Reward 设计
 

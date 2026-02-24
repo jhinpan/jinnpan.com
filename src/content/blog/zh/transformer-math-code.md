@@ -38,7 +38,7 @@ $$
 
 ### 2.1 Scaled Dot-Product Attention
 
-**数学公式： **
+**数学公式：**
 
 $$
 \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V
@@ -54,7 +54,7 @@ $$
 
 > **为什么要缩放 $\sqrt{d_k}$？** 假设 $q$ 和 $k$ 的每个分量都是均值 0、方差 1 的独立随机变量。 那么 $q \cdot k = \sum_{i=1}^{d_k} q_i k_i$ 的方差是 $d_k$。 当 $d_k$ 很大时， $q \cdot k$ 的绝对值很大， softmax 的输出趋近于 one-hot， 梯度趋近于零。 除以 $\sqrt{d_k}$ 把方差归一化为 1。
 
-**PyTorch 代码： **
+**PyTorch 代码：**
 
 ```python
 import torch
@@ -91,7 +91,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
 
 ### 2.2 Multi-Head Attention
 
-**数学公式： **
+**数学公式：**
 
 $$
 \text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h) W^O
@@ -108,7 +108,7 @@ $$
 
 > **为什么用多头？** 单头 attention 只能学一种"关注模式"。 多头让模型同时关注不同位置的不同类型的信息（如语法关系、语义相似度、位置邻近等）。
 
-**PyTorch 代码： **
+**PyTorch 代码：**
 
 ```python
 class MultiHeadAttention(nn.Module):
@@ -249,13 +249,13 @@ class RMSNorm(nn.Module):
         return self.gamma * (x / rms)
 ```
 
-> **RMSNorm 的优势： ** 去掉均值计算后减少了一次 reduce 操作。 在 GPU 上， reduce 操作涉及线程间同步， 是性能瓶颈之一。 实测 RMSNorm 比 LayerNorm 快约 10-15%， 且对模型质量几乎无影响。
+> **RMSNorm 的优势：** 去掉均值计算后减少了一次 reduce 操作。 在 GPU 上， reduce 操作涉及线程间同步， 是性能瓶颈之一。 实测 RMSNorm 比 LayerNorm 快约 10-15%， 且对模型质量几乎无影响。
 
 ## 4. MLP / FFN： 数学与代码
 
 ### 4.1 标准 FFN
 
-**数学公式： **
+**数学公式：**
 
 $$
 \text{FFN}(x) = W_2 \cdot \text{GELU}(W_1 x + b_1) + b_2
@@ -265,7 +265,7 @@ $$
 - $W_2 \in \mathbb{R}^{d_{ff} \times d_{model}}$： down projection， 压缩回去
 - $d_{ff}$ 通常是 $4 \times d_{model}$
 
-**GELU 激活函数： **
+**GELU 激活函数：**
 
 $$
 \text{GELU}(x) = x \cdot \Phi(x) \approx 0.5x\left(1 + \tanh\left[\sqrt{2/\pi}(x + 0.044715x^3)\right]\right)
@@ -286,7 +286,7 @@ $$
 
 > **SwiGLU 为什么好？** 经验上 SwiGLU 比 GELU FFN 在同样参数量下效果更好。 代价是多了一个 gate 投影矩阵（参数量从 $2 \times d \times d_{ff}$ 变成 $3 \times d \times d_{ff}$）， 但通常把 $d_{ff}$ 缩小一些来保持总参数量不变（如 Llama 的 $d_{ff} = 2/3 \times 4d$）。
 
-**PyTorch 代码： **
+**PyTorch 代码：**
 
 ```python
 class SwiGLU_FFN(nn.Module):

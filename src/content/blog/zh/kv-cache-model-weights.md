@@ -71,7 +71,7 @@ $$
 
 ### 2.2 KV Cache 的解决方案
 
-KV Cache 的核心想法： **之前 token 的 K 和 V 不会变， 缓存起来就行。 **
+KV Cache 的核心想法：**之前 token 的 K 和 V 不会变， 缓存起来就行。**
 
 ```python
 class AttentionWithKVCache(nn.Module):
@@ -120,7 +120,7 @@ $$
 \text{Total KV Cache} = 2 \times B \times N \times n_h \times d_h \times L \times \text{bytes}
 $$
 
-**Llama-7B 的 KV Cache 估算： **
+**Llama-7B 的 KV Cache 估算：**
 
 | 参数 | 值 |
 |------|-----|
@@ -132,7 +132,7 @@ $$
 | 精度 | FP16 (2 bytes) |
 | **KV Cache 总量** | 2 * 1 * 4096 * 32 * 128 * 32 * 2 = **2 GB** |
 
-> **序列长度的影响： ** KV Cache 与序列长度成正比。 同样的模型， 从 4K 到 128K 上下文， KV Cache 从 2 GB 涨到 64 GB， 直接超过了 7B 模型权重本身（~14 GB FP16）。 这就是为什么长上下文场景下， KV Cache 而不是模型权重成为显存瓶颈。
+> **序列长度的影响：** KV Cache 与序列长度成正比。 同样的模型， 从 4K 到 128K 上下文， KV Cache 从 2 GB 涨到 64 GB， 直接超过了 7B 模型权重本身（~14 GB FP16）。 这就是为什么长上下文场景下， KV Cache 而不是模型权重成为显存瓶颈。
 
 ## 3. Model Weights 与 KV Cache 的关系
 
@@ -155,7 +155,7 @@ Hidden State --> W_Q (weights) --> Query --> 不缓存，只用一次
 
 ### 4.1 优化技巧
 
-**针对 Model Weights 的优化： **
+**针对 Model Weights 的优化：**
 
 | 技术 | 原理 | 显存节省 |
 |------|------|---------|
@@ -164,7 +164,7 @@ Hidden State --> W_Q (weights) --> Query --> 不缓存，只用一次
 | Pruning | 删除不重要的权重 | 取决于稀疏率 |
 | LoRA | 低秩适配， 不改原始权重 | 训练时大幅节省 |
 
-**针对 KV Cache 的优化： **
+**针对 KV Cache 的优化：**
 
 | 技术 | 原理 | 显存节省 |
 |------|------|---------|
@@ -267,7 +267,7 @@ class Attention(nn.Module):
 3. 读取时用 `[:start_pos + seqlen]` 获取全部历史 K/V
 4. Q 只有当前 token， K/V 是全部历史 —— 这就是 KV Cache 的核心模式
 
-> **注意： ** 这是 Llama1 的简化实现。 生产级推理引擎（如 SGLang、vLLM）使用 PagedAttention 来管理 KV Cache， 避免预分配带来的显存浪费。
+> **注意：** 这是 Llama1 的简化实现。 生产级推理引擎（如 SGLang、vLLM）使用 PagedAttention 来管理 KV Cache， 避免预分配带来的显存浪费。
 
 ## 总结
 
