@@ -188,20 +188,7 @@ Post-SFT evaluation shouldn't rely on loss alone (low loss doesn't guarantee goo
 
 ### 4.1 SFT to RLHF Pipeline
 
-```mermaid
-graph LR
-    PT[Pretrained Model] --> SFT[SFT Training]
-    SFT --> RM[Reward Model Training]
-    SFT --> RLHF[RLHF / PPO / GRPO]
-    RM --> RLHF
-    RLHF --> Final[Final Model]
-
-    subgraph Data
-        D1[SFT Data<br/>human-written] --> SFT
-        D2[Comparison Data<br/>chosen vs rejected] --> RM
-        D3[Prompts<br/>for rollout] --> RLHF
-    end
-```
+![SFT to RLHF pipeline: pretrained model flows through SFT training, reward model training, and RLHF/PPO/GRPO to produce the final model](/blog/diagrams/sft-rl-training-guide-pipeline.svg)
 
 ### 4.2 PPO Loss
 
@@ -294,32 +281,7 @@ def compute_reward(prompt, response):
 
 ## 6. Complete Pipeline
 
-```mermaid
-graph TD
-    subgraph Phase1[Phase 1: SFT]
-        D1[Collect/Build SFT Data] --> T1[SFT Training]
-        T1 --> E1[Evaluate: benchmark + human]
-        E1 --> M1[SFT Model]
-    end
-
-    subgraph Phase2[Phase 2: Reward]
-        D2[Collect Comparison Data] --> T2[Train Reward Model]
-        T2 --> E2[Evaluate RM Accuracy]
-        E2 --> M2[Reward Model / Rules]
-    end
-
-    subgraph Phase3[Phase 3: RL]
-        M1 --> RL[RLHF/GRPO Training]
-        M2 --> RL
-        D3[Prompt Pool] --> RL
-        RL --> E3[Evaluate: reward + benchmark + human]
-        E3 --> M3[Final Model]
-    end
-
-    Phase1 --> Phase2
-    Phase1 --> Phase3
-    Phase2 --> Phase3
-```
+![Complete three-phase training pipeline: SFT, Reward Model, and RL training with evaluation at each stage](/blog/diagrams/sft-rl-training-guide-phases-en.svg)
 
 ## Summary
 

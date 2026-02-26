@@ -188,20 +188,7 @@ SFT 后的评估不能只看 loss（loss 低不代表生成质量好）。 需�
 
 ### 4.1 从 SFT 到 RLHF 的 Pipeline
 
-```mermaid
-graph LR
-    PT[Pretrained Model] --> SFT[SFT Training]
-    SFT --> RM[Reward Model Training]
-    SFT --> RLHF[RLHF / PPO / GRPO]
-    RM --> RLHF
-    RLHF --> Final[Final Model]
-
-    subgraph Data
-        D1[SFT Data<br/>human-written] --> SFT
-        D2[Comparison Data<br/>chosen vs rejected] --> RM
-        D3[Prompts<br/>for rollout] --> RLHF
-    end
-```
+![从 SFT 到 RLHF 的 Pipeline：预训练模型经过 SFT、Reward Model 训练、RLHF/PPO/GRPO 得到最终模型](/blog/diagrams/sft-rl-training-guide-pipeline.svg)
 
 ### 4.2 PPO Loss
 
@@ -294,32 +281,7 @@ def compute_reward(prompt, response):
 
 ## 6. 完整 Pipeline
 
-```mermaid
-graph TD
-    subgraph Phase1[Phase 1: SFT]
-        D1[收集/构建 SFT 数据] --> T1[SFT 训练]
-        T1 --> E1[评估: benchmark + 人工]
-        E1 --> M1[SFT Model]
-    end
-
-    subgraph Phase2[Phase 2: Reward]
-        D2[收集 comparison 数据] --> T2[训练 Reward Model]
-        T2 --> E2[评估 RM 准确率]
-        E2 --> M2[Reward Model / Rules]
-    end
-
-    subgraph Phase3[Phase 3: RL]
-        M1 --> RL[RLHF/GRPO 训练]
-        M2 --> RL
-        D3[Prompt Pool] --> RL
-        RL --> E3[评估: reward + benchmark + 人工]
-        E3 --> M3[Final Model]
-    end
-
-    Phase1 --> Phase2
-    Phase1 --> Phase3
-    Phase2 --> Phase3
-```
+![完整三阶段训练流程：SFT、Reward Model、RL 训练，每个阶段都有评估](/blog/diagrams/sft-rl-training-guide-phases-zh.svg)
 
 ## 总结
 

@@ -253,24 +253,7 @@ Fits on a single H100 80GB. But larger batches or longer sequences need multi-GP
 
 ## 8. Memory Optimization Flowchart
 
-```mermaid
-graph TD
-    Start[Out of Memory] --> Q1{Training or Inference?}
-
-    Q1 -->|Training| T1[Check optimizer states]
-    T1 --> T2{Using ZeRO?}
-    T2 -->|No| T3[Enable ZeRO Stage 1/2]
-    T2 -->|Yes| T4{Activations dominating?}
-    T4 -->|Yes| T5[Enable Activation Checkpointing]
-    T4 -->|No| T6[Increase TP/PP splitting]
-
-    Q1 -->|Inference| I1{Where's the bottleneck?}
-    I1 -->|Weights| I2[Model quantization INT8/INT4]
-    I1 -->|KV Cache| I3{Using GQA?}
-    I3 -->|No| I4[Switch to GQA/MQA model]
-    I3 -->|Yes| I5[KV Cache quantization / PagedAttention / shorter context]
-    I1 -->|Both large| I6[Increase TP splitting]
-```
+![Memory optimization flowchart: decision tree for resolving OOM in training and inference scenarios](/blog/diagrams/llm-gpu-memory-calculation-flowchart-en.svg)
 
 ## Summary
 

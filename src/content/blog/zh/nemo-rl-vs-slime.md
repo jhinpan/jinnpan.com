@@ -153,21 +153,7 @@ SFT 训练直接用 HuggingFace Transformers 或 DeepSpeed 就能搞定。 但 R
 
 如果要从零开始选型：
 
-```mermaid
-graph TD
-    Start[选 RL 框架] --> Q1{硬件?}
-    Q1 -->|NVIDIA GPU| Q2{MoE 模型?}
-    Q1 -->|AMD GPU| S[slime + DeepSpeed ROCm]
-
-    Q2 -->|Yes| Q3{规模?}
-    Q2 -->|No| Q4{需要 PP?}
-
-    Q3 -->|100+ GPU| N[NeMo-RL]
-    Q3 -->|<100 GPU| S2[slime]
-
-    Q4 -->|Yes| N
-    Q4 -->|No| S2
-```
+![RL 框架选型决策树：根据硬件、MoE 模型、规模、PP 需求选择](/blog/diagrams/nemo-rl-vs-slime-decision-tree-zh.svg)
 
 对于我们的场景（AMD MI300X / MI355X， MoE 模型， 研究迭代为主）：
 

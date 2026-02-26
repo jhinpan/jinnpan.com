@@ -253,24 +253,7 @@ $$
 
 ## 8. 显存优化路径
 
-```mermaid
-graph TD
-    Start[显存不够] --> Q1{是训练还是推理?}
-
-    Q1 -->|训练| T1[检查优化器状态]
-    T1 --> T2{用了 ZeRO?}
-    T2 -->|没有| T3[启用 ZeRO Stage 1/2]
-    T2 -->|用了| T4{激活值占比大?}
-    T4 -->|是| T5[启用 Activation Checkpointing]
-    T4 -->|否| T6[增加 TP/PP 切分]
-
-    Q1 -->|推理| I1{瓶颈在哪?}
-    I1 -->|权重| I2[模型量化 INT8/INT4]
-    I1 -->|KV Cache| I3{用了 GQA?}
-    I3 -->|没有| I4[换用 GQA/MQA 模型]
-    I3 -->|用了| I5[KV Cache 量化 / PagedAttention / 缩短上下文]
-    I1 -->|两者都大| I6[增加 TP 切分]
-```
+![显存优化路径：训练和推理场景下解决 OOM 的决策树](/blog/diagrams/llm-gpu-memory-calculation-flowchart-zh.svg)
 
 ## 总结
 

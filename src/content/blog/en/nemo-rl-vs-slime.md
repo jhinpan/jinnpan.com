@@ -153,21 +153,7 @@ This is another critical dimension. Our hardware is MI300X/MI355X running ROCm 7
 
 Starting from scratch, here's a selection flowchart:
 
-```mermaid
-graph TD
-    Start[Choose RL Framework] --> Q1{Hardware?}
-    Q1 -->|NVIDIA GPU| Q2{MoE Model?}
-    Q1 -->|AMD GPU| S[slime + DeepSpeed ROCm]
-
-    Q2 -->|Yes| Q3{Scale?}
-    Q2 -->|No| Q4{Need PP?}
-
-    Q3 -->|100+ GPU| N[NeMo-RL]
-    Q3 -->|<100 GPU| S2[slime]
-
-    Q4 -->|Yes| N
-    Q4 -->|No| S2
-```
+![RL framework decision tree: choose based on hardware, MoE model, scale, and PP requirements](/blog/diagrams/nemo-rl-vs-slime-decision-tree-en.svg)
 
 For our scenario (AMD MI300X/MI355X, MoE models, research iteration focus):
 

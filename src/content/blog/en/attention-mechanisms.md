@@ -196,16 +196,7 @@ DeepSeek's NSA is one of the best-engineered Sparse Attention implementations to
 
 NSA's core design uses three parallel branches:
 
-```mermaid
-graph TD
-    Input[Input Tokens] --> Comp[Compressed Branch]
-    Input --> Sel[Selected Branch]
-    Input --> SW[Sliding Window Branch]
-    Comp --> Gate[Gated Fusion]
-    Sel --> Gate
-    SW --> Gate
-    Gate --> Output[Output]
-```
+![NSA three-branch architecture: input tokens processed by compressed, selected, and sliding window branches, merged via gated fusion](/blog/diagrams/attention-mechanisms-nsa-architecture.svg)
 
 **Branch 1: Compressed Attention**
 
@@ -390,29 +381,7 @@ Engineering implications:
 
 ## 8. Architecture Evolution
 
-```mermaid
-graph LR
-    FA[Full Attention<br/>O&#40;N²&#41;] --> S[Sparse Route]
-    FA --> L[Linear Route]
-
-    S --> SW[Sliding Window]
-    S --> GT[Global Tokens]
-    S --> RC[Random Connections]
-    SW --> LF[Longformer]
-    GT --> LF
-    GT --> BB[BigBird]
-    RC --> BB
-    SW --> NSA[DeepSeek NSA]
-
-    L --> LT[Linear Transformer]
-    L --> RN[RetNet]
-    LT --> GLA_node[GLA]
-    RN --> GLA_node
-    L --> Ma[Mamba / S6]
-    Ma --> Ma2[Mamba2]
-    GLA_node --> Hy[Hybrid Models<br/>Qwen3-Coder-Next]
-    NSA --> Hy
-```
+![Attention architecture evolution: from Full Attention through Sparse and Linear routes to hybrid models like Qwen3-Coder-Next](/blog/diagrams/attention-mechanisms-evolution.svg)
 
 ## 9. Engineering Takeaways
 

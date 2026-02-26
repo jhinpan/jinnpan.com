@@ -196,16 +196,7 @@ DeepSeek 的 NSA 是目前 Sparse Attention 工程化做得最好的方案之一
 
 NSA 的核心设计是三个并行分支：
 
-```mermaid
-graph TD
-    Input[Input Tokens] --> Comp[Compressed Branch]
-    Input --> Sel[Selected Branch]
-    Input --> SW[Sliding Window Branch]
-    Comp --> Gate[Gated Fusion]
-    Sel --> Gate
-    SW --> Gate
-    Gate --> Output[Output]
-```
+![NSA 三分支架构：输入经过压缩、选择、滑动窗口三个分支，通过门控融合输出](/blog/diagrams/attention-mechanisms-nsa-architecture.svg)
 
 **Branch 1: Compressed Attention（压缩分支）**
 
@@ -390,29 +381,7 @@ Qwen3-Coder-Next 采用了 hybrid 架构：
 
 ## 8. 架构演化路线
 
-```mermaid
-graph LR
-    FA[Full Attention<br/>O&#40;N²&#41;] --> S[Sparse Route]
-    FA --> L[Linear Route]
-
-    S --> SW[Sliding Window]
-    S --> GT[Global Tokens]
-    S --> RC[Random Connections]
-    SW --> LF[Longformer]
-    GT --> LF
-    GT --> BB[BigBird]
-    RC --> BB
-    SW --> NSA[DeepSeek NSA]
-
-    L --> LT[Linear Transformer]
-    L --> RN[RetNet]
-    LT --> GLA_node[GLA]
-    RN --> GLA_node
-    L --> Ma[Mamba / S6]
-    Ma --> Ma2[Mamba2]
-    GLA_node --> Hy[Hybrid Models<br/>Qwen3-Coder-Next]
-    NSA --> Hy
-```
+![注意力架构演化：从 Full Attention 经过 Sparse 和 Linear 两条路线演化到 Qwen3-Coder-Next 等混合模型](/blog/diagrams/attention-mechanisms-evolution.svg)
 
 ## 9. 工程落地要点
 
