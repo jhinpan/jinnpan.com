@@ -20,7 +20,7 @@ export default defineConfig({
     rehypePlugins: [rehypeKatex],
   },
   i18n: {
-    defaultLocale: "zh",
+    defaultLocale: "en",
     locales: ["zh", "en"],
     routing: {
       prefixDefaultLocale: true,

@@ -7,7 +7,7 @@ type Props = {
   lang?: "zh" | "en";
 };
 
-const { lang = "zh" } = Astro.props;
+const { lang = "en" } = Astro.props;
 const otherLang = lang === "zh" ? "en" : "zh";
 const otherLangLabel = lang === "zh" ? "EN" : "ZH";
 

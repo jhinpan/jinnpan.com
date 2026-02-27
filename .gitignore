@@ -23,3 +23,7 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .vercel
+
+# screenshot test artifacts
+tests/screenshots/current/
+tests/screenshots/diff/
