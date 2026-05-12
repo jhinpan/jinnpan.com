@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyPilot — 一次源码精读 · No.001</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink-deep: #0c0e10;
+  --ink-paper: #14171a;
+  --ink-elev: #1a1e22;
+  --ink-rule: #242a31;
+  --ink-line: #2e353d;
+
+  --bone: #ece6d3;
+  --bone-soft: #d8d1bd;
+  --bone-dim: #a8a395;
+  --bone-mute: #6e6a5e;
+  --bone-faint: #4a4842;
+
+  --rust: #c95f3f;
+  --brass: #d4a76a;
+  --patina: #6cb0aa;
+  --vermillion: #d65244;
+  --indigo: #7e88d4;
+
+  --serif: 'Fraunces', 'Times New Roman', serif;
+  --sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --max-content: 720px;
+  --rail-w: 180px;
+  --margin-w: 260px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink-deep);
+  color: var(--bone);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  font-feature-settings: 'ss01', 'ss02', 'cv01';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Subtle film grain overlay */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Background coordinate paper */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(236,230,211,0.04) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 56px 48px 64px;
+  border-bottom: 1px solid var(--ink-line);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  margin-bottom: 32px;
+}
+.masthead .kicker::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--brass);
+}
+.masthead .kicker .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rust);
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.masthead h1 {
+  font-family: var(--serif);
+  font-weight: 350;
+  font-variation-settings: 'opsz' 144, 'SOFT' 30;
+  font-size: clamp(72px, 12vw, 168px);
+  line-height: 0.92;
+  margin: 0;
+  letter-spacing: -0.045em;
+  color: var(--bone);
+}
+.masthead h1 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--brass);
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+}
+
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.35;
+  color: var(--bone-soft);
+  margin: 28px 0 0;
+  max-width: 720px;
+  letter-spacing: -0.01em;
+}
+
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px dashed var(--ink-line);
+  max-width: 880px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bone-mute);
+  margin-bottom: 8px;
+}
+.masthead .meta .item .value {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--bone);
+  letter-spacing: -0.01em;
+}
+.masthead .meta .item .value .unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--bone-dim);
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+/* ============ LAYOUT ============ */
+.shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  z-index: 1;
+}
+
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 80px auto;
+  padding: 0;
+}
+
+/* ============ NAV RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 48px 20px;
+  border-right: 1px solid var(--ink-rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  background: linear-gradient(180deg, var(--ink-deep) 0%, rgba(12,14,16,0.95) 100%);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--ink-line); }
+
+.rail .brand {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--bone);
+  margin-bottom: 4px;
+}
+.rail .brand em {
+  font-style: italic;
+  color: var(--brass);
+}
+.rail .ref {
+  color: var(--bone-mute);
+  margin-bottom: 32px;
+  font-size: 10px;
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: nav;
+}
+.rail ol li {
+  margin-bottom: 14px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 28px;
+}
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--bone-mute);
+  font-size: 10px;
+}
+.rail ol li a {
+  color: var(--bone-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+  display: block;
+  line-height: 1.3;
+}
+.rail ol li a:hover { color: var(--brass); }
+.rail .divider {
+  height: 1px;
+  background: var(--ink-line);
+  margin: 20px 0;
+}
+
+@media (max-width: 1280px) {
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-variation-settings: 'opsz' 60;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin: 96px 0 24px;
+  color: var(--bone);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  color: var(--brass);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.article h2 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--brass);
+}
+
+.article h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-variation-settings: 'opsz' 36;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 56px 0 16px;
+  color: var(--bone);
+}
+
+.article h4 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 40px 0 12px;
+}
+
+.article p {
+  margin: 0 0 20px;
+  color: var(--bone-soft);
+  font-size: 17px;
+  line-height: 1.7;
+}
+.article p strong {
+  color: var(--bone);
+  font-weight: 600;
+}
+
+.article .lede {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 26px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--bone);
+  margin: 0 0 48px;
+  max-width: 600px;
+}
+.article .lede::first-letter {
+  font-family: var(--serif);
+  font-variation-settings: 'opsz' 144, 'SOFT' 50;
+  font-weight: 400;
+  font-size: 88px;
+  line-height: 0.85;
+  float: left;
+  margin: 6px 12px 0 -4px;
+  color: var(--brass);
+}
+
+.article a {
+  color: var(--patina);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(108,176,170,0.3);
+  transition: all 0.2s;
+}
+.article a:hover {
+  color: var(--brass);
+  border-bottom-color: var(--brass);
+}
+
+.article ul, .article ol {
+  padding-left: 24px;
+  margin: 0 0 24px;
+  color: var(--bone-soft);
+}
+.article li { margin-bottom: 10px; line-height: 1.6; }
+.article ul li::marker { color: var(--brass); }
+
+/* inline code */
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--ink-paper);
+  border: 1px solid var(--ink-rule);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--brass);
+  font-weight: 500;
+}
+
+/* code block */
+pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--ink-paper);
+  border: 1px solid var(--ink-rule);
+  border-left: 2px solid var(--brass);
+  padding: 20px 24px;
+  margin: 24px 0;
+  overflow-x: auto;
+  position: relative;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--bone-soft);
+}
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--bone-mute);
+  text-transform: uppercase;
+}
+
+/* ============ COMPONENTS ============ */
+
+/* Insight callout */
+.insight {
+  position: relative;
+  margin: 36px 0;
+  padding: 24px 28px;
+  background: linear-gradient(180deg, rgba(212,167,106,0.04), rgba(212,167,106,0.02));
+  border: 1px solid rgba(212,167,106,0.18);
+  border-left: 2px solid var(--brass);
+}
+.insight::before {
+  content: '※';
+  position: absolute;
+  top: 18px;
+  left: 28px;
+  color: var(--brass);
+  font-size: 14px;
+}
+.insight .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 8px;
+  padding-left: 24px;
+}
+.insight p { margin: 0; padding-left: 24px; font-size: 16px; line-height: 1.65; }
+.insight p + p { margin-top: 12px; }
+
+/* Trap callout */
+.trap {
+  margin: 24px 0;
+  padding: 20px 24px;
+  background: rgba(214,82,68,0.04);
+  border-left: 2px solid var(--vermillion);
+}
+.trap .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--vermillion);
+  margin-bottom: 8px;
+}
+
+/* Big numbers grid */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--ink-rule);
+  border: 1px solid var(--ink-rule);
+  margin: 32px 0;
+}
+.metrics .cell {
+  background: var(--ink-deep);
+  padding: 24px 20px;
+}
+.metrics .cell .num {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--brass);
+  letter-spacing: -0.02em;
+  font-variation-settings: 'opsz' 96;
+}
+.metrics .cell .lbl {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--bone-mute);
+  text-transform: uppercase;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Plate (diagram container) */
+.plate {
+  position: relative;
+  margin: 72px 0 56px;
+  padding: 0;
+}
+.plate .plate-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink-line);
+}
+.plate .plate-meta .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--brass);
+  text-transform: uppercase;
+}
+.plate .plate-meta .name {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 16px;
+  color: var(--bone-soft);
+}
+.plate .plate-meta .scale {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--bone-mute);
+  letter-spacing: 0.1em;
+}
+.plate svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--ink-paper);
+  border: 1px solid var(--ink-rule);
+}
+.plate .caption {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--bone-dim);
+  margin-top: 14px;
+  padding-left: 16px;
+  border-left: 1px solid var(--ink-line);
+}
+
+/* Wide plate breaks out of column */
+.plate.wide {
+  margin-left: calc(-1 * (1280px - var(--max-content)) / 2 + 48px);
+  margin-right: calc(-1 * (1280px - var(--max-content)) / 2 + 48px);
+  max-width: none;
+}
+@media (max-width: 1280px) {
+  .plate.wide {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 14px;
+}
+th, td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink-rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--brass);
+  text-transform: uppercase;
+  font-weight: 500;
+  border-bottom: 1px solid var(--brass);
+}
+td { color: var(--bone-soft); }
+td code { font-size: 12px; padding: 0 4px; }
+
+/* Footnote / margin reference */
+.fn {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--brass);
+  vertical-align: super;
+  letter-spacing: 0.05em;
+  padding: 0 2px;
+}
+
+/* Section divider */
+.section-rule {
+  display: flex;
+  align-items: center;
+  margin: 96px 0 0;
+}
+.section-rule .line {
+  flex: 1;
+  height: 1px;
+  background: var(--ink-line);
+}
+.section-rule .glyph {
+  margin: 0 24px;
+  font-family: var(--serif);
+  color: var(--brass);
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: 0.3em;
+}
+
+/* Q&A */
+.qa {
+  margin: 24px 0 40px;
+  padding: 24px;
+  background: var(--ink-paper);
+  border: 1px solid var(--ink-rule);
+}
+.qa .q {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--bone);
+  margin: 0 0 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--ink-line);
+}
+.qa .q::before {
+  content: 'Q.';
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--brass);
+  margin-right: 12px;
+  letter-spacing: 0.15em;
+}
+.qa .a { font-size: 15px; color: var(--bone-soft); }
+.qa .a::before {
+  content: 'A.';
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--patina);
+  margin-right: 12px;
+  letter-spacing: 0.15em;
+}
+
+/* Module chip */
+.chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  padding: 3px 8px;
+  border: 1px solid var(--bone-mute);
+  color: var(--bone-dim);
+  text-transform: uppercase;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.chip.brass { color: var(--brass); border-color: var(--brass); }
+.chip.rust { color: var(--rust); border-color: var(--rust); }
+.chip.patina { color: var(--patina); border-color: var(--patina); }
+
+/* Stagger fade-in on load */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.masthead .kicker { animation: rise 0.6s ease-out both; }
+.masthead h1 { animation: rise 0.8s 0.1s ease-out both; }
+.masthead .subtitle { animation: rise 0.8s 0.25s ease-out both; }
+.masthead .meta { animation: rise 0.8s 0.4s ease-out both; }
+
+/* Colophon */
+.colophon {
+  border-top: 1px solid var(--ink-line);
+  padding: 64px 48px;
+  max-width: 1280px;
+  margin: 96px auto 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--bone-mute);
+  letter-spacing: 0.05em;
+  line-height: 1.7;
+}
+.colophon .row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 32px; }
+.colophon .col h5 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--bone-dim);
+  margin: 0 0 12px;
+  letter-spacing: 0.05em;
+}
+.colophon .col p { margin: 0 0 4px; color: var(--bone-mute); }
+
+/* SVG styles (shared) */
+.diag-bg { fill: var(--ink-paper); }
+.diag-grid path { stroke: rgba(236,230,211,0.04); stroke-width: 1; fill: none; }
+.diag-node rect { fill: rgba(236,230,211,0.02); stroke: var(--bone-dim); stroke-width: 1.25; }
+.diag-node.active rect { stroke: var(--brass); fill: rgba(212,167,106,0.06); }
+.diag-node.warn rect { stroke: var(--rust); fill: rgba(201,95,63,0.06); }
+.diag-node.muted rect { stroke: var(--bone-faint); }
+.diag-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--bone-soft);
+}
+.diag-text.head { font-family: var(--serif); font-size: 14px; font-weight: 500; fill: var(--bone); font-style: italic; }
+.diag-text.brass { fill: var(--brass); }
+.diag-text.muted { fill: var(--bone-mute); }
+.diag-text.tiny { font-size: 9px; letter-spacing: 0.05em; }
+.diag-edge { stroke: var(--bone-dim); stroke-width: 1.25; fill: none; }
+.diag-edge.brass { stroke: var(--brass); }
+.diag-edge.rust { stroke: var(--rust); }
+.diag-edge.patina { stroke: var(--patina); }
+.diag-edge.dashed { stroke-dasharray: 4 4; }
+.diag-num-circle { fill: var(--ink-paper); stroke: var(--brass); stroke-width: 1.25; }
+.diag-num-text { font-family: var(--mono); font-size: 10px; fill: var(--brass); font-weight: 600; text-anchor: middle; }
+.zone-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.25em; fill: var(--bone-mute); text-transform: uppercase; }
+.zone-box { fill: none; stroke: var(--ink-line); stroke-dasharray: 2 5; stroke-width: 1; }
+
+/* responsive */
+@media (max-width: 768px) {
+  .masthead { padding: 32px 24px 40px; }
+  .masthead .meta { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .shell { padding: 0 24px; }
+  .article { margin: 48px auto; padding: 0; }
+  .article h2 { margin: 64px 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<!-- =============== NAV RAIL =============== -->
+<nav class="rail">
+  <div class="brand">Sky<em>Pilot</em></div>
+  <div class="ref">FILE № 001 · 2026.05.12</div>
+
+  <ol>
+    <li><a href="#prologue">Prologue</a></li>
+    <li><a href="#m0">Repo Tour</a></li>
+    <li><a href="#m1">Data Models</a></li>
+    <li><a href="#m2">CLI · SDK · Server</a></li>
+    <li><a href="#m3">9-Stage Pipeline</a></li>
+    <li><a href="#m4">Optimizer</a></li>
+    <li><a href="#m5">Backend</a></li>
+    <li><a href="#m6">Cloud</a></li>
+    <li><a href="#m7">Skylet</a></li>
+    <li><a href="#m8">Managed Jobs</a></li>
+    <li><a href="#m9">SkyServe</a></li>
+  </ol>
+
+  <div class="divider"></div>
+
+  <ol style="counter-reset: nav 11;">
+    <li><a href="#traps">Five Traps</a></li>
+    <li><a href="#redlines">Three Red Lines</a></li>
+    <li><a href="#amd">AMD Notes</a></li>
+  </ol>
+</nav>
+
+<!-- =============== MASTHEAD =============== -->
+<header class="masthead">
+  <div class="kicker">
+    <span class="dot"></span>
+    File № 001 · Source Reading · Architectural Reconnaissance · 211,510 LoC
+  </div>
+
+  <h1>Sky<em>Pilot</em>,<br>opened up.</h1>
+
+  <p class="subtitle">
+    一份用 6.5 小时把 21 万行代码读穿的笔记 — 从 <code style="font-family:var(--mono);font-size:0.78em;background:transparent;border:none;color:var(--brass);padding:0;">sky launch foo.yaml</code> 那个回车键，一路走到 MI300X 上 skylet 守护进程的事件循环。
+  </p>
+
+  <div class="meta">
+    <div class="item">
+      <div class="label">Source Lines</div>
+      <div class="value">211,510<span class="unit">py</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Modules</div>
+      <div class="value">11<span class="unit">M0–M9</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Clouds Wired</div>
+      <div class="value">26<span class="unit">incl. K8s</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Pipeline Stages</div>
+      <div class="value">9<span class="unit">enum</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- =============== ARTICLE =============== -->
+<div class="shell">
+<main class="article">
+
+<!-- ====== Prologue ====== -->
+<section id="prologue">
+  <h2><span class="num">§ 00 · Prologue</span>Why we cracked this open.</h2>
+
+  <p class="lede">
+    SkyPilot 是开源多云编排里的事实标准。表面是一行 <code>sky launch</code>，底下藏着一套客户机/服务器/节点守护的三段式系统、一个混合 DP + ILP 求解器、一组面向 24 个云厂商的多态抽象，以及 6562 行单文件后端。读它，是为了把"如何用一个统一控制平面调度异构基础设施"这件事彻底搞清楚 — 因为我们手头正在搭的，是它的近亲。
+  </p>
+
+  <p>
+    这次精读分 11 个模块（M0 → M9，加一个中途插入的 M2.5），共 6.5 小时。本档案是读后的总览：架构总图、9-stage 执行流水线、Optimizer 的 DP / ILP 路由、两层 job 状态机、加新云后端的文件改动清单 — 全部以手绘 SVG 呈现，无运行时依赖，离线可读。
+  </p>
+
+  <div class="metrics">
+    <div class="cell"><div class="num">2,142</div><div class="lbl">task.py</div></div>
+    <div class="cell"><div class="num">2,816</div><div class="lbl">resources.py</div></div>
+    <div class="cell"><div class="num">228</div><div class="lbl">dag.py</div></div>
+    <div class="cell"><div class="num">7,954</div><div class="lbl">cli/command.py</div></div>
+    <div class="cell"><div class="num">3,237</div><div class="lbl">client/sdk.py</div></div>
+    <div class="cell"><div class="num">3,524</div><div class="lbl">server.py</div></div>
+    <div class="cell"><div class="num">939</div><div class="lbl">execution.py</div></div>
+    <div class="cell"><div class="num">1,805</div><div class="lbl">optimizer.py</div></div>
+    <div class="cell"><div class="num">6,562</div><div class="lbl">cloud_vm_ray_backend.py</div></div>
+    <div class="cell"><div class="num">4,440</div><div class="lbl">backend_utils.py</div></div>
+    <div class="cell"><div class="num">1,041</div><div class="lbl">clouds/cloud.py</div></div>
+    <div class="cell"><div class="num">107</div><div class="lbl">skylet/skylet.py</div></div>
+  </div>
+
+  <p style="color:var(--bone-mute); font-size:13px; font-style:italic; margin-top:-12px;">— 上表为 master 分支（commit f8bb042）核心文件行数；前 4 个最大的合计已是 SkyPilot 实际"心脏"的一半以上。</p>
+</section>
+
+<!-- =============== PLATE I: ARCHITECTURE OVERVIEW =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate I — Architecture, in repose</span>
+    <span class="name">whole system, single view</span>
+    <span class="scale">1 : ∞</span>
+  </div>
+  <svg viewBox="0 0 1200 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="SkyPilot architecture overview">
+    <defs>
+      <pattern id="grid-1" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" stroke="rgba(236,230,211,0.03)" stroke-width="1" fill="none"/>
+      </pattern>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a8a395"/>
+      </marker>
+      <marker id="ah-brass" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a76a"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="540" fill="url(#grid-1)"/>
+
+    <!-- Zone: CLIENT -->
+    <rect class="zone-box" x="40" y="60" width="240" height="420" rx="0"/>
+    <text class="zone-label" x="48" y="48">Zone A · Client (user machine)</text>
+
+    <g class="diag-node" transform="translate(80, 96)">
+      <rect width="160" height="56"/>
+      <text x="80" y="22" text-anchor="middle" class="diag-text head">sky CLI</text>
+      <text x="80" y="40" text-anchor="middle" class="diag-text muted">cli.py · 10 lines (shim)</text>
+    </g>
+    <g class="diag-node" transform="translate(80, 188)">
+      <rect width="160" height="56"/>
+      <text x="80" y="22" text-anchor="middle" class="diag-text head">command.py</text>
+      <text x="80" y="40" text-anchor="middle" class="diag-text muted">7,954 · Click commands</text>
+    </g>
+    <g class="diag-node active" transform="translate(80, 280)">
+      <rect width="160" height="56"/>
+      <text x="80" y="22" text-anchor="middle" class="diag-text head">client/sdk.py</text>
+      <text x="80" y="40" text-anchor="middle" class="diag-text muted">3,237 · HTTP client</text>
+    </g>
+    <g class="diag-node muted" transform="translate(80, 380)">
+      <rect width="160" height="56"/>
+      <text x="80" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--bone-dim);">Task / Resources / Dag</text>
+      <text x="80" y="40" text-anchor="middle" class="diag-text muted">in-memory objects</text>
+    </g>
+
+    <!-- Internal client edges -->
+    <line class="diag-edge" x1="160" y1="152" x2="160" y2="184" marker-end="url(#ah)"/>
+    <line class="diag-edge" x1="160" y1="244" x2="160" y2="276" marker-end="url(#ah)"/>
+    <line class="diag-edge dashed" x1="160" y1="380" x2="160" y2="340"/>
+
+    <!-- Boundary line -->
+    <line x1="290" y1="80" x2="290" y2="460" stroke="var(--ink-line)" stroke-width="1" stroke-dasharray="6 6"/>
+    <text x="290" y="500" text-anchor="middle" class="zone-label" style="fill:var(--brass);">⟵ HTTP / REST ⟶</text>
+
+    <!-- Zone: SERVER -->
+    <rect class="zone-box" x="320" y="60" width="380" height="420"/>
+    <text class="zone-label" x="328" y="48">Zone B · API Server (FastAPI / uvicorn)</text>
+
+    <g class="diag-node active" transform="translate(360, 96)">
+      <rect width="300" height="56"/>
+      <text x="150" y="22" text-anchor="middle" class="diag-text head">server.py · FastAPI app</text>
+      <text x="150" y="40" text-anchor="middle" class="diag-text muted">3,524 · 10+ middlewares (RBAC / Auth / Versioning)</text>
+    </g>
+    <g class="diag-node" transform="translate(360, 188)">
+      <rect width="140" height="56"/>
+      <text x="70" y="22" text-anchor="middle" class="diag-text head">requests/</text>
+      <text x="70" y="40" text-anchor="middle" class="diag-text muted">async executor</text>
+    </g>
+    <g class="diag-node warn" transform="translate(520, 188)">
+      <rect width="140" height="56"/>
+      <text x="70" y="22" text-anchor="middle" class="diag-text head">spawn process</text>
+      <text x="70" y="40" text-anchor="middle" class="diag-text muted">multiprocessing</text>
+    </g>
+    <g class="diag-node active" transform="translate(360, 280)">
+      <rect width="300" height="56"/>
+      <text x="150" y="22" text-anchor="middle" class="diag-text head">execution.py</text>
+      <text x="150" y="40" text-anchor="middle" class="diag-text muted">939 · the 9-stage pipeline (see Plate IV)</text>
+    </g>
+    <g class="diag-node" transform="translate(360, 372)">
+      <rect width="140" height="56"/>
+      <text x="70" y="22" text-anchor="middle" class="diag-text head">optimizer.py</text>
+      <text x="70" y="40" text-anchor="middle" class="diag-text muted">1,805 · DP + ILP</text>
+    </g>
+    <g class="diag-node" transform="translate(520, 372)">
+      <rect width="140" height="56"/>
+      <text x="70" y="22" text-anchor="middle" class="diag-text head">backends/</text>
+      <text x="70" y="40" text-anchor="middle" class="diag-text muted">CloudVmRay 6,562</text>
+    </g>
+
+    <!-- Inside server edges -->
+    <line class="diag-edge brass" x1="160" y1="308" x2="356" y2="308" marker-end="url(#ah-brass)"/>
+    <text x="258" y="300" text-anchor="middle" class="diag-text tiny brass">launch(req)</text>
+
+    <line class="diag-edge dashed" x1="510" y1="152" x2="510" y2="184"/>
+    <line class="diag-edge" x1="430" y1="244" x2="430" y2="276" marker-end="url(#ah)"/>
+    <line class="diag-edge brass" x1="510" y1="336" x2="510" y2="368" marker-end="url(#ah-brass)"/>
+    <line class="diag-edge" x1="430" y1="336" x2="430" y2="368" marker-end="url(#ah)"/>
+
+    <!-- Boundary line -->
+    <line x1="710" y1="80" x2="710" y2="460" stroke="var(--ink-line)" stroke-width="1" stroke-dasharray="6 6"/>
+    <text x="710" y="500" text-anchor="middle" class="zone-label" style="fill:var(--brass);">⟵ SSH / Ray / gRPC ⟶</text>
+
+    <!-- Zone: COMPUTE -->
+    <rect class="zone-box" x="740" y="60" width="420" height="420"/>
+    <text class="zone-label" x="748" y="48">Zone C · Provisioned VMs / Pods / Slurm nodes</text>
+
+    <g transform="translate(780, 96)">
+      <rect width="340" height="146" class="diag-node" style="fill:rgba(212,167,106,0.02); stroke:var(--brass); stroke-width:1.25;"/>
+      <text x="170" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--brass);">Head node</text>
+      <g transform="translate(20, 38)">
+        <rect width="140" height="44" fill="none" stroke="var(--bone-dim)" stroke-width="1"/>
+        <text x="70" y="18" text-anchor="middle" class="diag-text">skylet daemon</text>
+        <text x="70" y="32" text-anchor="middle" class="diag-text muted tiny">107 lines · 6 events</text>
+      </g>
+      <g transform="translate(180, 38)">
+        <rect width="140" height="44" fill="none" stroke="var(--bone-dim)" stroke-width="1"/>
+        <text x="70" y="18" text-anchor="middle" class="diag-text">gRPC server</text>
+        <text x="70" y="32" text-anchor="middle" class="diag-text muted tiny">4 services</text>
+      </g>
+      <g transform="translate(20, 92)">
+        <rect width="300" height="40" fill="none" stroke="var(--bone-faint)" stroke-width="1"/>
+        <text x="150" y="16" text-anchor="middle" class="diag-text muted">Ray cluster · job_lib · log_lib · autostop_lib</text>
+        <text x="150" y="30" text-anchor="middle" class="diag-text tiny muted">configs · services · subprocess_daemon</text>
+      </g>
+    </g>
+
+    <g transform="translate(780, 270)">
+      <rect width="340" height="100" class="diag-node" style="fill:rgba(108,176,170,0.03); stroke:var(--patina); stroke-width:1.25;"/>
+      <text x="170" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--patina);">Worker node(s) — N×</text>
+      <g transform="translate(20, 38)">
+        <rect width="300" height="46" fill="none" stroke="var(--bone-dim)" stroke-width="1"/>
+        <text x="150" y="18" text-anchor="middle" class="diag-text">user setup · user run · ray worker</text>
+        <text x="150" y="34" text-anchor="middle" class="diag-text muted tiny">spawned by head, joined to ray cluster</text>
+      </g>
+    </g>
+
+    <g transform="translate(780, 398)">
+      <text x="0" y="14" class="diag-text muted tiny">Special compute zones (run as ordinary tasks above):</text>
+      <g transform="translate(0, 24)">
+        <rect width="100" height="36" fill="none" stroke="var(--bone-mute)" stroke-width="1"/>
+        <text x="50" y="16" text-anchor="middle" class="diag-text">Jobs Ctrl</text>
+        <text x="50" y="28" text-anchor="middle" class="diag-text muted tiny">(spot recovery)</text>
+      </g>
+      <g transform="translate(118, 24)">
+        <rect width="100" height="36" fill="none" stroke="var(--bone-mute)" stroke-width="1"/>
+        <text x="50" y="16" text-anchor="middle" class="diag-text">Serve Ctrl</text>
+        <text x="50" y="28" text-anchor="middle" class="diag-text muted tiny">(autoscale)</text>
+      </g>
+      <g transform="translate(236, 24)">
+        <rect width="104" height="36" fill="none" stroke="var(--bone-mute)" stroke-width="1"/>
+        <text x="52" y="16" text-anchor="middle" class="diag-text">Load Balancer</text>
+        <text x="52" y="28" text-anchor="middle" class="diag-text muted tiny">(FastAPI on VM)</text>
+      </g>
+    </g>
+
+    <!-- Server→Compute arrows -->
+    <line class="diag-edge brass" x1="660" y1="400" x2="776" y2="320" marker-end="url(#ah-brass)"/>
+    <text x="700" y="385" class="diag-text tiny brass" style="font-style: italic;">SSH / rsync / ray up</text>
+
+    <!-- Numbered annotations -->
+    <g transform="translate(36, 76)">
+      <circle r="10" cx="10" cy="10" class="diag-num-circle"/>
+      <text x="10" y="14" class="diag-num-text">1</text>
+    </g>
+    <g transform="translate(316, 76)">
+      <circle r="10" cx="10" cy="10" class="diag-num-circle"/>
+      <text x="10" y="14" class="diag-num-text">2</text>
+    </g>
+    <g transform="translate(736, 76)">
+      <circle r="10" cx="10" cy="10" class="diag-num-circle"/>
+      <text x="10" y="14" class="diag-num-text">3</text>
+    </g>
+  </svg>
+  <div class="caption">
+    <strong style="color:var(--bone);">Three zones, one program.</strong>
+    Zone A (Client) packages a <code>Task</code> and POSTs to Zone B. Zone B (FastAPI server) spawns a <em>process</em> per request, runs the 9-stage execution pipeline, and reaches into Zone C (provisioned VMs) over SSH / Ray / gRPC. The head-node skylet daemon is small (107 lines) — it is mostly an event-loop wrapper around four gRPC services and six recurring jobs. Special controllers (Managed Jobs · SkyServe · Load Balancer) are themselves ordinary SkyPilot tasks running in Zone C.
+  </div>
+</section>
+
+<!-- ====== M0 ====== -->
+<section id="m0">
+  <h2><span class="num">§ M0 · 20 min</span>The repository, <em>in repose.</em></h2>
+
+  <p>
+    把 21 万行的仓库当成一个整体先看一眼。它叫 sky，主包就是 <code>sky/</code>，根目录还有三个有意思的伙伴：<code>agent/</code>（SkyPilot Agent Skills — 给 LLM agent 用的 GPU 接入封装，v0.12 新功能）、<code>llm/</code>（45+ 个 LLM 训练/serving 例子，从 DeepSeek-R1 到 Kimi-K2），还有 <code>examples/amd/</code> — 4 个直接面向 MI 系列硬件的官方 YAML 范例。
+  </p>
+
+  <div class="insight">
+    <div class="label">观察 · OBSERVATION</div>
+    <p><strong>主包 + 伙伴目录</strong>这种结构在大型 ML 系统里很常见，但 SkyPilot 把 <code>llm/</code> 和 <code>agent/</code> 都做成顶层目录（而不是塞进 <code>examples/</code> 子目录），等于在宣告"这些是 first-class 的产品形态，不是普通示例"。版本和迭代节奏可以与主包解耦 — 这是个值得偷的工程姿势。</p>
+  </div>
+
+  <h3>公开 API 表面 · <code>sky/__init__.py</code></h3>
+
+  <p>
+    258 行的薄薄一份。它做的事情只有三件：(1) 在 import 时强制规范 HTTP/HTTPS 代理环境变量（因为 GCP SDK 对大小写敏感有 bug），(2) 重新导出 <code>sky.client.sdk</code> 里所有动词 API 到顶层命名空间，(3) 给 24 个云类型起别名。<code>sky.launch</code> 之所以不在 <code>sky/launch.py</code>，是因为 SkyPilot 用了门面模式 — 用户调 <code>sky.launch()</code> 感觉是本地函数，实际背后是 client → HTTP → server → execution pipeline 的整套链路。
+  </p>
+
+  <pre data-lang="python"><code># sky/__init__.py · line 83-84
+# Keep this order to avoid cyclic imports
+# pylint: disable=wrong-import-position
+from sky import backends
+from sky import batch  # noqa: F401
+from sky import clouds
+from sky.client.sdk import launch       # ← 重导出门面在这里
+from sky.client.sdk import status
+from sky.client.sdk import exec
+...
+AWS = clouds.AWS                          # ← 24 个云别名
+GCP = clouds.GCP
+Kubernetes = clouds.Kubernetes
+K8s = Kubernetes                          # ← 别名的别名</code></pre>
+
+  <p>那条 <code># Keep this order to avoid cyclic imports</code> 注释是真实工程债 — 内部模块之间有循环依赖，导入顺序敏感。读源码时如果看到 <code>task.py</code> 和 <code>resources.py</code> 互相 import，不用惊讶。</p>
+</section>
+
+<!-- ====== M1 ====== -->
+<section id="m1">
+  <h2><span class="num">§ M1 · 35 min</span>Three objects, one universe.</h2>
+
+  <p>三个文件，三个数据类，是 SkyPilot 整个 universe 的元素周期表：</p>
+
+  <table>
+    <thead><tr><th>File</th><th>Lines</th><th>Classes</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>sky/task.py</code></td><td>2,142</td><td>2</td><td>中枢请求对象（什么要跑）</td></tr>
+      <tr><td><code>sky/resources.py</code></td><td>2,816</td><td>2</td><td>资源规格（在哪跑、怎么跑）</td></tr>
+      <tr><td><code>sky/dag.py</code></td><td>228</td><td>3</td><td>Task DAG（多个 Task 怎么编排）</td></tr>
+    </tbody>
+  </table>
+
+  <p>反直觉的是 — <strong><code>Resources</code> 比 <code>Task</code> 还大</strong>。原因是 <code>Resources</code> 有 30+ 个 <code>@property</code> 暴露视图：infra / cloud / region / zone / instance_type / cpus / memory / accelerators / use_spot / disk_size / disk_tier / network_tier / image_id / ports / labels / autostop_config / priority / docker_login_config / ... 每个字段都对应一个云上的实际配置维度，24 个云全部要覆盖 — 字段就是这么多。</p>
+
+  <div class="insight">
+    <div class="label">设计模式 · IMMUTABLE VALUE OBJECT</div>
+    <p>所有 30+ 字段都是只读 <code>@property</code>，写操作走私有 <code>_set_*</code> 方法 + 公开 <code>Resources.copy(**override)</code> 函数式更新。这种 immutable 设计在 Optimizer 流水线里至关重要 — 它要从用户的"约束 Resources"枚举出 N 个候选（AWS-spot vs GCP-on-demand vs ...），如果 Resources 是 mutable 的，并发枚举就会互相污染。</p>
+    <p><strong>付出的代价是 DX：</strong> Resources 类长达 2816 行，每个字段都要写 property + private setter + 在 copy/__init__ 里处理。这是教科书级的"开发者体验换正确性"工程取舍。</p>
+  </div>
+
+  <h3>YAML → Python 的翻译：<code>_fill_in_env_vars</code> 的 JSON 中转大法</h3>
+
+  <p>
+    用户写 <code>file_mounts: { /model/llama-${SIZE}b: s3://llama-weights/${SIZE}b }</code>，SkyPilot 怎么把 <code>${SIZE}</code> 替换成实际值？直觉做法是递归遍历嵌套 dict 的每个字符串字段。SkyPilot 用了一个聪明的 trick：
+  </p>
+
+  <pre data-lang="python · sky/task.py:83"><code>def _fill_in_env_vars(yaml_field, task_envs):
+    yaml_field_str = json.dumps(yaml_field)           # 1) 嵌套 dict → JSON 字符串
+
+    def replace_var(match):
+        var_name = match.group(1)
+        return task_envs.get(var_name, match.group(0))
+
+    pattern = r'\$\{?\b([a-zA-Z_][a-zA-Z0-9_]*)\b\}?' # 2) regex 抓所有 $VAR / ${VAR}
+    yaml_field_str = re.sub(pattern, replace_var, yaml_field_str)
+    return json.loads(yaml_field_str)                 # 3) JSON 反序列化回 dict</code></pre>
+
+  <p>
+    3 行核心代码就替代了"递归遍历嵌套结构"的几十行 walker。可行性的前提：(1) schema 已经被 <code>validate_schema</code> 在上游校验过，(2) 不需要支持 bash 默认值语法 <code>${VAR:-default}</code>（这是个挂了好几年的 TODO，<code>line 115</code>）。性能上每次跑一次 JSON 序列化/反序列化不是最优，但对配置加载这种"少量、一次性"场景，简洁度胜过性能。
+  </p>
+
+  <div class="insight">
+    <div class="label">可偷的设计 · STEAL THIS</div>
+    <p>这个模式可以直接搬到你 AMD 的 agent 配置系统 — 需要在嵌套 YAML/JSON 里做 <code>${MI300X_HOSTS}</code> / <code>${TRITON_VERSION}</code> 之类的模板替换时，JSON 中转 + regex 比写递归 walker 简洁 10 倍，而且 LLM 也容易 review。</p>
+  </div>
+
+  <h3>另外两个值得记的点</h3>
+
+  <p><strong><code>ManagedSecretRef</code></strong>（<code>line 279</code>）— 一个 dataclass，三个字段（<code>name / mount_path / scope_override</code>）。它让 YAML 里能写 <code>secrets: [secrets:HF_TOKEN, secrets:workspace:GH_PAT]</code> 这种<em>命名引用</em>而不是内联值；token 实际值存在 server 端的 vault 里，YAML 自己不暴露。<code>scope_override</code> 决定查哪个命名空间（personal / workspace / global）。</p>
+
+  <p><strong><code>register_task_validator</code></strong>（<code>line 36</code>）— SkyPilot 的 plugin 机制典范。一个全局列表 <code>_task_validators</code>，<code>Task.validate()</code> 时遍历调用。<em>谁注册</em>不显式，靠 module import 副作用触发。如果你将来想给 SkyPilot 加"AMD-specific 任务校验"（比如 <code>run</code> 命令里出现 <code>cuda</code> 关键字但 <code>resources</code> 是 AMD 时警告），不用 fork 主代码，写个 plugin 注册到这里即可。</p>
+</section>
+
+<!-- ====== M2 + M2.5 ====== -->
+<section id="m2">
+  <h2><span class="num">§ M2 / M2.5 · 60 min</span>CLI · SDK · the FastAPI in the middle.</h2>
+
+  <p>
+    把用户敲的 <code>sky launch foo.yaml</code> 拆解开看，它跨越四个进程边界：终端 shell → Click CLI → Python SDK → FastAPI server → 子进程 executor。每一跳都值得展开。
+  </p>
+
+  <h3>Click CLI · <code>sky/client/cli/command.py</code> · 7,954 行</h3>
+
+  <p>
+    我们之前估计 2900 行，实际接近三倍 — 它把 30+ 个子命令（<code>launch / exec / status / queue / cost_report / logs / down / stop / autostop / start / check / show-gpus / jobs / serve ...</code>）的处理逻辑全放一起。<code>launch</code> 子命令处理器在 <code>line 1235</code>，接受 30+ 个 Click 选项 — 注意到 <code>infra</code>、<code>cloud</code>、<code>region</code>、<code>zone</code> 是<em>并存的</em>，老接口（cloud/region/zone）和新接口（infra）渐进迁移期共存。
+  </p>
+
+  <pre data-lang="python · cli/command.py:1305"><code>task_or_dag = _make_task_or_dag_from_entrypoint_with_overrides(
+    entrypoint=entrypoint,        # foo.yaml 路径
+    name=name, workdir=workdir,
+    cloud=cloud, region=region, zone=zone,
+    gpus=gpus, cpus=cpus, memory=memory,
+    instance_type=instance_type, num_nodes=num_nodes,
+    use_spot=use_spot, image_id=image_id,
+    env=env, secret=secret,
+    ...
+)
+# ↑ 这一调内部走 M1 的 Task.from_yaml_config
+#   合并 CLI overrides 进 envs/secrets, 跑 _fill_in_env_vars,
+#   返回纯净的 Task 对象
+
+request_id = sdk.launch(task, dryrun=dryrun, ...)
+# ↑ 这一调走 HTTP，返回 request_id (不是结果！)</code></pre>
+
+  <h3>Python SDK · <code>sky/client/sdk.py</code> · 3,237 行</h3>
+
+  <p>
+    关键签名揭示一切：<code>def launch(task, ...) -&gt; RequestId[Tuple[Optional[int], Optional[ResourceHandle]]]</code>。<strong>返回 <code>RequestId</code> 而不是结果。</strong>SDK 是<em>异步</em>的 — 你拿到 ID 之后用 <code>sky.stream_and_get(request_id)</code> 才能取实际结果（或者 CLI 替你做这件事）。原因：launch 可能要跑 30 分钟（provision VM + 装依赖 + 跑 setup），HTTP 请求绝不能阻塞。
+  </p>
+
+  <p>SDK 还有几个 <code>_is_launched_by_jobs_controller</code> / <code>_is_launched_by_sky_serve_controller</code> 这种内部标志 — 这暗示 Managed Jobs 和 SkyServe 内部会<strong>递归</strong>调 SDK launch 子任务（在 controller VM 上启动 worker VM）。</p>
+
+  <h3>FastAPI server · <code>sky/server/server.py</code> · 3,524 行</h3>
+
+  <p>
+    <code>line 926</code> 一行揭示骨架：
+  </p>
+
+  <pre data-lang="python · server.py:926"><code>app = fastapi.FastAPI(prefix='/api/v1', debug=True, lifespan=lifespan)</code></pre>
+
+  <p>
+    然后是 <strong>10+ 个 middleware</strong>：RBAC / RequestID / BasicAuth / BearerToken / AuthProxy / SecurityHeaders / InternalDashboardPrefix / CacheControlStatic / PathClean / GracefulShutdown / APIVersion。从 routes 看，端点包括 <code>/token</code> / <code>/api/v1/auth/*</code> / <code>/check</code> / <code>/enabled_clouds</code> 以及一长串异步任务（cleanup_upload_ids / cleanup_unreferenced_file_mounts / loop_lag_monitor 等），全部跑在 FastAPI 的 <code>lifespan</code> 上下文里。
+  </p>
+
+  <h3>Request executor · <code>sky/server/requests/executor.py</code></h3>
+
+  <p>这是最关键的一段，整个客户机/服务器解耦的真相在这里：</p>
+
+  <pre data-lang="python · requests/executor.py:85"><code>multiprocessing.set_start_method('spawn', force=True)
+# On macOS, the default start method for multiprocessing is 'fork', which...</code></pre>
+
+  <p>
+    每个 launch 请求被丢进一个独立的<strong>子进程</strong>（spawn，不是 fork）跑。这才是为什么 launch 不会阻塞其他请求：它在另一个 Python 解释器里跑，FastAPI 线程立刻返回 <code>request_id</code>。配合 <code>BurstableExecutor</code>，可以根据负载动态加进程。还有一个 <code>OnDemandThreadExecutor</code>（line 100）专门处理"轻量同步请求在协程里的执行"。
+  </p>
+
+  <div class="insight">
+    <div class="label">三段式架构的真相 · WHY THIS MATTERS</div>
+    <p>"用户调 <code>sky.launch()</code> 像本地函数"的体验，是 4 个进程 + 1 个 HTTP 协议 + spawn 多进程 executor 共同协作的结果。它的代价是<strong>整个系统是 eventually consistent 的</strong> — 你拿到 request_id 那一刻，可能 VM 还没开始 provision。后续所有"等待 / 状态查询 / 取消"都要回到 server 查那个 request_id 的状态。</p>
+    <p>这种"submit → poll / stream"模式直接对应你 multi-agent kernel optimization 系统里的 agent 任务投递 — 同样的 request_id 设计可以借鉴。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE II: CLIENT → SERVER → EXECUTOR =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate II — One launch, dissected</span>
+    <span class="name">CLI keystroke to spawned subprocess</span>
+    <span class="scale">temporal</span>
+  </div>
+  <svg viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Launch sequence across processes">
+    <defs>
+      <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a76a"/>
+      </marker>
+      <marker id="ah2-bone" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a8a395"/>
+      </marker>
+    </defs>
+
+    <!-- Lifelines -->
+    <g class="lifelines">
+      <line x1="120" y1="80" x2="120" y2="350" stroke="var(--bone-mute)" stroke-width="1" stroke-dasharray="3 4"/>
+      <line x1="360" y1="80" x2="360" y2="350" stroke="var(--bone-mute)" stroke-width="1" stroke-dasharray="3 4"/>
+      <line x1="600" y1="80" x2="600" y2="350" stroke="var(--bone-mute)" stroke-width="1" stroke-dasharray="3 4"/>
+      <line x1="840" y1="80" x2="840" y2="350" stroke="var(--bone-mute)" stroke-width="1" stroke-dasharray="3 4"/>
+      <line x1="1080" y1="80" x2="1080" y2="350" stroke="var(--bone-mute)" stroke-width="1" stroke-dasharray="3 4"/>
+    </g>
+
+    <!-- Actor labels -->
+    <g class="actors">
+      <g transform="translate(70, 40)">
+        <rect width="100" height="32" class="diag-node" style="fill:var(--ink-elev);"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text head">terminal</text>
+      </g>
+      <g transform="translate(310, 40)">
+        <rect width="100" height="32" class="diag-node" style="fill:var(--ink-elev);"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text head">command.py</text>
+      </g>
+      <g transform="translate(550, 40)">
+        <rect width="100" height="32" class="diag-node" style="fill:var(--ink-elev);"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text head">sdk.py</text>
+      </g>
+      <g transform="translate(790, 40)">
+        <rect width="100" height="32" class="diag-node active" style="fill:var(--ink-elev); stroke:var(--brass);"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text head" style="fill:var(--brass);">server.py</text>
+      </g>
+      <g transform="translate(1030, 40)">
+        <rect width="100" height="32" class="diag-node warn" style="fill:var(--ink-elev); stroke:var(--rust);"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text head" style="fill:var(--rust);">executor</text>
+      </g>
+    </g>
+
+    <!-- Messages -->
+    <g class="msgs">
+      <line class="diag-edge" x1="120" y1="100" x2="356" y2="100" marker-end="url(#ah2-bone)"/>
+      <text x="238" y="92" text-anchor="middle" class="diag-text tiny">sky launch foo.yaml</text>
+
+      <line class="diag-edge dashed" x1="360" y1="130" x2="360" y2="160"/>
+      <text x="376" y="148" class="diag-text tiny muted">parse YAML · build Task</text>
+
+      <line class="diag-edge" x1="360" y1="180" x2="596" y2="180" marker-end="url(#ah2-bone)"/>
+      <text x="478" y="172" text-anchor="middle" class="diag-text tiny">sdk.launch(task)</text>
+
+      <line class="diag-edge brass" x1="600" y1="210" x2="836" y2="210" marker-end="url(#ah2)"/>
+      <text x="718" y="202" text-anchor="middle" class="diag-text tiny brass">POST /api/v1/launch (HTTP)</text>
+
+      <line class="diag-edge" x1="840" y1="240" x2="1076" y2="240" marker-end="url(#ah2-bone)"/>
+      <text x="958" y="232" text-anchor="middle" class="diag-text tiny">spawn subprocess</text>
+
+      <line class="diag-edge brass" x1="1080" y1="270" x2="844" y2="270" marker-end="url(#ah2)"/>
+      <text x="962" y="262" text-anchor="middle" class="diag-text tiny brass">request_id ← immediately</text>
+
+      <line class="diag-edge brass" x1="840" y1="300" x2="604" y2="300" marker-end="url(#ah2)"/>
+      <line class="diag-edge brass" x1="600" y1="320" x2="364" y2="320" marker-end="url(#ah2)"/>
+      <text x="478" y="312" text-anchor="middle" class="diag-text tiny brass">request_id</text>
+
+      <line class="diag-edge dashed" x1="120" y1="340" x2="1080" y2="340"/>
+      <text x="600" y="332" text-anchor="middle" class="diag-text tiny muted" style="font-style: italic;">⤿  later: sdk.stream_and_get(request_id) ⤿  to fetch actual result</text>
+    </g>
+  </svg>
+  <div class="caption">
+    四进程 / 一次 RPC / 一次子进程派生。在 server 返回 request_id 的那一刻，executor 子进程才<em>刚刚</em>开始跑真正的 launch 流水线（接下来 30 分钟的事情）。CLI 默认会自动 stream 后续日志，但 <code>--async</code> 模式下就会立刻退出，只留 ID 在手 — 这正是 controller 在 spot 恢复后能"接续"先前 launch 的关键。
+  </div>
+</section>
+
+<!-- ====== M3 ====== -->
+<section id="m3">
+  <h2><span class="num">§ M3 · 40 min</span>Nine stages, <em>one pipeline.</em></h2>
+
+  <p>
+    一旦请求落到 executor 子进程，<code>sky/execution.py</code>（939 行）就开始按 9 个 stage 推进。我们之前 plan 时以为是 7 个 — 实际枚举有 9 个，多出来的是 <code>CLONE_DISK</code>（experimental，从另一个 cluster 克隆磁盘到新 cluster）和 <code>OPTIMIZE</code>（之前漏数）。
+  </p>
+
+  <pre data-lang="python · execution.py:48"><code>class Stage(enum.Enum):
+    CLONE_DISK = enum.auto()
+    OPTIMIZE = enum.auto()
+    PROVISION = enum.auto()
+    SYNC_WORKDIR = enum.auto()
+    SYNC_FILE_MOUNTS = enum.auto()
+    SETUP = enum.auto()
+    PRE_EXEC = enum.auto()
+    EXEC = enum.auto()
+    DOWN = enum.auto()</code></pre>
+
+  <p>每个 stage 都直接映射到 <code>backend.method()</code> 调用 — backend 抽象就是这套"做 9 件事"的契约：</p>
+
+  <table>
+    <thead><tr><th>Stage</th><th>Maps to</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>CLONE_DISK</td><td><code>_maybe_clone_disk_from_cluster</code></td><td>从另一个 cluster 复制磁盘镜像</td></tr>
+      <tr><td>OPTIMIZE</td><td><code>Optimizer.optimize(dag)</code></td><td>挑 cloud × region × instance，写入 <code>task.best_resources</code></td></tr>
+      <tr><td>PROVISION</td><td><code>backend.provision(...)</code></td><td>真正去云上拉 VM，返回 ResourceHandle</td></tr>
+      <tr><td>SYNC_WORKDIR</td><td><code>backend.sync_workdir(...)</code></td><td>rsync 本地 workdir 到 VM</td></tr>
+      <tr><td>SYNC_FILE_MOUNTS</td><td><code>backend.sync_file_mounts(...)</code></td><td>storage mounts（S3/GCS）+ file mounts</td></tr>
+      <tr><td>SETUP</td><td><code>backend.setup(...)</code></td><td>跑用户 setup 命令（装依赖）</td></tr>
+      <tr><td>PRE_EXEC</td><td><code>backend.set_autostop(...)</code></td><td>配置 idle autostop</td></tr>
+      <tr><td>EXEC</td><td><code>backend.execute(...)</code></td><td>跑用户 run 命令，返回 job_id</td></tr>
+      <tr><td>DOWN</td><td><code>backend.teardown(...)</code></td><td><code>--down</code> 时拆 cluster</td></tr>
+    </tbody>
+  </table>
+
+  <div class="insight">
+    <div class="label">隐藏的并发控制 · OPTIMISTIC + LOCK-INTERIOR FALLBACK</div>
+    <p><code>execution.py:474-505</code> 的注释揭示一个微妙设计：OPTIMIZE 在 per-cluster lock <em>之外</em>跑（因为 optimize 耗时，不能阻塞别的请求），但 backend 拿到锁后会发现"决策可能已过期"（比如 cluster 刚被别人删了）。补救方法是给 backend 传一个 <code>planner</code> callback — 锁内如果发现需要重 plan，就调它再跑一次 optimizer。</p>
+    <p>这是"乐观优化 + 临界区兜底"的并发模式，处理"长决策 + 临界区状态可能漂移"的经典做法。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE III: 9-STAGE PIPELINE =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate III — The 9-stage pipeline</span>
+    <span class="name">execution.py, in one elevation</span>
+    <span class="scale">temporal</span>
+  </div>
+  <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid meet" role="img" aria-label="9-stage execution pipeline">
+    <defs>
+      <pattern id="grid-3" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" stroke="rgba(236,230,211,0.03)" stroke-width="1" fill="none"/>
+      </pattern>
+      <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a76a"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="420" fill="url(#grid-3)"/>
+
+    <!-- Time axis -->
+    <line x1="60" y1="320" x2="1140" y2="320" stroke="var(--bone-dim)" stroke-width="1.25"/>
+    <text x="60" y="345" class="diag-text tiny muted">t₀</text>
+    <text x="1140" y="345" class="diag-text tiny muted" text-anchor="end">t →</text>
+
+    <!-- 9 stage boxes -->
+    <g class="stages">
+      <!-- CLONE_DISK -->
+      <g transform="translate(70, 220)">
+        <rect width="100" height="80" class="diag-node muted"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text tiny muted">1. (optional)</text>
+        <text x="50" y="42" text-anchor="middle" class="diag-text head" style="fill:var(--bone-dim); font-size:13px;">CLONE_DISK</text>
+        <text x="50" y="64" text-anchor="middle" class="diag-text tiny muted">helper fn</text>
+      </g>
+      <!-- OPTIMIZE -->
+      <g transform="translate(190, 220)">
+        <rect width="100" height="80" class="diag-node active"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text tiny brass">2.</text>
+        <text x="50" y="42" text-anchor="middle" class="diag-text head" style="fill:var(--brass); font-size:13px;">OPTIMIZE</text>
+        <text x="50" y="64" text-anchor="middle" class="diag-text tiny muted">Optimizer.optimize</text>
+      </g>
+      <!-- PROVISION -->
+      <g transform="translate(310, 200)">
+        <rect width="120" height="100" class="diag-node" style="stroke:var(--rust); fill:rgba(201,95,63,0.04);"/>
+        <text x="60" y="20" text-anchor="middle" class="diag-text tiny" style="fill:var(--rust);">3. ★ heavy</text>
+        <text x="60" y="44" text-anchor="middle" class="diag-text head" style="fill:var(--rust); font-size:14px;">PROVISION</text>
+        <text x="60" y="64" text-anchor="middle" class="diag-text tiny muted">backend.provision</text>
+        <text x="60" y="80" text-anchor="middle" class="diag-text tiny muted">Ray cluster · SSH</text>
+      </g>
+      <!-- SYNC_WORKDIR -->
+      <g transform="translate(450, 230)">
+        <rect width="100" height="70" class="diag-node"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text tiny muted">4.</text>
+        <text x="50" y="42" text-anchor="middle" class="diag-text head" style="font-size:13px;">SYNC_WD</text>
+        <text x="50" y="60" text-anchor="middle" class="diag-text tiny muted">rsync</text>
+      </g>
+      <!-- SYNC_FILE_MOUNTS -->
+      <g transform="translate(570, 230)">
+        <rect width="100" height="70" class="diag-node"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text tiny muted">5.</text>
+        <text x="50" y="42" text-anchor="middle" class="diag-text head" style="font-size:13px;">SYNC_FM</text>
+        <text x="50" y="60" text-anchor="middle" class="diag-text tiny muted">S3 / GCS</text>
+      </g>
+      <!-- SETUP -->
+      <g transform="translate(690, 220)">
+        <rect width="100" height="80" class="diag-node" style="stroke:var(--rust); fill:rgba(201,95,63,0.04);"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text tiny" style="fill:var(--rust);">6. ★ heavy</text>
+        <text x="50" y="42" text-anchor="middle" class="diag-text head" style="fill:var(--rust); font-size:13px;">SETUP</text>
+        <text x="50" y="64" text-anchor="middle" class="diag-text tiny muted">user setup cmd</text>
+      </g>
+      <!-- PRE_EXEC -->
+      <g transform="translate(810, 230)">
+        <rect width="100" height="70" class="diag-node"/>
+        <text x="50" y="20" text-anchor="middle" class="diag-text tiny muted">7.</text>
+        <text x="50" y="42" text-anchor="middle" class="diag-text head" style="font-size:13px;">PRE_EXEC</text>
+        <text x="50" y="60" text-anchor="middle" class="diag-text tiny muted">autostop cfg</text>
+      </g>
+      <!-- EXEC -->
+      <g transform="translate(930, 200)">
+        <rect width="120" height="100" class="diag-node active"/>
+        <text x="60" y="20" text-anchor="middle" class="diag-text tiny brass">8. ★ main</text>
+        <text x="60" y="44" text-anchor="middle" class="diag-text head" style="fill:var(--brass); font-size:14px;">EXEC</text>
+        <text x="60" y="64" text-anchor="middle" class="diag-text tiny muted">backend.execute</text>
+        <text x="60" y="80" text-anchor="middle" class="diag-text tiny muted">→ job_id</text>
+      </g>
+      <!-- DOWN -->
+      <g transform="translate(1070, 230)">
+        <rect width="60" height="70" class="diag-node muted"/>
+        <text x="30" y="20" text-anchor="middle" class="diag-text tiny muted">9.</text>
+        <text x="30" y="42" text-anchor="middle" class="diag-text head" style="fill:var(--bone-dim); font-size:12px;">DOWN</text>
+        <text x="30" y="60" text-anchor="middle" class="diag-text tiny muted">if --down</text>
+      </g>
+    </g>
+
+    <!-- Flow arrows -->
+    <g class="flow">
+      <line class="diag-edge brass" x1="170" y1="260" x2="186" y2="260" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="290" y1="260" x2="306" y2="260" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="430" y1="260" x2="446" y2="265" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="550" y1="265" x2="566" y2="265" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="670" y1="265" x2="686" y2="260" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="790" y1="260" x2="806" y2="265" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="910" y1="265" x2="926" y2="260" marker-end="url(#ah3)"/>
+      <line class="diag-edge brass" x1="1050" y1="260" x2="1066" y2="265" marker-end="url(#ah3)"/>
+    </g>
+
+    <!-- Title / legend -->
+    <text x="60" y="40" class="diag-text head" style="font-size: 16px;">execution.py · _execute_dag(...)</text>
+    <text x="60" y="62" class="diag-text muted">9 stages, fired in order, each maps to a backend method.</text>
+
+    <!-- Side annotations -->
+    <g transform="translate(70, 380)">
+      <text x="0" y="0" class="diag-text tiny brass">★</text>
+      <text x="14" y="0" class="diag-text tiny muted">= heavy stage (minutes)</text>
+    </g>
+    <g transform="translate(260, 380)">
+      <text x="0" y="0" class="diag-text tiny muted">— stages are conditional; <code style="font-family:var(--mono);">exec</code> command only fires SYNC_WORKDIR + EXEC</text>
+    </g>
+
+    <!-- "OPTIMIZE outside lock" callout -->
+    <g transform="translate(190, 120)">
+      <rect width="240" height="56" fill="rgba(212,167,106,0.04)" stroke="var(--brass)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="120" y="20" text-anchor="middle" class="diag-text tiny brass">OPTIMIZE runs OUTSIDE per-cluster lock</text>
+      <text x="120" y="36" text-anchor="middle" class="diag-text tiny muted">planner callback re-fires inside lock</text>
+      <text x="120" y="50" text-anchor="middle" class="diag-text tiny muted">if cached decision stale (see line 474-505)</text>
+    </g>
+    <line class="diag-edge dashed" x1="240" y1="176" x2="240" y2="218" stroke="var(--brass)"/>
+  </svg>
+  <div class="caption">
+    每个 stage 都是条件触发（<code>if Stage.X in stages:</code>），所以 <code>sky exec</code>（在已存在的 cluster 上跑命令）只会触发 SYNC_WORKDIR + EXEC 两个 stage。<code>provision / setup / exec</code> 三个 stage 是"贵"的 — 各自可能耗时数分钟。
+  </div>
+</section>
+
+<!-- ====== M4 ====== -->
+<section id="m4">
+  <h2><span class="num">§ M4 · 45 min</span>The Optimizer, <em>DP × ILP.</em></h2>
+
+  <p>
+    Optimizer 是 SkyPilot 的技术宝石 — 1805 行做一件事：在 24 个云 × N 个 region × M 个 instance type × spot/on-demand × egress 的笛卡尔积里挑出代价最小（或时间最短）的资源分配方案。
+  </p>
+
+  <p>关键的判别在第一步：拿到 <code>Dag</code> 之后，问它 <code>dag.is_chain()</code>：</p>
+
+  <table>
+    <thead><tr><th>DAG 拓扑</th><th>算法</th><th>复杂度</th><th>文件位置</th></tr></thead>
+    <tbody>
+      <tr><td>Chain（线性 pipeline）</td><td>动态规划 (DP)</td><td>O(N · R²)</td><td><code>_optimize_by_dp · line 429</code></td></tr>
+      <tr><td>General DAG（分支/合并）</td><td>整数线性规划 (ILP)，PuLP + CBC</td><td>NP-hard，但实际可解</td><td><code>_optimize_by_ilp · line 490</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>动态规划 · chain DAG 上的最短路径</h3>
+
+  <p>状态定义：<code>dp_best_objective[node][resources] = 用 resources 配置跑完 node 的最小累积代价</code>。状态转移：</p>
+
+  <pre data-lang="python · optimizer.py:444"><code># dp_best_objective[node][resources]
+#     = my_execution_cost(node, resources)
+#     + min over parent_resources of (
+#           dp_best_objective[parent][parent_resources]
+#         + egress_cost(parent → node, parent_resources, resources)
+#       )</code></pre>
+
+  <p>再加一个 <code>dp_point_backs[node][resources] = best_parent_resources</code> 用于反向回溯路径。这就是 Bellman 最短路径在"资源候选图"上的应用 — 每个 (node, resources) 是图上一个节点，相邻节点之间的边权是 execution_cost + egress_cost。</p>
+
+  <h3>整数线性规划 · 一般 DAG 上的双线性优化</h3>
+
+  <p>ILP 公式的 docstring 是教科书级的清晰，直接抄录关键部分：</p>
+
+  <pre data-lang="ilp · optimizer.py:509"><code>For cost optimization (after linearization):
+  minimize_{c, e}  Σ c[v]ᵀ · k[v]     # execution costs at each node v
+                 + Σ e[u,v]ᵀ · F[u,v] # egress costs on each edge (u,v)
+  subject to:
+    Σ c[v] == 1          for each v in V    # one-hot: pick one resource
+    Σ e[u,v] == 1        for each (u,v) in E
+    e[u,v] = flatten(c[u] @ c[v]ᵀ)           # linearize the bilinear term
+
+For time (makespan) optimization:
+  minimize finish_time[sink]
+  subject to:
+    finish_time[v] >= c[v]ᵀ·k[v] + finish_time[u] + e[u,v]ᵀ·F[u,v]
+    for each (u,v) in E
+    plus the same one-hot constraints</code></pre>
+
+  <div class="insight">
+    <div class="label">数学 trick · LINEARIZE THE BILINEAR</div>
+    <p>纯二次决策 <code>c[u] · c[v]ᵀ</code>（"u 选 r₁ 且 v 选 r₂"）让问题不是 ILP 而是更难求解的 quadratic IP。SkyPilot 用经典的 McCormick 线性化：引入辅助变量 <code>e[u,v]</code> 表示"edge 端配置 (r₁, r₂) 是否被同时选中"，加 one-hot 约束使 <code>e</code> 与 <code>c</code> 自洽，然后整个问题就成了 ILP，PuLP + CBC 求解器能跑。</p>
+    <p>这个 trick 在你做"多 agent 资源调度"时直接可用 — 任何"两个对象都得选某种配置且配对有代价"的问题，都能这么打平成 ILP。</p>
+  </div>
+
+  <h3>三种"特殊"路径</h3>
+
+  <p>除了主路径，<code>optimize_job_group</code>（line 1037）处理 v0.12 引入的"job group"语义 — 多个 task 必须跑在同一个 cloud / region 上（典型：RL 训练里 actor 和 replay-buffer 必须在同一可用区减少延迟）。它走的是 <code>_optimize_same_infra</code> + <code>_find_common_infras</code> + <code>_select_best_infra</code> 这条特殊路径，把"基础设施一致"作为硬约束。</p>
+</section>
+
+<!-- =============== PLATE IV: DAG ROUTING =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate IV — How the Optimizer decides</span>
+    <span class="name">chain → DP, general → ILP</span>
+    <span class="scale">conceptual</span>
+  </div>
+  <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Optimizer routing">
+    <defs>
+      <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a76a"/>
+      </marker>
+      <marker id="ah4-bone" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a8a395"/>
+      </marker>
+    </defs>
+
+    <!-- Input -->
+    <g transform="translate(540, 40)">
+      <rect width="120" height="48" class="diag-node active"/>
+      <text x="60" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--brass);">Dag</text>
+      <text x="60" y="38" text-anchor="middle" class="diag-text tiny muted">topo_order, edges</text>
+    </g>
+
+    <!-- Decision diamond -->
+    <g transform="translate(540, 120)">
+      <polygon points="60,0 120,30 60,60 0,30" fill="rgba(236,230,211,0.02)" stroke="var(--brass)" stroke-width="1.5"/>
+      <text x="60" y="28" text-anchor="middle" class="diag-text head" style="font-size:13px;">is_chain()</text>
+      <text x="60" y="42" text-anchor="middle" class="diag-text tiny muted">dag.py:159</text>
+    </g>
+
+    <line class="diag-edge brass" x1="600" y1="88" x2="600" y2="118" marker-end="url(#ah4)"/>
+
+    <!-- Branches -->
+    <line class="diag-edge brass" x1="540" y1="150" x2="280" y2="220" marker-end="url(#ah4)"/>
+    <text x="380" y="180" class="diag-text tiny brass" text-anchor="middle">TRUE</text>
+
+    <line class="diag-edge brass" x1="660" y1="150" x2="920" y2="220" marker-end="url(#ah4)"/>
+    <text x="820" y="180" class="diag-text tiny brass" text-anchor="middle">FALSE</text>
+
+    <!-- DP branch -->
+    <g transform="translate(120, 220)">
+      <rect width="320" height="200" class="diag-node" style="fill:rgba(108,176,170,0.03); stroke:var(--patina); stroke-width:1.5;"/>
+      <text x="160" y="28" text-anchor="middle" class="diag-text head" style="fill:var(--patina); font-size: 16px;">_optimize_by_dp</text>
+      <text x="160" y="46" text-anchor="middle" class="diag-text tiny muted">optimizer.py:429</text>
+
+      <line x1="20" y1="60" x2="300" y2="60" stroke="var(--bone-faint)"/>
+
+      <text x="160" y="84" text-anchor="middle" class="diag-text">Bellman-style shortest path</text>
+      <text x="160" y="100" text-anchor="middle" class="diag-text tiny muted">on (node, resources) graph</text>
+
+      <g transform="translate(20, 116)">
+        <text class="diag-text tiny" style="fill:var(--bone);">state:</text>
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--bone-soft);">dp[v][r] = min cost to reach v with r</text>
+      </g>
+      <g transform="translate(20, 132)">
+        <text class="diag-text tiny" style="fill:var(--bone);">trans:</text>
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--bone-soft);">dp[v][r] = exec(v,r) +</text>
+      </g>
+      <text x="64" y="148" class="diag-text tiny" style="fill:var(--bone-soft);">min_{r'} (dp[parent][r'] + egress(r',r))</text>
+
+      <g transform="translate(20, 172)">
+        <text class="diag-text tiny" style="fill:var(--bone);">cost:</text>
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--patina);">O(N · R²)</text>
+      </g>
+    </g>
+
+    <!-- ILP branch -->
+    <g transform="translate(760, 220)">
+      <rect width="320" height="200" class="diag-node" style="fill:rgba(245,182,67,0.03); stroke:var(--rust); stroke-width:1.5;"/>
+      <text x="160" y="28" text-anchor="middle" class="diag-text head" style="fill:var(--rust); font-size: 16px;">_optimize_by_ilp</text>
+      <text x="160" y="46" text-anchor="middle" class="diag-text tiny muted">optimizer.py:490 · PuLP + CBC</text>
+
+      <line x1="20" y1="60" x2="300" y2="60" stroke="var(--bone-faint)"/>
+
+      <text x="160" y="84" text-anchor="middle" class="diag-text">Integer Linear Programming</text>
+      <text x="160" y="100" text-anchor="middle" class="diag-text tiny muted">McCormick linearization of c[u] ⊗ c[v]</text>
+
+      <g transform="translate(20, 116)">
+        <text class="diag-text tiny" style="fill:var(--bone);">vars:</text>
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--bone-soft);">c[v] ∈ {0,1}^|R|  (one-hot node)</text>
+      </g>
+      <g transform="translate(20, 132)">
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--bone-soft);">e[u,v] ∈ {0,1}^|R|²  (one-hot edge)</text>
+      </g>
+      <g transform="translate(20, 152)">
+        <text class="diag-text tiny" style="fill:var(--bone);">obj:</text>
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--bone-soft);">min Σ c[v]·k[v] + Σ e[u,v]·F[u,v]</text>
+      </g>
+
+      <g transform="translate(20, 172)">
+        <text class="diag-text tiny" style="fill:var(--bone);">cost:</text>
+        <text x="44" y="0" class="diag-text tiny" style="fill:var(--rust);">NP-hard worst-case · CBC tractable</text>
+      </g>
+    </g>
+
+    <!-- Output -->
+    <g transform="translate(450, 450)">
+      <rect width="300" height="20" fill="none" stroke="var(--brass)" stroke-width="1"/>
+      <text x="150" y="14" text-anchor="middle" class="diag-text tiny brass">→ task.best_resources for each task in dag</text>
+    </g>
+    <line class="diag-edge brass" x1="280" y1="420" x2="500" y2="450" marker-end="url(#ah4)"/>
+    <line class="diag-edge brass" x1="920" y1="420" x2="700" y2="450" marker-end="url(#ah4)"/>
+  </svg>
+  <div class="caption">
+    所有 chain DAG（包括最常见的"单 task"特例）走 DP 分支，瞬间完成。多分支 / 多汇聚的 DAG 走 ILP，把笛卡尔积空间打成线性规划。<strong>OPTIMIZE 这个 stage 在 client 端还是 server 端跑？</strong>—— 在 server 端：catalog 数据和 PuLP 都装在 server 容器里，client 不背这个重担。
+  </div>
+</section>
+
+<!-- ====== M5 + M6 ====== -->
+<section id="m5">
+  <h2><span class="num">§ M5 / M6 · 75 min</span>Backend × Cloud, <em>the polymorphic dance.</em></h2>
+
+  <p>
+    这两层互为因果，必须一起读。<code>backend.py</code>（212 行）定义 <code>Backend[ResourceHandle]</code> 泛型抽象基类，列出 9 个 stage 对应的方法。<code>cloud.py</code>（1041 行）定义 <code>Cloud</code> 抽象基类，列出 14 个云必须实现的方法。
+  </p>
+
+  <p>关键洞察是：<strong>Backend 是"调用方"，Cloud 是"被调用方"</strong>。先读 backend 你才能知道 cloud 接口为什么长那样 — 抽象方法的形状是被调用模式塑造出来的。</p>
+
+  <h3>Backend 抽象的形状</h3>
+
+  <pre data-lang="python · backends/backend.py:30"><code>class Backend(Generic[_ResourceHandleType]):
+    def provision(self, task, to_provision_config, dryrun, ...) -> Tuple[ResourceHandle, bool]: ...
+    def sync_workdir(self, handle, workdir, envs_and_secrets): ...
+    def sync_file_mounts(self, handle, all_file_mounts, storage_mounts): ...
+    def setup(self, handle, task, detach_setup): ...
+    def execute(self, handle, task, dryrun) -> Optional[int]: ...     # → job_id
+    def teardown(self, handle, terminate): ...
+    def register_info(self, **kwargs): ...
+    # ... 加上几个 internal _method 钩子</code></pre>
+
+  <p>主实现 <code>CloudVmRayBackend</code> 在 <code>cloud_vm_ray_backend.py</code> 里，<strong>6562 行单文件</strong>。它的"主类"<code>CloudVmRayBackend</code> 本身从 line 3038 开始，到 line 6562 — 单个类 3500 行。文件里还有 7 个 helper 类：</p>
+
+  <table>
+    <thead><tr><th>Class</th><th>Line</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>GangSchedulingStatus</code></td><td>385</td><td>多节点 gang schedule 的状态枚举</td></tr>
+      <tr><td><code>FailoverCloudErrorHandlerV1 / V2</code></td><td>402 / 529</td><td>provision 失败时的故障转移决策（V1 老接口、V2 新接口）</td></tr>
+      <tr><td><code>RetryingVmProvisioner</code></td><td>796</td><td>关键 — 在 zone → region → cloud 三层重试 provision</td></tr>
+      <tr><td><code>SSHTunnelInfo</code></td><td>1938</td><td>SSH 隧道连接信息</td></tr>
+      <tr><td><code>CloudVmRayResourceHandle</code></td><td>1955</td><td>对外的 ResourceHandle 实现 — 持有 cluster 状态</td></tr>
+      <tr><td><code>LocalResourcesHandle</code></td><td>2795</td><td>local-mode 特例</td></tr>
+      <tr><td><code>SkyletClient</code></td><td>2843</td><td>★ backend → skylet 的 gRPC 客户端</td></tr>
+      <tr><td><code>CloudVmRayBackend</code></td><td>3038</td><td>主类</td></tr>
+    </tbody>
+  </table>
+
+  <h3>名字里的"Ray"是什么 Ray</h3>
+
+  <p>
+    <code>CloudVmRayBackend</code> 里的 "Ray" 指 <a href="https://ray.io">ray.io</a> 项目 — 但<strong>不是用 Ray 做分布式训练</strong>，而是借用 Ray 的 cluster launcher（<code>ray up</code> / <code>ray attach</code>）来管 VM 生命周期。SkyPilot 早期是 Ray 的扩展，后来独立发展，这是历史包袱 + 设计选择。<code>sky/skylet/ray_patches/</code> 子目录里能看到他们对 Ray cluster launcher 的私有 patch。
+  </p>
+
+  <h3>Cloud 抽象的 14 个必实现方法</h3>
+
+  <p>每个云（AWS / GCP / Kubernetes / SSH / Slurm / RunPod / ...）必须告诉 SkyPilot：</p>
+
+  <pre data-lang="python · clouds/cloud.py · abstract methods"><code>regions_with_offering(instance_type, accel, use_spot, region, zone)
+zones_provision_loop(...)               # 迭代 zones 用于 provision 尝试
+get_zone_shell_cmd()                    # 在 VM 内拿 zone 的 shell 命令
+instance_type_to_hourly_cost(it, spot)  # 给 Optimizer 喂价
+accelerators_to_hourly_cost(accel)
+get_egress_cost(num_gigabytes)          # 给 ILP 喂 egress 矩阵
+make_deploy_resources_variables(...)    # 把 Resources 翻译成 Ray YAML 模板的填充变量
+get_vcpus_mem_from_instance_type(it)
+get_accelerators_from_instance_type(it)
+get_default_instance_type(...)
+_get_feasible_launchable_resources(r)   # 预过滤候选 — 给 Optimizer 减负
+get_credential_file_mounts()
+_unsupported_features_for_resources(r)
+query_status(name_id_filter)            # 从云上拉 cluster 当前状态</code></pre>
+
+  <p>具体实现 26 个云覆盖 — 加起来代码量惊人（aws.py 1712 行，kubernetes.py 1491 行）。这正是"加新云后端"工作的核心 — 后面 Red Line 1 会详述。</p>
+</section>
+
+<!-- ====== M7 ====== -->
+<section id="m7">
+  <h2><span class="num">§ M7 · 40 min</span>Skylet, <em>the satellite.</em></h2>
+
+  <p>
+    最让人惊喜的发现：<code>sky/skylet/skylet.py</code> 只有 <strong>107 行</strong>。这个被誉为"SkyPilot 的 kubelet"的节点守护进程，本体精简到不可思议 — 它就做两件事：(1) 启动 gRPC server，(2) 跑一个 6 事件的轮询事件循环。重逻辑全在配套模块里。
+  </p>
+
+  <pre data-lang="python · skylet/skylet.py:27"><code>EVENTS = [
+    events.AutostopEvent(),                         # idle 自动关机
+    events.JobSchedulerEvent(),                     # 节点本地 job 调度
+    events.ManagedJobEvent(),                       # managed job 状态同步
+    events.ServiceUpdateEvent(pool=False),          # serving controller 健康
+    events.ServiceUpdateEvent(pool=True),           # pool 状态刷新
+    events.UsageHeartbeatReportEvent(),             # 用量遥测 (10 min 一次)
+]
+
+def run_event_loop():
+    for event in EVENTS:
+        event.start()
+    while True:
+        time.sleep(events.EVENT_CHECKING_INTERVAL_SECONDS)
+        for event in EVENTS:
+            event.run()</code></pre>
+
+  <p>gRPC server 暴露 4 个服务，全部用 protobuf 生成的 stub：</p>
+
+  <table>
+    <thead><tr><th>Service</th><th>Proto</th><th>谁是 client</th></tr></thead>
+    <tbody>
+      <tr><td><code>AutostopServiceImpl</code></td><td><code>autostopv1</code></td><td>backend, 配置 autostop</td></tr>
+      <tr><td><code>JobsServiceImpl</code></td><td><code>jobsv1</code></td><td>backend, 提交/查 job</td></tr>
+      <tr><td><code>ServeServiceImpl</code></td><td><code>servev1</code></td><td>serve controller</td></tr>
+      <tr><td><code>ManagedJobsServiceImpl</code></td><td><code>managed_jobsv1</code></td><td>jobs controller</td></tr>
+    </tbody>
+  </table>
+
+  <p>SkyletClient（<code>cloud_vm_ray_backend.py:2843</code>）就是这些 gRPC service 的客户端 — backend 通过它跟节点上的 skylet 通信。</p>
+
+  <div class="insight">
+    <div class="label">值得偷的设计模式 · MICRO-DAEMON + FAT MODULES</div>
+    <p>守护进程本体保持极薄，重逻辑全部下沉到独立模块（<code>job_lib.py</code> 1459 行 · <code>log_lib.py</code> 909 行 · <code>autostop_lib.py</code> 382 行 · <code>events.py</code> 442 行 · <code>services.py</code> 634 行）。这种"小核心 + 大附件"的拆法让你可以单独测试每个 lib，而 daemon 本身只是 wiring。</p>
+    <p>对你 multi-agent kernel optimization 系统的 worker daemon 设计完全适用 — 把"agent 本体"做成 100 行的 event loop + gRPC server，把"kernel benchmark / profile / analysis"做成独立 lib。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE V: SKYLET ANATOMY =============== -->
+<section class="plate">
+  <div class="plate-meta">
+    <span class="num">Plate V — Skylet</span>
+    <span class="name">107 lines, exploded</span>
+    <span class="scale">1 : 1</span>
+  </div>
+  <svg viewBox="0 0 720 460" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Skylet anatomy">
+    <defs>
+      <marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a8a395"/>
+      </marker>
+    </defs>
+
+    <!-- skylet.py main -->
+    <g transform="translate(280, 40)">
+      <rect width="160" height="50" class="diag-node active"/>
+      <text x="80" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--brass);">skylet.py</text>
+      <text x="80" y="38" text-anchor="middle" class="diag-text tiny muted">107 lines · main()</text>
+    </g>
+
+    <!-- two arms: gRPC + event loop -->
+    <line class="diag-edge" x1="320" y1="90" x2="160" y2="140" marker-end="url(#ah5)"/>
+    <line class="diag-edge" x1="400" y1="90" x2="560" y2="140" marker-end="url(#ah5)"/>
+
+    <!-- gRPC arm -->
+    <g transform="translate(60, 140)">
+      <rect width="220" height="240" fill="rgba(108,176,170,0.03)" stroke="var(--patina)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--patina);">gRPC server</text>
+      <text x="110" y="36" text-anchor="middle" class="diag-text tiny muted">ThreadPool, min(32, cpu+4)</text>
+
+      <g transform="translate(20, 56)">
+        <rect width="180" height="30" fill="none" stroke="var(--bone-dim)"/>
+        <text x="90" y="20" text-anchor="middle" class="diag-text tiny">AutostopService</text>
+      </g>
+      <g transform="translate(20, 96)">
+        <rect width="180" height="30" fill="none" stroke="var(--bone-dim)"/>
+        <text x="90" y="20" text-anchor="middle" class="diag-text tiny">JobsService</text>
+      </g>
+      <g transform="translate(20, 136)">
+        <rect width="180" height="30" fill="none" stroke="var(--bone-dim)"/>
+        <text x="90" y="20" text-anchor="middle" class="diag-text tiny">ServeService</text>
+      </g>
+      <g transform="translate(20, 176)">
+        <rect width="180" height="30" fill="none" stroke="var(--bone-dim)"/>
+        <text x="90" y="20" text-anchor="middle" class="diag-text tiny">ManagedJobsService</text>
+      </g>
+      <text x="110" y="225" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">↑ called by backend</text>
+    </g>
+
+    <!-- event loop arm -->
+    <g transform="translate(440, 140)">
+      <rect width="220" height="240" fill="rgba(212,167,106,0.03)" stroke="var(--brass)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--brass);">event loop</text>
+      <text x="110" y="36" text-anchor="middle" class="diag-text tiny muted">while True: sleep(N); run all</text>
+
+      <g transform="translate(16, 52)">
+        <rect width="188" height="20" fill="none" stroke="var(--bone-dim)"/>
+        <text x="94" y="14" text-anchor="middle" class="diag-text tiny">AutostopEvent</text>
+      </g>
+      <g transform="translate(16, 78)">
+        <rect width="188" height="20" fill="none" stroke="var(--bone-dim)"/>
+        <text x="94" y="14" text-anchor="middle" class="diag-text tiny">JobSchedulerEvent</text>
+      </g>
+      <g transform="translate(16, 104)">
+        <rect width="188" height="20" fill="none" stroke="var(--bone-dim)"/>
+        <text x="94" y="14" text-anchor="middle" class="diag-text tiny">ManagedJobEvent</text>
+      </g>
+      <g transform="translate(16, 130)">
+        <rect width="188" height="20" fill="none" stroke="var(--bone-dim)"/>
+        <text x="94" y="14" text-anchor="middle" class="diag-text tiny">ServiceUpdateEvent (×2)</text>
+      </g>
+      <g transform="translate(16, 156)">
+        <rect width="188" height="20" fill="none" stroke="var(--bone-dim)"/>
+        <text x="94" y="14" text-anchor="middle" class="diag-text tiny">UsageHeartbeat</text>
+      </g>
+      <text x="110" y="225" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">↓ polls local state</text>
+    </g>
+
+    <!-- shared library -->
+    <g transform="translate(140, 408)">
+      <rect width="440" height="36" fill="rgba(236,230,211,0.02)" stroke="var(--bone-faint)" stroke-width="1"/>
+      <text x="220" y="16" text-anchor="middle" class="diag-text tiny">job_lib (1,459) · log_lib (909) · autostop_lib (382)</text>
+      <text x="220" y="30" text-anchor="middle" class="diag-text tiny muted">events (442) · services (634) · constants (722)</text>
+    </g>
+
+    <line class="diag-edge dashed" x1="170" y1="380" x2="220" y2="408"/>
+    <line class="diag-edge dashed" x1="550" y1="380" x2="500" y2="408"/>
+  </svg>
+  <div class="caption">
+    左臂（gRPC）应答外部调用；右臂（event loop）巡视本地状态。两条腿共享同一组下层库 — 这是"daemon 即 wiring，logic 在 lib"的范式。
+  </div>
+</section>
+
+<!-- ====== M8 ====== -->
+<section id="m8">
+  <h2><span class="num">§ M8 · 35 min</span>Managed Jobs, <em>two state machines.</em></h2>
+
+  <p>
+    Managed Jobs 是 SkyPilot 的杀手特性 — 在 spot 实例上跑长跑作业不丢进度。它的核心设计是<strong>两层状态机</strong>，一个隔离另一个的瞬态故障：
+  </p>
+
+  <pre data-lang="python · jobs/state.py:369"><code>class ManagedJobStatus(enum.Enum):
+    """
+    The ManagedJobStatus is a higher level status than the JobStatus.
+    Each managed job submitted to a cluster will have a JobStatus
+    associated with it:
+        JobStatus = [INIT, SETTING_UP, PENDING, RUNNING, ...]
+    Whenever the cluster is preempted and recovered, the JobStatus
+    transitions multiple times.
+
+    However, a managed job only has one ManagedJobStatus on the jobs controller.
+        ManagedJobStatus = [PENDING, STARTING, RUNNING, ...]
+    """</code></pre>
+
+  <p>翻译成人话：</p>
+
+  <ul>
+    <li><strong>JobStatus</strong>（在 worker cluster 的节点上）：被 spot 抢占时会经历 <code>RUNNING → FAILED</code>；恢复后新 cluster 起来又走 <code>INIT → SETTING_UP → PENDING → RUNNING</code>。一个 managed job 的生命周期里这个底层状态可能<em>反复</em> RUNNING → FAILED → RUNNING。</li>
+    <li><strong>ManagedJobStatus</strong>（在独立的 jobs controller VM 上）：从用户视角看到的状态。底下被抢 N 次，这里始终是 <code>RUNNING</code>。只有当 controller 决定"不再 recover"了，才会进入 <code>FAILED_NO_RESOURCE</code> 或 <code>FAILED_CONTROLLER</code>。</li>
+  </ul>
+
+  <p>这种"上层状态吸收下层抖动"的设计同样反映在 <code>recovery_strategy.py</code>（1024 行）里：</p>
+
+  <table>
+    <thead><tr><th>Strategy class</th><th>Line</th><th>Behavior on preemption</th></tr></thead>
+    <tbody>
+      <tr><td><code>StrategyExecutor</code></td><td>61</td><td>抽象基类，定义 <code>recover()</code> 钩子</td></tr>
+      <tr><td><code>FailoverStrategyExecutor</code></td><td>815</td><td>等所有 zones/regions 都试一遍，再换 cloud</td></tr>
+      <tr><td><code>EagerFailoverStrategyExecutor</code></td><td>936</td><td>抢占后立即跳到下一个 region，不死磕</td></tr>
+    </tbody>
+  </table>
+
+  <p>scheduler.py（466 行）单独控制"controller 进程"的并行度 — 因为每个 managed job 在 controller VM 上是一个独立 Python 进程，太多 controller 会撑爆 VM 内存。</p>
+
+  <div class="insight">
+    <div class="label">直接相关 · DIRECTLY APPLICABLE</div>
+    <p>"两层状态机吸收瞬态故障"的设计是你的 multi-agent kernel optimization 系统应该照搬的 — agent 跑 kernel benchmark 时 ROCm 偶发 OOM / driver hang / 节点掉线，<em>底层 task 状态</em>反复抖动，但<em>上层 agent 任务状态</em>应该稳定保持 RUNNING，让 agent 不感知底层故障。<code>recovery_strategy.py</code> 那种"策略可插拔"的接口直接抄。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE VI: TWO-LEVEL STATE MACHINE =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate VI — The two-level state machine</span>
+    <span class="name">Managed Jobs · spot resilience</span>
+    <span class="scale">temporal</span>
+  </div>
+  <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Two-level state machine">
+    <defs>
+      <marker id="ah6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a8a395"/>
+      </marker>
+      <marker id="ah6r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d65244"/>
+      </marker>
+    </defs>
+
+    <!-- Time axis -->
+    <line x1="80" y1="380" x2="1140" y2="380" stroke="var(--bone-mute)" stroke-width="1"/>
+    <text x="80" y="402" class="diag-text tiny muted">t₀</text>
+    <text x="1140" y="402" class="diag-text tiny muted" text-anchor="end">t →</text>
+
+    <!-- Upper lane: ManagedJobStatus (stable) -->
+    <text x="60" y="110" class="diag-text tiny brass" text-anchor="end">↑ controller</text>
+    <text x="60" y="124" class="diag-text tiny brass" text-anchor="end">view</text>
+    <line x1="80" y1="130" x2="1140" y2="130" stroke="var(--brass)" stroke-width="1.5"/>
+    <text x="1145" y="134" class="diag-text tiny brass">RUNNING</text>
+
+    <!-- States on upper lane -->
+    <g transform="translate(100, 110)">
+      <circle r="6" cx="0" cy="20" fill="var(--brass)"/>
+      <text x="0" y="2" text-anchor="middle" class="diag-text tiny" style="fill:var(--brass);">STARTING</text>
+    </g>
+    <g transform="translate(220, 110)">
+      <circle r="5" cx="0" cy="20" fill="var(--brass)"/>
+      <text x="0" y="2" text-anchor="middle" class="diag-text tiny brass">RUNNING</text>
+    </g>
+
+    <!-- Lower lane: JobStatus (jittery) -->
+    <text x="60" y="270" class="diag-text tiny" style="fill:var(--bone-soft);" text-anchor="end">↓ worker</text>
+    <text x="60" y="284" class="diag-text tiny" style="fill:var(--bone-soft);" text-anchor="end">cluster</text>
+
+    <!-- JobStatus trace -->
+    <polyline points="100,290 160,290 160,250 260,250 280,290 340,290 360,330
+                       400,330 420,290 540,290 560,250 640,250 660,290 700,290
+                       720,330 760,330 780,290 880,290 900,250 1000,250 1020,290 1130,290"
+              class="diag-edge" style="stroke: var(--bone-soft); stroke-width: 1.5;" fill="none"/>
+
+    <!-- JobStatus state labels -->
+    <text x="200" y="240" class="diag-text tiny patina" text-anchor="middle">RUNNING</text>
+    <text x="380" y="320" class="diag-text tiny" style="fill:var(--vermillion);" text-anchor="middle">FAILED (spot kill)</text>
+    <text x="600" y="240" class="diag-text tiny patina" text-anchor="middle">RUNNING</text>
+    <text x="740" y="320" class="diag-text tiny" style="fill:var(--vermillion);" text-anchor="middle">FAILED (spot kill)</text>
+    <text x="940" y="240" class="diag-text tiny patina" text-anchor="middle">RUNNING (new cluster)</text>
+
+    <!-- Recovery arrows from lower to upper -->
+    <g class="recoveries">
+      <path d="M 400 305 Q 400 200 400 130" class="diag-edge dashed" marker-end="url(#ah6r)" style="stroke: var(--vermillion);"/>
+      <text x="408" y="220" class="diag-text tiny" style="fill:var(--vermillion);">recovery_strategy</text>
+      <text x="408" y="234" class="diag-text tiny" style="fill:var(--vermillion);">.recover()</text>
+
+      <path d="M 760 305 Q 760 200 760 130" class="diag-edge dashed" marker-end="url(#ah6r)" style="stroke: var(--vermillion);"/>
+      <text x="768" y="220" class="diag-text tiny" style="fill:var(--vermillion);">recover()</text>
+    </g>
+
+    <!-- Time markers -->
+    <line x1="380" y1="378" x2="380" y2="382" stroke="var(--vermillion)"/>
+    <text x="380" y="368" class="diag-text tiny" style="fill:var(--vermillion);" text-anchor="middle">preempt₁</text>
+
+    <line x1="740" y1="378" x2="740" y2="382" stroke="var(--vermillion)"/>
+    <text x="740" y="368" class="diag-text tiny" style="fill:var(--vermillion);" text-anchor="middle">preempt₂</text>
+
+    <!-- Title -->
+    <text x="600" y="40" text-anchor="middle" class="diag-text head" style="font-size: 16px;">A managed job <tspan font-style="italic" fill="#d4a76a">survives two spot preemptions</tspan></text>
+    <text x="600" y="60" text-anchor="middle" class="diag-text muted">Top lane (controller view): one continuous RUNNING. Bottom lane (cluster view): three RUNNING phases on three different clusters.</text>
+  </svg>
+  <div class="caption">
+    用户看到的"一个 job 跑了 6 小时"是上层平直的红线；底下其实是三段独立的 cluster 生命周期，每次抢占触发 <code>recovery_strategy.recover()</code> 重新 provision + sync + setup + exec。两层状态机的隔离让"长跑作业"变成可能。
+  </div>
+</section>
+
+<!-- ====== M9 ====== -->
+<section id="m9">
+  <h2><span class="num">§ M9 · 35 min</span>SkyServe, <em>scaling out.</em></h2>
+
+  <p>
+    SkyServe 是模型 serving 子系统 — 把 N 个 replica 跑在多云多区，自动扩缩，路由请求。结构上跟 Managed Jobs 镜像对称：每个 service 有独立的 controller VM，下面挂 K 个 replica VM，外加一个独立的 load balancer 进程负责把流量分发到健康的 replica。
+  </p>
+
+  <table>
+    <thead><tr><th>File</th><th>Lines</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>controller.py</code></td><td>297</td><td>service 生命周期</td></tr>
+      <tr><td><code>replica_managers.py</code></td><td>1,564</td><td>★ replica 健康监控 + 自愈</td></tr>
+      <tr><td><code>autoscalers.py</code></td><td>1,288</td><td>QueueLengthAutoscaler 等扩缩策略</td></tr>
+      <tr><td><code>load_balancer.py</code></td><td>342</td><td>FastAPI 进程，路由 HTTP</td></tr>
+      <tr><td><code>load_balancing_policies.py</code></td><td>262</td><td>round_robin / least_load / 等</td></tr>
+      <tr><td><code>spot_placer.py</code></td><td>281</td><td>replica 在 spot 上的放置策略</td></tr>
+      <tr><td><code>service_spec.py</code></td><td>661</td><td>YAML schema</td></tr>
+      <tr><td><code>serve_state.py</code></td><td>835</td><td>state DB</td></tr>
+      <tr><td><code>serve_utils.py</code></td><td>1,934</td><td>helpers</td></tr>
+    </tbody>
+  </table>
+
+  <p>关键发现：load balancer 自己<strong>就是一个 FastAPI 进程</strong>（<code>load_balancer.py:53</code>: <code>self._app = fastapi.FastAPI()</code>），跑在 controller VM 上。意味着 user request 的 hot path 是 <code>client → LB FastAPI → replica HTTP server</code>，多一跳但代价可控（同 VM 内）。</p>
+
+  <p><code>spot_placer.py</code> 是个有趣的独立模块 — 它<em>不</em>复用 Optimizer 的 ILP 逻辑，而是有专门策略：<strong>把 replica 分散在不同 region / zone，降低"同一时刻全军覆没"的概率</strong>。这是 serving 特有的可用性考虑。</p>
+
+  <p>Autoscaler 用 <code>AutoscalerDecisionOperator</code> 二元决策（SCALE_UP / SCALE_DOWN）+ <code>AutoscalerDecision(operator, target)</code> 数据类。<code>QueueLengthAutoscaler</code> 是一个具体实现 — 看队列深度做扩缩。这种"decision + operator"结构方便插入新策略（QPS / latency / GPU util）。</p>
+</section>
+
+<!-- =============== TRAPS =============== -->
+<section id="traps">
+  <h2><span class="num">§ Traps · five of them</span>What I wish I'd known.</h2>
+
+  <p class="lede">新人最容易栽的五个坑 — 如果你将来读源码、做改动、或者跟 SkyPilot 团队提 PR，先记住这几条。</p>
+
+  <div class="trap">
+    <div class="label">Trap № 1 · The "Ray" pun</div>
+    <p><code>cloud_vm_ray_backend.py</code> 里的 "Ray" 不是分布式训练 Ray，是借 <a href="https://ray.io">ray.io</a> 的 cluster launcher 管 VM。<code>sky/skylet/ray_patches/</code> 子目录可以确认 — 那是他们对 Ray cluster launcher 的私有 patch。SkyPilot 早期是 Ray 的扩展，独立后还沿用了 Ray 的 VM 编排底层。</p>
+  </div>
+
+  <div class="trap">
+    <div class="label">Trap № 2 · Four <code>state.py</code> files</div>
+    <p>这是新人必混的：</p>
+    <ul>
+      <li><code>sky/skylet/job_lib.py</code> — 节点本地 job DB</li>
+      <li><code>sky/jobs/state.py</code> — managed job 全局 DB（在 jobs controller 上）</li>
+      <li><code>sky/serve/serve_state.py</code> — serving 状态</li>
+      <li><code>sky/server/state.py</code> — API server 状态</li>
+    </ul>
+    <p>四个不同 FSM，对应 4 个不同层级的 job 概念。读 M7 / M8 / M9 时画一张对照表别忘了。</p>
+  </div>
+
+  <div class="trap">
+    <div class="label">Trap № 3 · <code>_fill_in_env_vars</code> 不只是字符串替换</div>
+    <p>看似只是 <code>${VAR}</code> 替换，实际上还涉及 secrets 不写日志、Docker 登录凭证不进 envs、和 file_mounts/storage/service/volumes 的多场景调用。它是个安全边界，不是无脑替换 — 加 plugin 时如果你引入新的"需要替换 env vars 的字段"，记得调它。</p>
+  </div>
+
+  <div class="trap">
+    <div class="label">Trap № 4 · Optimizer 在 server 端跑（不在 client）</div>
+    <p>直觉很容易反过来想 — client 上有 PuLP 也能跑啊。但 catalog 数据（pricing / availability CSV）在 server 端容器里，client 不背这个重，所以 OPTIMIZE 是 server 端 executor 子进程里跑的。这点决定了：(1) catalog 同步策略只发生在 server 上，(2) client 想"先看看代价"得发请求到 server。</p>
+  </div>
+
+  <div class="trap">
+    <div class="label">Trap № 5 · Plugin 机制隐式调用</div>
+    <p><code>register_task_validator</code> · <code>sky/server/plugins.py</code> · <code>plugin_hooks.py</code> — SkyPilot 有完整 plugin 体系，但不在主流程显式调用，靠装饰器 + entry_points + module import 副作用触发。读代码时看到"这函数貌似没人调"，先怀疑是 plugin hook。</p>
+  </div>
+</section>
+
+<!-- =============== RED LINES =============== -->
+<section id="redlines">
+  <h2><span class="num">§ Red lines · three</span>The big questions.</h2>
+
+  <p class="lede">读完整套源码，你应该能口头回答这三个大问题。每个红线问题贯穿多个模块，是真正的"懂了"指标。</p>
+
+  <div class="qa">
+    <div class="q">如果要给 SkyPilot 加一个新云后端（比如 AMD ROCm 集群、或 Nebius / Crusoe 这种 neocloud），要改哪些文件？按什么顺序？</div>
+    <div class="a">
+      <p>这是<strong>对你 AMD 工作直接相关</strong>的红线。读完 M5 / M6 / M7 你应该能列出：</p>
+      <ol>
+        <li><code>sky/clouds/&lt;new&gt;.py</code> — 实现 <code>Cloud</code> 抽象基类的 14 个抽象方法</li>
+        <li><code>sky/catalog/&lt;new&gt;_catalog.py</code> — 提供 pricing / availability（给 Optimizer 喂价格矩阵）</li>
+        <li><code>sky/provision/&lt;new&gt;/</code> — 实现节点起停的低层逻辑</li>
+        <li><code>sky/clouds/__init__.py</code> — 注册新云别名（让 <code>sky.MyCloud</code> 能用）</li>
+        <li><code>sky/check.py</code> — 加上凭证检查（<code>sky check</code> 能识别新云）</li>
+        <li>（可选）<code>sky/serve/spot_placer.py</code> — 如果新云有 spot，注册放置策略</li>
+        <li>（可选）<code>sky/dashboard/</code> — Web UI 里显示新云的图标和元数据</li>
+      </ol>
+      <p style="margin-top: 14px;">CLAUDE.md 官方的"Adding a new cloud provider"流程是 4 步（前 3 步 + 第 4 步），实际工作量通常落在 1+3+5 — 见下方 Plate VII。</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q">一条 <code>sky launch foo.yaml</code> 命令，从按下回车到 VM 上 run 起来，跨越多少个进程、几次 RPC、几次 SSH？</div>
+    <div class="a">
+      <p>读完整个 repo 你应该能画一张时序图：</p>
+      <p style="margin-top: 8px;"><strong>进程</strong>：terminal → CLI Python 进程 → SDK 同进程 → server FastAPI 进程 → executor spawn 的子进程 → ray launcher 在 client VM 起子进程 → 云 SDK 调云 API 起 VM → cloud-init 在 VM 上拉 skylet → skylet 起 4 个 gRPC service。<strong>共 9 个 Python 进程边界。</strong></p>
+      <p><strong>RPC / 网络</strong>：CLI → server 1 次 HTTP POST + N 次 stream/poll；server → 云 API 数十次；server SSH → VM 数次（rsync workdir、装依赖、提交 job）；backend → skylet gRPC 数次。<strong>核心路径约 5 类网络协议</strong>：HTTP、云厂商 REST API、SSH、gRPC、object storage upload/download。</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q">SkyPilot 的核心抽象到底是什么？Task / Resources / Cluster — 设计者把"状态"放在了哪一层？</div>
+    <div class="a">
+      <p>三分法明显：</p>
+      <ul>
+        <li><strong>Task</strong> 是<em>无状态请求</em>（值对象）— 一次 launch 对应一个 Task，请求结束生命周期结束</li>
+        <li><strong>Resources</strong> 是<em>规格不可变值对象</em>（functional update via <code>.copy(**override)</code>）— 描述"想要什么"</li>
+        <li><strong>Cluster</strong> 是<em>带状态实体</em>（DB 在 <code>sky/server/state.py</code> 和 <code>sky/skylet/job_lib.py</code>）— 描述"现在是什么"</li>
+      </ul>
+      <p style="margin-top: 12px;">这种"请求 / 规格 / 实体"三分法是后续可以借鉴到你的 multi-agent kernel optimization 系统的核心设计原则。你的 kernel optimization 任务（Task）应该是无状态的、可重放的；硬件 + 软件配置（Resources）应该是不可变值对象，可以快速枚举变体；实际跑起来的 agent worker（Cluster 类比）才有状态、需要 DB。</p>
+    </div>
+  </div>
+</section>
+
+<!-- =============== PLATE VII: ADDING A NEW CLOUD =============== -->
+<section id="amd" class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate VII — Adding an AMD ROCm cloud</span>
+    <span class="name">file-by-file</span>
+    <span class="scale">for Jhin</span>
+  </div>
+  <svg viewBox="0 0 1200 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Adding a new cloud — file changes">
+    <defs>
+      <marker id="ah7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a76a"/>
+      </marker>
+    </defs>
+
+    <!-- File tree on the left -->
+    <g transform="translate(40, 40)">
+      <text x="0" y="0" class="diag-text head" style="fill:var(--bone);">sky/</text>
+      <text x="20" y="22" class="diag-text">├── clouds/</text>
+      <text x="40" y="40" class="diag-text" style="fill:var(--rust); font-weight: 600;">│   ├── amd_rocm.py</text>
+      <text x="180" y="40" class="diag-text tiny brass">[1] NEW</text>
+      <text x="40" y="58" class="diag-text muted">│   ├── aws.py · gcp.py · k8s.py ...</text>
+      <text x="40" y="76" class="diag-text" style="fill:var(--rust);">│   └── __init__.py · register here</text>
+      <text x="180" y="76" class="diag-text tiny brass">[4] EDIT</text>
+
+      <text x="20" y="100" class="diag-text">├── catalog/</text>
+      <text x="40" y="118" class="diag-text" style="fill:var(--rust); font-weight: 600;">│   └── amd_rocm_catalog.py</text>
+      <text x="180" y="118" class="diag-text tiny brass">[2] NEW</text>
+
+      <text x="20" y="142" class="diag-text">├── provision/</text>
+      <text x="40" y="160" class="diag-text" style="fill:var(--rust); font-weight: 600;">│   └── amd_rocm/</text>
+      <text x="180" y="160" class="diag-text tiny brass">[3] NEW</text>
+      <text x="60" y="178" class="diag-text muted">│       ├── __init__.py</text>
+      <text x="60" y="196" class="diag-text muted">│       ├── config.py</text>
+      <text x="60" y="214" class="diag-text muted">│       ├── instance.py</text>
+      <text x="60" y="232" class="diag-text muted">│       └── utils.py</text>
+
+      <text x="20" y="256" class="diag-text" style="fill:var(--rust);">├── check.py  · cred discovery</text>
+      <text x="180" y="256" class="diag-text tiny brass">[5] EDIT</text>
+
+      <text x="20" y="280" class="diag-text muted">├── serve/spot_placer.py · optional</text>
+      <text x="180" y="280" class="diag-text tiny muted">[6] OPT</text>
+
+      <text x="20" y="304" class="diag-text muted">└── dashboard/ · UI icons</text>
+      <text x="180" y="304" class="diag-text tiny muted">[7] OPT</text>
+    </g>
+
+    <!-- Arrow to flow -->
+    <line class="diag-edge brass" x1="380" y1="170" x2="500" y2="170" marker-end="url(#ah7)"/>
+    <text x="440" y="160" class="diag-text tiny brass" text-anchor="middle">implement</text>
+
+    <!-- Required Cloud abstract methods -->
+    <g transform="translate(540, 60)">
+      <rect width="620" height="260" fill="rgba(212,167,106,0.04)" stroke="var(--brass)" stroke-width="1"/>
+      <text x="310" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--brass); font-size: 14px;">14 abstract methods to implement on AmdRocm(Cloud)</text>
+      <text x="310" y="38" text-anchor="middle" class="diag-text tiny muted">these are the entry points the Optimizer / Backend will call</text>
+
+      <g transform="translate(20, 58)">
+        <text class="diag-text tiny brass">▸ regions_with_offering</text>
+        <text x="0" y="14" class="diag-text tiny muted">return [Region("us-mi300x-1")] etc.</text>
+      </g>
+      <g transform="translate(220, 58)">
+        <text class="diag-text tiny brass">▸ zones_provision_loop</text>
+        <text x="0" y="14" class="diag-text tiny muted">iterate retry zones</text>
+      </g>
+      <g transform="translate(420, 58)">
+        <text class="diag-text tiny brass">▸ instance_type_to_hourly_cost</text>
+        <text x="0" y="14" class="diag-text tiny muted">$ per hour for each instance</text>
+      </g>
+
+      <g transform="translate(20, 100)">
+        <text class="diag-text tiny brass">▸ accelerators_to_hourly_cost</text>
+        <text x="0" y="14" class="diag-text tiny muted">$/h for MI300X · MI355X</text>
+      </g>
+      <g transform="translate(220, 100)">
+        <text class="diag-text tiny brass">▸ get_egress_cost</text>
+        <text x="0" y="14" class="diag-text tiny muted">data out pricing</text>
+      </g>
+      <g transform="translate(420, 100)">
+        <text class="diag-text tiny brass">▸ make_deploy_resources_variables</text>
+        <text x="0" y="14" class="diag-text tiny muted">fill Ray YAML template</text>
+      </g>
+
+      <g transform="translate(20, 142)">
+        <text class="diag-text tiny brass">▸ get_vcpus_mem_from_instance_type</text>
+        <text x="0" y="14" class="diag-text tiny muted">→ (192, 2304 GB) for MI300X</text>
+      </g>
+      <g transform="translate(220, 142)">
+        <text class="diag-text tiny brass">▸ get_accelerators_from_instance_type</text>
+        <text x="0" y="14" class="diag-text tiny muted">→ {"MI300X": 8}</text>
+      </g>
+      <g transform="translate(420, 142)">
+        <text class="diag-text tiny brass">▸ get_default_instance_type</text>
+        <text x="0" y="14" class="diag-text tiny muted">default pick logic</text>
+      </g>
+
+      <g transform="translate(20, 184)">
+        <text class="diag-text tiny brass">▸ _get_feasible_launchable_resources</text>
+        <text x="0" y="14" class="diag-text tiny muted">pre-filter for Optimizer</text>
+      </g>
+      <g transform="translate(220, 184)">
+        <text class="diag-text tiny brass">▸ get_credential_file_mounts</text>
+        <text x="0" y="14" class="diag-text tiny muted">~/.amd/credentials mount</text>
+      </g>
+      <g transform="translate(420, 184)">
+        <text class="diag-text tiny brass">▸ _unsupported_features_for_resources</text>
+        <text x="0" y="14" class="diag-text tiny muted">mark autostop / spot if unsupported</text>
+      </g>
+
+      <g transform="translate(20, 226)">
+        <text class="diag-text tiny brass">▸ query_status</text>
+        <text x="0" y="14" class="diag-text tiny muted">cluster state from AMD api</text>
+      </g>
+      <g transform="translate(220, 226)">
+        <text class="diag-text tiny brass">▸ get_zone_shell_cmd</text>
+        <text x="0" y="14" class="diag-text tiny muted">e.g. echo $AMD_ZONE</text>
+      </g>
+    </g>
+
+    <!-- Tip box -->
+    <g transform="translate(540, 360)">
+      <rect width="620" height="120" fill="rgba(108,176,170,0.04)" stroke="var(--patina)" stroke-width="1"/>
+      <text x="20" y="22" class="diag-text head" style="fill:var(--patina); font-size: 13px;">Tip · copy aws.py or kubernetes.py as scaffold</text>
+      <text x="20" y="44" class="diag-text" style="fill:var(--bone-soft); font-size: 12px;">aws.py (1,712 lines) is the most mature reference for "real cloud with regions/zones/spot".</text>
+      <text x="20" y="60" class="diag-text" style="fill:var(--bone-soft); font-size: 12px;">kubernetes.py (1,491 lines) is the reference for "no real regions, just one giant pool" — closer to your AMD on-prem cluster.</text>
+      <text x="20" y="82" class="diag-text" style="fill:var(--bone-soft); font-size: 12px;">For AMD ROCm on-prem clusters: start from kubernetes.py + selectively re-add zones if you have multi-DC deployment.</text>
+      <text x="20" y="104" class="diag-text tiny muted">Estimated effort: 2-3 days for a working prototype, 1-2 weeks for production-grade with all 14 methods + tests.</text>
+    </g>
+  </svg>
+  <div class="caption">
+    第 1、2、3 步是新文件，第 4、5 步是修改现有文件，第 6、7 步可选。如果你的 AMD 集群是 K8s 上跑（CSP 风格），最简方式是<em>直接用 SkyPilot 已有的 kubernetes 后端</em>，不需要新写 cloud —— 只需在 K8s 上 deploy SkyPilot helm chart，集群就能被 <code>sky launch --infra k8s</code> 调度。
+  </div>
+</section>
+
+<!-- ====== EPILOGUE ====== -->
+<section id="epilogue">
+  <div class="section-rule">
+    <div class="line"></div>
+    <div class="glyph">⤬</div>
+    <div class="line"></div>
+  </div>
+
+  <h2><span class="num">§ Epilogue</span>What we found, <em>and what's next.</em></h2>
+
+  <p>
+    SkyPilot 不是一个云抽象层；它是一个<strong>三段式分布式系统</strong>（client / API server / VM agent），中间用一个 9-stage 流水线把"用户意图"翻译成"VM 上跑的进程"。它的工程价值不是哪一个具体算法（虽然 Optimizer 的 DP+ILP 混合很漂亮），而是<strong>边界清晰</strong> — Task 是请求、Resources 是规格、Backend 是执行契约、Cloud 是多态被调用方、Skylet 是节点上的事件循环、Managed Jobs 是两层状态机吸收瞬态故障、SkyServe 是多副本拓扑。每一层的职责锐利分明，加新功能（新云、新调度策略、新 serving 拓扑）有清晰的接入点。
+  </p>
+
+  <p>
+    对你 multi-agent kernel optimization 系统的几个直接借鉴：
+  </p>
+
+  <ul>
+    <li><strong>异步 request_id 模式</strong> — agent 任务投递返回 ID，长跑用 stream/poll 拿结果。直接照搬 <code>sky/server/requests/executor.py</code> 的 spawn 多进程模式。</li>
+    <li><strong>JSON 中转字符串替换</strong> — agent 配置里的 <code>${MI300X_HOSTS}</code> 模板替换，三行代码搞定，参考 M1 的 <code>_fill_in_env_vars</code>。</li>
+    <li><strong>两层状态机吸收抖动</strong> — kernel benchmark 偶发 OOM / driver hang 应该被下层状态机吸收，agent 任务的上层状态保持稳定。参考 M8 的 JobStatus vs ManagedJobStatus。</li>
+    <li><strong>"daemon 是 wiring, logic 在 lib"</strong> — agent worker 本体保持 100 行级别，把 benchmark / profile / analysis 拆成独立 lib。参考 M7 的 skylet 107 行。</li>
+    <li><strong>插件化 validator / strategy</strong> — recovery strategy 可插拔，task validator 可注册。给你的 kernel optimization 加新策略时不要 fork 主代码，靠 plugin 注册。参考 <code>register_task_validator</code> 和 <code>recovery_strategy.py</code>。</li>
+  </ul>
+
+  <p style="margin-top: 40px;">— Fin.</p>
+</section>
+
+</main>
+</div>
+
+<footer class="colophon">
+  <div class="row">
+    <div class="col">
+      <h5>Colophon</h5>
+      <p>Source: github.com/skypilot-org/skypilot</p>
+      <p>Commit: f8bb042 · master · 2026-05-12</p>
+      <p>Reading: 6.5h across 4 sessions</p>
+      <p>Total lines surveyed: 211,510</p>
+    </div>
+    <div class="col">
+      <h5>Typography</h5>
+      <p>Display — Fraunces, var. opsz/wght</p>
+      <p>Body — Geist Sans</p>
+      <p>Mono — JetBrains Mono</p>
+    </div>
+    <div class="col">
+      <h5>Palette</h5>
+      <p>ink · bone · rust · brass · patina · vermillion</p>
+      <p>after engineering blueprints, ca. 1962</p>
+    </div>
+    <div class="col">
+      <h5>Compiled for</h5>
+      <p>Jhin Pan · AMD Spring 2026 Intern</p>
+      <p>MAS for Kernel Optimization</p>
+      <p>panjin1221@gmail.com</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

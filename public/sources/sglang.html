@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGLang — Source Reading No. 002</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f4ede0;
+  --paper-elev: #ece2cc;
+  --paper-deep: #e3d6b8;
+  --rule: #d4c5a3;
+  --rule-soft: #e0d3b3;
+
+  --ink: #1a1612;
+  --ink-mid: #4a4232;
+  --ink-dim: #7d745f;
+  --ink-faint: #b8ad8f;
+
+  --cobalt: #1e4a8a;
+  --cobalt-soft: #4c75b8;
+  --crimson: #a8312d;
+  --crimson-soft: #c85a55;
+  --ochre: #b5800c;
+  --ochre-soft: #d4a73a;
+  --moss: #4a6b3e;
+  --moss-soft: #6b8a5c;
+
+  --serif: 'DM Serif Display', 'Times New Roman', serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --max-content: 720px;
+  --rail-w: 200px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.65;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  background-image:
+    /* paper grain */
+    radial-gradient(circle at 23% 47%, rgba(58, 45, 20, 0.025) 0.5px, transparent 1px),
+    radial-gradient(circle at 71% 81%, rgba(58, 45, 20, 0.02) 0.5px, transparent 1px),
+    radial-gradient(circle at 13% 92%, rgba(58, 45, 20, 0.018) 0.5px, transparent 1px);
+  background-size: 17px 17px, 23px 23px, 31px 31px;
+}
+
+/* Subtle paper fiber texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0 0.08 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+
+/* ============ COVER / MASTHEAD ============ */
+.cover {
+  position: relative;
+  padding: 64px 56px 80px;
+  border-bottom: 2px solid var(--ink);
+  max-width: 1320px;
+  margin: 0 auto;
+  z-index: 1;
+}
+/* Decorative horizontal hairline below masthead */
+.cover::after {
+  content: '';
+  position: absolute;
+  bottom: 16px;
+  left: 56px;
+  right: 56px;
+  height: 1px;
+  background: var(--ink-dim);
+}
+
+.cover .top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink-mid);
+  margin-bottom: 48px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink);
+  text-transform: uppercase;
+}
+.cover .top-bar .left { color: var(--crimson); font-weight: 600; }
+.cover .top-bar .center { color: var(--ink); }
+.cover .top-bar .right { color: var(--cobalt); font-weight: 600; }
+
+.cover h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(72px, 11vw, 156px);
+  line-height: 0.88;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--ink);
+}
+.cover h1 .sg {
+  color: var(--cobalt);
+  font-style: italic;
+}
+.cover h1 .lang {
+  color: var(--crimson);
+  font-style: italic;
+}
+.cover h1 .dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: var(--ochre);
+  border-radius: 50%;
+  vertical-align: 0.45em;
+  margin: 0 8px;
+}
+
+.cover .blurb {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(22px, 2.3vw, 30px);
+  line-height: 1.32;
+  color: var(--ink-mid);
+  margin: 36px 0 0;
+  max-width: 760px;
+  letter-spacing: -0.005em;
+}
+
+.cover .lab-stamp {
+  position: absolute;
+  top: 100px;
+  right: 64px;
+  width: 140px;
+  height: 140px;
+  border: 2px solid var(--crimson);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--crimson);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-align: center;
+  transform: rotate(-8deg);
+  background: var(--paper);
+  opacity: 0.92;
+}
+.cover .lab-stamp .big {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  margin: 4px 0;
+  color: var(--crimson);
+}
+@media (max-width: 720px) { .cover .lab-stamp { display: none; } }
+
+.cover .specsheet {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  margin-top: 56px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+.cover .specsheet .field {
+  padding: 16px 14px;
+  border-right: 1px dashed var(--ink-faint);
+}
+.cover .specsheet .field:last-child { border-right: none; }
+.cover .specsheet .lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.cover .specsheet .val {
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.cover .specsheet .val .u {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  margin-left: 4px;
+}
+@media (max-width: 980px) {
+  .cover .specsheet { grid-template-columns: repeat(3, 1fr); }
+  .cover .specsheet .field:nth-child(3n) { border-right: none; }
+}
+@media (max-width: 540px) {
+  .cover .specsheet { grid-template-columns: repeat(2, 1fr); }
+  .cover .specsheet .field { border-right: 1px dashed var(--ink-faint); }
+  .cover .specsheet .field:nth-child(2n) { border-right: none; }
+}
+
+/* ============ LAYOUT ============ */
+.shell {
+  position: relative;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 56px;
+  z-index: 1;
+}
+
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 80px auto;
+}
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 48px 24px;
+  border-right: 1px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--paper-elev) 100%);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--ink-faint); }
+
+.rail .brand {
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.rail .brand .sg { color: var(--cobalt); font-style: italic; }
+.rail .brand .lang { color: var(--crimson); font-style: italic; }
+.rail .ref {
+  font-size: 10px;
+  color: var(--ink-dim);
+  margin-bottom: 28px;
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: nav;
+}
+.rail ol li {
+  margin-bottom: 12px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 28px;
+}
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--ochre);
+  font-size: 10px;
+}
+.rail ol li a {
+  color: var(--ink-mid);
+  text-decoration: none;
+  transition: color 0.2s;
+  line-height: 1.3;
+}
+.rail ol li a:hover { color: var(--cobalt); }
+.rail .divider {
+  height: 1px;
+  background: var(--ink-faint);
+  margin: 24px 0;
+}
+
+@media (max-width: 1320px) {
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(44px, 5.5vw, 72px);
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  margin: 112px 0 32px;
+  color: var(--ink);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  color: var(--crimson);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+.article h2 i { color: var(--cobalt); }
+.article h2 em { font-style: italic; color: var(--ochre); }
+
+.article h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 64px 0 18px;
+  color: var(--ink);
+}
+.article h3::before {
+  content: '§';
+  color: var(--crimson);
+  margin-right: 12px;
+  font-style: italic;
+}
+
+.article h4 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin: 40px 0 12px;
+}
+
+.article p {
+  margin: 0 0 20px;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.72;
+}
+.article p strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.article .lede {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 52px;
+  max-width: 640px;
+}
+.article .lede::first-letter {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 96px;
+  line-height: 0.78;
+  float: left;
+  margin: 12px 16px 0 -6px;
+  color: var(--crimson);
+}
+
+.article a {
+  color: var(--cobalt);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(30,74,138,0.3);
+  transition: all 0.2s;
+}
+.article a:hover {
+  color: var(--crimson);
+  border-bottom-color: var(--crimson);
+}
+
+.article ul, .article ol {
+  padding-left: 24px;
+  margin: 0 0 24px;
+}
+.article li { margin-bottom: 10px; line-height: 1.62; color: var(--ink); }
+.article ul li::marker { color: var(--crimson); }
+.article ol li::marker { color: var(--cobalt); font-weight: 600; }
+
+/* inline code */
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--paper-elev);
+  border: 1px solid var(--rule);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--cobalt);
+  font-weight: 500;
+}
+
+/* code block */
+pre {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  background: var(--paper-elev);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--cobalt);
+  padding: 20px 24px;
+  margin: 24px 0;
+  overflow-x: auto;
+  position: relative;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink);
+}
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+/* ============ COMPONENTS ============ */
+
+/* Lab insight (annotated callout in cobalt) */
+.note {
+  position: relative;
+  margin: 36px 0;
+  padding: 24px 28px 24px 56px;
+  background: rgba(30, 74, 138, 0.05);
+  border-left: 3px solid var(--cobalt);
+}
+.note::before {
+  content: 'N°';
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--cobalt);
+  font-size: 16px;
+}
+.note .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cobalt);
+  margin-bottom: 8px;
+}
+.note p { margin: 0; font-size: 15.5px; line-height: 1.66; }
+.note p + p { margin-top: 12px; }
+
+/* Marginal correction in crimson (sticky-note feel) */
+.correction {
+  margin: 28px 0;
+  padding: 18px 22px;
+  background: rgba(168,49,45,0.04);
+  border: 1px solid var(--crimson);
+  border-left: 3px solid var(--crimson);
+  position: relative;
+}
+.correction::before {
+  content: '✕';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  color: var(--crimson);
+  font-family: var(--serif);
+  font-size: 14px;
+}
+.correction .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 6px;
+}
+
+/* Big metric strip */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0;
+  border: 1px solid var(--ink);
+  margin: 32px 0;
+}
+.metrics .cell {
+  padding: 22px 20px;
+  border-right: 1px dashed var(--ink-faint);
+  background: var(--paper);
+}
+.metrics .cell:last-child { border-right: none; }
+.metrics .cell .num {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.metrics .cell .num .accent { color: var(--crimson); font-style: italic; }
+.metrics .cell .lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+/* Plate (diagram container) */
+.plate {
+  position: relative;
+  margin: 80px 0 64px;
+}
+.plate .plate-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--ink);
+}
+.plate .plate-meta .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--crimson);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.plate .plate-meta .name {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink);
+}
+.plate .plate-meta .scale {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 0.12em;
+}
+.plate svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--paper-elev);
+  border: 1px solid var(--ink);
+}
+.plate .caption {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-mid);
+  margin-top: 14px;
+  padding-left: 18px;
+  border-left: 2px solid var(--crimson);
+}
+
+.plate.wide {
+  margin-left: calc(-1 * (1320px - var(--max-content)) / 2 + 56px);
+  margin-right: calc(-1 * (1320px - var(--max-content)) / 2 + 56px);
+  max-width: none;
+}
+@media (max-width: 1320px) {
+  .plate.wide { margin-left: 0; margin-right: 0; }
+}
+
+/* Table — academic style */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 14px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--crimson);
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
+}
+td { color: var(--ink); }
+td code { font-size: 12px; padding: 0 4px; }
+
+/* Footnote-style ref */
+sup.ref {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--cobalt);
+  vertical-align: super;
+  font-weight: 600;
+}
+
+/* Section divider */
+.rule {
+  display: flex;
+  align-items: center;
+  margin: 96px 0 0;
+}
+.rule .line { flex: 1; height: 1px; background: var(--ink); }
+.rule .glyph {
+  margin: 0 24px;
+  font-family: var(--serif);
+  color: var(--crimson);
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: 0.3em;
+}
+
+/* QA */
+.qa {
+  margin: 28px 0 40px;
+  padding: 24px;
+  background: var(--paper-elev);
+  border: 1px solid var(--ink);
+  border-top: 2px solid var(--cobalt);
+}
+.qa .q {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0 0 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--ink-faint);
+}
+.qa .q::before {
+  content: 'Q.';
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--crimson);
+  margin-right: 12px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+.qa .a { font-size: 15px; color: var(--ink); }
+.qa .a::before {
+  content: 'A.';
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--cobalt);
+  margin-right: 12px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+
+/* Stagger fade-in */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cover .top-bar { animation: rise 0.5s ease-out both; }
+.cover h1 { animation: rise 0.8s 0.1s ease-out both; }
+.cover .blurb { animation: rise 0.7s 0.3s ease-out both; }
+.cover .specsheet { animation: rise 0.7s 0.45s ease-out both; }
+.cover .lab-stamp { animation: rise 0.6s 0.5s ease-out both; }
+
+/* Colophon */
+.colophon {
+  border-top: 2px solid var(--ink);
+  padding: 56px 56px 80px;
+  max-width: 1320px;
+  margin: 96px auto 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-mid);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+}
+.colophon .row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 32px; }
+.colophon .col h5 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--crimson);
+  margin: 0 0 10px;
+}
+.colophon .col p { margin: 0 0 4px; color: var(--ink-mid); }
+
+/* SVG shared styles */
+.diag-bg { fill: var(--paper-elev); }
+.diag-node rect { fill: var(--paper); stroke: var(--ink); stroke-width: 1.25; }
+.diag-node.cobalt rect { stroke: var(--cobalt); fill: rgba(30,74,138,0.06); }
+.diag-node.crimson rect { stroke: var(--crimson); fill: rgba(168,49,45,0.04); }
+.diag-node.ochre rect { stroke: var(--ochre); fill: rgba(181,128,12,0.06); }
+.diag-node.moss rect { stroke: var(--moss); fill: rgba(74,107,62,0.05); }
+.diag-node.muted rect { stroke: var(--ink-faint); fill: var(--paper); }
+.diag-text { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+.diag-text.head { font-family: var(--serif); font-size: 14px; fill: var(--ink); font-style: italic; }
+.diag-text.cobalt { fill: var(--cobalt); }
+.diag-text.crimson { fill: var(--crimson); }
+.diag-text.ochre { fill: var(--ochre); }
+.diag-text.muted { fill: var(--ink-dim); }
+.diag-text.tiny { font-size: 9.5px; letter-spacing: 0.04em; }
+.diag-edge { stroke: var(--ink-mid); stroke-width: 1.25; fill: none; }
+.diag-edge.cobalt { stroke: var(--cobalt); }
+.diag-edge.crimson { stroke: var(--crimson); }
+.diag-edge.ochre { stroke: var(--ochre); }
+.diag-edge.dashed { stroke-dasharray: 3 4; }
+.diag-edge.dotted { stroke-dasharray: 1.5 3; }
+.diag-num-circle { fill: var(--paper); stroke: var(--crimson); stroke-width: 1.25; }
+.diag-num-text { font-family: var(--mono); font-size: 10px; fill: var(--crimson); font-weight: 700; text-anchor: middle; }
+.zone-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em; fill: var(--ink-dim); text-transform: uppercase; }
+.zone-box { fill: none; stroke: var(--ink); stroke-dasharray: 3 5; stroke-width: 1; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cover { padding: 36px 24px 56px; }
+  .shell { padding: 0 24px; }
+  .article h2 { margin: 72px 0 24px; }
+  .cover .lab-stamp { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <div class="brand"><span class="sg">SG</span><span class="lang">Lang</span></div>
+  <div class="ref">FILE № 002 · 2026.05.12</div>
+
+  <ol>
+    <li><a href="#prologue">Prologue</a></li>
+    <li><a href="#m0">Repo Topology</a></li>
+    <li><a href="#m1">Engine entrypoint</a></li>
+    <li><a href="#m2">IPC · ZMQ mesh</a></li>
+    <li><a href="#m3">Scheduler · 4006 lines</a></li>
+    <li><a href="#m4">Overlap loop</a></li>
+    <li><a href="#m5">RadixCache</a></li>
+    <li><a href="#m6">ModelRunner</a></li>
+    <li><a href="#m7">27 attn backends</a></li>
+    <li><a href="#m8">AITER & ROCm</a></li>
+    <li><a href="#m9">sgl-kernel</a></li>
+  </ol>
+
+  <div class="divider"></div>
+
+  <ol style="counter-reset: nav 11;">
+    <li><a href="#traps">Five Traps</a></li>
+    <li><a href="#redlines">Three Questions</a></li>
+    <li><a href="#amd">AMD playbook</a></li>
+  </ol>
+</nav>
+
+<!-- ============ COVER ============ -->
+<header class="cover">
+
+  <div class="top-bar">
+    <span class="left">▣  Source Reading · File № 002</span>
+    <span class="center">An autopsy of the inference engine</span>
+    <span class="right">SGL-001 / 2026</span>
+  </div>
+
+  <h1><span class="sg">SG</span><span class="dot"></span><span class="lang">Lang</span></h1>
+
+  <p class="blurb">
+    Two threads of control, six&nbsp;ZMQ&nbsp;sockets, twenty-seven attention backends, and a radix tree that turns a chat prefix into a cache hit. A reading of 729,000 lines.
+  </p>
+
+  <div class="lab-stamp">
+    <div>LAB NOTEBOOK</div>
+    <div class="big">SGLang</div>
+    <div>v0.5 · ROCm 7.0</div>
+  </div>
+
+  <div class="specsheet">
+    <div class="field">
+      <div class="lbl">Source</div>
+      <div class="val">728,969<span class="u">loc · py</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl">Scheduler</div>
+      <div class="val">4,006<span class="u">lines · 1 file</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl">Attn backends</div>
+      <div class="val">27<span class="u">incl. AITER</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl">HW targets</div>
+      <div class="val">5<span class="u">NV · AMD · MUSA · Apple · NPU</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl">Kernel pkg</div>
+      <div class="val">sgl-kernel<span class="u">separate wheel</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl">Reading time</div>
+      <div class="val">~6h<span class="u">three sessions</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ARTICLE ============ -->
+<div class="shell">
+<main class="article">
+
+<!-- Prologue -->
+<section id="prologue">
+  <h2><span class="num">§ 00 · Prologue</span>What we're <i>after</i>.</h2>
+
+  <p class="lede">
+    SGLang 这次精读的目标，是把"高吞吐、低延迟、跨硬件"这三件事——分别由 RadixAttention、Continuous Batching with Overlap Scheduling、可插拔 Attention Backend 三大子系统承担——拆开来看个明白。它的源码量比 vLLM 还大；而且不像 PyTorch 那种"按 op/module 切片"的结构，SGLang 是按<em>系统组件</em>切片（tokenizer / scheduler / runner / cache / kernel），所以读起来更像读一个分布式系统。
+  </p>
+
+  <p>
+    精读分 10 个模块（M0 → M9）。本档案是读后的总览：Tokenizer/Scheduler/Workers 的三进程拓扑、ZMQ 消息总线、Overlap 调度器的时间线、RadixCache 的树形结构、27 个 attention backend 中 <code>aiter_backend.py</code> 给 MI300X 提供的入口，以及 <code>sgl-kernel</code> 这个独立 wheel 包的多平台构建系统。
+  </p>
+
+  <div class="metrics">
+    <div class="cell"><div class="num">4,006</div><div class="lbl">scheduler.py</div></div>
+    <div class="cell"><div class="num">3,607</div><div class="lbl">model_runner.py</div></div>
+    <div class="cell"><div class="num">3,284</div><div class="lbl">aiter_backend.py</div></div>
+    <div class="cell"><div class="num">1,349</div><div class="lbl">engine.py</div></div>
+    <div class="cell"><div class="num">828</div><div class="lbl">radix_cache.py</div></div>
+    <div class="cell"><div class="num"><span class="accent">27</span></div><div class="lbl">attn backends</div></div>
+    <div class="cell"><div class="num">19</div><div class="lbl">mem_cache files</div></div>
+    <div class="cell"><div class="num">20+</div><div class="lbl">managers files</div></div>
+  </div>
+</section>
+
+<!-- =============== PLATE I =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate I — Three processes, one engine</span>
+    <span class="name">tokenizer · scheduler · detokenizer, conjoined by ZMQ</span>
+    <span class="scale">1 : ∞</span>
+  </div>
+  <svg viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="SGLang process topology">
+    <defs>
+      <pattern id="gridS1" width="24" height="24" patternUnits="userSpaceOnUse">
+        <path d="M 24 0 L 0 0 0 24" stroke="rgba(26,22,18,0.025)" stroke-width="1" fill="none"/>
+      </pattern>
+      <marker id="ahS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4232"/>
+      </marker>
+      <marker id="ahSc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e4a8a"/>
+      </marker>
+      <marker id="ahSr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a8312d"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="520" fill="url(#gridS1)"/>
+
+    <!-- TITLE -->
+    <text x="600" y="36" text-anchor="middle" class="diag-text head" style="font-size:16px;">launch_server.py → 3 cooperating processes + N worker procs</text>
+
+    <!-- Tokenizer Manager -->
+    <g transform="translate(40, 80)">
+      <rect class="zone-box" x="0" y="0" width="220" height="380"/>
+      <text x="10" y="-8" class="zone-label">Process A · Tokenizer Manager</text>
+
+      <g class="diag-node cobalt" transform="translate(20, 30)">
+        <rect width="180" height="50"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--cobalt);">TokenizerManager</text>
+        <text x="90" y="38" text-anchor="middle" class="diag-text tiny muted">HTTP/FastAPI entry</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 100)">
+        <rect width="180" height="36"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text tiny">HF tokenizer · encode</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 150)">
+        <rect width="180" height="36"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text tiny">req → TokenizedGenerateReqInput</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 200)">
+        <rect width="180" height="36"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text tiny">async response router</text>
+      </g>
+
+      <text x="110" y="290" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">async event loop</text>
+      <text x="110" y="306" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">+ uvicorn server</text>
+
+      <g transform="translate(100, 332)">
+        <circle r="11" cx="0" cy="0" class="diag-num-circle"/>
+        <text x="0" y="3" class="diag-num-text">1</text>
+      </g>
+    </g>
+
+    <!-- Scheduler -->
+    <g transform="translate(320, 80)">
+      <rect class="zone-box" x="0" y="0" width="280" height="380" style="stroke:var(--crimson);"/>
+      <text x="10" y="-8" class="zone-label" style="fill:var(--crimson);">Process B · Scheduler (the heart)</text>
+
+      <g class="diag-node crimson" transform="translate(20, 30)">
+        <rect width="240" height="50"/>
+        <text x="120" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--crimson);">Scheduler</text>
+        <text x="120" y="38" text-anchor="middle" class="diag-text tiny muted">scheduler.py · 4006 lines</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 100)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny">event_loop_normal()</text>
+      </g>
+      <g class="diag-node ochre" transform="translate(20, 144)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny" style="fill:var(--ochre);">event_loop_overlap() ★</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 200)">
+        <rect width="115" height="32"/>
+        <text x="58" y="20" text-anchor="middle" class="diag-text tiny">schedule_policy</text>
+      </g>
+      <g class="diag-node" transform="translate(145, 200)">
+        <rect width="115" height="32"/>
+        <text x="58" y="20" text-anchor="middle" class="diag-text tiny">schedule_batch</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 244)">
+        <rect width="115" height="32"/>
+        <text x="58" y="20" text-anchor="middle" class="diag-text tiny">RadixCache</text>
+      </g>
+      <g class="diag-node" transform="translate(145, 244)">
+        <rect width="115" height="32"/>
+        <text x="58" y="20" text-anchor="middle" class="diag-text tiny">prefill_delayer</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 288)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny">communicator · ZMQ I/O</text>
+      </g>
+
+      <g transform="translate(140, 350)">
+        <circle r="11" cx="0" cy="0" class="diag-num-circle"/>
+        <text x="0" y="3" class="diag-num-text">2</text>
+      </g>
+    </g>
+
+    <!-- Detokenizer -->
+    <g transform="translate(660, 80)">
+      <rect class="zone-box" x="0" y="0" width="200" height="380"/>
+      <text x="10" y="-8" class="zone-label">Process C · Detokenizer</text>
+
+      <g class="diag-node cobalt" transform="translate(20, 30)">
+        <rect width="160" height="50"/>
+        <text x="80" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--cobalt);">DetokenizerManager</text>
+        <text x="80" y="38" text-anchor="middle" class="diag-text tiny muted">incremental decode</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 100)">
+        <rect width="160" height="34"/>
+        <text x="80" y="22" text-anchor="middle" class="diag-text tiny">token_ids → text chunks</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 150)">
+        <rect width="160" height="34"/>
+        <text x="80" y="22" text-anchor="middle" class="diag-text tiny">stop-string detection</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 200)">
+        <rect width="160" height="34"/>
+        <text x="80" y="22" text-anchor="middle" class="diag-text tiny">stream chunk → TokMgr</text>
+      </g>
+
+      <g transform="translate(90, 350)">
+        <circle r="11" cx="0" cy="0" class="diag-num-circle"/>
+        <text x="0" y="3" class="diag-num-text">3</text>
+      </g>
+    </g>
+
+    <!-- Worker processes -->
+    <g transform="translate(920, 80)">
+      <rect class="zone-box" x="0" y="0" width="240" height="380" style="stroke:var(--moss);"/>
+      <text x="10" y="-8" class="zone-label" style="fill:var(--moss);">Process(es) D · TP/EP workers</text>
+
+      <g class="diag-node moss" transform="translate(20, 30)">
+        <rect width="200" height="50"/>
+        <text x="100" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--moss);">ModelRunner</text>
+        <text x="100" y="38" text-anchor="middle" class="diag-text tiny muted">model_runner.py · 3607</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 100)">
+        <rect width="200" height="32"/>
+        <text x="100" y="20" text-anchor="middle" class="diag-text tiny">model.forward(batch)</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 144)">
+        <rect width="200" height="32"/>
+        <text x="100" y="20" text-anchor="middle" class="diag-text tiny">attn_backend (1 of 27)</text>
+      </g>
+      <g class="diag-node ochre" transform="translate(20, 188)">
+        <rect width="200" height="32"/>
+        <text x="100" y="20" text-anchor="middle" class="diag-text tiny" style="fill:var(--ochre);">CUDAGraphRunner ★</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 232)">
+        <rect width="200" height="32"/>
+        <text x="100" y="20" text-anchor="middle" class="diag-text tiny">memory_pool (KV cache)</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 276)">
+        <rect width="200" height="32"/>
+        <text x="100" y="20" text-anchor="middle" class="diag-text tiny">sampling (logits → tokens)</text>
+      </g>
+
+      <text x="120" y="338" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">N processes for TP/EP</text>
+
+      <g transform="translate(120, 350)">
+        <circle r="11" cx="0" cy="0" class="diag-num-circle"/>
+        <text x="0" y="3" class="diag-num-text">4</text>
+      </g>
+    </g>
+
+    <!-- ZMQ buses -->
+    <line class="diag-edge cobalt" x1="260" y1="115" x2="316" y2="115" marker-end="url(#ahSc)"/>
+    <text x="288" y="106" text-anchor="middle" class="diag-text tiny cobalt">ZMQ PUSH</text>
+    <line class="diag-edge crimson" x1="600" y1="115" x2="656" y2="115" marker-end="url(#ahSr)"/>
+    <text x="628" y="106" text-anchor="middle" class="diag-text tiny crimson">ZMQ PUSH</text>
+    <line class="diag-edge cobalt" x1="656" y1="160" x2="600" y2="160" marker-end="url(#ahSc)"/>
+    <text x="628" y="151" text-anchor="middle" class="diag-text tiny cobalt">ZMQ PUSH</text>
+    <line class="diag-edge cobalt" x1="316" y1="160" x2="260" y2="160" marker-end="url(#ahSc)"/>
+    <text x="288" y="151" text-anchor="middle" class="diag-text tiny cobalt">ZMQ PUSH</text>
+
+    <line class="diag-edge crimson dashed" x1="600" y1="250" x2="916" y2="250" marker-end="url(#ahSr)"/>
+    <text x="758" y="241" text-anchor="middle" class="diag-text tiny crimson">tensor IPC + ZMQ (req batch)</text>
+    <line class="diag-edge crimson dashed" x1="916" y1="290" x2="600" y2="290" marker-end="url(#ahSr)"/>
+    <text x="758" y="281" text-anchor="middle" class="diag-text tiny crimson">output tokens (per step)</text>
+  </svg>
+  <div class="caption">
+    四个进程（或进程组），<strong>由 ZMQ 消息总线串起来</strong>。Tokenizer 是 user-facing HTTP 入口；Scheduler 是大脑（4006 行）；Detokenizer 增量解码；Worker 是 N 个真正跑模型的进程（TP/EP 拆分）。Tokenizer 与 Scheduler 之间走 ZMQ <em>PUSH</em>，Scheduler ↔ Worker 之间是更高带宽的 tensor IPC + ZMQ 控制信令。
+  </div>
+</section>
+
+<!-- M0 -->
+<section id="m0">
+  <h2><span class="num">§ M0 · 20 min</span>The lab,&nbsp;<em>laid out.</em></h2>
+
+  <p>
+    SGLang 不是单包仓库 — 顶层就有 <code>python/</code>（Python 主包）+ <code>sgl-kernel/</code>（独立的 kernel wheel）+ <code>rust/</code>（一些 Rust 组件）+ <code>sgl-model-gateway/</code>（gateway 服务）+ <code>proto/</code>（gRPC 协议定义）。这种"主包 + 多 sub-package"结构反映了不同组件不同节奏发布的工程现实。
+  </p>
+
+  <p>Python 主包 <code>python/sglang/</code> 分两大块：</p>
+
+  <table>
+    <thead><tr><th>Subpackage</th><th>What</th></tr></thead>
+    <tbody>
+      <tr><td><code>sglang/lang/</code></td><td>前端 DSL — Structured Generation Language（select/gen/fork/regex 等 primitives）。这是 SGLang 名字的来源。</td></tr>
+      <tr><td><code>sglang/srt/</code></td><td><strong>Serving Runtime — 推理引擎本体</strong>，下面所有模块都属于它</td></tr>
+    </tbody>
+  </table>
+
+  <p><code>sglang/srt/</code> 进一步切分（这是真正的"系统"）：</p>
+
+  <table>
+    <thead><tr><th>Subdir</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>entrypoints/</code></td><td>Engine / HTTP server / gRPC server / OpenAI 兼容层</td></tr>
+      <tr><td><code>managers/</code></td><td><strong>★ scheduler.py / schedule_batch.py / schedule_policy.py</strong> — 调度核心，20+ 文件</td></tr>
+      <tr><td><code>model_executor/</code></td><td><strong>★ model_runner.py · 3607 行</strong> — 跑模型 forward，管 CUDAGraph</td></tr>
+      <tr><td><code>mem_cache/</code></td><td><strong>★ radix_cache.py · KV cache 池</strong> — RadixAttention 实现</td></tr>
+      <tr><td><code>layers/attention/</code></td><td><strong>★ 27 个 attention backend</strong>（aiter / flashinfer / triton / cutlass_mla / ...）</td></tr>
+      <tr><td><code>models/</code></td><td>具体模型定义（Llama / Qwen / Kimi / DeepSeek / ...）</td></tr>
+      <tr><td><code>hardware_backend/</code></td><td>gpu / mlx / musa / npu — 各硬件平台的 hook</td></tr>
+      <tr><td><code>speculative/</code></td><td>投机解码（draft / target / EAGLE）</td></tr>
+      <tr><td><code>disaggregation/</code></td><td>P/D 分离（prefill / decode 拆到不同节点）</td></tr>
+      <tr><td><code>distributed/ · elastic_ep/</code></td><td>TP / EP / DP 通信和弹性扩展</td></tr>
+      <tr><td><code>checkpoint_engine/</code></td><td>模型权重加载和热重启</td></tr>
+      <tr><td><code>compilation/</code></td><td>编译器集成（torch.compile / TVM-like）</td></tr>
+      <tr><td><code>constrained/</code></td><td>结构化生成（JSON schema / regex / EBNF）</td></tr>
+      <tr><td><code>connector/</code></td><td>对接 vLLM、TensorRT-LLM 等外部 runtime</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <div class="label">观察 · SUBPACKAGE STRATEGY</div>
+    <p><strong>sgl-kernel 作为独立包</strong>是 SGLang 工程上最值得偷的设计。它有自己的 <code>pyproject.toml</code> / <code>pyproject_cpu.toml</code> / <code>pyproject_musa.toml</code> / <code>pyproject_rocm.toml</code> — 同一份 C++/Triton 源码，针对 5 个平台（CUDA / ROCm / MUSA / CPU / Metal）构建 5 个不同的 wheel。这样既允许 sgl-kernel 独立 release（不用等主包），又把"kernel 调优"和"runtime 调度"两件事的迭代节奏完全解耦。</p>
+    <p>这正是<strong>你 AMD 工作直接相关</strong>的模式 — 如果将来 multi-agent kernel optimization 系统要产出可被其他系统消费的 kernel，做成独立 wheel 包 + 多平台 pyproject 是范本。</p>
+  </div>
+</section>
+
+<!-- M1 Engine -->
+<section id="m1">
+  <h2><span class="num">§ M1 · 30 min</span>The <i>Engine</i>, started.</h2>
+
+  <p>
+    用户最常用的入口有两条路径：(1) HTTP 服务模式 — <code>python -m sglang.launch_server --model X --tp 8</code>；(2) Python in-process 模式 — <code>from sglang import Engine; engine = Engine(model="X")</code>。两条都最终落到 <code>sky/entrypoints/engine.py</code> 的 <code>Engine</code> 类（1349 行，line 174）。
+  </p>
+
+  <pre data-lang="python · entrypoints/engine.py:116"><code>class SchedulerInitResult:
+    """Engine 启动期间收集每个 scheduler 子进程的初始化结果。"""
+
+class Engine(EngineScoreMixin, EngineBase):
+    """The main engine class. Holds the tokenizer manager,
+    spawns scheduler procs, manages their lifecycle."""</code></pre>
+
+  <p>Engine 启动序列（line 174-1158 大概结构）：</p>
+
+  <ol>
+    <li><strong><code>_set_envs_and_config</code></strong>（line 1159）— 设环境变量（CUDA_VISIBLE_DEVICES、ROCm 等），GC 调优</li>
+    <li><strong><code>init_tokenizer_manager</code></strong>（line 126）— 起 TokenizerManager 进程</li>
+    <li><strong><code>_compute_parallelism_ranks</code></strong>（line 1332）— 算 TP × DP × EP 拓扑下的 rank 分配</li>
+    <li><strong>spawn N 个 scheduler 子进程</strong>（multiprocessing），每个进程跑一个 <code>Scheduler.event_loop()</code></li>
+    <li><strong><code>_wait_for_scheduler_ready</code></strong>（line 1265）— 等所有 scheduler 通过 ZMQ ready barrier</li>
+    <li>HTTP / gRPC server 接管（如果是 server 模式）</li>
+  </ol>
+
+  <p>关键细节：<strong>每个 TP rank 是一个独立 scheduler 进程</strong>（不是 thread），用 multiprocessing spawn。Tokenizer 是单独一个进程，Detokenizer 又是单独一个。所以一个 TP=8 的部署有 <code>1 + 1 + 8 = 10 个 Python 进程</code> 共同协作。</p>
+
+  <div class="correction">
+    <div class="label">Easy mistake · DON'T</div>
+    <p>不要把 SGLang 当成"单进程 Python 服务" — 它是个 IPC-heavy 的多进程系统。任何对 scheduler 的 monkey-patch、log injection、observability 改动都要考虑"在哪个进程里生效"。<code>kernel_api_logging.py</code> 这种 hook 必须在所有 scheduler 进程里被 import 才能生效。</p>
+  </div>
+</section>
+
+<!-- M2 ZMQ -->
+<section id="m2">
+  <h2><span class="num">§ M2 · 25 min</span>ZMQ — <em>the wires.</em></h2>
+
+  <p>
+    四个进程之间的消息总线是 ZeroMQ。SGLang 用 <code>zmq</code> 库的 PUSH/PULL 模式（不是 PUB/SUB）— 因为请求需要严格的 producer→consumer 单向流动，PUSH/PULL 比 PUB/SUB 多一层 fan-out / load-balancing 语义。
+  </p>
+
+  <p>主要 socket 拓扑：</p>
+
+  <table>
+    <thead><tr><th>From → To</th><th>What</th><th>Mode</th></tr></thead>
+    <tbody>
+      <tr><td>HTTP client → TokenizerManager</td><td>HTTP request</td><td>FastAPI / uvicorn</td></tr>
+      <tr><td>TokenizerManager → Scheduler</td><td>TokenizedGenerateReqInput</td><td>ZMQ PUSH</td></tr>
+      <tr><td>Scheduler → Worker(s)</td><td>ScheduleBatch (tensor IPC)</td><td>ZMQ + shared memory</td></tr>
+      <tr><td>Worker → Scheduler</td><td>output tokens / logits</td><td>ZMQ PUSH</td></tr>
+      <tr><td>Scheduler → DetokenizerManager</td><td>token_ids batch</td><td>ZMQ PUSH</td></tr>
+      <tr><td>DetokenizerManager → TokenizerManager</td><td>decoded text chunks</td><td>ZMQ PUSH</td></tr>
+    </tbody>
+  </table>
+
+  <p>注意是<strong>环形</strong>拓扑：Tokenizer → Scheduler → Worker → Scheduler → Detokenizer → Tokenizer。Tokenizer 既是入口也是出口，负责把 streamed 输出聚合后通过 HTTP 推给客户端。</p>
+
+  <div class="note">
+    <div class="label">为什么 ZMQ 而非 gRPC · DESIGN CHOICE</div>
+    <p>ZMQ 比 gRPC 轻 — 没有 protobuf 序列化开销（除非用户自己加），没有 HTTP/2 帧开销，socket 直接走 Unix domain 或 IPC。对于"同机多进程" + "高频小消息" + "大 tensor 走共享内存"的场景，ZMQ 比 gRPC 快很多。SGLang 选 ZMQ + 自己定义 dataclass payload，是经过权衡的工程选择。</p>
+    <p>代价是<strong>缺乏 schema 演进保护</strong> — 改 payload 字段需要所有进程一起重启。但 SGLang 是单一二进制部署，这不是大问题。</p>
+  </div>
+</section>
+
+<!-- M3 Scheduler -->
+<section id="m3">
+  <h2><span class="num">§ M3 · 60 min</span>The Scheduler — <i>4006 lines</i> in one class.</h2>
+
+  <p>
+    <code>managers/scheduler.py</code> 是 SGLang 整个 codebase 里最重的一个文件。<code>class Scheduler</code> 从 line 324 开始，<code>__init__</code> 在 line 340，光构造函数就有几百行 — 它要初始化 ZMQ sockets、tokenizer、tp_group、model_runner、KV cache pool、radix cache、sampling、speculative decoding 等几乎所有子系统。
+  </p>
+
+  <p>核心方法（按调用频率排）：</p>
+
+  <table>
+    <thead><tr><th>Method</th><th>Line</th><th>Frequency</th><th>What</th></tr></thead>
+    <tbody>
+      <tr><td><code>event_loop_normal()</code></td><td>1524</td><td>per server</td><td>普通调度循环 — sequential</td></tr>
+      <tr><td><strong><code>event_loop_overlap()</code></strong></td><td>1551</td><td>per server</td><td>★ overlap 调度 — 计算/调度并发</td></tr>
+      <tr><td><code>process_input_requests</code></td><td>1829</td><td>per step</td><td>从 ZMQ 收新请求</td></tr>
+      <tr><td><code>get_next_batch_to_run</code></td><td>2461</td><td>per step</td><td>挑下一个要跑的 batch</td></tr>
+      <tr><td><code>update_running_batch</code></td><td>2870</td><td>per step</td><td>合并新 prefill 进 running batch</td></tr>
+    </tbody>
+  </table>
+
+  <p>Scheduler 类用了几个 Mixin 模式来切分代码（line 248 / 324 等）：</p>
+
+  <ul>
+    <li><code>SchedulerMlxOverlapMixin</code> — Apple MLX 后端特化</li>
+    <li><code>scheduler_dp_attn_mixin</code> — DP attention 特化</li>
+    <li><code>scheduler_output_processor_mixin</code> — 输出后处理</li>
+    <li><code>scheduler_input_blocker</code> — 输入背压</li>
+  </ul>
+
+  <p>这种"主类 + Mixin"是 SGLang 切分 4006 行的方式。<strong>但这也是个学习成本 — 跳到一个方法时不一定知道它属于哪个 Mixin</strong>。读源码时记得 <code>grep "def method_name"</code> 而不是 <code>grep "class .*:"</code>。</p>
+
+  <pre data-lang="python · scheduler.py:1551"><code># 简化后的 event_loop_overlap 核心结构
+def event_loop_overlap(self):
+    """Overlap: while GPU runs forward(t), CPU plans forward(t+1)"""
+    last_batch = None
+    while True:
+        # 1) 从 ZMQ 收新请求，加入 waiting queue
+        recv_reqs = self.recv_requests()
+        self.process_input_requests(recv_reqs)
+
+        # 2) 决定下一个 batch (CPU work)
+        batch = self.get_next_batch_to_run()
+
+        # 3) 启动 forward (GPU work, async via cuda stream)
+        if batch is not None:
+            future = self.forward_async(batch)  # ← non-blocking
+
+        # 4) 等上一个 batch 的 GPU 结果 (overlapped with #2/#3)
+        if last_batch is not None:
+            result = last_batch.future.wait()
+            self.process_batch_result(last_batch, result)
+
+        last_batch = batch</code></pre>
+
+  <div class="note">
+    <div class="label">★ 关键创新 · OVERLAP SCHEDULING</div>
+    <p>"普通"循环是 <code>plan(t+1) → run(t+1) → process(t+1)</code> 严格串行的。<strong>Overlap 循环</strong>把"plan 下一步"和"GPU 执行当前步"并发起来 — CPU 在算下一个 batch 的 schedule 决策时，GPU 还在跑当前 forward。在 prefill-heavy workload 上这相当于把 CPU planning overhead 完全吸收掉，吞吐通常 +10-25%。</p>
+    <p>这跟 SkyPilot Optimizer 那种"乐观决策 + 锁内兜底"在精神上一致 — 都是用"提前做事"来藏掉延迟。但 SGLang 这里是 GPU/CPU 异步，靠的是 CUDA stream 和 future 抽象。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE II: OVERLAP SCHEDULING =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate II — Overlap scheduling, in time</span>
+    <span class="name">CPU plans while GPU runs</span>
+    <span class="scale">temporal</span>
+  </div>
+  <svg viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs>
+      <marker id="ahP2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4232"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="380" class="diag-bg"/>
+
+    <text x="600" y="40" text-anchor="middle" class="diag-text head" style="font-size:16px;">event_loop_overlap()  vs.  event_loop_normal()</text>
+
+    <!-- Lanes -->
+    <text x="50" y="100" class="diag-text tiny muted">NORMAL</text>
+    <text x="50" y="120" class="diag-text tiny cobalt">CPU</text>
+    <text x="50" y="148" class="diag-text tiny crimson">GPU</text>
+    <line x1="90" y1="105" x2="1150" y2="105" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="2 3"/>
+
+    <!-- Normal loop boxes -->
+    <g transform="translate(110, 110)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=1</text>
+    </g>
+    <g transform="translate(210, 138)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=1 (GPU)</text>
+    </g>
+    <g transform="translate(430, 110)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=2</text>
+    </g>
+    <g transform="translate(530, 138)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=2 (GPU)</text>
+    </g>
+    <g transform="translate(750, 110)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=3</text>
+    </g>
+    <g transform="translate(850, 138)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=3 (GPU)</text>
+    </g>
+    <text x="1080" y="115" class="diag-text tiny muted" text-anchor="end">→ GPU 利用率低</text>
+
+    <!-- Overlap lanes -->
+    <text x="50" y="230" class="diag-text tiny ochre" style="font-weight:600;">OVERLAP ★</text>
+    <text x="50" y="250" class="diag-text tiny cobalt">CPU</text>
+    <text x="50" y="278" class="diag-text tiny crimson">GPU</text>
+    <line x1="90" y1="235" x2="1150" y2="235" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="2 3"/>
+
+    <!-- Overlap loop -->
+    <g transform="translate(110, 240)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=1</text>
+    </g>
+    <g transform="translate(210, 268)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=1 (GPU)</text>
+    </g>
+    <g transform="translate(210, 240)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=2</text>
+    </g>
+
+    <g transform="translate(430, 268)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=2 (GPU)</text>
+    </g>
+    <g transform="translate(430, 240)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=3</text>
+    </g>
+
+    <g transform="translate(650, 268)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=3 (GPU)</text>
+    </g>
+    <g transform="translate(650, 240)">
+      <rect width="100" height="22" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)" stroke-width="1"/>
+      <text x="50" y="15" text-anchor="middle" class="diag-text tiny cobalt">plan t=4</text>
+    </g>
+
+    <g transform="translate(870, 268)">
+      <rect width="220" height="22" fill="rgba(168,49,45,0.08)" stroke="var(--crimson)" stroke-width="1"/>
+      <text x="110" y="15" text-anchor="middle" class="diag-text tiny crimson">forward t=4 (GPU)</text>
+    </g>
+
+    <text x="1080" y="245" class="diag-text tiny ochre" text-anchor="end">→ GPU 几乎不停 ★</text>
+
+    <!-- Speedup bracket -->
+    <line x1="210" y1="328" x2="870" y2="328" stroke="var(--ochre)" stroke-width="1.5"/>
+    <line x1="210" y1="328" x2="210" y2="320" stroke="var(--ochre)"/>
+    <line x1="870" y1="328" x2="870" y2="320" stroke="var(--ochre)"/>
+    <text x="540" y="346" text-anchor="middle" class="diag-text tiny ochre" style="font-weight:600;">overlap 区间 — CPU plan 完全藏在前一步 GPU forward 里</text>
+
+    <!-- Time axis -->
+    <line x1="90" y1="358" x2="1150" y2="358" stroke="var(--ink)" stroke-width="1"/>
+    <text x="90" y="372" class="diag-text tiny muted">t₀</text>
+    <text x="1145" y="372" text-anchor="end" class="diag-text tiny muted">t →</text>
+  </svg>
+  <div class="caption">
+    Normal 循环 GPU 等 CPU，CPU 等 GPU，两边交替忙闲。Overlap 把"plan t+1"提前到"forward t"还在跑的时候 — CPU 时间被完全藏起来。代价是要管理一个 <code>last_batch.future</code> 状态，多了一层并发逻辑。SGLang 默认开 overlap，除非 backend 不支持 async forward。
+  </div>
+</section>
+
+<!-- M5 RadixCache -->
+<section id="m5">
+  <h2><span class="num">§ M5 · 40 min</span>Radix<i>Attention</i>, <em>the prefix tree.</em></h2>
+
+  <p>
+    SGLang 在论文里的最大卖点是 RadixAttention — 把多个请求共享的 prompt prefix 自动复用 KV cache。实现在 <code>mem_cache/radix_cache.py</code>（828 行），三个核心类：
+  </p>
+
+  <pre data-lang="python · mem_cache/radix_cache.py"><code>class RadixKey:        # 66  — token sequence → hashable key
+class TreeNode:        # 206 — radix tree 的节点 (children, key, value, ref_count)
+class RadixCache(KVCacheEventMixin, BasePrefixCache):  # 269</code></pre>
+
+  <p>Tree 上每个节点：</p>
+
+  <ul>
+    <li><strong>key</strong>: 一段 token 序列（<code>RadixKey</code>，可哈希）</li>
+    <li><strong>value</strong>: 这段 tokens 对应的 KV cache 的物理 slot indices</li>
+    <li><strong>children</strong>: 后续 token 派生出的子节点</li>
+    <li><strong>ref_count</strong>: 多少个活跃请求正在引用这段 prefix</li>
+    <li><strong>last_access</strong>: LRU 时间戳</li>
+  </ul>
+
+  <p>核心操作（来自 <code>BasePrefixCache</code> 抽象基类）：</p>
+
+  <table>
+    <thead><tr><th>Operation</th><th>What</th></tr></thead>
+    <tbody>
+      <tr><td><code>match_prefix(key)</code></td><td>沿树查最长匹配的 prefix，返回已 cache 的 KV slot 列表</td></tr>
+      <tr><td><code>insert(key, value)</code></td><td>把新生成的 tokens 和它们的 KV slot 加进树（可能在中间节点分裂）</td></tr>
+      <tr><td><code>evict(num_tokens)</code></td><td>当 KV pool 满时，按 LRU + ref_count=0 的策略驱逐</td></tr>
+      <tr><td><code>inc_lock_ref / dec_lock_ref</code></td><td>请求开始/结束时增减 ref_count（防止驱逐还在用的 prefix）</td></tr>
+    </tbody>
+  </table>
+
+  <p><code>mem_cache/</code> 还有 18 个其他文件 — 不同形态的 cache：<code>hiradix_cache.py</code>（多级 hierarchical）、<code>chunk_cache.py</code>（不用 radix 的简单 chunk）、<code>mamba_radix_cache.py</code>（Mamba/SSM 模型的特化）、<code>hisparse_memory_pool.py</code>（稀疏激活）等。还有 <code>cpp_radix_tree/</code> — 一个 C++ 实现的 radix tree，给极端性能场景用。</p>
+</section>
+
+<!-- =============== PLATE III: RADIX TREE =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate III — A RadixCache, populated</span>
+    <span class="name">three chat requests sharing two prefixes</span>
+    <span class="scale">structural</span>
+  </div>
+  <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Radix tree">
+    <defs>
+      <marker id="ahP3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4232"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="480" class="diag-bg"/>
+
+    <!-- Root -->
+    <g transform="translate(580, 50)">
+      <rect width="40" height="40" rx="4" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="20" y="26" text-anchor="middle" class="diag-text head" style="font-size:13px;">∅</text>
+    </g>
+
+    <!-- Level 1 nodes -->
+    <line class="diag-edge" x1="595" y1="90" x2="320" y2="140" marker-end="url(#ahP3)"/>
+    <line class="diag-edge" x1="600" y1="90" x2="600" y2="140" marker-end="url(#ahP3)"/>
+    <line class="diag-edge" x1="605" y1="90" x2="880" y2="140" marker-end="url(#ahP3)"/>
+
+    <g transform="translate(200, 140)">
+      <rect width="240" height="56" fill="rgba(30,74,138,0.06)" stroke="var(--cobalt)" stroke-width="1.5" rx="4"/>
+      <text x="120" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px; fill:var(--cobalt);">"You are a helpful"</text>
+      <text x="120" y="40" text-anchor="middle" class="diag-text tiny muted">tokens: [You, are, a, helpful]</text>
+      <text x="120" y="52" text-anchor="middle" class="diag-text tiny cobalt">ref_count = 2 · slots: [0-3]</text>
+    </g>
+
+    <g transform="translate(500, 140)">
+      <rect width="200" height="56" fill="rgba(30,74,138,0.06)" stroke="var(--cobalt)" stroke-width="1.5" rx="4"/>
+      <text x="100" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px; fill:var(--cobalt);">"Translate this:"</text>
+      <text x="100" y="40" text-anchor="middle" class="diag-text tiny muted">[Translate, this, :]</text>
+      <text x="100" y="52" text-anchor="middle" class="diag-text tiny cobalt">ref_count = 1 · slots: [4-6]</text>
+    </g>
+
+    <g transform="translate(760, 140)">
+      <rect width="220" height="56" fill="rgba(74,107,62,0.06)" stroke="var(--moss)" stroke-width="1.5" rx="4"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px; fill:var(--moss);">"def fibonacci(n):"</text>
+      <text x="110" y="40" text-anchor="middle" class="diag-text tiny muted">[def, fibonacci, (, n, )]</text>
+      <text x="110" y="52" text-anchor="middle" class="diag-text tiny" style="fill:var(--moss);">ref_count = 0 · evictable</text>
+    </g>
+
+    <!-- Level 2 split under "You are a helpful" -->
+    <line class="diag-edge" x1="280" y1="196" x2="160" y2="246" marker-end="url(#ahP3)"/>
+    <line class="diag-edge" x1="360" y1="196" x2="500" y2="246" marker-end="url(#ahP3)"/>
+
+    <g transform="translate(60, 246)">
+      <rect width="220" height="56" fill="rgba(168,49,45,0.06)" stroke="var(--crimson)" stroke-width="1.5" rx="4"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px; fill:var(--crimson);">"assistant. User asks:"</text>
+      <text x="110" y="40" text-anchor="middle" class="diag-text tiny muted">[assistant., User, asks, :]</text>
+      <text x="110" y="52" text-anchor="middle" class="diag-text tiny crimson">ref_count = 1 · slots: [7-10]</text>
+    </g>
+
+    <g transform="translate(360, 246)">
+      <rect width="280" height="56" fill="rgba(168,49,45,0.06)" stroke="var(--crimson)" stroke-width="1.5" rx="4"/>
+      <text x="140" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px; fill:var(--crimson);">"AI. Reply with care."</text>
+      <text x="140" y="40" text-anchor="middle" class="diag-text tiny muted">[AI., Reply, with, care, .]</text>
+      <text x="140" y="52" text-anchor="middle" class="diag-text tiny crimson">ref_count = 1 · slots: [11-15]</text>
+    </g>
+
+    <!-- Level 3 -->
+    <line class="diag-edge" x1="170" y1="302" x2="170" y2="352" marker-end="url(#ahP3)"/>
+    <line class="diag-edge" x1="500" y1="302" x2="500" y2="352" marker-end="url(#ahP3)"/>
+
+    <g transform="translate(60, 352)">
+      <rect width="220" height="48" fill="var(--paper)" stroke="var(--ink-mid)" stroke-width="1" rx="4"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px;">"How to print hi?"</text>
+      <text x="110" y="38" text-anchor="middle" class="diag-text tiny muted">REQ #1 active leaf · slots [16-20]</text>
+    </g>
+
+    <g transform="translate(390, 352)">
+      <rect width="220" height="48" fill="var(--paper)" stroke="var(--ink-mid)" stroke-width="1" rx="4"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text" style="font-family:var(--mono); font-size:11px;">"What is 2+2?"</text>
+      <text x="110" y="38" text-anchor="middle" class="diag-text tiny muted">REQ #2 active leaf · slots [21-23]</text>
+    </g>
+
+    <!-- Annotations -->
+    <g transform="translate(660, 360)">
+      <text class="diag-text tiny crimson" style="font-style:italic; font-weight: 600;">Req #1 and #2 share the first</text>
+      <text x="0" y="14" class="diag-text tiny crimson" style="font-style:italic; font-weight: 600;">two ancestor nodes →</text>
+      <text x="0" y="32" class="diag-text tiny" style="font-style:italic;">"You are a helpful" (4 tokens)</text>
+      <text x="0" y="46" class="diag-text tiny" style="font-style:italic;">"assistant. User asks:" (4 tokens)</text>
+      <text x="0" y="60" class="diag-text tiny ochre">= 8 cached KV tokens reused free.</text>
+    </g>
+
+    <!-- Legend -->
+    <g transform="translate(950, 360)">
+      <rect width="200" height="100" fill="var(--paper)" stroke="var(--ink-faint)" stroke-width="1"/>
+      <text x="100" y="20" text-anchor="middle" class="diag-text tiny" style="font-weight: 600;">LEGEND</text>
+      <rect x="14" y="32" width="16" height="10" fill="rgba(30,74,138,0.1)" stroke="var(--cobalt)"/>
+      <text x="40" y="42" class="diag-text tiny">internal node</text>
+      <rect x="14" y="50" width="16" height="10" fill="rgba(168,49,45,0.1)" stroke="var(--crimson)"/>
+      <text x="40" y="60" class="diag-text tiny">branching point</text>
+      <rect x="14" y="68" width="16" height="10" fill="rgba(74,107,62,0.1)" stroke="var(--moss)"/>
+      <text x="40" y="78" class="diag-text tiny">evictable (ref=0)</text>
+      <rect x="14" y="86" width="16" height="10" fill="var(--paper)" stroke="var(--ink-mid)"/>
+      <text x="40" y="96" class="diag-text tiny">leaf · active req</text>
+    </g>
+  </svg>
+  <div class="caption">
+    新请求来时调 <code>match_prefix(tokens)</code>，沿树查最长公共前缀，已 cache 的 token 直接复用 KV slots — 跳过这部分的 prefill 计算。中间节点在新请求"分叉"时会动态分裂（split）。<code>ref_count=0</code> 的子树在 KV pool 不够时按 LRU 驱逐。这就是 RadixAttention 在多轮对话 / 系统 prompt 共享场景下的核心机制。
+  </div>
+</section>
+
+<!-- M6 ModelRunner -->
+<section id="m6">
+  <h2><span class="num">§ M6 · 35 min</span>The ModelRunner — <em>3607 lines.</em></h2>
+
+  <p>
+    <code>model_executor/model_runner.py</code> 是另一个怪兽。<code>class ModelRunner(ModelRunnerKVCacheMixin)</code> 在 line 323，<code>ModelRunnerOutput</code> dataclass 在 315。它负责的事：
+  </p>
+
+  <ol>
+    <li>从 HF 或自定义 loader 加载模型权重</li>
+    <li>分配 KV cache memory pool（巨大 tensor，按 layer × block × head 切片）</li>
+    <li>选择并初始化 attention backend（从 27 个候选里挑）</li>
+    <li>build / capture CUDA Graph（line 2339-2347 的关键分支）</li>
+    <li>每次 <code>forward(batch)</code> 时把 ScheduleBatch 翻译成 ForwardBatch（含位置编码、cache indices、mask 等），调 <code>self.model.forward(...)</code></li>
+    <li>给 attention backend 调 <code>init_forward_metadata(forward_batch)</code> 准备元数据（page table / sliding window mask）</li>
+    <li>对接 sampling（top_k / top_p / 结构化生成）</li>
+  </ol>
+
+  <p>CUDA Graph 这一段值得单独说 — SGLang 提供多种 capture 策略：</p>
+
+  <ul>
+    <li><code>cuda_graph_runner.py</code> — 普通整张图 capture</li>
+    <li><code>piecewise_cuda_graph_runner.py</code> — 分段 capture，更灵活</li>
+    <li><code>breakable_cuda_graph_runner.py</code> — 可中断的 capture（用于 disagg P/D）</li>
+    <li><code>cpu_graph_runner.py</code> — CPU 版本（用于 host-side 模拟）</li>
+    <li><code>mindspore_runner.py</code> — MindSpore 平台特化</li>
+  </ul>
+
+  <div class="note">
+    <div class="label">为什么 ModelRunner 也是巨型类 · CONSTRAINT</div>
+    <p>3607 行单类的原因和 Scheduler 4006 行类似 — <strong>它要协调"模型、KV cache、attention backend、CUDA Graph、sampling、speculative"六个子系统在每次 forward 时的精确顺序</strong>。任何把它拆成多个小类的尝试都要面对"这些子系统之间状态依赖严重"的问题。SGLang 选择了"一个大类 + 几个 Mixin"，跟 Scheduler 是一脉相承的工程取舍。</p>
+    <p>对 reader 不友好。但对维护者来说，至少所有关键状态在一个 <code>self.*</code> 命名空间里。</p>
+  </div>
+</section>
+
+<!-- M7 + M8 Attention Backends -->
+<section id="m7">
+  <h2><span class="num">§ M7-M8 · 50 min</span>Twenty-seven backends, <i>one interface.</i></h2>
+
+  <p>
+    <code>layers/attention/</code> 是 SGLang 跨硬件能力的核心 — <strong>27 个 attention 实现</strong>共享一个 <code>AttentionBackend</code> 抽象基类（<code>base_attn_backend.py</code>），<code>attention_registry.py</code> 维护"backend 名字 → class"映射。
+  </p>
+
+  <table>
+    <thead><tr><th>Family</th><th>Backends</th><th>Hardware</th></tr></thead>
+    <tbody>
+      <tr><td>FlashAttention 系</td><td><code>flashattention_backend</code>, <code>flashinfer_backend</code>, <code>flashinfer_mla_backend</code>, <code>flashmla_backend</code></td><td>NV (CUDA)</td></tr>
+      <tr><td>Triton</td><td><code>triton_backend</code>, <code>triton_ops/</code></td><td>NV + AMD（Triton 跨平台）</td></tr>
+      <tr><td>CUTLASS</td><td><code>cutlass_mla_backend</code></td><td>NV (Hopper / Blackwell)</td></tr>
+      <tr><td>TRT-LLM</td><td><code>trtllm_mha_backend</code>, <code>trtllm_mla_backend</code></td><td>NV (TensorRT-LLM)</td></tr>
+      <tr><td>Torch native</td><td><code>torch_native_backend</code>, <code>torch_flex_backend</code></td><td>any (slow fallback)</td></tr>
+      <tr><td><strong>AMD AITER</strong></td><td><strong><code>aiter_backend</code></strong></td><td><strong>AMD ROCm (MI300X+)</strong></td></tr>
+      <tr><td>Intel</td><td><code>intel_amx_backend</code></td><td>Intel CPU + AMX</td></tr>
+      <tr><td>Mamba / State space</td><td><code>mamba/</code>, <code>linear/</code></td><td>any</td></tr>
+      <tr><td>NSA (sparse)</td><td><code>nsa_backend</code>, <code>nsa/</code></td><td>NV</td></tr>
+      <tr><td>DSv4 (DeepSeek)</td><td><code>deepseek_v4_backend</code>, <code>dsv4/</code></td><td>NV + AMD</td></tr>
+      <tr><td>Hybrid</td><td><code>hybrid_attn_backend</code>, <code>hybrid_linear_attn_backend</code>, <code>dual_chunk_flashattention_backend</code></td><td>any</td></tr>
+      <tr><td>TBO</td><td><code>tbo_backend</code></td><td>多 backend 二级路由</td></tr>
+    </tbody>
+  </table>
+
+  <h3>AITER 后端 — <i>给 MI300X 的入口</i></h3>
+
+  <p>
+    <code>aiter_backend.py</code> 一个文件就 <strong>3284 行</strong>。<code>class AiterAttnBackend(AttentionBackend)</code> 在 line 117。它在 SGLang 里的位置：用户跑 <code>sky launch --infra k8s ... sgl --attention-backend aiter</code>，scheduler 用 AITER 的 forward / metadata 接口，背后调 <code>aiter</code> 这个独立 Python 包（github.com/ROCm/aiter）的 CK / hipBLASLt kernel。
+  </p>
+
+  <pre data-lang="python · aiter_backend.py"><code>class AiterAttnBackend(AttentionBackend):    # line 117
+    def init_forward_metadata(self, forward_batch):
+        # build page table, mask, sliding window indices
+        ...
+    def forward_extend(self, ...): ...    # prefill
+    def forward_decode(self, ...): ...    # generation
+    def forward_target_verify(self, ...): ...  # speculative decoding
+
+class AiterIndicesUpdaterPrefill:            # line 2962
+class AiterMlaIndicesUpdaterPrefill:         # line 3064  ← MLA variant
+class AiterMultiStepDraftBackend:            # line 3146  ← speculative draft</code></pre>
+
+  <p>三个 helper 类分别处理：</p>
+
+  <ul>
+    <li><strong>Indices updater</strong> — 把 SGLang 的 RadixCache slot indices 翻译成 AITER 期望的 page table 布局（每个 kernel 都要求一种特定的内存布局）</li>
+    <li><strong>MLA indices updater</strong> — DeepSeek / Kimi-K2 的 Multi-head Latent Attention 特化（压缩 KV）</li>
+    <li><strong>MultiStep draft</strong> — 投机解码 draft model 的多步 forward 优化</li>
+  </ul>
+
+  <div class="correction">
+    <div class="label">★ 直接相关你的工作 · DEBUG ENTRY POINT</div>
+    <p>你在 CLAUDE.md 提到的 AITER 调试 agent team — <strong>"Kernel Debugger" 负责 <code>aiter/csrc/py_itfs_ck/</code>，"SGLang Integrator" 负责 <code>python/sglang/srt/layers/attention/</code></strong>。后者具体的入口就是这里：<code>aiter_backend.py</code> + <code>AiterIndicesUpdaterPrefill</code> + <code>AiterMlaIndicesUpdaterPrefill</code>。任何"参数组合不被 kernel 接受"的报错都先从这里追，看 indices updater 构造的张量是否符合 AITER kernel 的预期。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE IV: ATTENTION BACKENDS =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate IV — Attention backend constellation</span>
+    <span class="name">one interface, twenty-seven implementations</span>
+    <span class="scale">cross-hardware</span>
+  </div>
+  <svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs>
+      <marker id="ahP4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#7d745f"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="600" class="diag-bg"/>
+
+    <!-- Center: AttentionBackend abstract -->
+    <g transform="translate(500, 260)">
+      <rect width="200" height="80" fill="rgba(168,49,45,0.06)" stroke="var(--crimson)" stroke-width="2"/>
+      <text x="100" y="26" text-anchor="middle" class="diag-text head" style="fill:var(--crimson);">AttentionBackend</text>
+      <text x="100" y="44" text-anchor="middle" class="diag-text tiny muted">base_attn_backend.py</text>
+      <text x="100" y="60" text-anchor="middle" class="diag-text tiny muted">.init_forward_metadata(.)</text>
+      <text x="100" y="72" text-anchor="middle" class="diag-text tiny muted">.forward_extend / _decode</text>
+    </g>
+
+    <text x="600" y="220" text-anchor="middle" class="diag-text head" style="font-size:14px; font-style:italic;">one interface — 27 implementations</text>
+
+    <!-- NV cluster (top left) -->
+    <g transform="translate(60, 60)">
+      <rect width="280" height="160" fill="rgba(30,74,138,0.04)" stroke="var(--cobalt)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="14" y="-6" class="zone-label" style="fill:var(--cobalt);">NVIDIA · CUDA</text>
+      <g transform="translate(14, 14)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">flashattention</text></g>
+      <g transform="translate(146, 14)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">flashinfer</text></g>
+      <g transform="translate(14, 44)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">flashinfer_mla</text></g>
+      <g transform="translate(146, 44)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">flashmla</text></g>
+      <g transform="translate(14, 74)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">cutlass_mla</text></g>
+      <g transform="translate(146, 74)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">trtllm_mha</text></g>
+      <g transform="translate(14, 104)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">trtllm_mla</text></g>
+      <g transform="translate(146, 104)"><rect width="118" height="24" class="diag-node cobalt"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny cobalt">nsa</text></g>
+      <g transform="translate(14, 134)"><rect width="250" height="20" class="diag-node cobalt"/><text x="125" y="14" text-anchor="middle" class="diag-text tiny cobalt">+ dual_chunk_flashattention</text></g>
+    </g>
+
+    <line class="diag-edge" x1="340" y1="140" x2="500" y2="280" marker-end="url(#ahP4)"/>
+
+    <!-- AMD cluster (top right) -->
+    <g transform="translate(860, 60)">
+      <rect width="280" height="160" fill="rgba(168,49,45,0.06)" stroke="var(--crimson)" stroke-width="2"/>
+      <text x="14" y="-6" class="zone-label" style="fill:var(--crimson); font-weight: 700;">AMD · ROCm ★</text>
+      <g transform="translate(14, 14)">
+        <rect width="250" height="40" class="diag-node crimson" style="stroke-width: 2;"/>
+        <text x="125" y="18" text-anchor="middle" class="diag-text head" style="fill:var(--crimson); font-size: 13px;">aiter_backend</text>
+        <text x="125" y="32" text-anchor="middle" class="diag-text tiny muted">3284 lines · MI300X / MI355X</text>
+      </g>
+
+      <g transform="translate(14, 64)"><rect width="250" height="22" class="diag-node crimson"/><text x="125" y="16" text-anchor="middle" class="diag-text tiny crimson">AiterIndicesUpdaterPrefill (line 2962)</text></g>
+      <g transform="translate(14, 92)"><rect width="250" height="22" class="diag-node crimson"/><text x="125" y="16" text-anchor="middle" class="diag-text tiny crimson">AiterMlaIndicesUpdaterPrefill (3064)</text></g>
+      <g transform="translate(14, 120)"><rect width="250" height="22" class="diag-node crimson"/><text x="125" y="16" text-anchor="middle" class="diag-text tiny crimson">AiterMultiStepDraftBackend (3146)</text></g>
+    </g>
+
+    <line class="diag-edge crimson" x1="860" y1="140" x2="700" y2="280" marker-end="url(#ahP4)" stroke-width="1.5"/>
+
+    <!-- Triton cluster (left middle) -->
+    <g transform="translate(60, 380)">
+      <rect width="280" height="80" fill="rgba(181,128,12,0.04)" stroke="var(--ochre)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="14" y="-6" class="zone-label" style="fill:var(--ochre);">Cross-platform · Triton</text>
+      <g transform="translate(14, 14)"><rect width="118" height="24" class="diag-node ochre"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny ochre">triton_backend</text></g>
+      <g transform="translate(146, 14)"><rect width="118" height="24" class="diag-node ochre"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny ochre">triton_ops/</text></g>
+      <g transform="translate(14, 44)"><rect width="250" height="24" class="diag-node ochre"/><text x="125" y="16" text-anchor="middle" class="diag-text tiny ochre">torch_flex_backend</text></g>
+    </g>
+    <line class="diag-edge" x1="340" y1="420" x2="500" y2="320" marker-end="url(#ahP4)"/>
+
+    <!-- Models-specific (right middle) -->
+    <g transform="translate(860, 380)">
+      <rect width="280" height="80" fill="rgba(74,107,62,0.05)" stroke="var(--moss)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="14" y="-6" class="zone-label" style="fill:var(--moss);">Model-specific paths</text>
+      <g transform="translate(14, 14)"><rect width="118" height="24" class="diag-node moss"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny moss">deepseek_v4</text></g>
+      <g transform="translate(146, 14)"><rect width="118" height="24" class="diag-node moss"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny moss">mamba1/2</text></g>
+      <g transform="translate(14, 44)"><rect width="250" height="24" class="diag-node moss"/><text x="125" y="16" text-anchor="middle" class="diag-text tiny moss">hybrid_attn / hybrid_linear_attn / fla</text></g>
+    </g>
+    <line class="diag-edge" x1="860" y1="420" x2="700" y2="320" marker-end="url(#ahP4)"/>
+
+    <!-- Bottom -->
+    <g transform="translate(60, 510)">
+      <rect width="280" height="64" fill="var(--paper)" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="14" y="-6" class="zone-label">Fallback · slow</text>
+      <g transform="translate(14, 14)"><rect width="118" height="24" class="diag-node muted"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny muted">torch_native</text></g>
+      <g transform="translate(146, 14)"><rect width="118" height="24" class="diag-node muted"/><text x="59" y="16" text-anchor="middle" class="diag-text tiny muted">intel_amx</text></g>
+      <g transform="translate(14, 44)"><rect width="250" height="14" class="diag-node muted"/><text x="125" y="11" text-anchor="middle" class="diag-text tiny muted">tbo / linear / nsa_backend</text></g>
+    </g>
+
+    <line class="diag-edge dashed" x1="340" y1="540" x2="500" y2="340" marker-end="url(#ahP4)"/>
+
+    <!-- AITER call-out -->
+    <g transform="translate(860, 510)">
+      <rect width="280" height="64" fill="var(--paper)" stroke="var(--ochre)" stroke-width="1"/>
+      <text x="14" y="16" class="diag-text tiny ochre" style="font-weight:600;">→ AITER 是你 AMD 工作的</text>
+      <text x="14" y="32" class="diag-text tiny ochre" style="font-weight:600;">主入口点。MI300X 上跑 Kimi-K2 /</text>
+      <text x="14" y="48" class="diag-text tiny ochre" style="font-weight:600;">Qwen3-Next 时它是 forward 路径</text>
+      <text x="14" y="60" class="diag-text tiny ochre" style="font-weight:600;">里最热的代码。</text>
+    </g>
+  </svg>
+  <div class="caption">
+    27 个 backend 不是平均分布 — NV 系最丰富（FlashAttention 各种变体 + CUTLASS + TRT-LLM），AMD 主力是 AITER 一根扁担挑全场（外加 Triton 跨平台兜底）。<strong>对你的工作含义</strong>：AITER 上每多一种 kernel 优化（FA variant、MLA、sparse、speculative），都要在 <code>aiter_backend.py</code> 里加对应的 <code>IndicesUpdater</code>，因为 SGLang scheduler 还是按 NV 那套 page table 抽象在喂参数。
+  </div>
+</section>
+
+<!-- M9 sgl-kernel -->
+<section id="m9">
+  <h2><span class="num">§ M9 · 25 min</span>sgl-kernel — <em>five wheels, one tree.</em></h2>
+
+  <p>
+    <code>sgl-kernel/</code> 是 SGLang 工程组织最值得偷的部分 — 把 kernel 代码做成独立 wheel 包，5 个平台各一份 <code>pyproject_*.toml</code>，但共享同一份 C++ / Triton 源码。
+  </p>
+
+  <table>
+    <thead><tr><th>Build target</th><th>pyproject</th><th>Tooling</th></tr></thead>
+    <tbody>
+      <tr><td>CUDA wheel</td><td><code>pyproject.toml</code>（默认）</td><td>CMake + nvcc + ninja</td></tr>
+      <tr><td>ROCm wheel</td><td><code>pyproject_rocm.toml</code></td><td>CMake + hipcc + composable_kernel</td></tr>
+      <tr><td>CPU wheel</td><td><code>pyproject_cpu.toml</code></td><td>CMake + cc</td></tr>
+      <tr><td>MUSA wheel</td><td><code>pyproject_musa.toml</code></td><td>CMake + Moore Threads tooling</td></tr>
+      <tr><td>Metal binary</td><td><code>setup_metal.py</code></td><td>Xcode / Metal compiler</td></tr>
+    </tbody>
+  </table>
+
+  <p>包结构：</p>
+
+  <pre data-lang="bash"><code>sgl-kernel/
+├── csrc/             # C++ / CUDA / HIP 源码
+├── include/          # 头文件
+├── python/           # Python binding（pybind11 / cppextension）
+├── cmake/            # 各平台的 CMake module
+├── CMakeLists.txt    # 主 CMake
+├── build.sh          # 构建脚本
+├── Makefile
+├── pyproject.toml    ← CUDA
+├── pyproject_rocm.toml
+├── pyproject_cpu.toml
+├── pyproject_musa.toml
+├── setup_metal.py
+└── setup_musa.py</code></pre>
+
+  <div class="note">
+    <div class="label">值得偷的设计 · INDEPENDENT KERNEL WHEEL</div>
+    <p>把 kernel 做成独立 wheel 的工程价值：(1) <strong>独立 release 节奏</strong> — kernel 团队可以发新 wheel 不用等主包；(2) <strong>多平台 wheel 同名</strong>，靠 pip 安装时的 platform tag 自动挑对；(3) <strong>用户可以在没装 SGLang 主包的情况下单独用 kernels</strong>（比如别的 inference engine 想借 SGLang 的高性能 attention kernel）。</p>
+    <p>对你 multi-agent kernel optimization 系统：<strong>把你做出来的高性能 AMD kernel 也做成独立 wheel</strong>，让 vLLM / SGLang / 任何 PyTorch 用户都能直接 <code>pip install amd-kernels</code> 用。这是把工作 leverage 出去的最直接路径。</p>
+  </div>
+</section>
+
+<!-- Traps -->
+<section id="traps">
+  <h2><span class="num">§ Traps · five of them</span>What I wish I'd known.</h2>
+
+  <p class="lede">读 SGLang 时最容易栽的几个坑。每个坑都对应一类具体的失误模式。</p>
+
+  <div class="correction">
+    <div class="label">Trap N° 1 · Scheduler is multi-process</div>
+    <p>不是 multi-thread。你 monkey-patch <code>Scheduler.event_loop_normal</code> 在主进程是无效的 — 每个 TP rank 是一个独立 multiprocessing.Process，它们 spawn 时从头 import 整个 sglang 包，<strong>之前在主进程注入的 hook 完全丢失</strong>。要影响所有 scheduler，hook 必须放在 <code>sglang.srt.__init__</code> 或 module-level，import 时就生效。</p>
+  </div>
+
+  <div class="correction">
+    <div class="label">Trap N° 2 · overlap loop 改坏会 deadlock</div>
+    <p><code>event_loop_overlap</code> 用 <code>last_batch.future</code> 异步等 GPU 结果。如果你改 schedule 逻辑导致某次 future 永不 resolve（比如 batch 被错误地 drop），整个进程会卡死。建议任何改 overlap 路径的人先打开 <code>SGLANG_DEBUG=1</code> 看 future state。</p>
+  </div>
+
+  <div class="correction">
+    <div class="label">Trap N° 3 · RadixCache 的 ref_count 极易泄漏</div>
+    <p>RadixCache 每个匹配到 prefix 的请求要 <code>inc_lock_ref</code>，请求结束要 <code>dec_lock_ref</code>。如果一个 request 在 setup 时崩了，<strong>没人帮你 dec</strong>，那段 KV slots 永远不会被驱逐，最终 OOM。所有 catch 异常分支都要小心 ref 是否清理。<code>cache_controller.py</code> 有 helper 但不强制。</p>
+  </div>
+
+  <div class="correction">
+    <div class="label">Trap N° 4 · 27 个 backend 各有"必填"字段</div>
+    <p>不同 backend 对 <code>forward_batch</code> 的元数据要求不一样 — 有的要 <code>seq_lens_cpu</code>，有的要 <code>extend_seq_lens_int32</code>，有的要 page-aligned tensor。<code>init_forward_metadata</code> 是每个 backend 自己实现的，遗漏一个字段就会在 kernel 里炸（且报错信息常常很神秘）。<strong>切 backend 前先看目标 backend 的 <code>init_forward_metadata</code> 签名和断言。</strong></p>
+  </div>
+
+  <div class="correction">
+    <div class="label">Trap N° 5 · CUDA Graph capture 时数据必须 reproducible</div>
+    <p>CUDA Graph capture 时所有输入张量的形状必须固定。如果你的 batch 形状是动态的（变 padding），<code>cuda_graph_runner.py</code> 会按 padding bucket 准备多张 graph。改 batch 构造逻辑时，确认 padding 策略不要打破 bucket 假设，否则会触发 <code>piecewise_cuda_graph_runner.py</code> 的 fallback，性能掉一半。</p>
+  </div>
+</section>
+
+<!-- Red lines -->
+<section id="redlines">
+  <h2><span class="num">§ Red lines · three</span>The big questions.</h2>
+
+  <div class="qa">
+    <div class="q">如果要给 SGLang 加一个新的 attention backend（比如自家 AMD 的某个新 kernel），要改哪些文件？</div>
+    <div class="a">
+      <ol>
+        <li><code>sky/srt/layers/attention/&lt;new&gt;_backend.py</code> — 实现 <code>AttentionBackend</code> 抽象（<code>init_forward_metadata</code> / <code>forward_extend</code> / <code>forward_decode</code> / <code>forward_target_verify</code>）</li>
+        <li><code>sky/srt/layers/attention/attention_registry.py</code> — 注册名字 → class 映射</li>
+        <li><code>sky/srt/server_args.py</code> — 加入 <code>--attention-backend &lt;new&gt;</code> 的选项校验</li>
+        <li><code>sky/srt/model_executor/model_runner.py</code> 的 <code>_get_attention_backend()</code> 方法 — 必要的话加 fallback 逻辑</li>
+        <li>（推荐）<code>test/srt/test_attention_backend.py</code> — 加 smoke test 跑短 prefill + decode</li>
+        <li>（如果是 ROCm-specific）<code>sgl-kernel/</code> 里加配套的低层 kernel</li>
+      </ol>
+      <p style="margin-top:14px;">关键参考：<code>aiter_backend.py</code> 是最近也是最大型的"加新 backend"实例，可以照抄结构。</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q">一个 chat completion 请求，从 HTTP POST 到 token 返回，跨越多少个进程边界、多少种通信形式？</div>
+    <div class="a">
+      <p><strong>进程</strong>：HTTP client → TokenizerManager → Scheduler → ModelRunner（N 个 TP workers）→ Scheduler → DetokenizerManager → TokenizerManager → HTTP client。<strong>共 ~7 个 Python 进程</strong>（如果 TP=8，N=8）。</p>
+      <p><strong>通信形式</strong>：HTTP/JSON、ZMQ PUSH/PULL（结构化 message）、tensor IPC（shared memory）、CUDA stream events（在 worker 内部 GPU 异步）、NCCL collective（TP 内 all-reduce）。<strong>5 类通信</strong>。</p>
+      <p style="margin-top:8px;">这跟 SkyPilot 的"4 进程 + HTTP + spawn"复杂度相当 — 但 SGLang 多了 tensor IPC 和 NCCL 这两层 GPU-aware 通信，因为它要传巨大的 KV cache 张量。</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q">SGLang 比 vLLM 快的关键在哪里？</div>
+    <div class="a">
+      <p>四个具体来源：</p>
+      <ol>
+        <li><strong>RadixAttention 自动 prefix 共享</strong> — 多轮对话 / shared system prompt 场景下 prefill 计算被 cache 大量复用。vLLM 也有 prefix caching 但默认开关和粒度不如 SGLang aggressive。</li>
+        <li><strong>Overlap scheduling</strong> — CPU plan 完全 overlap 在 GPU forward 里。vLLM 的 v1 scheduler 在做类似优化但尚未完全 catch up。</li>
+        <li><strong>Structured generation 的 outlines 编译</strong> — JSON / regex 约束生成时把 FSM 编译成 GPU mask 而不是 CPU rejection sampling。</li>
+        <li><strong>27 个 attention backend 自动选最优</strong> — SGLang 几乎是即时跟进每个新 attention kernel 的 SOTA 实现，用户不用自己选。</li>
+      </ol>
+      <p style="margin-top:8px;">注意：vLLM 在 v0.6+ 的 v1 架构重写后差距迅速缩小。SGLang 优势主要在 multi-turn dialog 和结构化生成场景。</p>
+    </div>
+  </div>
+</section>
+
+<!-- AMD playbook -->
+<section id="amd">
+  <h2><span class="num">§ AMD · for Jhin</span>Where to <i>start touching</i>.</h2>
+
+  <p class="lede">基于这次精读，给你 AMD 工作的具体 actionable 起手点。</p>
+
+  <h3>Workstream 1 — AITER kernel 调试</h3>
+
+  <p>你 CLAUDE.md 里描述的 agent team："Kernel Debugger" / "SGLang Integrator" / "Arch Tracer"。具体到代码位置：</p>
+
+  <table>
+    <thead><tr><th>Teammate</th><th>Owns</th><th>Modify · Don't</th></tr></thead>
+    <tbody>
+      <tr><td>Kernel Debugger</td><td><code>aiter/csrc/py_itfs_ck/</code>（aiter 仓库）</td><td>Modify CK kernel; don't touch SGLang</td></tr>
+      <tr><td>SGLang Integrator</td><td><code>python/sglang/srt/layers/attention/aiter_backend.py</code></td><td>Modify backend dispatch + indices updater; don't touch kernel</td></tr>
+      <tr><td>Arch Tracer</td><td><code>python/sglang/srt/models/</code>（target 模型文件）</td><td>Trace shape at crash; don't modify kernel or backend</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Workstream 2 — Grid search for MI300X / MI355X</h3>
+
+  <p>当你跑 Kimi-K2.5 / Qwen3-Coder-Next 的 throughput 实验时：</p>
+
+  <ul>
+    <li><strong>Tier 1 attention backend sweep</strong>: <code>--attention-backend</code> ∈ <code>{aiter, triton, fa3}</code>。固定 TP=8，看哪个吞吐高。</li>
+    <li><strong>Tier 2 parallelism</strong>: 在最优 backend 下扫 TP / EP / DP（EP=2/4/8）。</li>
+    <li><strong>Tier 3 CUDA Graph + mem</strong>: <code>--enable-torch-compile</code> / <code>--enable-cuda-graph</code> / <code>--mem-fraction-static</code>。</li>
+  </ul>
+
+  <p>每次实验都用 SGLang 自带的 <code>bench_serving.py</code>（你已经在用）。结果存进性能数据库 — 这正是你 CLAUDE.md 提到的"performance database is the moat"。</p>
+
+  <h3>Workstream 3 — 长期：把你的 kernel 做成独立 wheel</h3>
+
+  <p>如果 multi-agent kernel optimization 系统产出了若干"AMD 上更快的 kernel"，仿照 <code>sgl-kernel/</code> 把它们做成 <code>amd-kernels</code> wheel：</p>
+
+  <ul>
+    <li>独立 <code>pyproject.toml</code>，only ROCm platform tag</li>
+    <li>CMake + hipcc 构建管线</li>
+    <li>暴露 Python API 给 SGLang / vLLM / 任何 PyTorch 程序直接调用</li>
+    <li>独立 release 节奏 — kernel 改进不用等 SGLang 主包发版</li>
+  </ul>
+
+  <p>这是把你的工作 leverage 出 AMD 团队、影响整个开源 ecosystem 的最直接路径。SGLang 的 <code>sgl-kernel</code>、vLLM 的 <code>vllm-flash-attn</code> 都是这种独立 kernel 包，已经形成工业惯例。</p>
+</section>
+
+<section id="epilogue">
+  <div class="rule">
+    <div class="line"></div>
+    <div class="glyph">§</div>
+    <div class="line"></div>
+  </div>
+
+  <h2><span class="num">§ Epilogue</span>What we found, and <em>what's next.</em></h2>
+
+  <p>
+    SGLang 不是一个 fast LLM server — 它是一个<strong>用四进程 + ZMQ 总线 + 27 个 attention backend + RadixAttention 共同实现的 inference orchestration system</strong>。它的工程价值在三个层面：(1) 多进程 IPC 的精巧解耦，(2) 跨硬件 attention 多态的优雅抽象，(3) 把"用户 prompt prefix"这种应用层语义带进系统层做共享的洞察。
+  </p>
+
+  <p>下一份 File № 003 是 vLLM 的对应分析 — 它走的是不同路径（PagedAttention 而非 RadixCache、v1 重构后的 EngineCore vs Worker 拆分）。两份合起来看才能理解"现代 LLM serving 的设计空间"。</p>
+
+  <p style="margin-top:32px;">— Fin.</p>
+</section>
+
+</main>
+</div>
+
+<footer class="colophon">
+  <div class="row">
+    <div class="col">
+      <h5>Colophon</h5>
+      <p>Source: github.com/sgl-project/sglang</p>
+      <p>Branch: main · 2026-05-12</p>
+      <p>Reading: ~6 h across three sessions</p>
+      <p>Total lines surveyed: 728,969</p>
+    </div>
+    <div class="col">
+      <h5>Typography</h5>
+      <p>Display — DM Serif Display, italic</p>
+      <p>Body — DM Sans</p>
+      <p>Mono — JetBrains Mono</p>
+    </div>
+    <div class="col">
+      <h5>Palette</h5>
+      <p>paper · ink · cobalt · crimson · ochre · moss</p>
+      <p>after lab notebooks, ca. 1972</p>
+    </div>
+    <div class="col">
+      <h5>Compiled for</h5>
+      <p>Jhin Pan · AMD Spring 2026 Intern</p>
+      <p>MAS for Kernel Optimization</p>
+      <p>panjin1221@gmail.com</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

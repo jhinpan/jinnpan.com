@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vLLM — Source Reading No. 003</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --abyss: #060912;
+  --deep: #0a0f1d;
+  --sea: #0f1525;
+  --tide: #161e34;
+  --foam: #1c2542;
+
+  --cream: #ece0c7;
+  --parchment: #d8c9a8;
+  --vellum: #b8a984;
+  --dim: #847656;
+  --faint: #4a4332;
+
+  --gold: #d4a542;
+  --amber: #e0b865;
+  --copper: #b87a37;
+
+  --teal: #5fb8b0;
+  --aqua: #84cdc4;
+  --jade: #4a8a85;
+
+  --coral: #d6745a;
+  --madder: #b03d2c;
+  --rust: #8c3a24;
+
+  --serif-d: 'Cormorant Garamond', 'Times New Roman', serif;
+  --serif: 'Spectral', 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --max-content: 720px;
+  --rail-w: 200px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(212,165,66,0.05) 0%, transparent 25%),
+    radial-gradient(circle at 88% 92%, rgba(95,184,176,0.04) 0%, transparent 30%),
+    var(--abyss);
+  color: var(--cream);
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Star field / sea spray overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 23% 17%, rgba(236,224,199,0.4) 50%, transparent 100%),
+    radial-gradient(1px 1px at 71% 47%, rgba(236,224,199,0.25) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 41% 73%, rgba(212,165,66,0.35) 50%, transparent 100%),
+    radial-gradient(1px 1px at 83% 13%, rgba(236,224,199,0.3) 50%, transparent 100%),
+    radial-gradient(0.5px 0.5px at 7% 84%, rgba(236,224,199,0.45) 50%, transparent 100%),
+    radial-gradient(1px 1px at 53% 91%, rgba(95,184,176,0.3) 50%, transparent 100%),
+    radial-gradient(0.5px 0.5px at 31% 38%, rgba(236,224,199,0.4) 50%, transparent 100%);
+  background-size: 320px 240px;
+  opacity: 0.5;
+}
+
+/* Soft noise grain */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ COVER ============ */
+.cover {
+  position: relative;
+  padding: 80px 64px 100px;
+  max-width: 1320px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--vellum);
+  z-index: 1;
+}
+
+.cover .compass {
+  position: absolute;
+  top: 80px;
+  right: 80px;
+  width: 180px;
+  height: 180px;
+  opacity: 0.4;
+}
+
+.cover .topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  color: var(--vellum);
+  margin-bottom: 56px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--vellum);
+  text-transform: uppercase;
+}
+.cover .topline .left { color: var(--gold); }
+.cover .topline .right { color: var(--teal); }
+
+.cover h1 {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(80px, 13vw, 192px);
+  line-height: 0.86;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--cream);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.cover h1 .v { color: var(--gold); }
+.cover h1 .llm { color: var(--cream); font-style: italic; }
+
+.cover .blurb {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.4;
+  color: var(--parchment);
+  margin: 40px 0 0;
+  max-width: 760px;
+  letter-spacing: -0.005em;
+}
+
+/* Specsheet at bottom of cover */
+.cover .meta {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  margin-top: 64px;
+  border-top: 1px solid var(--vellum);
+  border-bottom: 1px solid var(--vellum);
+}
+.cover .meta .col {
+  padding: 18px 16px;
+  border-right: 1px dashed rgba(184,169,132,0.3);
+}
+.cover .meta .col:last-child { border-right: none; }
+.cover .meta .lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+.cover .meta .val {
+  font-family: var(--serif-d);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--cream);
+}
+.cover .meta .val .u {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 10px;
+  color: var(--vellum);
+  margin-left: 4px;
+  font-weight: 400;
+}
+@media (max-width: 980px) {
+  .cover .meta { grid-template-columns: repeat(3, 1fr); }
+  .cover .meta .col:nth-child(3n) { border-right: none; }
+  .cover .compass { display: none; }
+}
+@media (max-width: 540px) {
+  .cover .meta { grid-template-columns: repeat(2, 1fr); }
+  .cover .meta .col { border-right: 1px dashed rgba(184,169,132,0.3); }
+  .cover .meta .col:nth-child(2n) { border-right: none; }
+}
+
+/* ============ LAYOUT ============ */
+.shell {
+  position: relative;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 64px;
+  z-index: 1;
+}
+
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 96px auto;
+}
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 56px 24px;
+  border-right: 1px solid var(--tide);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, var(--abyss) 0%, rgba(6,9,18,0.94) 100%);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--foam); }
+
+.rail .brand {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--cream);
+  margin-bottom: 4px;
+}
+.rail .brand .v { color: var(--gold); }
+.rail .ref {
+  font-size: 10px;
+  color: var(--dim);
+  margin-bottom: 28px;
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: nav;
+}
+.rail ol li {
+  margin-bottom: 12px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 28px;
+}
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--gold);
+  font-size: 10px;
+}
+.rail ol li a {
+  color: var(--vellum);
+  text-decoration: none;
+  transition: color 0.2s;
+  line-height: 1.3;
+}
+.rail ol li a:hover { color: var(--gold); }
+.rail .divider {
+  height: 1px;
+  background: var(--tide);
+  margin: 24px 0;
+}
+
+@media (max-width: 1320px) {
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--serif-d);
+  font-weight: 500;
+  font-style: italic;
+  font-size: clamp(56px, 6.5vw, 88px);
+  line-height: 0.92;
+  letter-spacing: -0.025em;
+  margin: 128px 0 36px;
+  color: var(--cream);
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.article h2 em { color: var(--gold); }
+.article h2 i { color: var(--teal); font-style: italic; }
+
+.article h3 {
+  font-family: var(--serif-d);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 32px;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin: 64px 0 18px;
+  color: var(--cream);
+}
+.article h3::before {
+  content: '◆';
+  color: var(--gold);
+  margin-right: 14px;
+  font-size: 14px;
+  vertical-align: 0.2em;
+}
+
+.article h4 {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 40px 0 12px;
+}
+
+.article p {
+  margin: 0 0 22px;
+  color: var(--cream);
+  font-size: 17.5px;
+  line-height: 1.72;
+}
+.article p strong {
+  color: var(--cream);
+  font-weight: 600;
+  background: linear-gradient(to top, rgba(212,165,66,0.15), transparent 60%);
+}
+
+.article .lede {
+  font-family: var(--serif-d);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 32px;
+  line-height: 1.32;
+  letter-spacing: -0.012em;
+  color: var(--cream);
+  margin: 0 0 56px;
+  max-width: 640px;
+}
+.article .lede::first-letter {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 104px;
+  line-height: 0.8;
+  float: left;
+  margin: 14px 16px 0 -8px;
+  color: var(--gold);
+}
+
+.article a {
+  color: var(--teal);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(95,184,176,0.3);
+  transition: all 0.2s;
+}
+.article a:hover {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+.article ul, .article ol {
+  padding-left: 24px;
+  margin: 0 0 24px;
+}
+.article li { margin-bottom: 10px; line-height: 1.65; color: var(--cream); }
+.article ul li::marker { color: var(--gold); }
+.article ol li::marker { color: var(--teal); font-weight: 600; }
+
+/* inline code */
+code {
+  font-family: var(--mono);
+  font-size: 0.84em;
+  background: var(--sea);
+  border: 1px solid var(--foam);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--gold);
+  font-weight: 500;
+}
+
+/* code block */
+pre {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  background: var(--sea);
+  border: 1px solid var(--foam);
+  border-left: 2px solid var(--gold);
+  padding: 22px 24px;
+  margin: 28px 0;
+  overflow-x: auto;
+  position: relative;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--parchment);
+}
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+/* ============ COMPONENTS ============ */
+
+/* Cartographer's note (gold, like ink annotation on chart) */
+.note {
+  position: relative;
+  margin: 36px 0;
+  padding: 24px 28px 24px 56px;
+  background: rgba(212,165,66,0.05);
+  border-left: 2px solid var(--gold);
+}
+.note::before {
+  content: '✦';
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  color: var(--gold);
+  font-size: 16px;
+}
+.note .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.note p { margin: 0; font-size: 16px; line-height: 1.68; color: var(--parchment); }
+.note p + p { margin-top: 14px; }
+
+/* Reef warning (coral red) */
+.reef {
+  margin: 28px 0;
+  padding: 18px 22px 18px 56px;
+  background: rgba(214,116,90,0.06);
+  border: 1px solid var(--rust);
+  border-left: 2px solid var(--coral);
+  position: relative;
+}
+.reef::before {
+  content: '⚠';
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  color: var(--coral);
+  font-size: 18px;
+}
+.reef .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-bottom: 6px;
+}
+
+/* Soundings (metrics) */
+.soundings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--foam);
+  border: 1px solid var(--foam);
+  margin: 32px 0;
+}
+.soundings .pt {
+  padding: 22px 20px;
+  background: var(--sea);
+}
+.soundings .pt .num {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+}
+.soundings .pt .num .acc { color: var(--teal); font-style: italic; }
+.soundings .pt .lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--vellum);
+  text-transform: uppercase;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+/* Plate */
+.plate {
+  position: relative;
+  margin: 88px 0 64px;
+}
+.plate .plate-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--vellum);
+}
+.plate .plate-meta .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.plate .plate-meta .name {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 19px;
+  color: var(--cream);
+}
+.plate .plate-meta .scale {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.12em;
+}
+.plate svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--deep);
+  border: 1px solid var(--vellum);
+}
+.plate .caption {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--parchment);
+  margin-top: 16px;
+  padding-left: 18px;
+  border-left: 2px solid var(--gold);
+}
+
+.plate.wide {
+  margin-left: calc(-1 * (1320px - var(--max-content)) / 2 + 64px);
+  margin-right: calc(-1 * (1320px - var(--max-content)) / 2 + 64px);
+  max-width: none;
+}
+@media (max-width: 1320px) {
+  .plate.wide { margin-left: 0; margin-right: 0; }
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 14.5px;
+}
+th, td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--foam);
+  vertical-align: top;
+  color: var(--cream);
+}
+th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 1px solid var(--gold);
+}
+td code { font-size: 12px; padding: 0 4px; }
+
+/* Section divider */
+.rule {
+  display: flex;
+  align-items: center;
+  margin: 96px 0 0;
+}
+.rule .line { flex: 1; height: 1px; background: var(--vellum); }
+.rule .glyph {
+  margin: 0 28px;
+  font-family: var(--serif-d);
+  color: var(--gold);
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 0.2em;
+}
+
+/* QA */
+.qa {
+  margin: 28px 0 40px;
+  padding: 26px;
+  background: var(--sea);
+  border: 1px solid var(--foam);
+  border-top: 2px solid var(--gold);
+}
+.qa .q {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.35;
+  color: var(--cream);
+  margin: 0 0 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--foam);
+}
+.qa .q::before {
+  content: 'Q.';
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--gold);
+  margin-right: 12px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+.qa .a { font-size: 15.5px; color: var(--cream); }
+.qa .a::before {
+  content: 'A.';
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--teal);
+  margin-right: 12px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+
+/* Fade-in */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cover .topline { animation: rise 0.5s ease-out both; }
+.cover h1 { animation: rise 0.9s 0.1s ease-out both; }
+.cover .compass { animation: rise 0.9s 0.25s ease-out both, spin 90s linear infinite; }
+.cover .blurb { animation: rise 0.7s 0.3s ease-out both; }
+.cover .meta { animation: rise 0.7s 0.45s ease-out both; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Colophon */
+.colophon {
+  border-top: 1px solid var(--vellum);
+  padding: 64px;
+  max-width: 1320px;
+  margin: 96px auto 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--vellum);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+}
+.colophon .row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 32px; }
+.colophon .col h5 {
+  font-family: var(--serif-d);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--gold);
+  margin: 0 0 10px;
+}
+.colophon .col p { margin: 0 0 4px; }
+
+/* SVG shared styles */
+.diag-bg { fill: var(--deep); }
+.diag-node rect { fill: rgba(28,37,66,0.5); stroke: var(--vellum); stroke-width: 1.25; }
+.diag-node.gold rect { stroke: var(--gold); fill: rgba(212,165,66,0.08); }
+.diag-node.teal rect { stroke: var(--teal); fill: rgba(95,184,176,0.06); }
+.diag-node.coral rect { stroke: var(--coral); fill: rgba(214,116,90,0.06); }
+.diag-node.dim rect { stroke: var(--dim); fill: rgba(28,37,66,0.4); }
+.diag-text { font-family: var(--mono); font-size: 11px; fill: var(--cream); }
+.diag-text.head { font-family: var(--serif-d); font-style: italic; font-size: 15px; fill: var(--cream); font-weight: 500; }
+.diag-text.gold { fill: var(--gold); }
+.diag-text.teal { fill: var(--teal); }
+.diag-text.coral { fill: var(--coral); }
+.diag-text.dim { fill: var(--dim); }
+.diag-text.muted { fill: var(--vellum); }
+.diag-text.tiny { font-size: 9.5px; letter-spacing: 0.04em; }
+.diag-edge { stroke: var(--vellum); stroke-width: 1.25; fill: none; }
+.diag-edge.gold { stroke: var(--gold); }
+.diag-edge.teal { stroke: var(--teal); }
+.diag-edge.coral { stroke: var(--coral); }
+.diag-edge.dashed { stroke-dasharray: 3 4; }
+.zone-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em; fill: var(--dim); text-transform: uppercase; }
+.zone-box { fill: none; stroke: var(--vellum); stroke-dasharray: 4 6; stroke-width: 1; opacity: 0.5; }
+
+@media (max-width: 768px) {
+  .cover { padding: 40px 24px 60px; }
+  .shell { padding: 0 24px; }
+  .article h2 { margin: 80px 0 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <div class="brand"><span class="v">v</span>LLM</div>
+  <div class="ref">FILE № 003 · 2026.05.12</div>
+
+  <ol>
+    <li><a href="#prologue">Prologue</a></li>
+    <li><a href="#m0">Repo Topology</a></li>
+    <li><a href="#m1">v0 → v1 schism</a></li>
+    <li><a href="#m2">EngineCore</a></li>
+    <li><a href="#m3">AsyncLLM</a></li>
+    <li><a href="#m4">Scheduler</a></li>
+    <li><a href="#m5">PagedAttention</a></li>
+    <li><a href="#m6">ModelRunner</a></li>
+    <li><a href="#m7">Attn backends</a></li>
+    <li><a href="#m8">ROCm path</a></li>
+    <li><a href="#m9">csrc · kernels</a></li>
+  </ol>
+
+  <div class="divider"></div>
+
+  <ol style="counter-reset: nav 11;">
+    <li><a href="#vs">vs SGLang</a></li>
+    <li><a href="#reefs">Five reefs</a></li>
+    <li><a href="#amd">AMD bearings</a></li>
+  </ol>
+</nav>
+
+<!-- ============ COVER ============ -->
+<header class="cover">
+
+  <!-- Compass rose -->
+  <svg class="compass" viewBox="0 0 200 200" aria-hidden="true">
+    <defs>
+      <radialGradient id="compass-bg">
+        <stop offset="0%" stop-color="rgba(212,165,66,0.1)"/>
+        <stop offset="100%" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+    <circle cx="100" cy="100" r="95" fill="url(#compass-bg)" stroke="rgba(212,165,66,0.4)" stroke-width="1"/>
+    <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(212,165,66,0.25)" stroke-width="0.5"/>
+    <circle cx="100" cy="100" r="50" fill="none" stroke="rgba(212,165,66,0.2)" stroke-width="0.5"/>
+    <!-- N S E W -->
+    <text x="100" y="22" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-size="14" fill="#d4a542">N</text>
+    <text x="100" y="188" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-size="14" fill="rgba(212,165,66,0.7)">S</text>
+    <text x="184" y="105" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-size="14" fill="rgba(212,165,66,0.7)">E</text>
+    <text x="16" y="105" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-size="14" fill="rgba(212,165,66,0.7)">W</text>
+    <!-- 8 cardinal lines -->
+    <line x1="100" y1="30" x2="100" y2="170" stroke="rgba(212,165,66,0.4)" stroke-width="0.5"/>
+    <line x1="30" y1="100" x2="170" y2="100" stroke="rgba(212,165,66,0.4)" stroke-width="0.5"/>
+    <line x1="50" y1="50" x2="150" y2="150" stroke="rgba(212,165,66,0.2)" stroke-width="0.5"/>
+    <line x1="150" y1="50" x2="50" y2="150" stroke="rgba(212,165,66,0.2)" stroke-width="0.5"/>
+    <!-- N arrow -->
+    <polygon points="100,32 95,98 100,90 105,98" fill="#d4a542"/>
+    <polygon points="100,168 95,102 100,110 105,102" fill="rgba(212,165,66,0.4)"/>
+    <circle cx="100" cy="100" r="3" fill="#d4a542"/>
+  </svg>
+
+  <div class="topline">
+    <span class="left">◆ Source Reading · File № 003</span>
+    <span>A chart of 633,079 lines</span>
+    <span class="right">VLLM-001 / 2026 ◆</span>
+  </div>
+
+  <h1><span class="v">v</span><span class="llm">LLM.</span></h1>
+
+  <p class="blurb">
+    PagedAttention turned KV cache into virtual memory. Then v1 turned the engine itself into a process. A reading of vLLM's reinvention of inference, in seven plates.
+  </p>
+
+  <div class="meta">
+    <div class="col">
+      <div class="lbl">Source</div>
+      <div class="val">633,079<span class="u">loc · py</span></div>
+    </div>
+    <div class="col">
+      <div class="lbl">v1 Reborn</div>
+      <div class="val">2024<span class="u">complete rewrite</span></div>
+    </div>
+    <div class="col">
+      <div class="lbl">Attn backends</div>
+      <div class="val">20<span class="u">incl. AITER</span></div>
+    </div>
+    <div class="col">
+      <div class="lbl">CUDA / HIP src</div>
+      <div class="val">csrc/<span class="u">extensive</span></div>
+    </div>
+    <div class="col">
+      <div class="lbl">gpu_model_runner</div>
+      <div class="val">7,185<span class="u">lines · 1 file</span></div>
+    </div>
+    <div class="col">
+      <div class="lbl">Reading time</div>
+      <div class="val">~6h<span class="u">three sessions</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ARTICLE ============ -->
+<div class="shell">
+<main class="article">
+
+<!-- Prologue -->
+<section id="prologue">
+  <h2><span class="num">§ 00 · Prologue</span>The territory <em>charted.</em></h2>
+
+  <p class="lede">
+    vLLM 不是单纯的 inference engine — 它发明了"<i>PagedAttention</i>"这个抽象。把 KV cache 像虚拟内存一样分页管理，让吞吐量和拼批策略<strong>解耦于物理 GPU 内存碎片</strong>。这是它从 2023 年发布到 2026 年仍然是事实标准的根本原因。这次精读关注它 2024 年完成的 <code>v1</code> 重构 — 把原本的单体引擎拆成可插拔的 EngineCore + Worker，并提供进程内 / 独立进程 / Ray actor 三种部署模式。
+  </p>
+
+  <p>
+    跟 SGLang 的对比是这份文档的潜流。<strong>SGLang 用 RadixCache 在请求间共享 prefix；vLLM 用 BlockPool 在物理内存里共享 block。</strong>两条路径走到了相似的终点（prefix caching），但底层的抽象层级不同 — 这造就了两个系统在多轮对话、结构化生成、多模态扩展上的不同表现。
+  </p>
+
+  <div class="soundings">
+    <div class="pt"><div class="num">7,185</div><div class="lbl">gpu_model_runner</div></div>
+    <div class="pt"><div class="num">2,234</div><div class="lbl">v1/scheduler</div></div>
+    <div class="pt"><div class="num">2,161</div><div class="lbl">v1/engine/core</div></div>
+    <div class="pt"><div class="num">1,969</div><div class="lbl">flashinfer backend</div></div>
+    <div class="pt"><div class="num">1,471</div><div class="lbl">rocm_aiter_fa</div></div>
+    <div class="pt"><div class="num">1,236</div><div class="lbl">flash_attn</div></div>
+    <div class="pt"><div class="num">1,107</div><div class="lbl">async_llm</div></div>
+    <div class="pt"><div class="num">541</div><div class="lbl">kv_cache_manager</div></div>
+    <div class="pt"><div class="num">509</div><div class="lbl">block_pool</div></div>
+    <div class="pt"><div class="num"><span class="acc">20</span></div><div class="lbl">attn backends</div></div>
+    <div class="pt"><div class="num"><span class="acc">3</span></div><div class="lbl">deploy modes</div></div>
+    <div class="pt"><div class="num">v1</div><div class="lbl">architecture</div></div>
+  </div>
+</section>
+
+<!-- ============ PLATE I: v0 vs v1 ============ -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate I — Two eras of vLLM</span>
+    <span class="name">v0 monolith versus v1 dispatched</span>
+    <span class="scale">architectural</span>
+  </div>
+  <svg viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs>
+      <pattern id="seaGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+        <path d="M 32 0 L 0 0 0 32" stroke="rgba(184,169,132,0.04)" stroke-width="1" fill="none"/>
+      </pattern>
+      <marker id="ahV1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8a984"/>
+      </marker>
+      <marker id="ahV1g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a542"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="560" class="diag-bg"/>
+    <rect width="1200" height="560" fill="url(#seaGrid)"/>
+
+    <!-- left: v0 -->
+    <text x="280" y="42" text-anchor="middle" class="diag-text head" style="font-size:18px; fill:var(--vellum);">v0 — monolith</text>
+    <text x="280" y="62" text-anchor="middle" class="diag-text tiny dim">until 2024 · single process owns everything</text>
+
+    <g transform="translate(120, 100)">
+      <rect width="320" height="380" fill="none" stroke="var(--vellum)" stroke-width="1" stroke-dasharray="3 5"/>
+      <g class="diag-node dim" transform="translate(40, 30)">
+        <rect width="240" height="44"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text head muted">LLMEngine</text>
+        <text x="120" y="34" text-anchor="middle" class="diag-text tiny dim">single process holds it all</text>
+      </g>
+      <g class="diag-node dim" transform="translate(40, 92)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny muted">Scheduler</text>
+      </g>
+      <g class="diag-node dim" transform="translate(40, 138)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny muted">BlockManager (KV)</text>
+      </g>
+      <g class="diag-node dim" transform="translate(40, 184)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny muted">Worker.execute_model()</text>
+      </g>
+      <g class="diag-node dim" transform="translate(40, 230)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny muted">Model.forward()</text>
+      </g>
+      <g class="diag-node dim" transform="translate(40, 276)">
+        <rect width="240" height="32"/>
+        <text x="120" y="20" text-anchor="middle" class="diag-text tiny muted">Detokenize → output</text>
+      </g>
+      <text x="160" y="340" text-anchor="middle" class="diag-text tiny dim" style="font-style:italic;">CPU 调度 ↔ GPU 执行</text>
+      <text x="160" y="356" text-anchor="middle" class="diag-text tiny dim" style="font-style:italic;">严格串行 — GPU idle 等 CPU</text>
+    </g>
+
+    <!-- divider -->
+    <line x1="600" y1="100" x2="600" y2="480" stroke="var(--gold)" stroke-width="1" stroke-dasharray="2 4" opacity="0.5"/>
+    <text x="600" y="510" text-anchor="middle" class="diag-text" style="fill:var(--gold); font-family:var(--serif-d); font-style:italic; font-size:20px;">→ rewrite, 2024 →</text>
+
+    <!-- right: v1 -->
+    <text x="900" y="42" text-anchor="middle" class="diag-text head" style="font-size:18px; fill:var(--gold);">v1 — dispatched</text>
+    <text x="900" y="62" text-anchor="middle" class="diag-text tiny dim">EngineCore + Worker · IPC over ZMQ</text>
+
+    <g transform="translate(700, 100)">
+      <!-- AsyncLLM client side -->
+      <g class="diag-node teal" transform="translate(40, 0)">
+        <rect width="200" height="44"/>
+        <text x="100" y="20" text-anchor="middle" class="diag-text head" style="fill:var(--teal);">AsyncLLM</text>
+        <text x="100" y="34" text-anchor="middle" class="diag-text tiny dim">user-facing async client</text>
+      </g>
+
+      <line class="diag-edge gold dashed" x1="140" y1="44" x2="140" y2="78" marker-end="url(#ahV1g)"/>
+      <text x="152" y="64" class="diag-text tiny gold">ZMQ</text>
+
+      <g class="diag-node gold" transform="translate(20, 80)">
+        <rect width="280" height="100"/>
+        <text x="140" y="22" text-anchor="middle" class="diag-text head gold">EngineCore</text>
+        <text x="140" y="38" text-anchor="middle" class="diag-text tiny dim">core.py · 2161 lines</text>
+        <rect x="20" y="50" width="110" height="22" fill="rgba(212,165,66,0.1)" stroke="var(--gold)"/>
+        <text x="75" y="64" text-anchor="middle" class="diag-text tiny gold">Scheduler</text>
+        <rect x="150" y="50" width="110" height="22" fill="rgba(212,165,66,0.1)" stroke="var(--gold)"/>
+        <text x="205" y="64" text-anchor="middle" class="diag-text tiny gold">KVCacheManager</text>
+        <text x="140" y="92" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">3 modes: Proc · Actor · Inline</text>
+      </g>
+
+      <line class="diag-edge teal dashed" x1="160" y1="180" x2="160" y2="210" marker-end="url(#ahV1g)" style="stroke:var(--teal);"/>
+      <text x="172" y="198" class="diag-text tiny teal">IPC</text>
+
+      <g class="diag-node teal" transform="translate(20, 212)">
+        <rect width="280" height="100"/>
+        <text x="140" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--teal);">GPU Worker(s) — N×</text>
+        <text x="140" y="38" text-anchor="middle" class="diag-text tiny dim">gpu_worker.py</text>
+        <rect x="20" y="50" width="240" height="40" fill="rgba(95,184,176,0.08)" stroke="var(--teal)"/>
+        <text x="140" y="64" text-anchor="middle" class="diag-text tiny" style="fill:var(--teal);">GpuModelRunner · 7185 lines</text>
+        <text x="140" y="80" text-anchor="middle" class="diag-text tiny dim">forward, attn backend dispatch, KV ops</text>
+      </g>
+
+      <text x="160" y="340" text-anchor="middle" class="diag-text tiny" style="fill:var(--gold); font-style:italic;">★ CPU & GPU overlap — async by design</text>
+      <text x="160" y="356" text-anchor="middle" class="diag-text tiny dim" style="font-style:italic;">每 GPU step: ~1 IPC round-trip</text>
+    </g>
+
+    <!-- bottom -->
+    <text x="600" y="530" text-anchor="middle" class="diag-text tiny dim" style="font-style:italic;">Both still exist in the codebase. <tspan fill="#d4a542">v1 is default since v0.6;</tspan> v0 marked legacy.</text>
+  </svg>
+  <div class="caption">
+    v0 把所有事在一个 Python 进程里串行做。v1 把<strong>调度</strong>和<strong>模型执行</strong>拆成 EngineCore + Worker — 它们之间用 ZMQ / IPC 通信，CPU 调度天然 overlap 在 GPU forward 之上。这是 vLLM 2024 年最大的工程转向，也是它现在能跟 SGLang 在吞吐量上拉近差距的关键。
+  </div>
+</section>
+
+<!-- M0 -->
+<section id="m0">
+  <h2><span class="num">§ M0 · 25 min</span>The repo, <i>at first sight.</i></h2>
+
+  <p>
+    vLLM 是个 monorepo — 顶层就有 <code>vllm/</code>（Python 包）+ <code>csrc/</code>（C++/CUDA/HIP 源码）+ <code>cmake/</code>（构建系统）+ <code>tests/</code> + <code>benchmarks/</code> + <code>docs/</code>。没有像 SGLang 那样把 kernel 拆成独立 wheel — vLLM 的策略是"一个 wheel 内置所有 platform 的 CUDA/HIP 二进制"。
+  </p>
+
+  <p><code>vllm/</code> 主包里有几个值得立刻定位的 file：</p>
+
+  <table>
+    <thead><tr><th>File / Dir</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>vllm/v1/</code></td><td><strong>★ 2024 重构后的新架构</strong> — 整个内核都在这</td></tr>
+      <tr><td><code>vllm/engine/</code></td><td>老 v0 入口（llm_engine.py · async_llm_engine.py · arg_utils.py）</td></tr>
+      <tr><td><code>vllm/_aiter_ops.py</code></td><td><strong>AMD AITER 自定义算子包装</strong></td></tr>
+      <tr><td><code>vllm/_custom_ops.py</code></td><td>通用 C++ ext 算子包装（量化、norm、rotary etc.）</td></tr>
+      <tr><td><code>vllm/_xpu_ops.py</code></td><td>Intel XPU 算子</td></tr>
+      <tr><td><code>vllm/attention/</code></td><td>老 v0 attention 框架（v1 在 v1/attention/）</td></tr>
+      <tr><td><code>vllm/model_executor/</code></td><td>model 定义 + 加载（Llama / DeepSeek / Kimi / ...）</td></tr>
+      <tr><td><code>vllm/distributed/</code></td><td>TP/PP/DP 通信 + KV connector（NIXL · offloading）</td></tr>
+      <tr><td><code>vllm/compilation/</code></td><td>torch.compile 集成 + custom passes</td></tr>
+      <tr><td><code>vllm/platforms/</code></td><td>CUDA / ROCm / TPU / XPU / CPU 平台抽象</td></tr>
+      <tr><td><code>vllm/kernels/</code></td><td>纯 Python kernel 封装</td></tr>
+      <tr><td><code>vllm/entrypoints/</code></td><td>OpenAI 兼容 API server + offline LLM 类</td></tr>
+      <tr><td><code>csrc/</code></td><td><strong>extensive C++/CUDA/HIP 源码</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p><code>vllm/v1/</code> 进一步切分：</p>
+
+  <table>
+    <thead><tr><th>v1 subdir</th><th>What</th></tr></thead>
+    <tbody>
+      <tr><td><code>v1/engine/</code></td><td><strong>EngineCore</strong>（core.py 2161 行）· AsyncLLM · LLMEngine</td></tr>
+      <tr><td><code>v1/core/</code></td><td><strong>KVCacheManager · BlockPool · sched/Scheduler</strong></td></tr>
+      <tr><td><code>v1/worker/</code></td><td><strong>GpuModelRunner</strong>（7185 行！）· CPU/TPU/XPU runner</td></tr>
+      <tr><td><code>v1/attention/</code></td><td>20 个 attention backend（含 3 个 ROCm）</td></tr>
+      <tr><td><code>v1/kv_offload/</code></td><td>★ KV cache offload 到 CPU / disk / NIXL（disagg serving）</td></tr>
+      <tr><td><code>v1/spec_decode/</code></td><td>投机解码</td></tr>
+      <tr><td><code>v1/structured_output/</code></td><td>JSON / regex 约束</td></tr>
+      <tr><td><code>v1/sample/</code></td><td>采样（top_k / top_p / typical）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <div class="label">观察 · ARCHITECTURE INVARIANT</div>
+    <p>vLLM 把"<strong>什么</strong>调度（Scheduler · KVCacheManager · 在 EngineCore 里）"和"<strong>怎么</strong>执行（Worker · ModelRunner · 在独立进程或 Ray actor 里）"完全分开。这是它跟 SGLang 最显眼的设计差异 — SGLang 是<em>每个 TP rank 都是一个完整 scheduler</em>（N 个 scheduler 进程），vLLM 是<em>一个 scheduler 协调 N 个 worker</em>。</p>
+    <p>vLLM 路径的好处：scheduler 状态单点权威，KVCacheManager 不用同步；代价：scheduler 是单点瓶颈，必须做得很快（这也是为什么有 7185 行的 gpu_model_runner，把工作尽量推到 worker 端做）。</p>
+  </div>
+</section>
+
+<!-- M1+M2 EngineCore -->
+<section id="m1">
+  <h2><span class="num">§ M1 / M2 · 50 min</span>EngineCore — <em>three lives.</em></h2>
+
+  <p>
+    <code>vllm/v1/engine/core.py</code>（2161 行）是 vLLM v1 的心脏。它定义了一个清晰的继承体系，让<strong>同一个 EngineCore 可以以三种部署形态运行</strong>：
+  </p>
+
+  <pre data-lang="python · v1/engine/core.py"><code>class EngineCore:                            # line 91  · 基类，纯逻辑
+    """Scheduler + KVCacheManager + Workers · 同步接口"""
+
+class EngineCoreProc(EngineCore):            # line 810 · 独立进程
+    """Subprocess 形态 · 与 AsyncLLM 通过 ZMQ 通信"""
+
+class DPEngineCoreProc(EngineCoreProc):      # line 1626 · 数据并行
+    """DP 拓扑下 N 个 EngineCoreProc 协作"""
+
+class EngineCoreActorMixin:                  # line 1985 · Ray actor 行为
+class EngineCoreActor(EngineCoreActorMixin, EngineCoreProc):  # line 2133
+class DPMoEEngineCoreActor(EngineCoreActorMixin, DPEngineCoreProc):  # line 2110</code></pre>
+
+  <p>这意味着用户可以选 3 种部署：</p>
+
+  <table>
+    <thead><tr><th>Deployment</th><th>Class</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>In-process (sync)</td><td><code>EngineCore</code></td><td>Python 脚本里 <code>LLM(...)</code> 离线推理</td></tr>
+      <tr><td>Subprocess (async)</td><td><code>EngineCoreProc</code></td><td>OpenAI API server 默认</td></tr>
+      <tr><td>Ray Actor</td><td><code>EngineCoreActor</code></td><td>多机多 GPU 部署</td></tr>
+    </tbody>
+  </table>
+
+  <p>三种部署共享同一份核心逻辑 — 这是 OO 多态在系统工程里的漂亮应用。</p>
+
+  <h3>AsyncLLM — 异步客户端</h3>
+
+  <p><code>vllm/v1/engine/async_llm.py</code>（1107 行）是 OpenAI-compatible server 用的高级入口。它做的事：</p>
+
+  <ol>
+    <li>fork 一个 <code>EngineCoreProc</code> 子进程</li>
+    <li>建立 ZMQ socket（PUSH/PULL + PUB/SUB 混用）</li>
+    <li>提供 <code>async def generate(prompt)</code> async 生成器接口</li>
+    <li>每次拿到 EngineCore 的一批 outputs，把它们 demux 给等待的 async 请求</li>
+  </ol>
+
+  <p>跟 SGLang 的 TokenizerManager 类似，但 vLLM 把 tokenizer / detokenizer 都<strong>合在 EngineCore 进程里</strong>（不是单独进程）— 这是 vLLM 整体进程数少的原因。</p>
+</section>
+
+<!-- =============== PLATE II: EngineCore × Worker =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate II — One scheduler, N workers</span>
+    <span class="name">EngineCore / Worker IPC topology</span>
+    <span class="scale">deployment</span>
+  </div>
+  <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs>
+      <marker id="ahV2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a542"/>
+      </marker>
+      <marker id="ahV2t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#5fb8b0"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="480" class="diag-bg"/>
+
+    <!-- AsyncLLM (Client) -->
+    <g transform="translate(80, 80)">
+      <rect class="zone-box" x="0" y="0" width="220" height="320"/>
+      <text x="10" y="-8" class="zone-label">Process · Client</text>
+      <g class="diag-node teal" transform="translate(20, 30)">
+        <rect width="180" height="56"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--teal);">AsyncLLM</text>
+        <text x="90" y="38" text-anchor="middle" class="diag-text tiny dim">v1/engine/async_llm.py</text>
+        <text x="90" y="52" text-anchor="middle" class="diag-text tiny dim">1,107 lines</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 110)">
+        <rect width="180" height="36"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text tiny">tokenize</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 158)">
+        <rect width="180" height="36"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text tiny">async def generate()</text>
+      </g>
+      <g class="diag-node" transform="translate(20, 206)">
+        <rect width="180" height="36"/>
+        <text x="90" y="22" text-anchor="middle" class="diag-text tiny">demux outputs to coroutines</text>
+      </g>
+    </g>
+
+    <!-- ZMQ arrow -->
+    <line class="diag-edge gold dashed" x1="300" y1="160" x2="400" y2="160" marker-end="url(#ahV2)" stroke-width="1.5"/>
+    <text x="350" y="150" text-anchor="middle" class="diag-text tiny gold">ZMQ</text>
+    <text x="350" y="178" text-anchor="middle" class="diag-text tiny gold">requests</text>
+
+    <line class="diag-edge gold dashed" x1="400" y1="220" x2="300" y2="220" marker-end="url(#ahV2)" stroke-width="1.5"/>
+    <text x="350" y="240" text-anchor="middle" class="diag-text tiny gold">outputs</text>
+
+    <!-- EngineCore (Server side) -->
+    <g transform="translate(400, 80)">
+      <rect class="zone-box" x="0" y="0" width="320" height="320" style="stroke:var(--gold);"/>
+      <text x="10" y="-8" class="zone-label" style="fill:var(--gold);">Process · EngineCoreProc (subprocess or actor)</text>
+
+      <g class="diag-node gold" transform="translate(20, 30)">
+        <rect width="280" height="48"/>
+        <text x="140" y="22" text-anchor="middle" class="diag-text head gold">EngineCore</text>
+        <text x="140" y="38" text-anchor="middle" class="diag-text tiny dim">v1/engine/core.py · 2,161 lines</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 96)">
+        <rect width="135" height="38"/>
+        <text x="68" y="16" text-anchor="middle" class="diag-text tiny">Scheduler</text>
+        <text x="68" y="30" text-anchor="middle" class="diag-text tiny dim">2,234</text>
+      </g>
+      <g class="diag-node" transform="translate(165, 96)">
+        <rect width="135" height="38"/>
+        <text x="68" y="16" text-anchor="middle" class="diag-text tiny">KVCacheManager</text>
+        <text x="68" y="30" text-anchor="middle" class="diag-text tiny dim">541</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 146)">
+        <rect width="135" height="38"/>
+        <text x="68" y="16" text-anchor="middle" class="diag-text tiny">BlockPool</text>
+        <text x="68" y="30" text-anchor="middle" class="diag-text tiny dim">509</text>
+      </g>
+      <g class="diag-node" transform="translate(165, 146)">
+        <rect width="135" height="38"/>
+        <text x="68" y="16" text-anchor="middle" class="diag-text tiny">Detokenize</text>
+        <text x="68" y="30" text-anchor="middle" class="diag-text tiny dim">in-proc</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 200)">
+        <rect width="280" height="38"/>
+        <text x="140" y="22" text-anchor="middle" class="diag-text tiny">EngineCoreBusyLoop · step / step / step</text>
+      </g>
+
+      <text x="160" y="280" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">Schedule t+1 ⇄ collect output t</text>
+    </g>
+
+    <!-- IPC arrow -->
+    <line class="diag-edge teal dashed" x1="720" y1="160" x2="820" y2="160" marker-end="url(#ahV2t)" stroke-width="1.5"/>
+    <text x="770" y="150" text-anchor="middle" class="diag-text tiny teal">SchedulerOutput</text>
+    <text x="770" y="178" text-anchor="middle" class="diag-text tiny teal">(IPC / shm)</text>
+
+    <line class="diag-edge teal dashed" x1="820" y1="220" x2="720" y2="220" marker-end="url(#ahV2t)" stroke-width="1.5"/>
+    <text x="770" y="240" text-anchor="middle" class="diag-text tiny teal">ModelRunnerOutput</text>
+
+    <!-- Workers -->
+    <g transform="translate(820, 80)">
+      <rect class="zone-box" x="0" y="0" width="300" height="320" style="stroke:var(--teal);"/>
+      <text x="10" y="-8" class="zone-label" style="fill:var(--teal);">Process(es) · Worker(s) — N×</text>
+
+      <g class="diag-node teal" transform="translate(20, 30)">
+        <rect width="260" height="44"/>
+        <text x="130" y="22" text-anchor="middle" class="diag-text head" style="fill:var(--teal);">GpuWorker</text>
+        <text x="130" y="36" text-anchor="middle" class="diag-text tiny dim">v1/worker/gpu_worker.py</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 90)">
+        <rect width="260" height="56"/>
+        <text x="130" y="22" text-anchor="middle" class="diag-text head muted">GpuModelRunner</text>
+        <text x="130" y="36" text-anchor="middle" class="diag-text tiny dim">gpu_model_runner.py · 7,185 lines</text>
+        <text x="130" y="50" text-anchor="middle" class="diag-text tiny dim" style="font-style:italic;">vLLM's largest single file</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 160)">
+        <rect width="125" height="32"/>
+        <text x="62" y="20" text-anchor="middle" class="diag-text tiny">model.forward</text>
+      </g>
+      <g class="diag-node" transform="translate(155, 160)">
+        <rect width="125" height="32"/>
+        <text x="62" y="20" text-anchor="middle" class="diag-text tiny">attn backend</text>
+      </g>
+
+      <g class="diag-node" transform="translate(20, 204)">
+        <rect width="125" height="32"/>
+        <text x="62" y="20" text-anchor="middle" class="diag-text tiny">KV cache write</text>
+      </g>
+      <g class="diag-node" transform="translate(155, 204)">
+        <rect width="125" height="32"/>
+        <text x="62" y="20" text-anchor="middle" class="diag-text tiny">sampling</text>
+      </g>
+
+      <text x="150" y="280" text-anchor="middle" class="diag-text tiny muted" style="font-style:italic;">CUDA Graph captured per shape bucket</text>
+    </g>
+  </svg>
+  <div class="caption">
+    一个 EngineCore + N 个 Worker。<strong>Scheduler 在 EngineCore 这边</strong> — 它知道全局所有请求的状态、KV cache 占用、block 分配。Worker 只负责"接收一批 schedule，跑 forward，输出 token"。这种"单 scheduler 多 worker"是 vLLM 路径；SGLang 是"N 个 scheduler，各管自己的 rank"。两种都能 work，但调试体验和扩展方向不同。
+  </div>
+</section>
+
+<!-- M5 PagedAttention -->
+<section id="m5">
+  <h2><span class="num">§ M5 · 50 min</span>Paged<i>Attention</i> — <em>virtual memory for KV.</em></h2>
+
+  <p>
+    这是 vLLM 的<strong>原创贡献</strong>。把整个 KV cache 物理内存切成定长 block（默认 16 token 一个 block），用一个"虚拟 → 物理"映射表（block table）让每个 sequence 看到的是逻辑连续的 KV，但物理上可以散布在内存任何位置。
+  </p>
+
+  <p>v1 里的实现拆成三个类：</p>
+
+  <table>
+    <thead><tr><th>Class</th><th>File / Line</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>BlockPool</code></td><td><code>v1/core/block_pool.py:130</code></td><td>物理 block 池 — 哪些 block 空闲 / 被引用</td></tr>
+      <tr><td><code>BlockHashToBlockMap</code></td><td><code>v1/core/block_pool.py:34</code></td><td>★ block hash → block id — 这是 prefix caching 的核心</td></tr>
+      <tr><td><code>KVCacheBlocks</code></td><td><code>v1/core/kv_cache_manager.py:22</code></td><td>一个请求拥有的 block 集合</td></tr>
+      <tr><td><code>KVCacheManager</code></td><td><code>v1/core/kv_cache_manager.py:106</code></td><td>scheduler 用的 high-level API</td></tr>
+      <tr><td><code>KVCacheCoordinator</code></td><td><code>v1/core/kv_cache_coordinator.py</code></td><td>多种 cache（attn / mamba）的协调</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Prefix caching — vLLM 的方式</h3>
+
+  <p>
+    跟 SGLang 的 RadixCache（树形）不同，vLLM 用<strong>哈希 + 不可变 block</strong>实现 prefix caching：
+  </p>
+
+  <pre data-lang="python · 概念伪代码"><code>def compute_block_hash(tokens):
+    # 一个 block 的 hash 是它自己的 tokens + 父 block 的 hash
+    return hash((parent_block_hash, tuple(tokens)))
+
+# 当新请求来时：
+for i, block_tokens in enumerate(tokenize(prompt).blocks):
+    h = compute_block_hash(block_tokens)
+    if h in block_hash_to_block_map:
+        # cache hit — 直接复用物理 block
+        reuse(block_hash_to_block_map[h])
+    else:
+        # cache miss — allocate 新 block，记录 hash
+        new_block = block_pool.allocate()
+        new_block.hash = h
+        block_hash_to_block_map[h] = new_block</code></pre>
+
+  <p>关键差异：<strong>block 的 hash 包含父 block 的 hash</strong> — 这让 hash 隐含了"我前面所有 token 的精确历史"。两个请求只有当 prefix 完全一致时，它们的 block hash 才会一样。</p>
+
+  <div class="note">
+    <div class="label">★ 设计对比 · TREE vs HASH</div>
+    <p><strong>SGLang RadixCache（树）</strong>：节点显式持有 token 序列，match_prefix 沿树查最长匹配。优点：能匹配任意长度的部分 prefix，分裂粒度细。缺点：树维护成本高，需要 ref_count + LRU。</p>
+    <p><strong>vLLM BlockPool（hash）</strong>：固定 16-token block，每个 block 一个 hash。优点：实现极简，lookup O(1)，整 block 复用对 attention kernel 友好。缺点：粒度粗 — prefix 必须是 16 的倍数才能 cache hit。</p>
+    <p>实际效果：在长 prompt + 多轮对话场景，两者差距很小（因为 prefix 一致性通常是 hundreds-of-tokens 级别）；但 SGLang 在<strong>短 prompt 部分共享</strong>场景下更灵活。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE III: PagedAttention =============== -->
+<section class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate III — PagedAttention, dissected</span>
+    <span class="name">virtual layout vs. physical pool</span>
+    <span class="scale">memory</span>
+  </div>
+  <svg viewBox="0 0 1200 540" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs>
+      <marker id="ahV3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a542"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="540" class="diag-bg"/>
+
+    <text x="600" y="40" text-anchor="middle" class="diag-text head" style="font-size:18px;">Two requests share <tspan fill="#d4a542" font-style="italic">"You are helpful"</tspan> · only the <tspan fill="#5fb8b0" font-style="italic">tail</tspan> diverges</text>
+
+    <!-- Request 1 virtual view -->
+    <text x="60" y="100" class="diag-text" style="fill:var(--teal); font-family:var(--serif-d); font-style:italic; font-size:16px;">Request A — logical layout</text>
+    <g transform="translate(60, 120)">
+      <g class="diag-node gold" transform="translate(0,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny gold">block 0</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">You,are,a,helpful</text></g>
+      <g class="diag-node gold" transform="translate(80,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny gold">block 1</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">asst.User asks:</text></g>
+      <g class="diag-node teal" transform="translate(160,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny teal">block 2</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">How to print</text></g>
+      <g class="diag-node teal" transform="translate(240,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny teal">block 3</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">hi? Answer:</text></g>
+    </g>
+    <text x="60" y="178" class="diag-text tiny dim">request_a.block_table = [<tspan fill="#d4a542">7</tspan>, <tspan fill="#d4a542">12</tspan>, <tspan fill="#5fb8b0">3</tspan>, <tspan fill="#5fb8b0">9</tspan>]</text>
+
+    <!-- Request 2 virtual view -->
+    <text x="660" y="100" class="diag-text" style="fill:var(--teal); font-family:var(--serif-d); font-style:italic; font-size:16px;">Request B — logical layout</text>
+    <g transform="translate(660, 120)">
+      <g class="diag-node gold" transform="translate(0,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny gold">block 0</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">You,are,a,helpful</text></g>
+      <g class="diag-node gold" transform="translate(80,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny gold">block 1</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">asst.User asks:</text></g>
+      <g class="diag-node teal" transform="translate(160,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny teal">block 2</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">What is 2+2?</text></g>
+      <g class="diag-node teal" transform="translate(240,0)"><rect width="60" height="36"/><text x="30" y="14" text-anchor="middle" class="diag-text tiny teal">block 3</text><text x="30" y="28" text-anchor="middle" class="diag-text tiny dim">. Reply: 4.</text></g>
+    </g>
+    <text x="660" y="178" class="diag-text tiny dim">request_b.block_table = [<tspan fill="#d4a542">7</tspan>, <tspan fill="#d4a542">12</tspan>, <tspan fill="#5fb8b0">5</tspan>, <tspan fill="#5fb8b0">11</tspan>]</text>
+
+    <!-- Virtual to physical arrows -->
+    <line class="diag-edge gold" x1="90" y1="158" x2="500" y2="280" stroke-width="1"/>
+    <line class="diag-edge gold" x1="170" y1="158" x2="500" y2="340" stroke-width="1"/>
+    <line class="diag-edge teal" x1="250" y1="158" x2="500" y2="400" stroke-width="1"/>
+    <line class="diag-edge teal" x1="330" y1="158" x2="500" y2="460" stroke-width="1"/>
+
+    <line class="diag-edge gold" x1="690" y1="158" x2="500" y2="280" stroke-width="1"/>
+    <line class="diag-edge gold" x1="770" y1="158" x2="500" y2="340" stroke-width="1"/>
+    <line class="diag-edge teal" x1="850" y1="158" x2="500" y2="400" stroke-width="1"/>
+    <line class="diag-edge teal" x1="930" y1="158" x2="500" y2="460" stroke-width="1"/>
+
+    <!-- Physical block pool -->
+    <text x="600" y="240" text-anchor="middle" class="diag-text" style="fill:var(--gold); font-family:var(--serif-d); font-style:italic; font-size:16px;">BlockPool — physical KV memory (256 blocks)</text>
+
+    <g transform="translate(440, 270)">
+      <rect class="zone-box" x="0" y="0" width="320" height="220" style="stroke:var(--gold);"/>
+      <g class="diag-node gold" transform="translate(20, 16)"><rect width="280" height="28"/><text x="140" y="18" text-anchor="middle" class="diag-text tiny gold">block 7 · "You,are,a,helpful" · ref=2 (shared!)</text></g>
+      <g class="diag-node gold" transform="translate(20, 50)"><rect width="280" height="28"/><text x="140" y="18" text-anchor="middle" class="diag-text tiny gold">block 12 · "asst.User asks:" · ref=2 (shared!)</text></g>
+      <g class="diag-node teal" transform="translate(20, 84)"><rect width="280" height="28"/><text x="140" y="18" text-anchor="middle" class="diag-text tiny teal">block 3 · "How to print" · ref=1 (A only)</text></g>
+      <g class="diag-node teal" transform="translate(20, 118)"><rect width="280" height="28"/><text x="140" y="18" text-anchor="middle" class="diag-text tiny teal">block 5 · "What is 2+2?" · ref=1 (B only)</text></g>
+      <g class="diag-node teal" transform="translate(20, 152)"><rect width="280" height="28"/><text x="140" y="18" text-anchor="middle" class="diag-text tiny teal">block 9 · "hi? Answer:" · ref=1</text></g>
+      <g class="diag-node teal" transform="translate(20, 186)"><rect width="280" height="28"/><text x="140" y="18" text-anchor="middle" class="diag-text tiny teal">block 11 · ". Reply: 4." · ref=1</text></g>
+    </g>
+
+    <!-- Bottom annotations -->
+    <g transform="translate(60, 510)">
+      <text class="diag-text tiny gold" style="font-style:italic;">★ Two requests share blocks 7 + 12 — 32 tokens × 2 layers × hidden_dim × 2 (K+V) bytes saved.</text>
+    </g>
+    <g transform="translate(780, 510)">
+      <text class="diag-text tiny dim" style="font-style:italic;">Hash chain ensures sharing is safe even with mid-prompt divergence.</text>
+    </g>
+  </svg>
+  <div class="caption">
+    Request A 和 B 各看到 4 个逻辑 block。<code>block_table</code> 把它们映射到物理 <code>BlockPool</code> 里的 block id。Block 7 和 12 被两个请求共享（ref_count=2）— 这就是 prefix caching 在 vLLM 里的实现。当 ref_count 归零，block 回到 free pool 可被新请求用。整个机制类似操作系统页表 + 写时复制（COW），所以叫"PagedAttention"。
+  </div>
+</section>
+
+<!-- M4 Scheduler -->
+<section id="m4">
+  <h2><span class="num">§ M4 · 40 min</span>The Scheduler — <em>budget keeper.</em></h2>
+
+  <p>
+    <code>vllm/v1/core/sched/scheduler.py</code> 是 2234 行的单类。<code>Scheduler(SchedulerInterface)</code> 在 line 62。它的核心数据结构出乎意料地简单：
+  </p>
+
+  <pre data-lang="python · v1/core/sched/scheduler.py:162"><code>class Scheduler(SchedulerInterface):
+    def __init__(self, ...):
+        self.waiting = create_request_queue(self.policy)  # 等待 prefill 的请求
+        self.running: list[Request] = []                  # 正在 generation 的请求
+        # + KVCacheManager, max_num_running_reqs, token_budget, etc.</code></pre>
+
+  <p><code>schedule()</code> 方法（line 310）是每个 step 调用一次的核心。它做<strong>两轮调度决策</strong>：</p>
+
+  <ol>
+    <li><strong>Phase A — running 请求继续 decode</strong>（line 347-462）<br>遍历 <code>self.running</code>，给每个请求 1 个 decode token 的预算。如果总 token budget 用完 / KV cache 不够，<strong>preempt</strong> 最低优先级的请求（line 442：<code>self.running.remove(preempted_req)</code>）。</li>
+    <li><strong>Phase B — waiting 请求 admit + prefill</strong>（line 529-765）<br>从 <code>self.waiting</code> 拉新请求，尝试 chunked prefill — 一次 step 不跑完整个 prompt，分多个 chunk 边 prefill 边和 decode 混跑。</li>
+  </ol>
+
+  <p>这种"Phase A + Phase B 在同一 step 里混跑"是 vLLM <strong>continuous batching</strong> 的精髓。"continuous" 不是"不停跑"，而是"prefill 和 decode 在 batch 维度共存"。</p>
+
+  <h3>Preemption — 当资源不够</h3>
+
+  <p>line 910 的 <code>_preempt_request</code>：</p>
+
+  <pre data-lang="python"><code>def _preempt_request(self, request, timestamp):
+    # 把所有 KV blocks 还回 BlockPool (但保留 hash → 后续可能复用)
+    self.kv_cache_manager.free(request)
+    # 状态变 WAITING，重新插到 waiting 队列前部
+    request.status = RequestStatus.WAITING
+    self.waiting.prepend_request(request)</code></pre>
+
+  <p><strong>Preempted 请求会丢失它的 KV cache</strong>（虽然 prefix block 因为有 hash 可能在 BlockPool 里被新请求复用，从而部分恢复）。下次被 schedule 时要重新跑 prefill — 这是 vLLM 在内存受限场景下的 graceful degradation。</p>
+</section>
+
+<!-- M6 ModelRunner -->
+<section id="m6">
+  <h2><span class="num">§ M6 · 40 min</span>GpuModelRunner — <em>seven thousand lines.</em></h2>
+
+  <p>
+    <code>vllm/v1/worker/gpu_model_runner.py</code> 是<strong>整个 vLLM codebase 里最大的单一文件 — 7185 行</strong>。它干的事：
+  </p>
+
+  <ol>
+    <li>从 EngineCore 收 <code>SchedulerOutput</code>（含每个请求的 block_table、要跑的 token 数、采样参数）</li>
+    <li>构造 <code>ForwardContext</code>（含 attention metadata、cuda graph bucket key 等）</li>
+    <li>把 token 张量准备好（concat 所有请求的 input_ids、build position_ids、mask、block table padding）</li>
+    <li>选择 attention backend（FlashAttention / FlashInfer / Triton / ROCm AITER / ...）调它的 <code>init_forward_metadata()</code></li>
+    <li>调 <code>model.forward(input_ids, positions, attn_metadata, kv_caches)</code></li>
+    <li>跑 sampling（top_k / top_p / temperature / 结构化生成 mask）</li>
+    <li>把 token 写回 KV cache（kernel-level）+ append 到 block</li>
+    <li>构造 <code>ModelRunnerOutput</code> 还给 EngineCore</li>
+  </ol>
+
+  <p>它为什么这么大？因为它要支持：</p>
+
+  <ul>
+    <li>CUDA Graph capture（多个 batch size bucket）+ 不 capture 的 fallback</li>
+    <li>不同模型架构（dense / MoE / Mamba / 多模态）的 forward 差异</li>
+    <li>LoRA / 多 adapter 切换</li>
+    <li>Speculative decoding（draft + verify 两步走）</li>
+    <li>EP (Expert Parallel) MoE 的 all-to-all 通信</li>
+    <li>Mixed-precision (FP16 / BF16 / FP8 / INT4) 路径</li>
+  </ul>
+
+  <p>每多一种"feature"都给这个类加几百行。这是大部分 inference engine 都会遇到的"巨型类陷阱"。vLLM 走的路是用 Mixin 拆（<code>ec_connector_model_runner_mixin</code> / <code>kv_connector_model_runner_mixin</code> / <code>lora_model_runner_mixin</code>）— 跟 SGLang Scheduler 是同一种应对策略。</p>
+</section>
+
+<!-- M7 M8 Attention Backends + ROCm -->
+<section id="m7">
+  <h2><span class="num">§ M7 / M8 · 45 min</span>Backends, <i>twenty of them.</i></h2>
+
+  <p>
+    <code>vllm/v1/attention/backends/</code> 有 20 个 attention 实现，全部实现同一个 <code>AttentionBackend</code> 抽象（<code>backend.py</code>）。<code>registry.py</code> 维护名字 → class 映射，<code>selector.py</code> 自动选择（根据模型架构和硬件）。
+  </p>
+
+  <table>
+    <thead><tr><th>Family</th><th>Files</th><th>Lines</th></tr></thead>
+    <tbody>
+      <tr><td>Flash family</td><td><code>flash_attn</code>, <code>flash_attn_diffkv</code>, <code>flashinfer</code></td><td>1236 + 321 + 1969</td></tr>
+      <tr><td>Triton</td><td><code>triton_attn</code></td><td>774</td></tr>
+      <tr><td>Flex</td><td><code>flex_attention</code></td><td>1217</td></tr>
+      <tr><td><strong>ROCm</strong></td><td><strong><code>rocm_aiter_fa</code> · <code>rocm_aiter_unified_attn</code> · <code>rocm_attn</code></strong></td><td><strong>1471 + 304 + 545</strong></td></tr>
+      <tr><td>CPU</td><td><code>cpu_attn</code></td><td>545</td></tr>
+      <tr><td>State space</td><td><code>mamba_attn</code>, <code>mamba1_attn</code>, <code>mamba2_attn</code>, <code>gdn_attn</code>, <code>linear_attn</code>, <code>short_conv_attn</code></td><td>588 + 64 + 171 + 475 + 93 + 34</td></tr>
+      <tr><td>Quantized</td><td><code>turboquant_attn</code></td><td>906</td></tr>
+      <tr><td>MLA</td><td><code>mla/</code>（子目录）</td><td>多文件</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ROCm 三件套</h3>
+
+  <p>vLLM 在 AMD 上有<strong>三个</strong> attention backend，对应三种策略：</p>
+
+  <table>
+    <thead><tr><th>Backend</th><th>What</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><code>rocm_aiter_fa.py</code> (1471 行)</td><td>★ 调 AITER 的 FlashAttention kernel（CK 实现）</td><td>MI300X+ · 默认主力</td></tr>
+      <tr><td><code>rocm_aiter_unified_attn.py</code> (304)</td><td>AITER unified attention（统一 prefill+decode 入口）</td><td>较新模型</td></tr>
+      <tr><td><code>rocm_attn.py</code> (545)</td><td>ROCm 通用 fallback（不依赖 AITER）</td><td>老硬件 / AITER 不支持的形状</td></tr>
+    </tbody>
+  </table>
+
+  <p>跟 SGLang 的<strong>单一 <code>aiter_backend.py</code>（3284 行）</strong>对比 — vLLM 把 AITER 调用拆得更细，可读性更好，但加新 ROCm-specific 优化时要看清楚改哪一个。</p>
+
+  <div class="note">
+    <div class="label">关键对比 · ROCm SUPPORT MATURITY</div>
+    <p>vLLM 的 ROCm 支持比 SGLang 更<strong>结构化</strong> — 它把 AITER 包装在 <code>vllm/_aiter_ops.py</code>（顶层 module）里，attention 层只是消费者。改 AITER 集成时改 <code>_aiter_ops.py</code> 一处即可，attention backend 自动跟着走。SGLang 是<strong>把 AITER 调用直接写在 attention backend 里</strong>，更扁但耦合更深。</p>
+    <p>对你的工作：在 vLLM 上加 AITER 新 kernel 时，先改 <code>vllm/_aiter_ops.py</code> 暴露 API，再在 3 个 ROCm backend 里选择消费方式。</p>
+  </div>
+</section>
+
+<!-- =============== PLATE IV: SGLang vs vLLM =============== -->
+<section id="vs" class="plate wide">
+  <div class="plate-meta">
+    <span class="num">Plate IV — Two engines, side by side</span>
+    <span class="name">vLLM and SGLang, where they converge and diverge</span>
+    <span class="scale">comparative</span>
+  </div>
+  <svg viewBox="0 0 1200 580" preserveAspectRatio="xMidYMid meet" role="img">
+    <defs>
+      <marker id="ahV4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8a984"/>
+      </marker>
+    </defs>
+    <rect width="1200" height="580" class="diag-bg"/>
+
+    <!-- Header -->
+    <text x="600" y="44" text-anchor="middle" class="diag-text head" style="font-size:20px;">vLLM <tspan fill="#d4a542" font-style="italic">⊕</tspan> SGLang</text>
+    <text x="600" y="64" text-anchor="middle" class="diag-text tiny dim">same problem space · different abstractions</text>
+
+    <!-- Left column: vLLM -->
+    <text x="280" y="100" text-anchor="middle" class="diag-text head" style="fill:var(--gold); font-size:17px;">vLLM</text>
+    <line x1="100" y1="110" x2="460" y2="110" stroke="var(--gold)" stroke-width="1"/>
+
+    <g transform="translate(120, 130)">
+      <text class="diag-text tiny gold">SCHEDULER</text>
+      <text x="0" y="16" class="diag-text">1× EngineCore</text>
+      <text x="0" y="32" class="diag-text tiny dim">N workers as subprocs / Ray actors</text>
+    </g>
+    <g transform="translate(120, 190)">
+      <text class="diag-text tiny gold">PREFIX CACHE</text>
+      <text x="0" y="16" class="diag-text">BlockPool + hash chain</text>
+      <text x="0" y="32" class="diag-text tiny dim">16-token block granularity</text>
+    </g>
+    <g transform="translate(120, 250)">
+      <text class="diag-text tiny gold">CONTINUOUS BATCH</text>
+      <text x="0" y="16" class="diag-text">chunked prefill + decode mix</text>
+      <text x="0" y="32" class="diag-text tiny dim">single-pass schedule() per step</text>
+    </g>
+    <g transform="translate(120, 310)">
+      <text class="diag-text tiny gold">EXEC OVERLAP</text>
+      <text x="0" y="16" class="diag-text">IPC-driven (EngineCore ↔ Worker)</text>
+      <text x="0" y="32" class="diag-text tiny dim">CPU schedule overlaps GPU step</text>
+    </g>
+    <g transform="translate(120, 370)">
+      <text class="diag-text tiny gold">ROCm</text>
+      <text x="0" y="16" class="diag-text">3 backends + _aiter_ops</text>
+      <text x="0" y="32" class="diag-text tiny dim">aiter_fa / unified / fallback</text>
+    </g>
+    <g transform="translate(120, 430)">
+      <text class="diag-text tiny gold">CODE</text>
+      <text x="0" y="16" class="diag-text">633K · v1 rewrite</text>
+      <text x="0" y="32" class="diag-text tiny dim">7,185-line model_runner</text>
+    </g>
+    <g transform="translate(120, 490)">
+      <text class="diag-text tiny gold">SHINES IN</text>
+      <text x="0" y="16" class="diag-text">general serving / OpenAI compat</text>
+      <text x="0" y="32" class="diag-text tiny dim">deployment flexibility</text>
+    </g>
+
+    <!-- Right column: SGLang -->
+    <text x="920" y="100" text-anchor="middle" class="diag-text head" style="fill:var(--teal); font-size:17px;">SGLang</text>
+    <line x1="740" y1="110" x2="1100" y2="110" stroke="var(--teal)" stroke-width="1"/>
+
+    <g transform="translate(760, 130)">
+      <text class="diag-text tiny teal">SCHEDULER</text>
+      <text x="0" y="16" class="diag-text">N× Scheduler</text>
+      <text x="0" y="32" class="diag-text tiny dim">one per TP rank, fully symmetric</text>
+    </g>
+    <g transform="translate(760, 190)">
+      <text class="diag-text tiny teal">PREFIX CACHE</text>
+      <text x="0" y="16" class="diag-text">RadixCache (tree)</text>
+      <text x="0" y="32" class="diag-text tiny dim">token-level granularity</text>
+    </g>
+    <g transform="translate(760, 250)">
+      <text class="diag-text tiny teal">CONTINUOUS BATCH</text>
+      <text x="0" y="16" class="diag-text">schedule_batch + policy</text>
+      <text x="0" y="32" class="diag-text tiny dim">priority queues, low-priority-first</text>
+    </g>
+    <g transform="translate(760, 310)">
+      <text class="diag-text tiny teal">EXEC OVERLAP</text>
+      <text x="0" y="16" class="diag-text">event_loop_overlap (in scheduler)</text>
+      <text x="0" y="32" class="diag-text tiny dim">CUDA stream / future-based</text>
+    </g>
+    <g transform="translate(760, 370)">
+      <text class="diag-text tiny teal">ROCm</text>
+      <text x="0" y="16" class="diag-text">1 monolithic aiter_backend</text>
+      <text x="0" y="32" class="diag-text tiny dim">3,284 lines · all-in-one</text>
+    </g>
+    <g transform="translate(760, 430)">
+      <text class="diag-text tiny teal">CODE</text>
+      <text x="0" y="16" class="diag-text">729K · multi-package</text>
+      <text x="0" y="32" class="diag-text tiny dim">sgl-kernel as separate wheel</text>
+    </g>
+    <g transform="translate(760, 490)">
+      <text class="diag-text tiny teal">SHINES IN</text>
+      <text x="0" y="16" class="diag-text">multi-turn / structured / DSL</text>
+      <text x="0" y="32" class="diag-text tiny dim">prefix-heavy workloads</text>
+    </g>
+
+    <!-- Center divider with insight -->
+    <line x1="600" y1="120" x2="600" y2="520" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3 5" opacity="0.4"/>
+
+    <g transform="translate(490, 540)">
+      <rect width="220" height="36" fill="rgba(212,165,66,0.06)" stroke="var(--gold)"/>
+      <text x="110" y="22" text-anchor="middle" class="diag-text tiny gold" style="font-style:italic;">Same problem · two abstractions</text>
+    </g>
+  </svg>
+  <div class="caption">
+    两个系统解决同一个问题（高吞吐 LLM 推理），但底层抽象选了不同路径：vLLM 走"物理 block + hash"，SGLang 走"逻辑 prefix + 树"。两条路最终都会做 prefix caching、chunked prefill、speculative decoding — 但<strong>底层抽象的选择决定了哪种 workload 更舒服</strong>。短回复的 OpenAI compat API：vLLM 略好；多轮 + 结构化生成：SGLang 略好。在 AMD MI300X 上：两者都能跑，AITER 集成 vLLM 更结构化，SGLang 更直接。
+  </div>
+</section>
+
+<!-- Reefs -->
+<section id="reefs">
+  <h2><span class="num">§ Reefs · five</span>What to <i>avoid running aground.</i></h2>
+
+  <p class="lede">读 vLLM 时最容易触礁的几处。</p>
+
+  <div class="reef">
+    <div class="label">Reef N° 1 · v0 vs v1 — two universes</div>
+    <p><code>vllm/engine/</code>（老 v0）和 <code>vllm/v1/engine/</code>（新 v1）<strong>都还在 codebase 里</strong>。看老 issue / 老 blog post 时引用的 <code>LLMEngine</code> 可能是 v0 那个，跟你实际在跑的 v1 EngineCore 完全不同对象。改代码前先 <code>grep "VLLM_USE_V1"</code> 确认 codepath。</p>
+  </div>
+
+  <div class="reef">
+    <div class="label">Reef N° 2 · Block size 是 hash 函数的隐式参数</div>
+    <p>BlockPool 的 prefix caching 依赖每个 block 的 hash 包含父 block 的 hash。如果你<strong>改 block_size</strong>（默认 16），所有现存的 cache 都失效，因为 hash 计算变了。重启 vLLM 服务后必然 cold start。改 block_size 是个有副作用的运维操作。</p>
+  </div>
+
+  <div class="reef">
+    <div class="label">Reef N° 3 · Preempted 请求不一定能复用 cache</div>
+    <p><code>_preempt_request</code> 释放 KV blocks 回 pool，但<strong>BlockPool 可能在下次 schedule 时已经把这些 block 分配给别的请求</strong>了。所谓"hash 仍在 map 里"只在 block 还没被复用前才有效。preemption + 高 KV 压力的场景下，"复用率"是个统计平均，不是保证。</p>
+  </div>
+
+  <div class="reef">
+    <div class="label">Reef N° 4 · GpuModelRunner 的 mixin 拆分易看漏</div>
+    <p>7185 行的 <code>GpuModelRunner</code> 用了 5+ 个 mixin（<code>kv_connector_model_runner_mixin</code> / <code>lora_*</code> / <code>ec_connector_*</code>）。grep 某个方法时可能找不到 — 它在 mixin 里。读 forward path 时一定要先看 <code>class GpuModelRunner(...)</code> 的所有父类。</p>
+  </div>
+
+  <div class="reef">
+    <div class="label">Reef N° 5 · Attention backend selector 是隐式自动的</div>
+    <p>用户不指定时 <code>v1/attention/selector.py</code> 会根据模型架构 + 硬件自动选 backend。在 MI300X 上跑 Llama-3 默认会选 <code>rocm_aiter_fa</code>，但跑 DeepSeek-V3（MLA）可能选 <code>triton_attn</code> 或 fallback。<strong>跑 benchmark 时务必打印实际选中的 backend</strong>，不要假设。</p>
+  </div>
+</section>
+
+<!-- AMD playbook -->
+<section id="amd">
+  <h2><span class="num">§ AMD bearings · for Jhin</span>Where to <i>start touching.</i></h2>
+
+  <p>三个具体起手点，对应你 multi-agent kernel optimization 的两个 ultimate goal。</p>
+
+  <h3>1 · 在 vLLM 上跑 MI300X 性能 baseline</h3>
+
+  <p>vLLM 的 ROCm 路径比 SGLang 更结构化 — 适合做<strong>横向对比基准</strong>：</p>
+
+  <pre data-lang="bash"><code># 用 vLLM 跑同一个 model 做参照
+VLLM_USE_V1=1 vllm serve meta-llama/Llama-3-70B \
+  --tensor-parallel-size 8 \
+  --attention-backend rocm_aiter_fa \
+  --enable-prefix-caching \
+  --max-num-batched-tokens 8192
+
+# 同样的 model 在 SGLang 上
+python -m sglang.launch_server \
+  --model meta-llama/Llama-3-70B \
+  --tp 8 \
+  --attention-backend aiter</code></pre>
+
+  <p>用两边自带的 <code>benchmarks/</code> 跑同一组 trace，对比 throughput / TTFT / ITL。这是你 AMD performance database 的第一行数据。</p>
+
+  <h3>2 · 改 _aiter_ops.py 加你的新 kernel</h3>
+
+  <p>当你 multi-agent 系统跑出一个比当前 AITER kernel 更快的 attention variant，<strong>vLLM 集成路径只需改一个文件</strong>：</p>
+
+  <pre data-lang="python · vllm/_aiter_ops.py"><code># 添加一个新的 wrapper
+def my_faster_attn(q, k, v, ...):
+    """Custom AITER attention kernel optimized by MAS."""
+    from my_kernels import fast_attn_v2
+    return fast_attn_v2(q, k, v, ...)</code></pre>
+
+  <p>然后在 <code>rocm_aiter_fa.py</code> 的 <code>forward_extend</code> / <code>forward_decode</code> 里替换调用。这种"先暴露 API，再选择消费方"的两层结构让 kernel 实验非常快。</p>
+
+  <h3>3 · 抄 vLLM 的 _aiter_ops.py 模式做你自己的 kernel package</h3>
+
+  <p>SGLang 的 <code>sgl-kernel</code> 是独立 wheel 包；vLLM 的 <code>_aiter_ops.py</code> 是<strong>顶层 module 层级的 wrapper</strong>。两种都是把"kernel"和"使用 kernel 的代码"解耦的有效手段。对你的 multi-agent kernel optimization 系统：</p>
+
+  <ul>
+    <li>短期：用 <code>_aiter_ops.py</code> 这种<strong>顶层 wrapper</strong> 模式 — kernel 改进无需碰各个 backend 文件</li>
+    <li>长期：做成<strong>独立 wheel 包</strong>（学 sgl-kernel），让 vLLM / SGLang / 其他 inference engine 都能直接 import</li>
+  </ul>
+
+  <p>这是 leverage 你工作的双层路径 — 先在一个引擎上做出收益，再独立发行让生态都受益。</p>
+</section>
+
+<!-- Epilogue -->
+<section id="epilogue">
+  <div class="rule">
+    <div class="line"></div>
+    <div class="glyph">◆</div>
+    <div class="line"></div>
+  </div>
+
+  <h2><span class="num">§ Epilogue</span>Three readings, <em>one map.</em></h2>
+
+  <p>
+    File № 001（SkyPilot）讲的是"如何把工作丢到任何云上的任何 GPU"。File № 002（SGLang）讲的是"在那个 GPU 上如何高效跑 LLM 推理"。File № 003（vLLM）也讲推理 — 但用了不同的抽象。这三份合起来读，正好覆盖你 AMD 工作的<strong>完整栈</strong>：
+  </p>
+
+  <ul>
+    <li><strong>Orchestration 层</strong>（SkyPilot）— 让 multi-agent kernel optimization 系统能在多 MI300X 节点上跑分布式实验</li>
+    <li><strong>Inference 层 A</strong>（SGLang）— 你目前的主力 serving 引擎，了解它的 scheduler / RadixCache 让你能改 / 加 backend</li>
+    <li><strong>Inference 层 B</strong>（vLLM）— 对照系统 + 第二个测试床，跑 baseline + 验证你的 kernel 通用性</li>
+  </ul>
+
+  <p>三个系统在工程上有<strong>同构的设计模式</strong>：(1) 把请求 / 任务 / 配置做成<em>不可变值对象</em>；(2) 把状态 / 物理资源做成<em>可写实体并集中管理</em>；(3) 用<em>异步消息总线</em>解耦组件；(4) 把<em>调度决策</em>和<em>真正干活</em>分到不同进程；(5) 用<em>plugin / abstract base class</em> 让平台扩展低成本。这五点的反复出现告诉你 — 现代分布式 ML 系统在收敛于一组共同的工程姿态。值得把这套姿态吸收进你即将搭的 multi-agent kernel optimization 系统。</p>
+
+  <p style="margin-top:40px; font-style:italic; color:var(--vellum);">— Fin de trilogie.</p>
+</section>
+
+</main>
+</div>
+
+<footer class="colophon">
+  <div class="row">
+    <div class="col">
+      <h5>Colophon</h5>
+      <p>Source: github.com/vllm-project/vllm</p>
+      <p>Branch: main · 2026-05-12</p>
+      <p>Reading: ~6 h across three sessions</p>
+      <p>Total lines surveyed: 633,079</p>
+    </div>
+    <div class="col">
+      <h5>Typography</h5>
+      <p>Display — Cormorant Garamond, italic</p>
+      <p>Body — Spectral</p>
+      <p>Mono — IBM Plex Mono</p>
+    </div>
+    <div class="col">
+      <h5>Palette</h5>
+      <p>abyss · cream · gold · teal · coral</p>
+      <p>after navigational charts, ca. 1745</p>
+    </div>
+    <div class="col">
+      <h5>Compiled for</h5>
+      <p>Jhin Pan · AMD Spring 2026 Intern</p>
+      <p>MAS for Kernel Optimization</p>
+      <p>panjin1221@gmail.com</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
