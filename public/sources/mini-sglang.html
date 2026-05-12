@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mini-SGLang — Source Reading No. 004 (with reflections)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #faf3e7;
+  --paper-soft: #f4ecdb;
+  --paper-deep: #ebe1c8;
+  --rule: #d8ccab;
+
+  --ink: #1c1a18;
+  --ink-mid: #3d3830;
+  --ink-soft: #5d564a;
+  --margin: #786f5e;
+  --faint: #b8ad96;
+
+  --oxblood: #8b2a1f;
+  --oxblood-soft: #a8413a;
+  --indigo: #1f3c7d;
+  --indigo-soft: #4a629d;
+  --moss: #5a6e3a;
+  --moss-soft: #7a8e5a;
+  --ochre: #b58410;
+
+  --display: 'Marcellus', 'Times New Roman', serif;
+  --body: 'Crimson Pro', 'Times New Roman', serif;
+  --mono: 'Fira Code', ui-monospace, monospace;
+
+  --col-main: 540px;
+  --col-margin: 260px;
+  --col-gap: 48px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.55;
+  font-feature-settings: 'onum', 'liga';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* very subtle horizontal warm-paper gradient */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 80% 10%, rgba(139,42,31,0.025) 0%, transparent 40%),
+    radial-gradient(circle at 15% 90%, rgba(31,60,125,0.02) 0%, transparent 35%);
+}
+
+/* warm paper noise overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.22 0 0 0 0 0.12 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  max-width: calc(var(--col-main) + var(--col-gap) + var(--col-margin) + 96px);
+  margin: 0 auto;
+  padding: 80px 48px 32px;
+  z-index: 1;
+}
+
+.masthead .series {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--oxblood);
+  text-transform: uppercase;
+  margin-bottom: 36px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.masthead .series::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--oxblood);
+}
+
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(56px, 7vw, 92px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--ink);
+}
+.masthead h1 .mini {
+  color: var(--oxblood);
+  font-style: italic;
+  font-family: var(--body);
+  font-weight: 300;
+}
+.masthead h1 .sg {
+  color: var(--ink);
+}
+
+.masthead .subtitle {
+  font-family: var(--body);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 24px 0 0;
+  max-width: 580px;
+}
+
+.masthead .byline {
+  margin-top: 36px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--margin);
+  letter-spacing: 0.08em;
+}
+.masthead .byline strong {
+  color: var(--ink);
+}
+
+/* hairline divider */
+.hr {
+  max-width: calc(var(--col-main) + var(--col-gap) + var(--col-margin) + 96px);
+  margin: 0 auto;
+  padding: 0 48px;
+  border-bottom: 1px solid var(--ink);
+  position: relative;
+  z-index: 1;
+}
+
+/* ============ MAIN COLUMN + MARGINALIA ============ */
+.essay {
+  position: relative;
+  max-width: calc(var(--col-main) + var(--col-gap) + var(--col-margin) + 96px);
+  margin: 0 auto;
+  padding: 56px 48px;
+  display: grid;
+  grid-template-columns: var(--col-main) var(--col-margin);
+  column-gap: var(--col-gap);
+  z-index: 1;
+}
+
+.essay > * {
+  grid-column: 1;
+}
+
+.essay > .margin {
+  grid-column: 2;
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--margin);
+  align-self: start;
+  position: relative;
+  padding-left: 16px;
+  border-left: 1px solid var(--rule);
+}
+.essay > .margin .glyph {
+  position: absolute;
+  left: -7px;
+  top: 0;
+  background: var(--paper);
+  color: var(--oxblood);
+  font-family: var(--display);
+  font-size: 14px;
+  font-style: normal;
+  padding: 0 2px;
+}
+.essay > .margin .lbl {
+  display: block;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--oxblood);
+  margin-bottom: 6px;
+}
+.essay > .margin .lbl.indigo { color: var(--indigo); }
+.essay > .margin .lbl.moss { color: var(--moss); }
+.essay > .margin code { font-size: 11.5px; }
+
+@media (max-width: 980px) {
+  .essay {
+    grid-template-columns: 1fr;
+  }
+  .essay > .margin {
+    grid-column: 1;
+    margin: -8px 0 20px;
+    padding-left: 14px;
+    border-left: 2px solid var(--oxblood);
+  }
+}
+
+/* ============ TOC ============ */
+.toc {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--ink-soft);
+  margin: 0 0 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px dashed var(--rule);
+  letter-spacing: 0.02em;
+}
+.toc .lbl {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--oxblood);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  columns: 2;
+  column-gap: 28px;
+}
+.toc ol li {
+  margin: 0;
+  padding-left: 22px;
+  position: relative;
+}
+.toc ol li::before {
+  content: counter(toc-num, decimal-leading-zero);
+  counter-increment: toc-num;
+  position: absolute;
+  left: 0;
+  color: var(--margin);
+}
+.toc { counter-reset: toc-num; }
+.toc ol li a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s;
+}
+.toc ol li a:hover {
+  color: var(--oxblood);
+  border-bottom-color: var(--oxblood);
+}
+
+/* ============ TYPOGRAPHY ============ */
+.essay h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+  margin: 64px 0 18px;
+  color: var(--ink);
+}
+.essay h2 .secnum {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--oxblood);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+.essay h2 em {
+  font-style: italic;
+  color: var(--oxblood);
+  font-family: var(--body);
+  font-weight: 400;
+}
+
+.essay h3 {
+  font-family: var(--body);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  margin: 40px 0 14px;
+  color: var(--ink);
+}
+
+.essay h4 {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--oxblood);
+  margin: 32px 0 10px;
+}
+
+.essay p {
+  margin: 0 0 18px;
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1.6;
+}
+.essay p strong {
+  font-weight: 600;
+  color: var(--ink);
+  background: linear-gradient(transparent 70%, rgba(181,132,16,0.18) 70%);
+}
+
+.essay .lede {
+  font-family: var(--body);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin: 0 0 40px;
+}
+.essay .lede::first-letter {
+  font-family: var(--display);
+  font-style: normal;
+  font-size: 84px;
+  line-height: 0.78;
+  float: left;
+  margin: 12px 14px 0 -4px;
+  color: var(--oxblood);
+}
+
+.essay a {
+  color: var(--indigo);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(31,60,125,0.3);
+  transition: all 0.2s;
+}
+.essay a:hover {
+  color: var(--oxblood);
+  border-bottom-color: var(--oxblood);
+}
+
+.essay ul, .essay ol {
+  padding-left: 22px;
+  margin: 0 0 22px;
+}
+.essay li {
+  margin-bottom: 8px;
+  line-height: 1.55;
+  font-size: 18px;
+}
+.essay ul li::marker { color: var(--oxblood); }
+.essay ol li::marker { color: var(--indigo); font-weight: 600; }
+
+/* inline code */
+code {
+  font-family: var(--mono);
+  font-size: 0.82em;
+  background: var(--paper-soft);
+  border: 1px solid var(--rule);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--oxblood);
+  font-weight: 500;
+}
+
+/* code block */
+pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.65;
+  background: var(--paper-soft);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--oxblood);
+  padding: 20px 24px;
+  margin: 24px 0;
+  overflow-x: auto;
+  position: relative;
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink);
+}
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--margin);
+  text-transform: uppercase;
+}
+
+/* ============ REFLECTION CALLOUTS ============ */
+.reflection {
+  /* span both columns */
+  grid-column: 1 / -1 !important;
+  margin: 40px 0;
+  padding: 28px 32px;
+  background: var(--paper-soft);
+  border: 1px solid var(--ink);
+  position: relative;
+}
+.reflection::before {
+  content: 'Reflection';
+  position: absolute;
+  top: -10px;
+  left: 24px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--oxblood);
+  background: var(--paper);
+  padding: 0 12px;
+}
+.reflection .num {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--oxblood);
+  margin-bottom: 4px;
+}
+.reflection h4 {
+  font-family: var(--display);
+  font-size: 24px;
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  text-transform: none;
+}
+.reflection p {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink-mid);
+  margin: 0 0 14px;
+}
+.reflection p:last-child { margin-bottom: 0; }
+.reflection p strong {
+  font-style: normal;
+  background: linear-gradient(transparent 65%, rgba(139,42,31,0.18) 65%);
+  color: var(--ink);
+}
+
+/* ============ TABLE ============ */
+.essay table, .plate table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 15px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+.essay table { grid-column: 1; }
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--oxblood);
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 1px solid var(--ink);
+}
+td { color: var(--ink); }
+td code { font-size: 12px; padding: 0 4px; }
+
+/* ============ PLATE ============ */
+.plate {
+  grid-column: 1 / -1 !important;
+  position: relative;
+  margin: 56px 0;
+}
+.plate .plate-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ink);
+}
+.plate .plate-meta .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--oxblood);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.plate .plate-meta .name {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink);
+}
+.plate .plate-meta .scale {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--margin);
+  letter-spacing: 0.12em;
+}
+.plate svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--paper-soft);
+  border: 1px solid var(--ink);
+}
+.plate .caption {
+  font-family: var(--body);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-top: 14px;
+  padding-left: 16px;
+  border-left: 2px solid var(--oxblood);
+}
+
+/* Big metrics row */
+.metrics {
+  grid-column: 1 / -1 !important;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border: 1px solid var(--ink);
+  margin: 32px 0;
+}
+.metrics .cell {
+  padding: 22px 20px;
+  border-right: 1px dashed var(--rule);
+  background: var(--paper);
+}
+.metrics .cell:last-child { border-right: none; }
+.metrics .cell .num {
+  font-family: var(--display);
+  font-size: 36px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.metrics .cell .num .acc { color: var(--oxblood); }
+.metrics .cell .lbl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--margin);
+  text-transform: uppercase;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+/* Final colophon */
+.colophon {
+  border-top: 1px solid var(--ink);
+  max-width: calc(var(--col-main) + var(--col-gap) + var(--col-margin) + 96px);
+  margin: 96px auto 0;
+  padding: 56px 48px 80px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--margin);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+  position: relative;
+  z-index: 1;
+}
+.colophon .row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 36px;
+}
+.colophon .col h5 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--oxblood);
+  margin: 0 0 10px;
+}
+.colophon .col p { margin: 0 0 4px; }
+
+/* SVG shared styles */
+.diag-text { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+.diag-text.head { font-family: var(--body); font-style: italic; font-size: 14px; fill: var(--ink); }
+.diag-text.ox { fill: var(--oxblood); }
+.diag-text.indigo { fill: var(--indigo); }
+.diag-text.moss { fill: var(--moss); }
+.diag-text.muted { fill: var(--margin); }
+.diag-text.tiny { font-size: 9.5px; letter-spacing: 0.04em; }
+.diag-edge { stroke: var(--ink-soft); stroke-width: 1.25; fill: none; }
+.diag-edge.ox { stroke: var(--oxblood); }
+.diag-edge.indigo { stroke: var(--indigo); }
+.diag-edge.dashed { stroke-dasharray: 3 4; }
+.diag-node rect { fill: var(--paper); stroke: var(--ink); stroke-width: 1.25; }
+.diag-node.ox rect { stroke: var(--oxblood); fill: rgba(139,42,31,0.05); }
+.diag-node.indigo rect { stroke: var(--indigo); fill: rgba(31,60,125,0.05); }
+.diag-node.moss rect { stroke: var(--moss); fill: rgba(90,110,58,0.05); }
+.diag-node.muted rect { stroke: var(--faint); fill: rgba(0,0,0,0.01); }
+.zone-label { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.22em; fill: var(--margin); text-transform: uppercase; }
+.zone-box { fill: none; stroke: var(--ink); stroke-dasharray: 3 5; stroke-width: 1; opacity: 0.5; }
+
+@media (max-width: 768px) {
+  .masthead { padding: 48px 24px 24px; }
+  .hr { padding: 0 24px; }
+  .essay { padding: 32px 24px; }
+  .colophon { padding: 40px 24px 56px; }
+  .toc ol { columns: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="series">File N° 004 · Source Reading · with reflections</div>
+
+  <h1><span class="mini">mini-</span><span class="sg">SGLang.</span></h1>
+
+  <p class="subtitle">
+    140× smaller than its parent, by design. A reading of the 5,000-line teaching implementation that maps cleanly onto every concept in the 728,000-line production engine — and what that mapping <em>itself</em> teaches.
+  </p>
+
+  <div class="byline">
+    <strong>2026.05.15</strong>  ·  Jhin Pan  ·  AMD Spring 2026 Intern  ·  Source Reading series, entry № 004
+  </div>
+</header>
+
+<div class="hr"></div>
+
+<!-- ============ ESSAY ============ -->
+<main class="essay">
+
+  <!-- TOC -->
+  <nav class="toc">
+    <span class="lbl">Contents</span>
+    <ol>
+      <li><a href="#prologue">A gift, in five thousand lines</a></li>
+      <li><a href="#shrink">The 140× shrink, accounted</a></li>
+      <li><a href="#mirror">What's preserved: the skeleton</a></li>
+      <li><a href="#reading-order">A guided reading order</a></li>
+      <li><a href="#scheduler">280 lines vs four thousand</a></li>
+      <li><a href="#radix">RadixCache, quietly refactored</a></li>
+      <li><a href="#engine">Engine in 253 lines</a></li>
+      <li><a href="#missing">What's missing, on purpose</a></li>
+      <li><a href="#workflow">How to actually use both</a></li>
+      <li><a href="#epilogue">Epilogue · pedagogy as code</a></li>
+    </ol>
+  </nav>
+
+  <!-- ====== PROLOGUE ====== -->
+  <section id="prologue">
+    <p class="lede">
+      In December 2025 the SGLang team did something rare in open source: they wrote a <em>second</em>, smaller implementation of their own system — not to replace it, but to explain it. mini-SGLang is roughly 5,000 lines of Python, ~140× smaller than its parent. It preserves the four-process architecture, RadixAttention, chunked prefill, overlap scheduling, and tensor parallelism. Everything else — 27 attention backends, hierarchical caches, disaggregation, speculative decoding, EAGLE, multimodal — is gone. The result is a system you can read end-to-end in an afternoon, and which makes the production engine's 728k lines suddenly legible.
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl">Frame</span>
+    <span class="glyph">¶</span>
+    <p>This entry breaks the format of the previous three Source Readings: instead of just covering the codebase, the right-margin track runs <em>reflections</em> in parallel with the main text. Read the marginalia as a meta-commentary on <em>learning from minimal implementations in general</em>.</p>
+  </aside>
+
+  <section>
+    <p>
+      The previous entry in this series read full SGLang end-to-end. I came away admiring the engineering but uneasy about the reading experience — a 4,006-line single-class Scheduler, a 3,607-line ModelRunner, 27 attention backends. mini-SGLang is the project I wish I'd read <em>first</em>.
+    </p>
+    <p>
+      This entry is structured around that wish. Each section reads a piece of mini-SGLang, and where the design choice illuminates something about the full SGLang — or about software pedagogy in general — there's a margin note or a numbered <em>Reflection</em> callout.
+    </p>
+  </section>
+
+  <!-- big number strip -->
+  <div class="metrics">
+    <div class="cell"><div class="num"><span class="acc">5,000</span></div><div class="lbl">mini-SGLang lines</div></div>
+    <div class="cell"><div class="num">728,969</div><div class="lbl">full SGLang lines</div></div>
+    <div class="cell"><div class="num"><span class="acc">140×</span></div><div class="lbl">ratio</div></div>
+    <div class="cell"><div class="num">4</div><div class="lbl">cooperating processes</div></div>
+    <div class="cell"><div class="num">2</div><div class="lbl">attention backends</div></div>
+    <div class="cell"><div class="num">2</div><div class="lbl">models (Llama · Qwen3)</div></div>
+  </div>
+
+  <!-- ====== SHRINK ====== -->
+  <section id="shrink">
+    <h2><span class="secnum">§ 01 · Accounting</span>The 140× <em>shrink</em>, accounted.</h2>
+
+    <p>
+      To know what was kept, count what was cut. Here's the file-level comparison for the modules that appear in both:
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl indigo">Lens</span>
+    <span class="glyph">⊕</span>
+    <p>The ratios are not uniform. The scheduler shrinks 14×; the radix cache only 3.3×. <strong>The non-uniformity is the data</strong> — modules with high ratios were carrying many features (versions, plugins, edge cases). Modules with low ratios are dominated by algorithmic substance.</p>
+  </aside>
+
+  <table>
+    <thead><tr><th>Module / file</th><th>full SGLang</th><th>mini</th><th>ratio</th></tr></thead>
+    <tbody>
+      <tr><td><code>scheduler.py</code></td><td>4,006 lines + Mixins</td><td>280 lines + 7 helpers</td><td><strong>14×</strong></td></tr>
+      <tr><td><code>model_runner.py</code> / <code>engine.py</code></td><td>3,607 lines</td><td>253 lines</td><td><strong>14×</strong></td></tr>
+      <tr><td><code>radix_cache.py</code></td><td>828 lines</td><td>253 lines</td><td>3.3×</td></tr>
+      <tr><td>attention backends</td><td>27 backends</td><td>2 backends</td><td><strong>13×</strong></td></tr>
+      <tr><td>models</td><td>~50 architectures</td><td>2 (Llama, Qwen3)</td><td><strong>25×</strong></td></tr>
+      <tr><td>hardware backends</td><td>4 (gpu/mlx/musa/npu)</td><td>1 (gpu)</td><td>4×</td></tr>
+      <tr><td>whole package</td><td>728,969 LOC</td><td>~5,000 LOC</td><td><strong>140×</strong></td></tr>
+    </tbody>
+  </table>
+
+  <section>
+    <p>
+      The scheduler's 14× compression is the most informative. Full SGLang's scheduler is a single 4,006-line class with Mixins (<code>SchedulerMlxOverlapMixin</code>, <code>scheduler_dp_attn_mixin</code>, <code>scheduler_output_processor_mixin</code>, <code>scheduler_input_blocker</code>). The mini version splits the same responsibilities into 7 small files: <code>scheduler.py</code> (280 lines, the loop), <code>cache.py</code>, <code>config.py</code>, <code>decode.py</code>, <code>io.py</code>, <code>prefill.py</code>, <code>table.py</code>. Same total surface area, completely different cognitive surface.
+    </p>
+  </section>
+
+  <!-- =============== PLATE I =============== -->
+  <section class="plate">
+    <div class="plate-meta">
+      <span class="num">Plate I — The shrink, to scale</span>
+      <span class="name">file-by-file, proportional rectangles</span>
+      <span class="scale">comparative</span>
+    </div>
+    <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Size comparison between full SGLang and mini-SGLang">
+      <defs>
+        <pattern id="hash1" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(28,26,24,0.12)" stroke-width="1"/>
+        </pattern>
+      </defs>
+
+      <text x="600" y="32" text-anchor="middle" class="diag-text head" style="font-size:15px;">Same modules · drawn to scale</text>
+      <text x="220" y="76" text-anchor="middle" class="diag-text" style="font-size: 12px; fill:var(--ink);">full SGLang</text>
+      <text x="900" y="76" text-anchor="middle" class="diag-text" style="font-size: 12px; fill:var(--oxblood);">mini-SGLang</text>
+
+      <!-- Scheduler comparison -->
+      <text x="60" y="120" class="diag-text muted">scheduler</text>
+      <rect x="140" y="100" width="280" height="28" fill="url(#hash1)" stroke="var(--ink)"/>
+      <text x="280" y="120" text-anchor="middle" class="diag-text tiny">4,006 lines · 1 monolith + Mixins</text>
+      <rect x="800" y="100" width="40" height="28" fill="rgba(139,42,31,0.1)" stroke="var(--oxblood)"/>
+      <text x="820" y="120" text-anchor="middle" class="diag-text tiny ox">280</text>
+      <text x="860" y="120" class="diag-text tiny muted">+ 7 helpers</text>
+
+      <!-- Model runner / engine -->
+      <text x="60" y="170" class="diag-text muted">runner/engine</text>
+      <rect x="140" y="150" width="260" height="28" fill="url(#hash1)" stroke="var(--ink)"/>
+      <text x="270" y="170" text-anchor="middle" class="diag-text tiny">3,607 lines</text>
+      <rect x="800" y="150" width="40" height="28" fill="rgba(139,42,31,0.1)" stroke="var(--oxblood)"/>
+      <text x="820" y="170" text-anchor="middle" class="diag-text tiny ox">253</text>
+
+      <!-- Radix cache -->
+      <text x="60" y="220" class="diag-text muted">radix_cache</text>
+      <rect x="140" y="200" width="70" height="28" fill="url(#hash1)" stroke="var(--ink)"/>
+      <text x="175" y="220" text-anchor="middle" class="diag-text tiny">828</text>
+      <rect x="800" y="200" width="36" height="28" fill="rgba(139,42,31,0.1)" stroke="var(--oxblood)"/>
+      <text x="818" y="220" text-anchor="middle" class="diag-text tiny ox">253</text>
+
+      <!-- Attention backends -->
+      <text x="60" y="270" class="diag-text muted">attn backends</text>
+      <g>
+        <rect x="140" y="250" width="280" height="28" fill="url(#hash1)" stroke="var(--ink)"/>
+        <text x="280" y="270" text-anchor="middle" class="diag-text tiny">27 backends · 18,000+ lines</text>
+      </g>
+      <rect x="800" y="250" width="48" height="28" fill="rgba(139,42,31,0.1)" stroke="var(--oxblood)"/>
+      <text x="824" y="270" text-anchor="middle" class="diag-text tiny ox">2</text>
+
+      <!-- Models -->
+      <text x="60" y="320" class="diag-text muted">models</text>
+      <rect x="140" y="300" width="280" height="28" fill="url(#hash1)" stroke="var(--ink)"/>
+      <text x="280" y="320" text-anchor="middle" class="diag-text tiny">~50 architectures</text>
+      <rect x="800" y="300" width="40" height="28" fill="rgba(139,42,31,0.1)" stroke="var(--oxblood)"/>
+      <text x="820" y="320" text-anchor="middle" class="diag-text tiny ox">2</text>
+
+      <!-- Total -->
+      <line x1="60" y1="360" x2="1140" y2="360" stroke="var(--ink)" stroke-width="0.5"/>
+      <text x="60" y="384" class="diag-text" style="font-weight: 600;">∑ package</text>
+      <rect x="140" y="370" width="600" height="32" fill="url(#hash1)" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="440" y="390" text-anchor="middle" class="diag-text" style="font-weight: 600;">728,969 lines</text>
+      <rect x="800" y="370" width="56" height="32" fill="rgba(139,42,31,0.1)" stroke="var(--oxblood)" stroke-width="1.5"/>
+      <text x="828" y="390" text-anchor="middle" class="diag-text ox" style="font-weight: 600;">~5,000</text>
+      <text x="880" y="390" class="diag-text muted" style="font-style: italic;">— 140× ratio</text>
+    </svg>
+    <div class="caption">
+      Width is proportional to line count, clipped to fit. The mini bars don't look that small in absolute terms because of the necessary minimum-rectangle rendering — but the 140× total-package ratio is no exaggeration. The scheduler and runner/engine shrink the most. The radix cache shrinks least, because it's algorithmic substance — there's a floor on how short a correct radix tree can be.
+    </div>
+  </section>
+
+  <!-- ====== MIRROR ====== -->
+  <section id="mirror">
+    <h2><span class="secnum">§ 02 · Skeleton</span>What's preserved: <em>the bones</em>.</h2>
+
+    <p>
+      Despite the 140× shrink, mini-SGLang is the same <em>shape</em> as full SGLang. Four cooperating processes communicate over ZeroMQ for control and NCCL (via <code>torch.distributed</code>) for tensors:
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl">Same topology</span>
+    <span class="glyph">⌬</span>
+    <p>Both engines settled on the same four-process layout. <strong>This is the load-bearing architectural decision</strong> of modern LLM serving — separate tokenize / schedule / forward / detokenize into different processes so that any one's latency or crash doesn't stall the others. Once you internalize this from mini, the same shape in full SGLang reads instantly.</p>
+  </aside>
+
+  <ul>
+    <li><strong>API Server</strong> — HTTP entry, OpenAI-compatible</li>
+    <li><strong>Tokenizer Worker</strong> — text → token ids</li>
+    <li><strong>Scheduler Worker</strong> — request batching + forward dispatch (one per GPU)</li>
+    <li><strong>Detokenizer Worker</strong> — token ids → streamed text</li>
+  </ul>
+
+  <section>
+    <p>
+      The mini version has one structural simplification: in full SGLang the scheduler <em>is</em> on every GPU (N schedulers for TP=N, fully symmetric). In mini, the scheduler is the only "manager" process and the workers are pure execution endpoints. This is a real architectural decision, not just code shrinkage — and arguably the cleaner one for understanding.
+    </p>
+  </section>
+
+  <!-- =============== PLATE II =============== -->
+  <section class="plate">
+    <div class="plate-meta">
+      <span class="num">Plate II — Mirroring topology</span>
+      <span class="name">four processes in both engines</span>
+      <span class="scale">structural</span>
+    </div>
+    <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid meet" role="img">
+      <defs>
+        <marker id="ahR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#5d564a"/>
+        </marker>
+        <marker id="ahR2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b2a1f"/>
+        </marker>
+      </defs>
+
+      <text x="300" y="32" text-anchor="middle" class="diag-text head">full SGLang</text>
+      <text x="900" y="32" text-anchor="middle" class="diag-text head" style="fill:var(--oxblood);">mini-SGLang</text>
+
+      <!-- LEFT: full SGLang -->
+      <g transform="translate(80, 60)">
+        <rect class="zone-box" x="0" y="0" width="460" height="320"/>
+        <g class="diag-node" transform="translate(20, 24)">
+          <rect width="180" height="50"/>
+          <text x="90" y="22" text-anchor="middle" class="diag-text head">TokenizerManager</text>
+          <text x="90" y="38" text-anchor="middle" class="diag-text tiny muted">HTTP → tokens</text>
+        </g>
+        <g class="diag-node" transform="translate(260, 24)">
+          <rect width="180" height="50"/>
+          <text x="90" y="22" text-anchor="middle" class="diag-text head">DetokenizerMgr</text>
+          <text x="90" y="38" text-anchor="middle" class="diag-text tiny muted">tokens → text</text>
+        </g>
+
+        <g class="diag-node ox" transform="translate(20, 110)">
+          <rect width="420" height="80"/>
+          <text x="210" y="26" text-anchor="middle" class="diag-text head ox">Scheduler × N (one per GPU)</text>
+          <text x="210" y="44" text-anchor="middle" class="diag-text tiny">4,006 lines, monolith + Mixins</text>
+          <text x="210" y="62" text-anchor="middle" class="diag-text tiny muted">event_loop_normal · event_loop_overlap</text>
+        </g>
+
+        <g class="diag-node" transform="translate(20, 220)">
+          <rect width="420" height="60"/>
+          <text x="210" y="22" text-anchor="middle" class="diag-text head">ModelRunner workers (TP/EP)</text>
+          <text x="210" y="40" text-anchor="middle" class="diag-text tiny muted">3,607 lines · 27 attn backends</text>
+        </g>
+
+        <text x="230" y="304" text-anchor="middle" class="diag-text tiny muted" style="font-style: italic;">ZMQ + NCCL</text>
+      </g>
+
+      <!-- RIGHT: mini-SGLang -->
+      <g transform="translate(660, 60)">
+        <rect class="zone-box" x="0" y="0" width="460" height="320" style="stroke:var(--oxblood);"/>
+        <g class="diag-node" transform="translate(20, 24)">
+          <rect width="180" height="50"/>
+          <text x="90" y="22" text-anchor="middle" class="diag-text head">Tokenizer Worker</text>
+          <text x="90" y="38" text-anchor="middle" class="diag-text tiny muted">HTTP → tokens</text>
+        </g>
+        <g class="diag-node" transform="translate(260, 24)">
+          <rect width="180" height="50"/>
+          <text x="90" y="22" text-anchor="middle" class="diag-text head">Detokenizer</text>
+          <text x="90" y="38" text-anchor="middle" class="diag-text tiny muted">tokens → text</text>
+        </g>
+
+        <g class="diag-node ox" transform="translate(20, 110)">
+          <rect width="420" height="80"/>
+          <text x="210" y="26" text-anchor="middle" class="diag-text head ox">Scheduler (×1 manager)</text>
+          <text x="210" y="44" text-anchor="middle" class="diag-text tiny">280 lines · 7 helper files</text>
+          <text x="210" y="62" text-anchor="middle" class="diag-text tiny muted">run_forever() · single overlap loop</text>
+        </g>
+
+        <g class="diag-node" transform="translate(20, 220)">
+          <rect width="420" height="60"/>
+          <text x="210" y="22" text-anchor="middle" class="diag-text head">Engine workers (TP)</text>
+          <text x="210" y="40" text-anchor="middle" class="diag-text tiny muted">253 lines · 2 attn backends</text>
+        </g>
+
+        <text x="230" y="304" text-anchor="middle" class="diag-text tiny ox" style="font-style: italic;">ZMQ + NCCL (same)</text>
+      </g>
+
+      <!-- center label -->
+      <text x="600" y="200" text-anchor="middle" class="diag-text" style="font-family: var(--body); font-style:italic; font-size:14px; fill: var(--margin);">= same shape =</text>
+    </svg>
+    <div class="caption">
+      Same four-role topology, same wire protocols, same conceptual roles. The mini version pushes the scheduler to single-manager rather than per-GPU — a real simplification, but the responsibilities map. <em>This is the architectural skeleton you carry from mini into reading the full code.</em>
+    </div>
+  </section>
+
+  <!-- REFLECTION 1 -->
+  <section class="reflection">
+    <div class="num">N° 1</div>
+    <h4>Small is a lens, not a constraint.</h4>
+    <p>
+      It's tempting to read mini-SGLang as a "stepping stone toward the real thing." That framing undersells it. The 5,000-line version isn't lesser — it's a <strong>different artifact serving a different purpose</strong>. The production engine optimizes for throughput, model coverage, hardware portability, and feature breadth. The teaching engine optimizes for <em>read time per concept</em>. Both are correct; both are necessary.
+    </p>
+    <p>
+      The cultural innovation in publishing mini-SGLang isn't the code; it's <strong>the decision to write code whose primary user is a reader, not an operator</strong>. That decision is rare in open source and historically required to come from individuals (Karpathy's nanoGPT, Kaiming He's MAE) rather than from institutional teams. LMSYS doing this at scale is, quietly, a precedent.
+    </p>
+  </section>
+
+  <!-- ====== READING ORDER ====== -->
+  <section id="reading-order">
+    <h2><span class="secnum">§ 03 · Path</span>A guided <em>reading order</em>.</h2>
+
+    <p>
+      Because mini is small enough to read sequentially, there's a real "correct order." Here's the path I'd recommend, in eight stops:
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl moss">Sequence</span>
+    <span class="glyph">→</span>
+    <p>Each stop is small enough (~50-300 lines) to fully comprehend before moving on. <strong>Don't skip ahead.</strong> The whole point is that each module is a complete idea you can hold in working memory before adding the next one.</p>
+  </aside>
+
+  <ol>
+    <li><strong><code>__main__.py</code> (3 lines)</strong> — just calls <code>launch_server()</code>. The thinnest possible entry.</li>
+    <li><strong><code>server/</code></strong> — spawns the four processes, wires their ZMQ sockets.</li>
+    <li><strong><code>tokenizer/</code></strong> — wrap HF tokenizer; simplest worker, helps you read ZMQ patterns.</li>
+    <li><strong><code>core.py</code></strong> — defines <code>Req</code>, <code>Batch</code>, <code>SamplingParams</code>. These are the value objects that flow through all later modules.</li>
+    <li><strong><code>kvcache/radix_cache.py</code> (253 lines)</strong> — algorithmic substance. RAII handle pattern. Read this carefully.</li>
+    <li><strong><code>scheduler/scheduler.py</code> (280 lines) + the 6 helpers</strong> — the loop. Once kvcache is clear, the schedule decisions are obvious.</li>
+    <li><strong><code>engine/engine.py</code> (253 lines)</strong> — the GPU side. <code>forward_batch</code> dispatches to attention + model.</li>
+    <li><strong><code>attention/</code> + <code>models/</code> + <code>layers/</code></strong> — the bottom of the stack. Read after you know <em>who</em> calls <em>what</em>.</li>
+  </ol>
+
+  <!-- =============== PLATE III =============== -->
+  <section class="plate">
+    <div class="plate-meta">
+      <span class="num">Plate III — A reading walk</span>
+      <span class="name">8 stops through the package</span>
+      <span class="scale">narrative</span>
+    </div>
+    <svg viewBox="0 0 1200 320" preserveAspectRatio="xMidYMid meet" role="img">
+      <defs>
+        <marker id="ahW" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b2a1f"/>
+        </marker>
+      </defs>
+
+      <text x="600" y="32" text-anchor="middle" class="diag-text head">Read in this order — each stop fits in working memory</text>
+
+      <!-- 8 stops along a curve -->
+      <g transform="translate(50, 110)">
+        <circle cx="0" cy="0" r="20" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700;">1</text>
+        <text x="0" y="38" text-anchor="middle" class="diag-text tiny">__main__</text>
+        <text x="0" y="52" text-anchor="middle" class="diag-text tiny muted">3 lines</text>
+      </g>
+      <g transform="translate(190, 130)">
+        <circle cx="0" cy="0" r="20" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700;">2</text>
+        <text x="0" y="38" text-anchor="middle" class="diag-text tiny">server/</text>
+        <text x="0" y="52" text-anchor="middle" class="diag-text tiny muted">spawn 4</text>
+      </g>
+      <g transform="translate(330, 150)">
+        <circle cx="0" cy="0" r="20" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700;">3</text>
+        <text x="0" y="38" text-anchor="middle" class="diag-text tiny">tokenizer/</text>
+        <text x="0" y="52" text-anchor="middle" class="diag-text tiny muted">simplest</text>
+      </g>
+      <g transform="translate(470, 130)">
+        <circle cx="0" cy="0" r="20" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700;">4</text>
+        <text x="0" y="38" text-anchor="middle" class="diag-text tiny">core.py</text>
+        <text x="0" y="52" text-anchor="middle" class="diag-text tiny muted">Req · Batch</text>
+      </g>
+      <g transform="translate(610, 110)">
+        <circle cx="0" cy="0" r="22" fill="rgba(139,42,31,0.08)" stroke="var(--oxblood)" stroke-width="2"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700; font-size: 12px;">5</text>
+        <text x="0" y="40" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">kvcache</text>
+        <text x="0" y="54" text-anchor="middle" class="diag-text tiny muted">algorithmic</text>
+      </g>
+      <g transform="translate(750, 130)">
+        <circle cx="0" cy="0" r="22" fill="rgba(139,42,31,0.08)" stroke="var(--oxblood)" stroke-width="2"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700; font-size: 12px;">6</text>
+        <text x="0" y="40" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">scheduler</text>
+        <text x="0" y="54" text-anchor="middle" class="diag-text tiny muted">the loop</text>
+      </g>
+      <g transform="translate(890, 150)">
+        <circle cx="0" cy="0" r="20" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700;">7</text>
+        <text x="0" y="38" text-anchor="middle" class="diag-text tiny">engine/</text>
+        <text x="0" y="52" text-anchor="middle" class="diag-text tiny muted">GPU side</text>
+      </g>
+      <g transform="translate(1050, 130)">
+        <circle cx="0" cy="0" r="20" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="0" y="4" text-anchor="middle" class="diag-text ox" style="font-weight: 700;">8</text>
+        <text x="0" y="38" text-anchor="middle" class="diag-text tiny">attn/models</text>
+        <text x="0" y="52" text-anchor="middle" class="diag-text tiny muted">leaves</text>
+      </g>
+
+      <!-- connecting arrows -->
+      <path d="M 70 110 Q 130 100 170 130" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+      <path d="M 210 130 Q 260 130 310 150" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+      <path d="M 350 150 Q 400 150 450 130" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+      <path d="M 490 130 Q 540 120 590 110" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+      <path d="M 632 110 Q 680 120 730 130" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+      <path d="M 772 130 Q 820 140 870 150" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+      <path d="M 910 150 Q 970 140 1030 130" class="diag-edge ox" marker-end="url(#ahW)" stroke-dasharray="2 3"/>
+
+      <!-- bottom band: hour estimate -->
+      <line x1="50" y1="240" x2="1150" y2="240" stroke="var(--ink-soft)" stroke-width="0.5"/>
+      <text x="50" y="260" class="diag-text tiny muted">~10 min</text>
+      <text x="200" y="260" class="diag-text tiny muted">~20 min</text>
+      <text x="350" y="260" class="diag-text tiny muted">~15 min</text>
+      <text x="500" y="260" class="diag-text tiny muted">~20 min</text>
+      <text x="640" y="260" class="diag-text tiny ox" style="font-weight: 600;">~60 min ★</text>
+      <text x="780" y="260" class="diag-text tiny ox" style="font-weight: 600;">~60 min ★</text>
+      <text x="900" y="260" class="diag-text tiny muted">~40 min</text>
+      <text x="1050" y="260" class="diag-text tiny muted">~45 min</text>
+
+      <text x="600" y="290" text-anchor="middle" class="diag-text" style="font-style: italic; font-size: 13px; fill: var(--margin);">≈ 4-5 hours total · stops 5 and 6 are where the substance lives</text>
+    </svg>
+    <div class="caption">
+      The walk is roughly 4-5 hours from start to finish. <strong>kvcache</strong> and <strong>scheduler</strong> are the two stops where you should slow down — these contain the algorithmic substance that the rest of the system arranges around.
+    </div>
+  </section>
+
+  <!-- ====== SCHEDULER ====== -->
+  <section id="scheduler">
+    <h2><span class="secnum">§ 04 · Scheduler</span>280 lines vs <em>four thousand</em>.</h2>
+
+    <p>
+      The full SGLang scheduler is the system's heart and also its largest single file. The mini version is the same heart, drawn in 280 lines plus six focused helpers:
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl">Split or merge</span>
+    <span class="glyph">⌗</span>
+    <p>Mini splits into 7 files of one concern each. Full SGLang puts them in one class with Mixins. <strong>The Mixin pattern is what happens when "split into files" meets "Python prefers one class per logical unit"</strong> — a compromise that ages poorly. The mini choice (separate files, not Mixins) is the cleaner kind of split.</p>
+  </aside>
+
+  <pre data-lang="python · mini-sglang scheduler/"><code>scheduler.py    # 280 — class Scheduler(SchedulerIOMixin), run_forever()
+cache.py        # CacheManager — coordinates with RadixCache
+config.py       # SchedulerConfig — knobs
+decode.py       # DecodeManager — Phase A: continue decoding
+prefill.py      # PrefillManager + ChunkedReq — Phase B: admit + chunked prefill
+io.py           # SchedulerIOMixin — ZMQ I/O
+table.py        # TableManager — per-request block tables</code></pre>
+
+  <section>
+    <p>
+      Each file has one concern. <code>decode.py</code> handles "what to do with already-running requests"; <code>prefill.py</code> handles "what new requests can we admit, possibly chunking"; <code>cache.py</code> mediates with the radix cache; <code>table.py</code> tracks block tables. The main <code>scheduler.py</code> just orchestrates these. <strong>This is what 4,006 lines look like when you stop optimizing for production and start optimizing for the reader.</strong>
+    </p>
+  </section>
+
+  <!-- =============== PLATE IV =============== -->
+  <section class="plate">
+    <div class="plate-meta">
+      <span class="num">Plate IV — Same concerns, different shape</span>
+      <span class="name">Scheduler structure: full vs mini</span>
+      <span class="scale">organizational</span>
+    </div>
+    <svg viewBox="0 0 1200 420" preserveAspectRatio="xMidYMid meet" role="img">
+      <text x="300" y="32" text-anchor="middle" class="diag-text head">full SGLang · one class</text>
+      <text x="900" y="32" text-anchor="middle" class="diag-text head" style="fill:var(--oxblood);">mini-SGLang · seven files</text>
+
+      <!-- LEFT -->
+      <g transform="translate(100, 60)">
+        <rect x="0" y="0" width="400" height="340" fill="rgba(28,26,24,0.04)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="200" y="28" text-anchor="middle" class="diag-text head" style="font-size: 16px;">class Scheduler</text>
+        <text x="200" y="46" text-anchor="middle" class="diag-text tiny muted">scheduler.py · 4,006 lines</text>
+
+        <line x1="20" y1="64" x2="380" y2="64" stroke="var(--ink-soft)" stroke-width="0.5"/>
+
+        <text x="20" y="86" class="diag-text tiny muted">+ SchedulerMlxOverlapMixin</text>
+        <text x="20" y="106" class="diag-text tiny muted">+ scheduler_dp_attn_mixin</text>
+        <text x="20" y="126" class="diag-text tiny muted">+ scheduler_output_processor_mixin</text>
+        <text x="20" y="146" class="diag-text tiny muted">+ scheduler_input_blocker</text>
+
+        <line x1="20" y1="170" x2="380" y2="170" stroke="var(--ink-soft)" stroke-width="0.5" stroke-dasharray="2 3"/>
+
+        <text x="20" y="194" class="diag-text" style="font-size: 12.5px;">event_loop_normal()</text>
+        <text x="20" y="214" class="diag-text" style="font-size: 12.5px;">event_loop_overlap()</text>
+        <text x="20" y="234" class="diag-text" style="font-size: 12.5px;">process_input_requests()</text>
+        <text x="20" y="254" class="diag-text" style="font-size: 12.5px;">get_next_batch_to_run()</text>
+        <text x="20" y="274" class="diag-text" style="font-size: 12.5px;">update_running_batch()</text>
+        <text x="20" y="294" class="diag-text" style="font-size: 12.5px;">+ ~80 other methods</text>
+
+        <text x="200" y="324" text-anchor="middle" class="diag-text tiny" style="font-style: italic; fill: var(--margin);">all in one class</text>
+      </g>
+
+      <!-- RIGHT -->
+      <g transform="translate(700, 60)">
+        <rect x="0" y="0" width="400" height="340" fill="rgba(139,42,31,0.04)" stroke="var(--oxblood)" stroke-width="1.5"/>
+        <text x="200" y="28" text-anchor="middle" class="diag-text head" style="fill: var(--oxblood); font-size: 16px;">scheduler/</text>
+        <text x="200" y="46" text-anchor="middle" class="diag-text tiny muted">7 files · 1 file per concern</text>
+
+        <line x1="20" y1="64" x2="380" y2="64" stroke="var(--ink-soft)" stroke-width="0.5"/>
+
+        <g transform="translate(20, 76)">
+          <rect width="170" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="85" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">scheduler.py</text>
+          <text x="85" y="28" text-anchor="middle" class="diag-text tiny muted">280 · the loop</text>
+        </g>
+        <g transform="translate(210, 76)">
+          <rect width="170" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="85" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">io.py</text>
+          <text x="85" y="28" text-anchor="middle" class="diag-text tiny muted">ZMQ in/out</text>
+        </g>
+        <g transform="translate(20, 122)">
+          <rect width="170" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="85" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">prefill.py</text>
+          <text x="85" y="28" text-anchor="middle" class="diag-text tiny muted">admit + chunked</text>
+        </g>
+        <g transform="translate(210, 122)">
+          <rect width="170" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="85" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">decode.py</text>
+          <text x="85" y="28" text-anchor="middle" class="diag-text tiny muted">continue running</text>
+        </g>
+        <g transform="translate(20, 168)">
+          <rect width="170" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="85" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">cache.py</text>
+          <text x="85" y="28" text-anchor="middle" class="diag-text tiny muted">radix interface</text>
+        </g>
+        <g transform="translate(210, 168)">
+          <rect width="170" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="85" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">table.py</text>
+          <text x="85" y="28" text-anchor="middle" class="diag-text tiny muted">block tables</text>
+        </g>
+        <g transform="translate(20, 214)">
+          <rect width="360" height="34" fill="var(--paper)" stroke="var(--oxblood)" stroke-width="1"/>
+          <text x="180" y="15" text-anchor="middle" class="diag-text tiny ox" style="font-weight: 600;">config.py</text>
+          <text x="180" y="28" text-anchor="middle" class="diag-text tiny muted">all knobs</text>
+        </g>
+
+        <text x="200" y="280" text-anchor="middle" class="diag-text tiny" style="font-style: italic; fill: var(--margin);">each file ≤ 200 lines · each concern in one place</text>
+        <text x="200" y="298" text-anchor="middle" class="diag-text tiny" style="font-style: italic; fill: var(--margin);">no Mixins · no surprise inheritance</text>
+      </g>
+
+      <text x="600" y="220" text-anchor="middle" class="diag-text" style="font-size: 14px; fill: var(--oxblood); font-style: italic;">same concerns,</text>
+      <text x="600" y="240" text-anchor="middle" class="diag-text" style="font-size: 14px; fill: var(--oxblood); font-style: italic;">different shape</text>
+    </svg>
+    <div class="caption">
+      Both engines need to manage prefill, decode, cache, block tables, IO, config. The production engine puts them in one class with Mixins; the teaching engine puts each in its own file. <em>For new contributors, the right-hand layout is meaningfully easier to onboard onto</em> — even if both ultimately do the same work.
+    </div>
+  </section>
+
+  <!-- REFLECTION 2 -->
+  <section class="reflection">
+    <div class="num">N° 2</div>
+    <h4>Splitting <em>is</em> the lesson.</h4>
+    <p>
+      The single most teaching-rich move in mini-SGLang is that scheduler split. It shows what the full SGLang's scheduler <em>could</em> look like if cognitive load were optimized over locality. Mixins are clever because they avoid file-explosion, but they also <strong>scatter behavior across inheritance chains in ways grep can't easily reveal</strong>. Reading a 4,006-line class with four Mixins requires the reader to mentally maintain a partial method-resolution order — a tax that compounds with codebase age.
+    </p>
+    <p>
+      For your own systems: when a class crosses roughly <strong>800 lines</strong>, ask whether you're really building one thing or whether you're papering over a missed decomposition. The teaching version of your future system will probably split it — so the production version should consider splitting it sooner.
+    </p>
+  </section>
+
+  <!-- ====== RADIX ====== -->
+  <section id="radix">
+    <h2><span class="secnum">§ 05 · RadixCache</span>RadixCache, <em>quietly refactored</em>.</h2>
+
+    <p>
+      The 253-line <code>kvcache/radix_cache.py</code> in mini-SGLang isn't just shorter than its 828-line parent — it has a quietly better API. Where full SGLang requires callers to manually pair <code>inc_lock_ref()</code> and <code>dec_lock_ref()</code>, mini introduces a single <code>lock_handle()</code> that returns a <code>RadixCacheHandle</code> dataclass:
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl indigo">RAII</span>
+    <span class="glyph">⊟</span>
+    <p>Full SGLang's <code>inc_lock_ref / dec_lock_ref</code> pair is a known footgun (it's literally <em>Trap N° 3</em> in <a href="/sources/sglang.html">File N° 002</a>). The mini handle pattern fixes it. <strong>Teaching code can choose the better design</strong> when production code is locked in by callers.</p>
+  </aside>
+
+  <pre data-lang="python · mini-sglang"><code>class RadixCacheHandle:        # frozen dataclass
+    node: RadixTreeNode
+    matched_indices: list[int]
+    # → released automatically when handle goes out of scope
+
+class RadixPrefixCache:
+    def lock_handle(self, key) -> RadixCacheHandle: ...
+    def match_prefix(self, key) -> list[int]: ...
+    def insert_prefix(self, key, value) -> None: ...
+    def evict(self, num_tokens: int) -> int: ...
+    def reset(self) -> None: ...                          # NotImplementedError
+    def check_integrity(self) -> None: ...                # no-op</code></pre>
+
+  <section>
+    <p>
+      The handle is a small, idiomatic Python pattern (frozen dataclass + explicit lifecycle). It makes leakage essentially impossible. The full SGLang couldn't introduce this without breaking many internal callers; mini, having no callers to protect, ships the cleaner design.
+    </p>
+  </section>
+
+  <!-- REFLECTION 3 -->
+  <section class="reflection">
+    <div class="num">N° 3</div>
+    <h4>The teaching version is sometimes <em>better</em>.</h4>
+    <p>
+      You'd expect a minimal version to be strictly a subset of its parent — fewer features, otherwise the same. But mini-SGLang occasionally <em>improves</em> on full SGLang: the RAII handle for KV cache references, the seven-file scheduler split, the elimination of Mixins, the single overlap loop instead of dual normal/overlap loops. These are <strong>refactors the production version can't take cheaply</strong>, because they'd break callers.
+    </p>
+    <p>
+      So mini-SGLang functions as a <strong>shadow design</strong> — a working sketch of what full SGLang could become given a green field. That's another reason to read it: not just to learn the current system, but to glimpse the next version of it.
+    </p>
+  </section>
+
+  <!-- ====== ENGINE ====== -->
+  <section id="engine">
+    <h2><span class="secnum">§ 06 · Engine</span>The Engine, <em>in 253 lines</em>.</h2>
+
+    <p>
+      <code>engine/engine.py</code> is mini's equivalent of full SGLang's 3,607-line <code>model_runner.py</code>. The shrinkage ratio is the same as the scheduler (14×), and the technique is the same: pull related concerns into sibling files.
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl moss">Graph runner</span>
+    <span class="glyph">◷</span>
+    <p>CUDA graph capture/replay is non-trivial. Mini keeps it in <code>engine/graph.py</code> as a dedicated <code>GraphRunner</code>. <strong>The forward path then becomes "graph hit? replay. graph miss? model.forward()"</strong> — six lines you can hold in your head.</p>
+  </aside>
+
+  <pre data-lang="python · mini-sglang engine/"><code>class Engine:
+    def __init__(self, config: EngineConfig): ...
+    def _init_communication(): ...              # NCCL groups
+    def _load_weight_state_dict(): ...          # HF or generated
+    def _determine_num_pages(): ...             # KV page budget
+    def _sync_get_memory(): ...                 # all-reduce free mem
+    def forward_batch(batch) -> ForwardOutput:  # ★ the hot path
+        if self.graph_runner.can_replay(batch):
+            return self.graph_runner.replay(batch)
+        return self.model.forward(batch)
+    def shutdown(): ...
+
+# graph.py — class GraphRunner (CUDA graph capture per shape bucket)
+# sample.py — class Sampler  (top-k, top-p, temperature)
+# config.py — EngineConfig</code></pre>
+
+  <section>
+    <p>
+      Compare this to full SGLang's <code>model_runner.py</code>: 3,607 lines coordinating model forward, attention backend selection (out of 27), KV cache writes, multiple CUDA graph capture strategies (graph/piecewise/breakable/cpu), LoRA, speculative decoding, EP MoE, mixed-precision paths. Every additional concern is real and necessary in production — but it makes the file unreadable as a learning artifact.
+    </p>
+  </section>
+
+  <!-- ====== MISSING ====== -->
+  <section id="missing">
+    <h2><span class="secnum">§ 07 · Cut</span>What's <em>missing</em>, on purpose.</h2>
+
+    <p>
+      A list of what mini-SGLang deliberately leaves out, with brief notes on why each is "not architecture":
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl">Subtractive design</span>
+    <span class="glyph">−</span>
+    <p>The decision <em>what to leave out</em> is the design. Every absent feature implicitly says "this is an optimization or product feature, not a fundamental of LLM serving." That curatorial judgment is the most valuable part of the project — not the code that remains.</p>
+  </aside>
+
+  <table>
+    <thead><tr><th>Feature</th><th>Why it's cut</th></tr></thead>
+    <tbody>
+      <tr><td>25 of 27 attention backends</td><td>backends are kernel selections, not architecture — once you understand <em>one</em> backend interface, the others are variants</td></tr>
+      <tr><td>~50 model architectures</td><td>model files are mostly weight loading + forward; pattern transfers from Llama to others</td></tr>
+      <tr><td>AITER / ROCm / MUSA / NPU paths</td><td>hardware portability is a layered concern atop a working CUDA path</td></tr>
+      <tr><td>Speculative decoding (EAGLE)</td><td>throughput optimization, not foundational</td></tr>
+      <tr><td>Disaggregated prefill/decode (P/D)</td><td>distributed-system optimization, not core inference</td></tr>
+      <tr><td>Structured generation (JSON, regex, EBNF)</td><td>logits-mask feature, orthogonal to scheduling</td></tr>
+      <tr><td>Multimodal (vision / audio)</td><td>preprocessor + adapter, doesn't change the serving core</td></tr>
+      <tr><td>Hierarchical / sparse / Mamba caches</td><td>specialized memory pools for specific models</td></tr>
+      <tr><td>Connectors to vLLM / TensorRT-LLM</td><td>interop, not architecture</td></tr>
+      <tr><td>sgl-kernel as a separate wheel</td><td>release-engineering concern, not runtime</td></tr>
+      <tr><td>Web dashboard / observability stack</td><td>operations layer</td></tr>
+    </tbody>
+  </table>
+
+  <section>
+    <p>
+      <strong>None of these are unimportant</strong> — they're the reasons production SGLang exists. They're just not <em>foundational</em> to "how an LLM inference engine works." mini-SGLang's curatorial line falls exactly at the boundary between <em>architecture</em> and <em>features that ride on top of architecture</em>.
+    </p>
+  </section>
+
+  <!-- REFLECTION 4 -->
+  <section class="reflection">
+    <div class="num">N° 4</div>
+    <h4>What's missing teaches what's <em>optional</em>.</h4>
+    <p>
+      For your own work — multi-agent kernel optimization, AMD inference, anywhere — the question <em>"what can I cut from this system and still call it the system?"</em> is the most powerful design audit you can run. mini-SGLang is that audit performed on full SGLang in public.
+    </p>
+    <p>
+      When you build your own inference or orchestration system, mentally write the mini version first. Identify <strong>what cannot be removed without breaking the central claim</strong>. Build that first; layer the rest as optional features. Production systems that grew this way (designed-mini-first, even if never published) are conspicuously more maintainable than ones that grew by accretion.
+    </p>
+  </section>
+
+  <!-- ====== WORKFLOW ====== -->
+  <section id="workflow">
+    <h2><span class="secnum">§ 08 · Method</span>How to actually <em>use both</em>.</h2>
+
+    <p>
+      A concrete reading-and-reference workflow that combines mini-SGLang and full SGLang. This is the practical takeaway for anyone who needs to work in either codebase:
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl">Concrete</span>
+    <span class="glyph">☞</span>
+    <p>For my AMD work specifically: when I touch <code>aiter_backend.py</code> (3,284 lines), I first re-read mini's <code>attention/</code> to refresh the interface contract. The interface is identical; only the implementation depth differs. <strong>Mini becomes a personal lexicon for the API surface</strong>.</p>
+  </aside>
+
+  <ol>
+    <li><strong>First pass</strong> — read all of mini-SGLang sequentially, in the order from Plate III. ~5 hours. Goal: form vocabulary.</li>
+    <li><strong>Indexing</strong> — for each mini file, note which full-SGLang file/directory is its parent. Keep this as a private cheat sheet.</li>
+    <li><strong>Targeted reads</strong> — when you need to touch full SGLang, find the mini parent of the target module first. Refresh the simple version (~15 min), then dive into the full version with the simple version's structure in mind.</li>
+    <li><strong>Diff reading</strong> — when full SGLang adds something mini doesn't have (e.g., disaggregation), read it as an <em>add-on</em>, not a re-learn. The add-on attaches to a part of mini that you already understand.</li>
+    <li><strong>Contribution direction</strong> — if you find a cleaner pattern in mini that full doesn't have, it's a potential refactor PR for full SGLang. The RAII handle pattern is one such candidate.</li>
+  </ol>
+
+  <!-- ====== EPILOGUE ====== -->
+  <section id="epilogue">
+    <h2><span class="secnum">§ 09 · Epilogue</span>Pedagogy, <em>as code</em>.</h2>
+
+    <p>
+      What LMSYS did with mini-SGLang is, in a small way, an example for the open-source community at large. Big systems become impenetrable. Documentation tries to bridge the gap and often fails because docs decay faster than code. <em>A second smaller implementation</em>, maintained in lockstep with the main one, is a third path — neither just-code nor just-docs, but code that exists to be read.
+    </p>
+  </section>
+
+  <aside class="margin">
+    <span class="lbl">Coda</span>
+    <span class="glyph">∎</span>
+    <p>nanoGPT taught a generation about transformers. MAE's reference code taught about masked autoencoders. mini-SGLang may, in retrospect, turn out to be the first <strong>institutional</strong> example of the same impulse — a teaching twin maintained by the same team that ships production.</p>
+  </aside>
+
+  <section>
+    <p>
+      If you're an MLSys engineer in 2026, the most valuable hour you can spend this week is reading mini-SGLang. It will give you the vocabulary to read every modern inference engine — vLLM, TensorRT-LLM, your own future system — with confidence. And it will quietly shape how you write your own code: smaller, more decomposed, more readable. <em>That's the real shrink</em>.
+    </p>
+    <p style="margin-top:32px; font-style: italic; color: var(--margin);">— Fin.</p>
+  </section>
+
+</main>
+
+<!-- ============ COLOPHON ============ -->
+<footer class="colophon">
+  <div class="row">
+    <div class="col">
+      <h5>Colophon</h5>
+      <p>Source: github.com/sgl-project/mini-sglang</p>
+      <p>Branch: main · 2026-05-15</p>
+      <p>Reading: ~5 hours, single sitting</p>
+      <p>Total lines surveyed: ~5,000</p>
+    </div>
+    <div class="col">
+      <h5>Companion</h5>
+      <p>Read alongside</p>
+      <p><a href="/sources/sglang.html" style="color:var(--oxblood);">File N° 002 — full SGLang</a></p>
+      <p>to see the 140× version</p>
+    </div>
+    <div class="col">
+      <h5>Typography</h5>
+      <p>Display — Marcellus</p>
+      <p>Body — Crimson Pro</p>
+      <p>Mono — Fira Code</p>
+    </div>
+    <div class="col">
+      <h5>Palette</h5>
+      <p>ivory · ink · oxblood · indigo · moss</p>
+      <p>after Tufte essays, ca. 2001</p>
+    </div>
+    <div class="col">
+      <h5>Compiled for</h5>
+      <p>Jhin Pan · AMD Spring 2026 Intern</p>
+      <p>MAS for Kernel Optimization</p>
+      <p>panjin1221@gmail.com</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
