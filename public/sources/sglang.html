@@ -43,6 +43,7 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   padding: 0;
+  padding-left: var(--rail-w);
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
@@ -308,6 +309,7 @@ body::before {
 }
 
 @media (max-width: 1320px) {
+  body { padding-left: 0; }
   .rail { display: none; }
 }
 
