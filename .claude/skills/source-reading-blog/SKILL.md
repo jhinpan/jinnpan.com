@@ -181,6 +181,23 @@ git -C ~/jinnpan.com push origin main
 - [ ] At least one section ties to Jhin's AMD / kernel-optimization work where applicable
 - [ ] No emojis in the HTML or blog body (Jhin's style — only use if he explicitly asks)
 - [ ] No generic AI-writing patterns (run `/humanizer` mentally — avoid "delve into", "comprehensive", "leverage", em-dash overuse, rule-of-three lists when not natural)
+- [ ] **Anchor cross-check passes** (see below)
+
+### Anchor cross-check — MANDATORY before commit
+
+Before declaring the HTML done, run this cross-grep to verify that every rail/TOC link has a matching `<section id="...">` and vice versa. This catches "rail drift" — where modules get merged during writing but the rail wasn't updated.
+
+```bash
+F=public/sources/<slug>.html
+rail=$(grep -oE 'href="#[a-z0-9-]+"' "$F" | sort -u | sed 's/href="#//;s/"//')
+body=$(grep -oE 'section[^>]*id="[a-z0-9-]+"' "$F" | sed 's/.*id="//;s/"//' | sort -u)
+echo "Rail-only (broken links): $(comm -23 <(echo "$rail") <(echo "$body") | tr '\n' ' ')"
+echo "Body-only (orphan sections): $(comm -13 <(echo "$rail") <(echo "$body") | tr '\n' ' ')"
+```
+
+Both lines must print empty. If "Rail-only" is non-empty, your rail points to nothing — clicking falls back to the page top silently. If "Body-only" is non-empty, you have a real section without a nav entry — the most common case is forgetting an Epilogue link.
+
+The first three entries in this series (skypilot, sglang, vllm) all shipped with broken rails because writing-time module merges weren't reflected back into the rail. Don't repeat that — run the check.
 
 ## Skipping rules
 
