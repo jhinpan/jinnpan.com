@@ -692,6 +692,7 @@ section { scroll-margin-top: 32px; }
     <li><a href="#reefs">Reefs (six pitfalls)</a></li>
     <li><a href="#redlines">Red lines for kernel agents</a></li>
     <li><a href="#epilogue">Epilogue</a></li>
+    <li><a href="#references">Primary references · AMD ISA docs</a></li>
   </ol>
 </nav>
 
@@ -754,7 +755,7 @@ section { scroll-margin-top: 32px; }
   <p>The cleanest path is roughly: <strong>M1</strong> (CDNA3 background, so the rest makes sense) → <strong>M2</strong> (<code>vector_add_asm</code>, the canonical example) → <strong>M3</strong> (<code>bandwidth_memread</code>, your roofline ceiling) → <strong>M4</strong> (MFMA, the only path to peak FLOPS) → <strong>M5/M6/M7</strong> in any order. Skip the rest of this prologue if you already know why you are here.</p>
 </div>
 
-<p>Three things this writeup is <em>not</em>: it is not a build guide (the READMEs handle that), it is not a tutorial for HIP itself (assume you can write a basic kernel), and it is not a substitute for the ISA manual (read sections 8–10 of the <em>AMD CDNA3 Instruction Set Architecture</em> document alongside this). It is a reader's report: what each example teaches, what assumptions it leaves unstated, and where it fits in the larger geography of AMD optimization.</p>
+<p>Three things this writeup is <em>not</em>: it is not a build guide (the READMEs handle that), it is not a tutorial for HIP itself (assume you can write a basic kernel), and it is not a substitute for the ISA manual (read sections 8–10 of the <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-mi300-cdna3-instruction-set-architecture.pdf"><em>AMD Instinct MI300 CDNA3 Instruction Set Architecture</em></a> document alongside this — full link list in <a href="#references">§ References</a> below). It is a reader's report: what each example teaches, what assumptions it leaves unstated, and where it fits in the larger geography of AMD optimization.</p>
 </section>
 
 <!-- ====================================================== -->
@@ -2221,6 +2222,48 @@ asm <span class="c-key">volatile</span>(<span class="c-str">"v_mfma_f32_32x32x8f
 <p>The repo is small enough that re-reading every six months is feasible. New examples appear occasionally — <code>mla_agentic_v0</code>, <code>wmma_opus_rdna4</code>, <code>matrix_core_gfx950</code> are recent additions that hint at where AMD optimization is moving (MLA for inference, RDNA4 WMMA for client-side, gfx950 as the imminent successor to MI300). It is worth a bookmark.</p>
 
 <p>The next entry in this series will likely cover either <a href="https://github.com/ROCm/aiter">aiter</a> (the production kernel library that <code>opus_*</code> examples build on) or Triton-ROCm's code generation pipeline. Both extend the chain started here in different directions — aiter pushes toward production patterns, Triton-ROCm pushes toward automated codegen. Either way, gcnasm is the foundation that makes the next two readable.</p>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- REFERENCES -->
+<!-- ====================================================== -->
+<section id="references">
+<h2><span class="num">§ Refs · The six documents to keep open</span>Primary references</h2>
+
+<p>gcnasm makes sense only when read alongside the AMD specifications it implements against. The six documents below are the load-bearing references for every claim in this writeup — line numbers like <code>vector_add_kernel.s:147</code> are the <em>where</em>, and these PDFs are the <em>why</em>. Bookmark all of them; the gap between "the instruction exists in the ISA manual" and "the LLVM assembler accepts it" is exactly the territory gcnasm maps.</p>
+
+<ol class="tile-list">
+  <li>
+    <div class="ttl">№ 1 — <em>AMD Instinct MI300 CDNA3 ISA Reference Guide</em> · Aug 2025</div>
+    <div class="desc">The 1,200-page authority for gfx942. Sections to read first: <strong>§ 8 (Vector Memory · MUBUF/MTBUF/FLAT)</strong> for the buffer-load patterns in M2, <strong>§ 7 (Vector ALU)</strong> for DPP control codes in M5, <strong>§ 10 (MFMA)</strong> for the matrix-core instruction families in M4, and <strong>§ 6 (Scalar Memory · s_waitcnt encoding)</strong> for the <code>vmcnt</code> mechanics this repo lives on. → <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-mi300-cdna3-instruction-set-architecture.pdf">amd.com · CDNA3 ISA PDF</a></div>
+  </li>
+  <li>
+    <div class="ttl">№ 2 — <em>AMD CDNA3 Architecture White Paper</em></div>
+    <div class="desc">Architecture-level overview: XCD layout, AID/IOD chiplet topology, Infinity Fabric, HBM3 hierarchy, the unified VGPR+AGPR register file. Read this <em>before</em> the ISA reference so the instructions make sense in context — why MUBUF exists at all, why MFMA writes to AGPRs, what the 304-CU figure means physically. → <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/white-papers/amd-cdna-3-white-paper.pdf">amd.com · CDNA3 white paper</a></div>
+  </li>
+  <li>
+    <div class="ttl">№ 3 — <em>AMD Instinct CDNA4 ISA Reference Guide</em> · Aug 2025</div>
+    <div class="desc">For MI355X (gfx950). CDNA4 is a strict superset of CDNA3 — every pattern in gcnasm transfers, with added MFMA shapes (fp8/fp6/fp4) and an expanded MTBUF. Diff this against № 1 to see what's new and what to retune. → <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-cdna4-instruction-set-architecture.pdf">amd.com · CDNA4 ISA PDF</a></div>
+  </li>
+  <li>
+    <div class="ttl">№ 4 — <em>LLVM AMDGPU Backend documentation</em></div>
+    <div class="desc">The definitive source for what the assembler <em>actually</em> accepts — which is sometimes a strict subset of what the ISA defines (Reef 1). When the LLVM source contradicts the AMD ISA manual, your code compiles against LLVM, not against AMD. Also documents intrinsics (<code>__builtin_amdgcn_*</code>) used in M2 and M4. → <a href="https://llvm.org/docs/AMDGPUUsage.html">llvm.org · AMDGPUUsage</a></div>
+  </li>
+  <li>
+    <div class="ttl">№ 5 — <em>ROCm GPU architecture specifications</em></div>
+    <div class="desc">Quick reference: CU count, peak FP/INT throughput, HBM bandwidth, LDS size per SKU. Fills in the constants for the roofline numbers in M3 (the 4.56 TB/s measured on MI308X versus the ~5.3 TB/s peak comes from this table). → <a href="https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html">rocm.docs.amd.com · gpu-arch-specs</a></div>
+  </li>
+  <li>
+    <div class="ttl">№ 6 — <em>AMD GPUOpen ISA documentation hub</em></div>
+    <div class="desc">Index of every public AMD GPU ISA reference: GCN3-5, CDNA1-4, RDNA1-4. Bookmark for cross-architecture work — porting a CDNA kernel to RDNA, or comparing how MFMA evolves across generations. The same team maintains it; the structure of each PDF is consistent. → <a href="https://gpuopen.com/amd-gpu-architecture-programming-documentation/">gpuopen.com · ISA hub</a></div>
+  </li>
+</ol>
+
+<div class="callout cyan">
+  <span class="ctag">A reading sequence</span>
+  <p>If you are coming to AMD GPU programming for the first time, the right order is <strong>№ 2 → § 2-3 of № 1 → this writeup → § 6-10 of № 1 → № 4 alongside as you start to assemble</strong>. The white paper builds intuition for the hardware shape; the early ISA chapters establish the register and memory model; this writeup gives you running examples to anchor everything against; the deep ISA chapters become readable once you have those anchors; the LLVM doc is your reference for what the toolchain actually accepts. № 3, № 5, № 6 are lookups, not sequential reads.</p>
+</div>
 
 </section>
 

@@ -1,6 +1,6 @@
 ---
 title: "源码精读 004 — mini-SGLang， 缩小 140 倍的双生子如何教会我们读 SGLang"
-description: "5000 行的教学实现， 与 72.9 万行的生产引擎并行维护。 5 小时读穿。 关于"如何从最小实现学到东西"的反思至少和代码本身一样重要。"
+description: '5000 行的教学实现， 与 72.9 万行的生产引擎并行维护。 5 小时读穿。 关于"如何从最小实现学到东西"的反思至少和代码本身一样重要。'
 date: 2026-05-15
 tags: ["source-reading", "MLSys", "inference", "sglang", "pedagogy"]
 category: "Technical"

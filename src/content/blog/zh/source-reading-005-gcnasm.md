@@ -50,6 +50,19 @@ AMD GPU 编程一直存在一个文档断层。 一边是 HIP 教程： 友好�
 
 **→ 完整深度阅读在 [/sources/gcnasm.html](/sources/gcnasm.html)** —— 整体用"逻辑分析仪"美学（深硅黑底 + 荧光绿 + 琥珀 + 数据青 + 时钟品红， Newsreader / Manrope / Geist Mono 字体）， 所有图都是手写的 inline SVG。
 
+## AMD ISA 官方文档 —— 与这篇一起读的六份
+
+gcnasm 只有和它实际针对的 AMD 规范一起读才算完整。 下面六份是承重文档 —— ISA 手册收录的指令和 LLVM 汇编器实际接受的指令之间的那道缝， 正好是这个 repo 在勾画的边界：
+
+1. **[AMD Instinct MI300 CDNA3 ISA Reference Guide（2025 年 8 月版）](https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-mi300-cdna3-instruction-set-architecture.pdf)** —— gfx942 的 1200 页权威手册。 § 8（MUBUF / MTBUF / FLAT）对应 M2 的 buffer load， § 7（Vector ALU）对应 M5 的 DPP， § 10（MFMA）对应 M4 的 matrix-core 指令家族， § 6（s_waitcnt 编码）对应这个 repo 立足的 vmcnt 机制。
+2. **[AMD CDNA3 架构白皮书](https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/white-papers/amd-cdna-3-white-paper.pdf)** —— XCD / AID chiplet 拓扑、 Infinity Fabric、 HBM3、 统一的 VGPR / AGPR 寄存器文件。 ISA 手册之前先读这本， 你才能看到指令为什么长那样的硬件背景（为什么会有 MUBUF， 为什么 MFMA 写到 AGPR， 304 个 CU 物理上意味着什么）。
+3. **[AMD Instinct CDNA4 ISA Reference Guide（2025 年 8 月版）](https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-cdna4-instruction-set-architecture.pdf)** —— MI355X（gfx950）用。 CDNA4 是 CDNA3 的严格超集， 多了 fp8 / fp6 / fp4 的 MFMA 形状和扩展的 MTBUF。 跟 № 1 对 diff， 就能知道新增了什么、 哪些参数要重新调。
+4. **[LLVM AMDGPU Backend 文档](https://llvm.org/docs/AMDGPUUsage.html)** —— 汇编器<em>真正</em>接受的指令的权威来源（有时候是 ISA 的严格子集 —— 见 Reef 1， 那条 `buffer_load…lds`）。 LLVM 和 AMD ISA 冲突的时候， 你的代码是按 LLVM 编的， 不是按 AMD 编的。 M2 和 M4 里大量使用的 `__builtin_amdgcn_*` intrinsics 也在这里查。
+5. **[ROCm GPU 架构规格](https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html)** —— 每个 SKU 的 CU 数、 峰值 FP / INT 吞吐、 HBM 带宽、 LDS 容量快查表。 M3 里 roofline 计算用的常数都来自这里（MI308X 实测 4.56 TB/s 对照 ~5.3 TB/s 峰值， 那个峰值就从这张表里查出来）。
+6. **[AMD GPUOpen ISA 文档总入口](https://gpuopen.com/amd-gpu-architecture-programming-documentation/)** —— 所有公开 AMD GPU ISA 手册的索引（GCN3-5、 CDNA1-4、 RDNA1-4）。 做跨架构工作或者想看 MFMA 跨代怎么演化时 bookmark 一下。
+
+第一次接触 AMD GPU 编程的推荐顺序是 **№ 2 → № 1 的 § 2-3 → 这篇 → № 1 的 § 6-10 → 开始写汇编后 № 4 边写边查**。 白皮书让你建立硬件直觉。 ISA 前几章建立寄存器和内存模型。 这篇文章给你可执行的例子作为锚。 ISA 深层章节有了锚之后就能读了。 LLVM 文档是工具链实际接受什么的参考。 № 3、 № 5、 № 6 是查阅， 不是顺读。
+
 ---
 
 *上一篇： [源码精读 004 — mini-SGLang](/blog/source-reading-004-mini-sglang/)。 下一篇大概率写 [aiter](https://github.com/ROCm/aiter)（gcnasm 的 `opus_*` 例子底下那个 production AMD kernel 库）或者 Triton-ROCm 的 codegen 流水线 —— 两个方向都是 gcnasm 这层地基上的自然延伸。*
