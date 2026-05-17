@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GCNasm — 一次源码精读 · No.005</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200;300;400;500;600;700&family=Geist+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void: #07090c;
+  --silicon: #0d1116;
+  --substrate: #14181f;
+  --trace: #1e242e;
+  --etch: #2a323e;
+  --rail-edge: #353e4d;
+
+  --vellum: #e8e3d4;
+  --vellum-dim: #c8c3b2;
+  --vellum-soft: #908a78;
+  --vellum-mute: #5a564a;
+  --vellum-faint: #3a3830;
+
+  --phosphor: #6dd47e;
+  --phosphor-deep: #2f8a48;
+  --amber: #f5b338;
+  --amber-deep: #b87f1f;
+  --magenta: #d76dc4;
+  --cyan: #5ec9d4;
+  --crimson: #e25555;
+  --crimson-deep: #8a2a2a;
+
+  --serif: 'Newsreader', 'Times New Roman', serif;
+  --sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'JetBrains Mono', monospace;
+
+  --max-content: 720px;
+  --rail-w: 188px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--void);
+  color: var(--vellum);
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.66;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* CRT scanlines + silicon grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(109, 212, 126, 0.012) 0px,
+    rgba(109, 212, 126, 0.012) 1px,
+    transparent 1px,
+    transparent 3px);
+  opacity: 0.6;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(109, 212, 126, 0.025) 1px, transparent 0),
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(245, 179, 56, 0.04), transparent 60%);
+  background-size: 36px 36px, 100% 100%;
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 64px 48px 72px;
+  border-bottom: 1px solid var(--trace);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--vellum-soft);
+  margin-bottom: 36px;
+}
+.masthead .kicker::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--phosphor);
+  box-shadow: 0 0 6px rgba(109, 212, 126, 0.6);
+}
+.masthead .kicker .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--phosphor);
+  box-shadow: 0 0 8px rgba(109, 212, 126, 0.9);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.masthead .kicker .clock {
+  color: var(--vellum-mute);
+}
+
+.masthead h1 {
+  font-family: var(--serif);
+  font-weight: 320;
+  font-variation-settings: 'opsz' 72;
+  font-size: clamp(64px, 11vw, 156px);
+  line-height: 0.93;
+  margin: 0;
+  letter-spacing: -0.035em;
+  color: var(--vellum);
+}
+.masthead h1 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--phosphor);
+  font-variation-settings: 'opsz' 72;
+  text-shadow: 0 0 18px rgba(109, 212, 126, 0.25);
+}
+
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 280;
+  font-variation-settings: 'opsz' 32;
+  font-size: clamp(19px, 2.1vw, 26px);
+  line-height: 1.36;
+  color: var(--vellum-dim);
+  margin: 32px 0 0;
+  max-width: 740px;
+  letter-spacing: -0.005em;
+}
+
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  margin-top: 60px;
+  padding-top: 32px;
+  border-top: 1px dashed var(--trace);
+  max-width: 920px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--vellum-mute);
+  margin-bottom: 10px;
+}
+.masthead .meta .item .value {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-variation-settings: 'opsz' 32;
+  font-size: 22px;
+  color: var(--vellum);
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+}
+.masthead .meta .item .value .unit {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--vellum-soft);
+  margin-left: 5px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+.masthead .meta .item .value .accent {
+  color: var(--phosphor);
+}
+
+/* ============ LAYOUT ============ */
+.shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  z-index: 1;
+}
+
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 88px auto;
+  padding: 0;
+}
+
+/* ============ NAV RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 48px 22px;
+  border-right: 1px solid var(--rail-edge);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, var(--void) 0%, rgba(7, 9, 12, 0.96) 100%);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--trace); }
+
+.rail .brand {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 19px;
+  font-weight: 350;
+  font-variation-settings: 'opsz' 24;
+  letter-spacing: -0.01em;
+  color: var(--vellum);
+  margin-bottom: 6px;
+}
+.rail .brand em {
+  font-style: normal;
+  color: var(--phosphor);
+}
+.rail .ref {
+  color: var(--vellum-mute);
+  margin-bottom: 28px;
+  font-size: 9.5px;
+}
+.rail .ref .pin {
+  color: var(--amber);
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: nav;
+}
+.rail ol li {
+  margin-bottom: 12px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 30px;
+}
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--vellum-mute);
+  font-size: 9.5px;
+}
+.rail ol li a {
+  color: var(--vellum-dim);
+  text-decoration: none;
+  transition: color 0.18s;
+  display: block;
+  line-height: 1.32;
+}
+.rail ol li a:hover { color: var(--phosphor); }
+.rail .divider {
+  height: 1px;
+  background: var(--trace);
+  margin: 18px 0;
+}
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--serif);
+  font-weight: 380;
+  font-variation-settings: 'opsz' 60;
+  font-size: clamp(38px, 4.8vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin: 104px 0 24px;
+  color: var(--vellum);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  color: var(--phosphor);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+.article h2 em {
+  font-style: italic;
+  font-weight: 320;
+  color: var(--phosphor);
+}
+
+.article h3 {
+  font-family: var(--serif);
+  font-weight: 420;
+  font-variation-settings: 'opsz' 32;
+  font-size: 23px;
+  line-height: 1.25;
+  margin: 56px 0 14px;
+  color: var(--vellum);
+  letter-spacing: -0.012em;
+}
+.article h3 em {
+  font-style: italic;
+  color: var(--amber);
+}
+
+.article h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+  margin: 36px 0 10px;
+}
+
+.article p {
+  margin: 0 0 18px;
+  color: var(--vellum-dim);
+}
+.article p strong {
+  color: var(--vellum);
+  font-weight: 600;
+}
+.article p em {
+  color: var(--amber);
+  font-style: italic;
+}
+.article p code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--substrate);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--cyan);
+  border: 1px solid var(--trace);
+}
+.article a {
+  color: var(--phosphor);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--phosphor-deep);
+  transition: color 0.18s;
+}
+.article a:hover { color: var(--amber); border-bottom-color: var(--amber-deep); }
+
+/* ============ DROP CAP ============ */
+.dropcap {
+  display: block;
+}
+.dropcap::first-letter {
+  font-family: var(--serif);
+  font-weight: 350;
+  font-variation-settings: 'opsz' 72;
+  font-size: 64px;
+  line-height: 0.85;
+  float: left;
+  margin: 6px 12px -2px 0;
+  color: var(--phosphor);
+  text-shadow: 0 0 12px rgba(109, 212, 126, 0.3);
+}
+
+/* ============ CODE BLOCKS ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: var(--silicon);
+  border: 1px solid var(--trace);
+  border-left: 2px solid var(--phosphor-deep);
+  padding: 18px 22px;
+  margin: 22px 0;
+  overflow-x: auto;
+  color: var(--vellum-dim);
+  white-space: pre;
+  border-radius: 1px;
+  box-shadow: inset 0 0 24px rgba(109, 212, 126, 0.025);
+}
+.code .c-key { color: var(--phosphor); }
+.code .c-str { color: var(--amber); }
+.code .c-num { color: var(--cyan); }
+.code .c-com { color: var(--vellum-mute); font-style: italic; }
+.code .c-reg { color: var(--magenta); }
+.code .c-warn { color: var(--crimson); }
+.code .c-fname {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--vellum-mute);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 28px 0;
+  padding: 18px 22px 18px 24px;
+  background: var(--substrate);
+  border-left: 2px solid var(--amber);
+  position: relative;
+}
+.callout.phosphor { border-left-color: var(--phosphor); }
+.callout.crimson { border-left-color: var(--crimson); }
+.callout.cyan { border-left-color: var(--cyan); }
+.callout.magenta { border-left-color: var(--magenta); }
+
+.callout .ctag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 8px;
+  display: block;
+}
+.callout.phosphor .ctag { color: var(--phosphor); }
+.callout.crimson .ctag { color: var(--crimson); }
+.callout.cyan .ctag { color: var(--cyan); }
+.callout.magenta .ctag { color: var(--magenta); }
+
+.callout p {
+  margin: 0 0 8px;
+  color: var(--vellum);
+  font-size: 14.5px;
+}
+.callout p:last-child { margin-bottom: 0; }
+
+/* ============ TABLES ============ */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 22px 0;
+  font-size: 13.5px;
+}
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--trace);
+  vertical-align: top;
+}
+.tbl th {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vellum-soft);
+  font-weight: 500;
+  border-bottom-color: var(--etch);
+  padding-bottom: 10px;
+}
+.tbl td {
+  color: var(--vellum-dim);
+}
+.tbl td code, .tbl th code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--cyan);
+  background: var(--silicon);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.tbl td.k { color: var(--vellum); font-family: var(--mono); font-size: 12px; }
+.tbl td.acc { color: var(--phosphor); }
+.tbl td.warn { color: var(--crimson); }
+.tbl td.num { color: var(--amber); font-variant-numeric: tabular-nums; }
+
+/* ============ PLATES (SVG) ============ */
+.plate {
+  margin: 56px 0;
+  padding: 0;
+}
+.plate.wide {
+  max-width: 1040px;
+  margin-left: calc(-1 * (1040px - var(--max-content)) / 2);
+}
+@media (max-width: 1100px) {
+  .plate.wide { max-width: 100%; margin-left: 0; }
+}
+
+.plate-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--trace);
+}
+.plate-meta .pnum {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+}
+.plate-meta .pname {
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: 'opsz' 24;
+  font-size: 17px;
+  color: var(--vellum);
+  font-weight: 400;
+}
+.plate-meta .pscale {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--vellum-mute);
+}
+
+.plate-body {
+  background: var(--silicon);
+  border: 1px solid var(--trace);
+  padding: 22px;
+  position: relative;
+}
+.plate-body svg { display: block; width: 100%; height: auto; }
+
+.plate .caption {
+  margin-top: 12px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: 'opsz' 18;
+  font-size: 14.5px;
+  color: var(--vellum-soft);
+  line-height: 1.5;
+}
+
+/* SVG shared classes */
+.diag-text { font-family: var(--sans); font-size: 11px; fill: var(--vellum); }
+.diag-text.mono { font-family: var(--mono); font-size: 10.5px; }
+.diag-text.small { font-size: 9.5px; fill: var(--vellum-soft); }
+.diag-text.tiny { font-size: 8.5px; fill: var(--vellum-mute); }
+.diag-text.label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; fill: var(--vellum-mute); text-transform: uppercase; }
+.diag-text.title { font-family: var(--serif); font-style: italic; font-size: 13px; fill: var(--vellum); }
+.diag-text.phos { fill: var(--phosphor); }
+.diag-text.amb { fill: var(--amber); }
+.diag-text.cyn { fill: var(--cyan); }
+.diag-text.mag { fill: var(--magenta); }
+.diag-text.crm { fill: var(--crimson); }
+.diag-text.dim { fill: var(--vellum-soft); }
+
+.zone { fill: var(--substrate); stroke: var(--etch); stroke-width: 1; }
+.zone.phos { stroke: var(--phosphor-deep); }
+.zone.amb { stroke: var(--amber-deep); }
+.zone.cyn { stroke: var(--cyan); stroke-opacity: 0.4; }
+.zone.mag { stroke: var(--magenta); stroke-opacity: 0.4; }
+.zone.crm { stroke: var(--crimson); stroke-opacity: 0.4; }
+
+.trace { stroke: var(--vellum-mute); stroke-width: 1; fill: none; }
+.trace.dash { stroke-dasharray: 3 3; }
+.trace.phos { stroke: var(--phosphor); }
+.trace.amb { stroke: var(--amber); }
+.trace.cyn { stroke: var(--cyan); }
+.trace.mag { stroke: var(--magenta); }
+
+.fifo { stroke: var(--trace); stroke-width: 1; }
+
+/* ============ FOOTER ============ */
+.colophon {
+  max-width: 1280px;
+  margin: 120px auto 0;
+  padding: 48px 48px 64px;
+  border-top: 1px solid var(--trace);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--vellum-soft);
+  line-height: 1.7;
+}
+.colophon .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+}
+.colophon .field .lbl {
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vellum-mute);
+  margin-bottom: 10px;
+}
+.colophon .field .val {
+  color: var(--vellum-dim);
+}
+.colophon .field .val a {
+  color: var(--phosphor);
+  text-decoration: none;
+}
+.colophon .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: middle;
+  border: 1px solid var(--etch);
+}
+
+/* ============ DETAILS LIST ============ */
+.tile-list {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0;
+}
+.tile-list li {
+  padding: 14px 0 14px 28px;
+  border-bottom: 1px dashed var(--trace);
+  position: relative;
+}
+.tile-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  color: var(--phosphor);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.tile-list li .ttl {
+  font-family: var(--serif);
+  font-variation-settings: 'opsz' 18;
+  font-size: 15px;
+  color: var(--vellum);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.tile-list li .ttl em {
+  font-style: italic;
+  color: var(--amber);
+}
+.tile-list li .desc {
+  font-size: 13.5px;
+  color: var(--vellum-dim);
+}
+
+/* ============ FIRST PARAGRAPH SPACING ============ */
+.article > p:first-of-type {
+  margin-top: 0;
+}
+
+/* SECTION ANCHOR PADDING */
+section { scroll-margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <div class="brand"><em>gcnasm</em></div>
+  <div class="ref">FILE № <span class="pin">005</span> · 2026.05.17</div>
+  <ol>
+    <li><a href="#prologue">Prologue</a></li>
+    <li><a href="#m0-topography">Topography of 64 katas</a></li>
+    <li><a href="#m1-cdna3">CDNA3 in ten minutes</a></li>
+    <li><a href="#m2-vector-add">Five patterns of <em>vector_add_asm</em></a></li>
+    <li><a href="#m3-roofline">Roofline · <em>bandwidth_memread</em></a></li>
+    <li><a href="#m4-mfma">Matrix Core · MFMA layouts</a></li>
+    <li><a href="#m5-dpp">Cross-lane · DPP wavefront</a></li>
+    <li><a href="#m6-iteration">Iteration speed · co-exec, measure_ips</a></li>
+    <li><a href="#m7-oddments">Oddments · integer, atomics, type cvt</a></li>
+    <div class="divider"></div>
+    <li><a href="#reefs">Reefs (six pitfalls)</a></li>
+    <li><a href="#redlines">Red lines for kernel agents</a></li>
+    <li><a href="#epilogue">Epilogue</a></li>
+  </ol>
+</nav>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="kicker">
+    <span>FILE № 005</span>
+    <span class="dot"></span>
+    <span>2026.05.17</span>
+    <span class="clock">·</span>
+    <span class="clock">gfx942 / gfx950 / gfx1030</span>
+  </div>
+  <h1><em>GCN</em>asm</h1>
+  <p class="subtitle">
+    A field reading of carlushuang's kata book — sixty-four
+    self-contained kernels that teach what the CDNA3 ISA manual
+    refuses to spell out, from <em>buffer_load…lds</em> tricks the
+    assembler will not accept to the <em>vmcnt(3)</em> arithmetic
+    that turns a vector add into a pipelined loom.
+  </p>
+
+  <div class="meta">
+    <div class="item">
+      <div class="label">Source lines</div>
+      <div class="value">72,878<span class="unit">.s/.cc/.cu/.py</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Kata folders</div>
+      <div class="value">64<span class="unit">independent</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Roofline ceiling</div>
+      <div class="value"><span class="accent">4.56</span><span class="unit">TB/s · MI308X</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Reading time</div>
+      <div class="value">~6<span class="unit">hours, careful</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ARTICLE ============ -->
+<div class="shell">
+<main class="article">
+
+<!-- ====================================================== -->
+<!-- PROLOGUE -->
+<!-- ====================================================== -->
+<section id="prologue">
+<h2><span class="num">§ 00 · Why this repo, why now</span>Prologue</h2>
+
+<p class="dropcap">There is a well-documented chasm in AMD GPU programming. On one bank stands the HIP-level tutorial: <code>__global__</code>, <code>blockIdx</code>, <code>__shfl_xor</code>. Friendly, portable, and almost entirely unable to express the half-dozen tricks that separate a 30% kernel from a 95% kernel. On the other bank stands the CDNA3 ISA manual: an authoritative 1,200-page artifact that catalogs every bit of every opcode, never once showing what a <em>complete, optimized, hand-written</em> kernel actually looks like.</p>
+
+<p>carlushuang's <a href="https://github.com/carlushuang/gcnasm">gcnasm</a> is a bridge built of plank-by-plank examples — 64 short folders, each one a complete program demonstrating one technique. The repo has no library, no central abstraction, no build system that ties anything together. Every folder has a <code>build.sh</code>, an <code>.s</code> or <code>.cc</code> or both, and (if you're lucky) a README. That structure is the point: each kata is something you can read, compile, run, and modify in an hour.</p>
+
+<p>For someone whose work involves <em>generating</em> AMD kernels — whether by hand, by codegen, or by autonomous agent — this repo is a calibration target. It answers a question the official docs do not: <em>what should a good kernel look like when a fluent AMD engineer writes it?</em> The first time you see the <code>vmcnt(3)</code> incantation in <code>vector_add_asm/vector_add_kernel.s:237</code> and trace through the FIFO logic in <code>README.md:410-452</code>, the chasm closes by a step.</p>
+
+<div class="callout phosphor">
+  <span class="ctag">Reading order</span>
+  <p>The cleanest path is roughly: <strong>M1</strong> (CDNA3 background, so the rest makes sense) → <strong>M2</strong> (<code>vector_add_asm</code>, the canonical example) → <strong>M3</strong> (<code>bandwidth_memread</code>, your roofline ceiling) → <strong>M4</strong> (MFMA, the only path to peak FLOPS) → <strong>M5/M6/M7</strong> in any order. Skip the rest of this prologue if you already know why you are here.</p>
+</div>
+
+<p>Three things this writeup is <em>not</em>: it is not a build guide (the READMEs handle that), it is not a tutorial for HIP itself (assume you can write a basic kernel), and it is not a substitute for the ISA manual (read sections 8–10 of the <em>AMD CDNA3 Instruction Set Architecture</em> document alongside this). It is a reader's report: what each example teaches, what assumptions it leaves unstated, and where it fits in the larger geography of AMD optimization.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M0 — TOPOGRAPHY -->
+<!-- ====================================================== -->
+<section id="m0-topography">
+<h2><span class="num">M0 · The cartography</span>Topography of <em>64 katas</em></h2>
+
+<p>Before walking through any single example, it helps to see the shape of the whole. gcnasm has no top-level layering — every folder is a peer — but the names cluster naturally into seven orthogonal categories. The README gives a tagged index; the table below distills it into something readable.</p>
+
+<table class="tbl">
+  <thead><tr><th>Group</th><th>Count</th><th>Anchor examples</th><th>What you learn</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Vector / element-wise</td><td class="num">3</td><td><code>vector_add_asm</code>, <code>absdiff</code></td><td>The whole stack — persistent kernels, LDS, OOB, pipelining</td></tr>
+    <tr><td class="k">GEMM + MFMA</td><td class="num">11</td><td><code>hgemm_mfma</code>, <code>matrix_core_asm</code>, <code>opus_gemm</code></td><td>Tile layouts, AGPR scheduling, swap-and-swizzle</td></tr>
+    <tr><td class="k">Bandwidth / memcpy</td><td class="num">10</td><td><code>bandwidth_memread</code>, <code>membench</code></td><td>The ceiling — peak HBM bandwidth on every part you own</td></tr>
+    <tr><td class="k">Warp / wave primitives</td><td class="num">6</td><td><code>wave_reduce_dpp</code>, <code>warp_sort_bitonic</code></td><td>DPP control codes, <code>ds_permute</code>, <code>readlane</code></td></tr>
+    <tr><td class="k">Atomics / sync</td><td class="num">3</td><td><code>cmpswap_atomic</code>, <code>cross-wg-sync</code></td><td>bf16x2 atomic reduction, cross-workgroup ordering</td></tr>
+    <tr><td class="k">Type conversion</td><td class="num">6</td><td><code>cvt_fp8</code>, <code>pk_cvt</code>, <code>lqq</code></td><td>FP8, INT4, packed conversions on the cheap</td></tr>
+    <tr><td class="k">Integer arithmetic</td><td class="num">3</td><td><code>magic_integer_division</code></td><td>Multiply-shift replacement for division in address math</td></tr>
+    <tr><td class="k">HW probing / IPS</td><td class="num">4</td><td><code>measure_ips</code>, <code>hwreg</code></td><td>Instruction throughput, <code>HW_ID</code> register decoding</td></tr>
+    <tr><td class="k">Python / PyTorch glue</td><td class="num">7</td><td><code>co-exec</code>, <code>opus_fmm</code>, <code>warp_histogram</code></td><td>How to make a hand-written kernel callable from PyTorch</td></tr>
+  </tbody>
+</table>
+
+<p>The folder names tell a small story by themselves. <code>opus_*</code> directories use the <a href="https://github.com/ROCm/aiter">aiter / opus</a> library — these are higher-level building blocks that look more like a kernel you would actually ship. The bare names (<code>hgemm</code>, <code>sgemm</code>, <code>matrix_core</code>) are the pedagogical minimums. The <code>_asm</code> suffix flags hand-written assembly. The <code>_bench</code> suffix means there's a measurement harness around the kernel.</p>
+
+<!-- ============ PLATE I ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate I</span>
+    <span class="pname">Repo compass — sixty-four kernels on a six-axis grid</span>
+    <span class="pscale">Scale: 1 = one folder</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 460" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr-phos" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6dd47e"/>
+    </marker>
+  </defs>
+
+  <!-- backplane grid -->
+  <g stroke="#1e242e" stroke-width="0.5">
+    <line x1="40" y1="60" x2="940" y2="60"/>
+    <line x1="40" y1="380" x2="940" y2="380"/>
+    <line x1="40" y1="60" x2="40" y2="380"/>
+    <line x1="940" y1="60" x2="940" y2="380"/>
+  </g>
+
+  <!-- column headers (operation axis) -->
+  <text class="diag-text label" x="80" y="48">LOAD</text>
+  <text class="diag-text label" x="220" y="48">COMPUTE</text>
+  <text class="diag-text label" x="380" y="48">REDUCE</text>
+  <text class="diag-text label" x="540" y="48">COMMUNICATE</text>
+  <text class="diag-text label" x="710" y="48">PROBE</text>
+  <text class="diag-text label" x="850" y="48">GLUE</text>
+
+  <!-- row labels (data axis) -->
+  <text class="diag-text label" x="40" y="100">SCALAR</text>
+  <text class="diag-text label" x="40" y="170">VECTOR</text>
+  <text class="diag-text label" x="40" y="240">MATRIX</text>
+  <text class="diag-text label" x="40" y="310">WAVE</text>
+  <text class="diag-text label" x="40" y="370">META</text>
+
+  <!-- vertical separators -->
+  <g stroke="#1e242e" stroke-width="0.5" stroke-dasharray="2 3">
+    <line x1="200" y1="60" x2="200" y2="380"/>
+    <line x1="350" y1="60" x2="350" y2="380"/>
+    <line x1="510" y1="60" x2="510" y2="380"/>
+    <line x1="670" y1="60" x2="670" y2="380"/>
+    <line x1="820" y1="60" x2="820" y2="380"/>
+  </g>
+  <!-- horizontal separators -->
+  <g stroke="#1e242e" stroke-width="0.5" stroke-dasharray="2 3">
+    <line x1="40" y1="130" x2="940" y2="130"/>
+    <line x1="40" y1="200" x2="940" y2="200"/>
+    <line x1="40" y1="270" x2="940" y2="270"/>
+    <line x1="40" y1="340" x2="940" y2="340"/>
+  </g>
+
+  <!-- SCALAR row -->
+  <g>
+    <rect class="zone amb" x="60" y="75" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="68" y="92">buffer_ld_oob</text>
+    <text class="diag-text small" x="68" y="106">OOB → 0 demo</text>
+    <text class="diag-text tiny" x="68" y="118">mubuf semantics</text>
+
+    <rect class="zone amb" x="210" y="75" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="218" y="92">int_divide_mod</text>
+    <text class="diag-text small" x="218" y="106">magic_div macros</text>
+    <text class="diag-text tiny" x="218" y="118">s_mul_hi shift</text>
+  </g>
+
+  <!-- VECTOR row -->
+  <g>
+    <rect class="zone phos" x="60" y="145" width="130" height="48" rx="2"/>
+    <text class="diag-text mono phos" x="68" y="162">vector_add_asm</text>
+    <text class="diag-text small" x="68" y="176">5 patterns in 1</text>
+    <text class="diag-text tiny" x="68" y="188">★ canonical example</text>
+
+    <rect class="zone phos" x="210" y="145" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="218" y="162">bandwidth_memread</text>
+    <text class="diag-text small" x="218" y="176">4.56 TB/s ceiling</text>
+    <text class="diag-text tiny" x="218" y="188">float4 + nt_load</text>
+
+    <rect class="zone" x="360" y="145" width="140" height="48" rx="2"/>
+    <text class="diag-text mono" x="368" y="162">absdiff</text>
+    <text class="diag-text small" x="368" y="176">__builtin_amdgcn_sad_u16</text>
+    <text class="diag-text tiny" x="368" y="188">SAD 8x8</text>
+
+    <rect class="zone cyn" x="520" y="145" width="140" height="48" rx="2"/>
+    <text class="diag-text mono" x="528" y="162">memcpy_async</text>
+    <text class="diag-text small" x="528" y="176">async copy via LDS</text>
+    <text class="diag-text tiny" x="528" y="188">global → lds → global</text>
+
+    <rect class="zone amb" x="680" y="145" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="688" y="162">measure_ips</text>
+    <text class="diag-text small" x="688" y="176">IPS per instruction</text>
+    <text class="diag-text tiny" x="688" y="188">tight asm loop</text>
+
+    <rect class="zone" x="830" y="145" width="100" height="48" rx="2"/>
+    <text class="diag-text mono" x="838" y="162">triton_</text>
+    <text class="diag-text mono" x="838" y="176">memread</text>
+    <text class="diag-text tiny" x="838" y="188">triton sanity</text>
+  </g>
+
+  <!-- MATRIX row -->
+  <g>
+    <rect class="zone phos" x="60" y="215" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="68" y="232">hgemm_mfma</text>
+    <text class="diag-text small" x="68" y="246">production-ish GEMM</text>
+    <text class="diag-text tiny" x="68" y="258">11 files, codegen</text>
+
+    <rect class="zone phos" x="210" y="215" width="130" height="48" rx="2"/>
+    <text class="diag-text mono phos" x="218" y="232">matrix_core_asm</text>
+    <text class="diag-text small" x="218" y="246">hand MFMA loop</text>
+    <text class="diag-text tiny" x="218" y="258">AGPR scheduling</text>
+
+    <rect class="zone phos" x="360" y="215" width="140" height="48" rx="2"/>
+    <text class="diag-text mono" x="368" y="232">matrix_core</text>
+    <text class="diag-text small" x="368" y="246">3 layout strategies</text>
+    <text class="diag-text tiny" x="368" y="258">32x32x8 fp16</text>
+
+    <rect class="zone cyn" x="520" y="215" width="140" height="48" rx="2"/>
+    <text class="diag-text mono" x="528" y="232">transpose-lds</text>
+    <text class="diag-text small" x="528" y="246">avoid bank conflict</text>
+    <text class="diag-text tiny" x="528" y="258">swizzled LDS</text>
+
+    <rect class="zone amb" x="680" y="215" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="688" y="232">opus_attn</text>
+    <text class="diag-text small" x="688" y="246">attention via opus</text>
+    <text class="diag-text tiny" x="688" y="258">7 files</text>
+
+    <rect class="zone" x="830" y="215" width="100" height="48" rx="2"/>
+    <text class="diag-text mono" x="838" y="232">opus_fmm</text>
+    <text class="diag-text tiny" x="838" y="258">PyTorch ext</text>
+  </g>
+
+  <!-- WAVE row -->
+  <g>
+    <rect class="zone mag" x="210" y="285" width="130" height="48" rx="2"/>
+    <text class="diag-text mono mag" x="218" y="302">wave_reduce_dpp</text>
+    <text class="diag-text small" x="218" y="316">6-stage tree</text>
+    <text class="diag-text tiny" x="218" y="328">v_mov_b32_dpp</text>
+
+    <rect class="zone mag" x="360" y="285" width="140" height="48" rx="2"/>
+    <text class="diag-text mono" x="368" y="302">warp_sort_bitonic</text>
+    <text class="diag-text small" x="368" y="316">med3 + DPP shuffle</text>
+    <text class="diag-text tiny" x="368" y="328">31 files (largest)</text>
+
+    <rect class="zone mag" x="520" y="285" width="140" height="48" rx="2"/>
+    <text class="diag-text mono" x="528" y="302">ds_permute</text>
+    <text class="diag-text small" x="528" y="316">cross-lane shuffle</text>
+    <text class="diag-text tiny" x="528" y="328">LDS-based xchg</text>
+
+    <rect class="zone crm" x="680" y="285" width="130" height="48" rx="2"/>
+    <text class="diag-text mono" x="688" y="302">cmpswap_atomic</text>
+    <text class="diag-text small" x="688" y="316">bf16x2 atomic add</text>
+    <text class="diag-text tiny" x="688" y="328">compare-and-swap</text>
+  </g>
+
+  <!-- META row -->
+  <g>
+    <rect class="zone amb" x="60" y="350" width="280" height="22" rx="2"/>
+    <text class="diag-text mono" x="68" y="365">hwreg · hwreg_mask · smid · test_compiler · test_exp2 · test_tanh</text>
+
+    <rect class="zone cyn" x="360" y="350" width="280" height="22" rx="2"/>
+    <text class="diag-text mono" x="368" y="365">membench · ubench · measure_ips_bench (the meters)</text>
+
+    <rect class="zone phos" x="660" y="350" width="270" height="22" rx="2"/>
+    <text class="diag-text mono phos" x="668" y="365">co-exec ⟵ standalone Python compile+launch loop</text>
+  </g>
+
+</svg>
+  </div>
+  <div class="caption">A six-by-five floor plan of the repo. Green-bordered tiles are the kernels you should read first; magenta marks cross-lane work; cyan marks data-movement; amber marks integer or probing utilities; crimson is atomics. The empty cells (e.g. scalar-reduce, scalar-communicate) are gaps the repo does not cover — those are problems CDNA solves with hardware features (<code>s_barrier</code>, kernarg loads) and so do not need standalone examples.</div>
+</div>
+
+<div class="callout">
+  <span class="ctag">Steal this taxonomy</span>
+  <p>If you maintain your own AMD kernel knowledge base — Obsidian, Notion, internal wiki — this six-axis grid is a better organizational principle than alphabetical or chronological. Group by <em>data shape × operation</em> and the same kernels will be findable from either direction. The empty cells are also informative: when you find yourself wanting to add something there, you have probably found a problem that does not need a kernel.</p>
+</div>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- M1 — CDNA3 PRIMER -->
+<!-- ====================================================== -->
+<section id="m1-cdna3">
+<h2><span class="num">M1 · The hardware behind the assembly</span>CDNA3 in <em>ten minutes</em></h2>
+
+<p>Every line of <code>vector_add_kernel.s</code> assumes you know things this section will state outright. If you've written CUDA, two-thirds of this maps cleanly onto NVIDIA equivalents; the differences are concentrated and worth memorizing.</p>
+
+<h3>Wavefront, CU, SIMD — the execution unit</h3>
+
+<p>An AMD <strong>wavefront</strong> is 64 lanes, not 32. This single fact ripples through everything: every cross-lane primitive operates over 64-bit masks (<code>exec</code>, <code>vcc</code>), DPP shuffles cover 64 lanes in 6 tree stages instead of 5, and LDS bank conflicts behave differently because the bank arbiter sees twice as many threads per cycle.</p>
+
+<p>A <strong>Compute Unit (CU)</strong> on CDNA3 holds 4 SIMDs, each 16 lanes wide. A wavefront occupies one SIMD, and the wave's instructions issue 16 lanes per cycle, taking 4 cycles to fully execute one 64-lane instruction. The wave scheduler interleaves up to 10 waves per SIMD (40 waves per CU); this is why occupancy is measured in "waves per SIMD" not "warps per SM."</p>
+
+<!-- ============ PLATE II ============ -->
+<div class="plate">
+  <div class="plate-meta">
+    <span class="pnum">Plate II</span>
+    <span class="pname">CU exploded view — where a wavefront actually lives</span>
+    <span class="pscale">CDNA3 / MI300X · gfx942</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer GPU label -->
+  <text class="diag-text label" x="20" y="22">MI300X — 304 CUs</text>
+  <rect class="zone" x="20" y="32" width="660" height="290" rx="2"/>
+
+  <!-- CU box (one of 304) -->
+  <text class="diag-text label phos" x="40" y="56">ONE COMPUTE UNIT</text>
+  <rect class="zone phos" x="40" y="62" width="280" height="240" rx="2"/>
+
+  <!-- 4 SIMDs inside CU -->
+  <g>
+    <rect class="zone" x="56" y="80" width="120" height="50" rx="2"/>
+    <text class="diag-text mono" x="64" y="98">SIMD 0</text>
+    <text class="diag-text tiny" x="64" y="112">16 ALU · 10 waves</text>
+    <text class="diag-text tiny" x="64" y="122">256 KB VGPR</text>
+
+    <rect class="zone" x="184" y="80" width="120" height="50" rx="2"/>
+    <text class="diag-text mono" x="192" y="98">SIMD 1</text>
+    <text class="diag-text tiny" x="192" y="112">16 ALU · 10 waves</text>
+    <text class="diag-text tiny" x="192" y="122">256 KB VGPR</text>
+
+    <rect class="zone" x="56" y="140" width="120" height="50" rx="2"/>
+    <text class="diag-text mono" x="64" y="158">SIMD 2</text>
+    <text class="diag-text tiny" x="64" y="172">16 ALU · 10 waves</text>
+    <text class="diag-text tiny" x="64" y="182">256 KB VGPR</text>
+
+    <rect class="zone" x="184" y="140" width="120" height="50" rx="2"/>
+    <text class="diag-text mono" x="192" y="158">SIMD 3</text>
+    <text class="diag-text tiny" x="192" y="172">16 ALU · 10 waves</text>
+    <text class="diag-text tiny" x="192" y="182">256 KB VGPR</text>
+  </g>
+
+  <!-- LDS bank -->
+  <rect class="zone cyn" x="56" y="204" width="248" height="38" rx="2"/>
+  <text class="diag-text mono cyn" x="64" y="222">LDS  64 KB · 32 banks · 128 B/cycle</text>
+  <text class="diag-text tiny" x="64" y="234">addr via M0 for buffer_load…lds</text>
+
+  <!-- Matrix Core -->
+  <rect class="zone phos" x="56" y="252" width="248" height="38" rx="2"/>
+  <text class="diag-text mono phos" x="64" y="270">MFMA matrix core (gfx942)</text>
+  <text class="diag-text tiny" x="64" y="282">fp16 · bf16 · fp8 · int8 · 32x32x8 / 16x16x16</text>
+
+  <!-- Wavefront detail -->
+  <text class="diag-text label amb" x="360" y="56">ONE WAVEFRONT</text>
+  <rect class="zone amb" x="360" y="62" width="320" height="120" rx="2"/>
+
+  <!-- 64 lanes -->
+  <g>
+    <text class="diag-text tiny" x="372" y="80">64 lanes total · issued 16/cycle × 4 cycles</text>
+    <g>
+      <rect x="372" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="380" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="388" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="396" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="404" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="412" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="420" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="428" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="436" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="444" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="452" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="460" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="468" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="476" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="484" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+      <rect x="492" y="88" width="6" height="10" fill="#6dd47e" opacity="0.85"/>
+    </g>
+    <text class="diag-text tiny phos" x="376" y="110">cycle 0</text>
+
+    <g>
+      <rect x="500" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="508" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="516" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="524" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="532" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="540" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="548" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="556" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="564" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="572" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="580" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="588" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="596" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="604" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="612" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+      <rect x="620" y="88" width="6" height="10" fill="#f5b338" opacity="0.85"/>
+    </g>
+    <text class="diag-text tiny amb" x="500" y="110">cycle 1</text>
+
+    <g>
+      <rect x="372" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="380" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="388" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="396" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="404" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="412" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="420" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="428" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="436" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="444" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="452" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="460" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="468" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="476" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="484" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+      <rect x="492" y="120" width="6" height="10" fill="#d76dc4" opacity="0.85"/>
+    </g>
+    <text class="diag-text tiny mag" x="376" y="142">cycle 2</text>
+
+    <g>
+      <rect x="500" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="508" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="516" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="524" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="532" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="540" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="548" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="556" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="564" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="572" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="580" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="588" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="596" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="604" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="612" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+      <rect x="620" y="120" width="6" height="10" fill="#5ec9d4" opacity="0.85"/>
+    </g>
+    <text class="diag-text tiny cyn" x="500" y="142">cycle 3</text>
+
+    <text class="diag-text small" x="372" y="166">exec mask 64-bit · vcc 64-bit · m0 per-wave</text>
+  </g>
+
+  <!-- Register file -->
+  <text class="diag-text label cyn" x="360" y="206">UNIFIED REGISTER FILE</text>
+  <rect class="zone cyn" x="360" y="212" width="320" height="86" rx="2"/>
+
+  <g>
+    <rect x="372" y="224" width="135" height="22" fill="#0d1116" stroke="#5ec9d4" stroke-opacity="0.5"/>
+    <text class="diag-text mono cyn" x="378" y="240">VGPR  [0 .. accum_offset)</text>
+
+    <rect x="514" y="224" width="155" height="22" fill="#0d1116" stroke="#d76dc4" stroke-opacity="0.5"/>
+    <text class="diag-text mono mag" x="520" y="240">AGPR  [accum_offset .. end)</text>
+
+    <text class="diag-text tiny" x="372" y="260">CDNA3 fuses VGPR+AGPR in one file.</text>
+    <text class="diag-text tiny" x="372" y="272">.amdhsa_accum_offset declares the split.</text>
+    <text class="diag-text tiny" x="372" y="284">MFMA destinations must be AGPR ("a"</text>
+    <text class="diag-text tiny" x="372" y="295">constraint), MFMA sources can be either.</text>
+  </g>
+
+</svg>
+  </div>
+  <div class="caption">A CU is four SIMDs sharing one 64 KB LDS bank and one matrix-core unit. Each wavefront pins itself to one SIMD and its 64 lanes execute in groups of 16 over 4 cycles — that's why <code>vmcnt</code> arithmetic counts <em>operations</em>, not cycles. The unified VGPR/AGPR register file is the CDNA-specific oddity: <code>.amdhsa_accum_offset</code> is the directive that draws the line.</div>
+</div>
+
+<h3>The two register classes — VGPR vs <em>AGPR</em></h3>
+
+<p>CDNA3 has one physical register file but two logical register classes. <strong>VGPRs</strong> are general-purpose vector registers. <strong>AGPRs</strong> are accumulator registers; only the MFMA matrix-core instructions can write them as destinations, and only MFMA inputs (and a handful of <code>v_accvgpr_*</code> moves) can read them. The directive <code>.amdhsa_accum_offset</code> declares where in the unified file the AGPR range begins. If you allocate 8 VGPRs and no AGPRs, you write <code>.amdhsa_accum_offset 8</code> (<code>vector_add_kernel.s:290</code>). If you allocate 128 VGPRs and 128 AGPRs, you write <code>.amdhsa_accum_offset 128</code> (<code>matrix_core_asm/kernel.s:62</code>).</p>
+
+<p>Omitting the directive on a CDNA target causes the assembler to error out. This is not just a metadata field — it actually affects register allocation and forms part of the kernel descriptor that the GPU reads at launch.</p>
+
+<h3>The two wait counters — <em>vmcnt</em> and <em>lgkmcnt</em></h3>
+
+<p>AMD memory operations are asynchronous. Each one increments a counter; software is responsible for waiting until the counter drains before reading the result. There are two independent FIFOs:</p>
+
+<table class="tbl">
+  <thead><tr><th>Counter</th><th>Tracks</th><th>Wait instruction</th><th>Depth (CDNA3)</th></tr></thead>
+  <tbody>
+    <tr><td><code>vmcnt</code></td><td>Global / buffer memory ops — including <code>buffer_load…lds</code> and <code>buffer_store</code></td><td><code>s_waitcnt vmcnt(N)</code></td><td>up to 63</td></tr>
+    <tr><td><code>lgkmcnt</code></td><td>LDS reads/writes (<code>ds_read</code>, <code>ds_write</code>) plus scalar memory ops (<code>s_load_dword</code>)</td><td><code>s_waitcnt lgkmcnt(N)</code></td><td>up to 15</td></tr>
+  </tbody>
+</table>
+
+<p>The semantics is <em>"wait until at most N entries remain outstanding"</em> — so <code>vmcnt(0)</code> drains everything, <code>vmcnt(3)</code> means "let three operations stay in flight." This is the foundation under everything in M2.</p>
+
+<p>One trap worth flagging now: <code>buffer_load…lds</code> increments <code>vmcnt</code> (it's a memory op from the FIFO's perspective), but the <em>final write to LDS</em> can only be observed after the wait completes. So you need <code>vmcnt(0)</code> before the corresponding <code>ds_read</code>, even though <code>ds_read</code> reads LDS not global memory. <code>vector_add_asm</code> threads this needle by letting two loop iterations of latency hide between the load and the read.</p>
+
+<h3>The buffer resource descriptor — <em>SRD</em></h3>
+
+<p>Most memory instructions in CDNA come in two flavors: <em>flat</em> (one big virtual address space, like CUDA pointers) and <em>buffer</em> (addressed through a 128-bit resource descriptor — the "SRD"). Hand-written kernels overwhelmingly prefer buffer instructions because the SRD gives you out-of-bounds protection for free, which lets you eliminate the <code>exec</code> mask gymnastics that flat-pointer kernels need.</p>
+
+<table class="tbl">
+  <thead><tr><th>Word</th><th>Bits</th><th>Contents</th><th>What it controls</th></tr></thead>
+  <tbody>
+    <tr><td class="num">0</td><td>0..31</td><td><code>base_address[31:0]</code></td><td>Low 32 bits of the pointer</td></tr>
+    <tr><td class="num">1</td><td>0..15</td><td><code>base_address[47:32]</code></td><td>High 16 bits; upper bits 0 for stride=0</td></tr>
+    <tr><td class="num">2</td><td>0..31</td><td><code>num_records</code></td><td>Byte count — anything past this triggers OOB</td></tr>
+    <tr><td class="num">3</td><td>0..31</td><td>format / type</td><td><code>0x00020000</code> for raw buffer on gfx942</td></tr>
+  </tbody>
+</table>
+
+<p>The OOB semantics is the lever: loads past <code>num_records</code> return zero, stores past it are dropped silently. Set <code>num_records = N * sizeof(float)</code> and your kernel is automatically safe at the array boundary — no <code>if (idx &lt; N)</code> needed, no <code>s_cbranch_execz</code> needed. This single feature reshapes how hand-written AMD kernels look compared to their CUDA equivalents.</p>
+
+<h3>What this section deliberately skips</h3>
+
+<p>This is not a complete ISA primer. Three substantial topics are deferred to their own sections: <strong>MFMA</strong> instruction families (M4), <strong>DPP</strong> cross-lane operations (M5), and <strong>M0 register</strong> handling for LDS addressing (M2, since <code>vector_add_asm</code> is where it first matters). The hardware basics above are enough to read the next section without panic.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M2 — vector_add_asm -->
+<!-- ====================================================== -->
+<section id="m2-vector-add">
+<h2><span class="num">M2 · The five-pattern primer</span><em>vector_add_asm</em></h2>
+
+<p><code>vector_add_asm/</code> is the example to read first and read carefully. It does the simplest possible work — <code>C[i] = A[i] + B[i]</code> on float32 — but stacks five orthogonal optimization patterns on top of it. Read the patterns separately and the kernel becomes legible; try to read it bottom-up and you will spend an hour confused by what <code>vmcnt(3)</code> means.</p>
+
+<p>The files are tiny: <code>vector_add_kernel.s</code> is 319 lines (<a href="https://github.com/carlushuang/gcnasm/blob/master/vector_add_asm/vector_add_kernel.s">link</a>), <code>main.cpp</code> is 230, the README is 452. Total reading time, end to end, is about 90 minutes the first pass. The five patterns:</p>
+
+<ol class="tile-list">
+  <li>
+    <div class="ttl">Pattern 1 — <em>Persistent kernel</em></div>
+    <div class="desc">Grid size equals the number of CUs (<code>main.cpp</code> queries <code>multiProcessorCount</code>). Each workgroup runs a grid-stride loop. One launch covers the whole array regardless of size; every CU stays occupied for the kernel's duration.</div>
+  </li>
+  <li>
+    <div class="ttl">Pattern 2 — <em>Double LDS buffer</em></div>
+    <div class="desc">4 KB of LDS split into <code>buf0</code> and <code>buf1</code>, each holding 256 threads' worth of A and B values. The loop body reads one buffer while prefetching into the other. Hides global-memory latency behind compute.</div>
+  </li>
+  <li>
+    <div class="ttl">Pattern 3 — <em>buffer_load…lds direct path</em></div>
+    <div class="desc">Data flows from HBM straight into LDS, bypassing VGPRs entirely. Reduces register pressure (which raises occupancy) and eliminates a write-back step. The catch: the LLVM assembler does not accept this instruction encoding — you emit the MUBUF bits manually.</div>
+  </li>
+  <li>
+    <div class="ttl">Pattern 4 — <em>OOB-based control flow</em></div>
+    <div class="desc">SRDs set <code>num_records = N * 4</code>. Out-of-bounds loads return zero; out-of-bounds stores are dropped. The kernel never touches <code>exec</code> — all 64 lanes execute every instruction unconditionally.</div>
+  </li>
+  <li>
+    <div class="ttl">Pattern 5 — <em>vmcnt(3) precise pipelining</em></div>
+    <div class="desc">A careful arithmetic argument lets exactly 3 memory ops stay in flight at all times — two prefetches and one store from the previous half-iteration. Deeper than <code>vmcnt(0)</code> (no pipelining) and tighter than the conservative bound.</div>
+  </li>
+</ol>
+
+<h3>Pattern 3 in detail — the assembler's blind spot</h3>
+
+<p>The flagship trick is <code>buffer_load_dword … offen lds</code>. On gfx942 this instruction reads data from global memory and writes it directly to LDS, never going through a VGPR. It exists in the hardware encoding and the disassembler will print it back to you, but the LLVM MC assembler (as of ROCm 7.1 / clang 20) rejects the <code>lds</code> text modifier on any GFX9/CDNA target. carlushuang's workaround, in <code>vector_add_kernel.s:147-158</code>:</p>
+
+<div class="code"><span class="c-fname">vector_add_kernel.s · line 147</span><span class="c-com">; ====================================================================
+; Macro: buffer_load_dword ... offen lds  (manual MUBUF encoding)
+; ====================================================================</span>
+<span class="c-key">.macro</span> buffer_load_dword_offen_lds vdata, vaddr, srsrc_base
+    <span class="c-com">; DWORD 0: MUBUF major opcode (0x38), OP=0x14 (buffer_load_dword),
+    ;          LDS=1 (bit 16), OFFEN=1 (bit 12)</span>
+    <span class="c-key">.long</span> <span class="c-num">0xE0511000</span>
+    <span class="c-com">; DWORD 1: SOFFSET=0x80 (literal 0), SRSRC, VDATA, VADDR</span>
+    <span class="c-key">.long</span> (<span class="c-num">0x80</span> &lt;&lt; <span class="c-num">24</span>) | ((\srsrc_base / <span class="c-num">4</span>) &lt;&lt; <span class="c-num">16</span>) | (\vdata &lt;&lt; <span class="c-num">8</span>) | \vaddr
+<span class="c-key">.endm</span></div>
+
+<p>The constant <code>0xE0511000</code> was derived by assembling a regular <code>buffer_load_dword … offen</code> (which yields <code>0xE0501000</code>) and flipping bit 16. A clean macro hides this from the calling code; the rest of the kernel calls <code>buffer_load_dword_offen_lds v_a, v_buf_off, s_res_a</code> as if it were a real instruction.</p>
+
+<div class="callout crimson">
+  <span class="ctag">Reef · agent ceiling</span>
+  <p>If you plan to have an agent emit <code>.s</code> source for clang to assemble, this kind of trick is <em>structurally invisible</em> — the agent's vocabulary is bounded by the assembler's grammar. The same is true for several other tricks in this repo: any optimization that requires hand-rolling MUBUF bits, manipulating <code>amdhsa_*</code> directives the assembler does not validate, or using internal-only encodings will be out of reach. For kernel-agent design, this argues for emitting at one level lower (raw object) or one level higher (intrinsics + post-processing).</p>
+</div>
+
+<h3>Pattern 4 in detail — OOB as control flow</h3>
+
+<p>Set <code>num_records = N * sizeof(element)</code> when building each SRD (<code>vector_add_kernel.s:124-132</code>):</p>
+
+<div class="code"><span class="c-fname">vector_add_kernel.s · line 124</span><span class="c-com">; ===========================================================
+; Step 4: Build SRDs with num_records = N * 4
+; ===========================================================</span>
+<span class="c-key">s_lshl_b32</span> <span class="c-reg">s[s_res_a+2]</span>, <span class="c-reg">s[s_n]</span>, <span class="c-num">2</span>
+
+<span class="c-key">s_mov_b32</span> <span class="c-reg">s[s_res_a+0]</span>, <span class="c-reg">s[s_ptr_a]</span>
+<span class="c-key">s_and_b32</span> <span class="c-reg">s[s_res_a+1]</span>, <span class="c-reg">s[s_ptr_a+1]</span>, <span class="c-num">0xFFFF</span>
+<span class="c-key">s_mov_b32</span> <span class="c-reg">s[s_res_a+3]</span>, SRD_CONFIG_GFX942</div>
+
+<p>Now any lane whose byte offset exceeds <code>N * 4</code> gets safe hardware behavior on its load (zero return) and on its store (dropped). Loop termination is a single scalar comparison against the wave's current <code>idx</code> — no <code>s_and_saveexec_b64</code>, no per-lane masking, no execution-mask juggling:</p>
+
+<div class="code"><span class="c-fname">vector_add_kernel.s · line 235</span><span class="c-key">v_cmp_gt_u32</span> <span class="c-reg">vcc</span>, <span class="c-reg">s[s_n]</span>, <span class="c-reg">v[v_idx]</span>
+<span class="c-key">s_cbranch_vccz</span> L_done</div>
+
+<p>This produces shorter, branchier code than a CUDA equivalent — and the absence of <code>exec</code> manipulation means the optimizer (mental or compiler) is freer to reorder things. The trade-off: the buffer-instruction path is slightly slower per access than flat loads on small buffers (because the SRD has to be constructed and is read on every issue). For loops, the amortized cost is invisible.</p>
+
+<h3>Pattern 5 — the <em>vmcnt(3)</em> arithmetic</h3>
+
+<p>This is the part that takes the longest to internalize. The README spells out the accounting in section 14 (<code>README.md:410-452</code>); I will not reproduce it line by line. The key visual is this: at any point in the steady-state loop, the <code>vmcnt</code> FIFO contains exactly three operations from the half-iteration you <em>just finished</em>, while the half-iteration you are <em>currently in</em> issues three more operations (two prefetches plus one store). At the bottom of each half, <code>s_waitcnt vmcnt(3)</code> drains the older three and leaves the newer three in flight to overlap with the next half's compute.</p>
+
+<!-- ============ PLATE III ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate III</span>
+    <span class="pname">vmcnt FIFO timeline — what's outstanding at each program point</span>
+    <span class="pscale">vector_add_asm steady state</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Timeline axis -->
+  <line x1="40" y1="320" x2="940" y2="320" stroke="#5a564a" stroke-width="1"/>
+  <g>
+    <line x1="40" y1="316" x2="40" y2="324" stroke="#5a564a"/>
+    <line x1="190" y1="316" x2="190" y2="324" stroke="#5a564a"/>
+    <line x1="370" y1="316" x2="370" y2="324" stroke="#5a564a"/>
+    <line x1="550" y1="316" x2="550" y2="324" stroke="#5a564a"/>
+    <line x1="730" y1="316" x2="730" y2="324" stroke="#5a564a"/>
+    <line x1="900" y1="316" x2="900" y2="324" stroke="#5a564a"/>
+  </g>
+  <text class="diag-text tiny" x="40" y="340">prologue start</text>
+  <text class="diag-text tiny" x="160" y="340">after vmcnt(2)</text>
+  <text class="diag-text tiny" x="320" y="340">end of buf0 half</text>
+  <text class="diag-text tiny" x="500" y="340">after vmcnt(3)</text>
+  <text class="diag-text tiny" x="680" y="340">end of buf1 half</text>
+  <text class="diag-text tiny" x="860" y="340">after vmcnt(3)</text>
+
+  <!-- FIFO depth markers -->
+  <text class="diag-text label" x="20" y="60">FIFO</text>
+  <text class="diag-text label" x="20" y="115">DEPTH</text>
+  <g stroke="#1e242e" stroke-width="0.5">
+    <line x1="40" y1="80" x2="940" y2="80"/>
+    <line x1="40" y1="120" x2="940" y2="120"/>
+    <line x1="40" y1="160" x2="940" y2="160"/>
+    <line x1="40" y1="200" x2="940" y2="200"/>
+    <line x1="40" y1="240" x2="940" y2="240"/>
+    <line x1="40" y1="280" x2="940" y2="280"/>
+  </g>
+  <text class="diag-text tiny dim" x="48" y="76">6</text>
+  <text class="diag-text tiny dim" x="48" y="116">4</text>
+  <text class="diag-text tiny dim" x="48" y="156">3</text>
+  <text class="diag-text tiny dim" x="48" y="196">2</text>
+  <text class="diag-text tiny dim" x="48" y="236">1</text>
+  <text class="diag-text tiny dim" x="48" y="276">0</text>
+
+  <!-- Prologue: load goes 0,1,2,3,4 then drained to 2 -->
+  <g>
+    <!-- bar from t=40 to t=190 climbing -->
+    <rect x="55" y="260" width="22" height="20" fill="#5ec9d4" opacity="0.85"/>
+    <text class="diag-text tiny cyn" x="56" y="254">A[0]</text>
+
+    <rect x="83" y="240" width="22" height="40" fill="#5ec9d4" opacity="0.85"/>
+    <text class="diag-text tiny cyn" x="84" y="234">B[0]</text>
+
+    <rect x="111" y="220" width="22" height="60" fill="#5ec9d4" opacity="0.85"/>
+    <text class="diag-text tiny cyn" x="112" y="214">A[1]</text>
+
+    <rect x="139" y="200" width="22" height="80" fill="#5ec9d4" opacity="0.85"/>
+    <text class="diag-text tiny cyn" x="140" y="194">B[1]</text>
+
+    <!-- drain to 2 -->
+    <rect x="167" y="240" width="22" height="40" fill="#d76dc4" opacity="0.55"/>
+    <text class="diag-text tiny mag" x="158" y="234">wait(2)</text>
+  </g>
+
+  <!-- buf0 half: read, prefetch ×2, store ×1, climb from 2 to 5, then drain to 3 -->
+  <g>
+    <rect x="200" y="200" width="22" height="80" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="200" y="194">pfA</text>
+
+    <rect x="228" y="180" width="22" height="100" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="228" y="174">pfB</text>
+
+    <rect x="256" y="160" width="22" height="120" fill="#f5b338" opacity="0.85"/>
+    <text class="diag-text tiny amb" x="256" y="154">stC</text>
+
+    <rect x="320" y="180" width="34" height="100" fill="#d76dc4" opacity="0.55"/>
+    <text class="diag-text tiny mag" x="324" y="174">wait(3)</text>
+  </g>
+
+  <!-- buf1 half: same pattern -->
+  <g>
+    <rect x="380" y="160" width="22" height="120" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="380" y="154">pfA</text>
+
+    <rect x="408" y="140" width="22" height="140" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="408" y="134">pfB</text>
+
+    <rect x="436" y="120" width="22" height="160" fill="#f5b338" opacity="0.85"/>
+    <text class="diag-text tiny amb" x="436" y="114">stC</text>
+
+    <rect x="500" y="180" width="34" height="100" fill="#d76dc4" opacity="0.55"/>
+    <text class="diag-text tiny mag" x="504" y="174">wait(3)</text>
+  </g>
+
+  <!-- repeat -->
+  <g>
+    <rect x="560" y="160" width="22" height="120" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="560" y="154">pfA</text>
+
+    <rect x="588" y="140" width="22" height="140" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="588" y="134">pfB</text>
+
+    <rect x="616" y="120" width="22" height="160" fill="#f5b338" opacity="0.85"/>
+    <text class="diag-text tiny amb" x="616" y="114">stC</text>
+
+    <rect x="680" y="180" width="34" height="100" fill="#d76dc4" opacity="0.55"/>
+    <text class="diag-text tiny mag" x="684" y="174">wait(3)</text>
+  </g>
+
+  <g>
+    <rect x="740" y="160" width="22" height="120" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="740" y="154">pfA</text>
+
+    <rect x="768" y="140" width="22" height="140" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny phos" x="768" y="134">pfB</text>
+
+    <rect x="796" y="120" width="22" height="160" fill="#f5b338" opacity="0.85"/>
+    <text class="diag-text tiny amb" x="796" y="114">stC</text>
+
+    <rect x="860" y="180" width="34" height="100" fill="#d76dc4" opacity="0.55"/>
+    <text class="diag-text tiny mag" x="864" y="174">wait(3)</text>
+  </g>
+
+  <!-- Legend -->
+  <g>
+    <rect x="40" y="20" width="14" height="10" fill="#5ec9d4" opacity="0.85"/>
+    <text class="diag-text tiny" x="60" y="29">prologue load</text>
+
+    <rect x="170" y="20" width="14" height="10" fill="#6dd47e" opacity="0.85"/>
+    <text class="diag-text tiny" x="190" y="29">prefetch (buffer_load)</text>
+
+    <rect x="340" y="20" width="14" height="10" fill="#f5b338" opacity="0.85"/>
+    <text class="diag-text tiny" x="360" y="29">store (buffer_store)</text>
+
+    <rect x="490" y="20" width="14" height="10" fill="#d76dc4" opacity="0.55"/>
+    <text class="diag-text tiny" x="510" y="29">s_waitcnt drain</text>
+
+    <text class="diag-text small phos" x="640" y="29">steady state: FIFO oscillates 3 ↔ 6 forever</text>
+  </g>
+
+</svg>
+  </div>
+  <div class="caption">Each bar height is the <code>vmcnt</code> FIFO depth (outstanding memory ops) at that instruction. Prologue climbs to 4 and drains to 2; the first half-iteration climbs to 5 then drains to 3 via the <code>vmcnt(3)</code> wait. From the second iteration on, the FIFO oscillates between 3 and 6 — three slots are always devoted to the previous half's traffic, three to the current half's. The magenta blocks are the only places the GPU actually stalls; everywhere else memory and compute overlap.</div>
+</div>
+
+<h3>What it does not show you</h3>
+
+<p>The kernel is a vector add — pure stream, no compute density. Therefore <em>nothing in this example exercises the matrix core, the AGPRs, the DPP shuffles, or the LDS bank arbiter</em>. Those are the next four sections. The point of <code>vector_add_asm</code> is to put the <em>scaffold</em> in place so you can read more complex kernels without getting distracted by the boilerplate.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M3 — ROOFLINE -->
+<!-- ====================================================== -->
+<section id="m3-roofline">
+<h2><span class="num">M3 · The number you measure everything against</span><em>bandwidth_memread</em></h2>
+
+<p>You cannot meaningfully say a kernel is "slow" until you know the ceiling it is supposed to hit. <code>bandwidth_memread/</code> is a portable, two-kernel microbenchmark — read-only and read+write — designed to push HBM as hard as physically possible. On an MI308X (80 CUs, gfx942) the README reports <strong>4.56 TB/s</strong> read-only and <strong>3.36 TB/s</strong> read+write (<code>README.md:57-83</code>). These are the numbers any memory-bound kernel on the same hardware should be benchmarked against.</p>
+
+<h3>What the kernel does — six tricks compressed</h3>
+
+<p>The whole kernel is ~30 lines (<code>bandwidth_kernel.cu:68-92</code>). The tricks are stacked:</p>
+
+<div class="code"><span class="c-fname">bandwidth_kernel.cu · line 68</span><span class="c-key">template</span>&lt;<span class="c-key">typename</span> T, <span class="c-key">int</span> UNROLL = <span class="c-num">8</span>&gt;
+__global__
+<span class="c-key">void</span> memread_kernel(T* p_src, T* p_dst, <span class="c-key">int</span> issues_per_block, <span class="c-key">int</span> iters)
+{
+    <span class="c-key">auto</span> current = blockIdx.x * issues_per_block;
+    T v {};
+    <span class="c-key">for</span>(<span class="c-key">auto</span> i = <span class="c-num">0</span>; i &lt; iters; i++) {
+        <span class="c-key">auto</span> offs = UNROLL * BLOCK_SIZE * i + threadIdx.x;
+        <span class="c-key">#pragma unroll</span>
+        <span class="c-key">for</span>(<span class="c-key">auto</span> j = <span class="c-num">0</span>; j &lt; UNROLL; j++) {
+            acc(v, <span class="c-key">nt_load</span>(p_src[current + offs]));
+            offs += BLOCK_SIZE;
+        }
+    }
+    <span class="c-com">// dead store -- prevents compiler from eliding loads</span>
+    <span class="c-key">if</span>(v.x == <span class="c-num">10000</span> &amp;&amp; v.y == <span class="c-num">10000</span> &amp;&amp; v.z == <span class="c-num">10000</span> &amp;&amp; v.w == <span class="c-num">10000</span>)
+        *p_dst = v;
+}</div>
+
+<table class="tbl">
+  <thead><tr><th>Trick</th><th>What it gets you</th></tr></thead>
+  <tbody>
+    <tr><td><strong>float4 vector loads</strong></td><td>128-bit transactions per load — saturates the L2-to-CU bus in one instruction</td></tr>
+    <tr><td><strong>UNROLL=8</strong></td><td>Eight independent loads in flight per iteration. ILP hides memory latency without needing more waves.</td></tr>
+    <tr><td><strong>nt_load — non-temporal</strong></td><td><code>__builtin_nontemporal_load</code> bypasses L2 on the way in. For streaming reads, L2 pollution costs more than it saves.</td></tr>
+    <tr><td><strong>BLOCK_SIZE = 1024</strong></td><td>Maximum threads per workgroup. With <code>occupancy = 1</code>, each CU runs one workgroup of 1024 threads — 16 waves per CU.</td></tr>
+    <tr><td><strong>Persistent launch</strong></td><td>Grid size = <code>num_CUs</code>; each workgroup loops over <code>issues_per_block</code> chunks. One launch per measurement.</td></tr>
+    <tr><td><strong>Dead-store trick</strong></td><td>The unreachable <code>if</code> branch prevents the compiler from concluding that <code>v</code> is unused and deleting all the loads. Subtle but essential.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ PLATE IV ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate IV</span>
+    <span class="pname">Roofline — MI300 ceilings and where the kata lives</span>
+    <span class="pscale">log–log, MI308X observed values</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <!-- Axes -->
+  <line x1="80" y1="320" x2="940" y2="320" stroke="#5a564a"/>
+  <line x1="80" y1="40" x2="80" y2="320" stroke="#5a564a"/>
+
+  <!-- X axis labels (arithmetic intensity, FLOPS/byte) -->
+  <text class="diag-text label" x="80" y="345">ARITHMETIC INTENSITY</text>
+  <text class="diag-text small" x="490" y="345">FLOPS / byte (log)</text>
+  <g class="diag-text tiny">
+    <text x="80" y="340">0.01</text>
+    <text x="240" y="340">0.1</text>
+    <text x="400" y="340">1</text>
+    <text x="560" y="340">10</text>
+    <text x="720" y="340">100</text>
+    <text x="880" y="340">1000</text>
+  </g>
+
+  <!-- Y axis labels (TFLOPS) -->
+  <text class="diag-text label" x="20" y="60" transform="rotate(-90 20 60)">PERFORMANCE  TFLOPS (log)</text>
+  <g class="diag-text tiny">
+    <text x="44" y="324">0.1</text>
+    <text x="44" y="244">1</text>
+    <text x="44" y="164">10</text>
+    <text x="44" y="84">100</text>
+    <text x="44" y="44">1000</text>
+  </g>
+
+  <!-- gridlines -->
+  <g stroke="#1e242e" stroke-width="0.5" stroke-dasharray="2 3">
+    <line x1="80" y1="244" x2="940" y2="244"/>
+    <line x1="80" y1="164" x2="940" y2="164"/>
+    <line x1="80" y1="84" x2="940" y2="84"/>
+    <line x1="240" y1="40" x2="240" y2="320"/>
+    <line x1="400" y1="40" x2="400" y2="320"/>
+    <line x1="560" y1="40" x2="560" y2="320"/>
+    <line x1="720" y1="40" x2="720" y2="320"/>
+  </g>
+
+  <!-- Memory bandwidth roof: slope=1 in log-log -->
+  <!-- 4.56 TB/s = 4.56e12 B/s; at AI=1, perf = 4.56 TFLOPS -->
+  <!-- At AI=0.01, perf = 0.0456 TFLOPS; at AI=100, perf = 456 TFLOPS -->
+  <line x1="80" y1="320" x2="490" y2="244" stroke="#5ec9d4" stroke-width="2" stroke-dasharray="6 4"/>
+  <line x1="490" y1="244" x2="720" y2="100" stroke="#5ec9d4" stroke-width="2"/>
+  <text class="diag-text small cyn" x="200" y="298">HBM ceiling · 4.56 TB/s · MI308X measured</text>
+
+  <!-- MFMA fp16 roof: ~1306 TFLOPS for MI300X -->
+  <line x1="720" y1="100" x2="940" y2="100" stroke="#6dd47e" stroke-width="2"/>
+  <line x1="80" y1="100" x2="720" y2="100" stroke="#6dd47e" stroke-width="1" stroke-dasharray="4 4" opacity="0.4"/>
+  <text class="diag-text small phos" x="750" y="92">MFMA fp16 · 1306 TFLOPS peak</text>
+
+  <!-- MFMA fp32 roof: ~163 TFLOPS -->
+  <line x1="80" y1="160" x2="940" y2="160" stroke="#f5b338" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+  <text class="diag-text small amb" x="800" y="156">MFMA fp32 · 163 TFLOPS</text>
+
+  <!-- Sample kernel points -->
+  <!-- vector_add: AI ≈ 1/12 ~ 0.083, sits on memory roof at ~0.38 TFLOPS -->
+  <circle cx="232" cy="260" r="5" fill="#d76dc4"/>
+  <text class="diag-text tiny mag" x="200" y="278">vector_add</text>
+  <text class="diag-text tiny" x="200" y="290">AI ≈ 0.08</text>
+
+  <!-- bandwidth_memread: AI = 0, sits at top-left -->
+  <circle cx="100" cy="316" r="5" fill="#d76dc4"/>
+  <text class="diag-text tiny mag" x="100" y="312">bandwidth_memread</text>
+
+  <!-- attention (memory bound at moderate AI): -->
+  <circle cx="350" cy="230" r="5" fill="#f5b338"/>
+  <text class="diag-text tiny amb" x="350" y="222">attention (BS=1)</text>
+
+  <!-- GEMM large (compute bound): -->
+  <circle cx="760" cy="100" r="5" fill="#6dd47e"/>
+  <text class="diag-text tiny phos" x="730" y="92">GEMM 8K · MFMA peak</text>
+
+  <!-- GEMM small (memory bound): -->
+  <circle cx="500" cy="180" r="5" fill="#f5b338"/>
+  <text class="diag-text tiny amb" x="500" y="200">GEMM 512 (mem bound)</text>
+
+  <!-- Ridge point annotation -->
+  <line x1="490" y1="244" x2="490" y2="40" stroke="#5a564a" stroke-width="0.5" stroke-dasharray="2 3"/>
+  <text class="diag-text tiny dim" x="495" y="60">ridge: AI ≈ 286</text>
+
+  <!-- Title -->
+  <text class="diag-text title" x="80" y="30">where each gcnasm kata sits on the roofline</text>
+
+</svg>
+  </div>
+  <div class="caption">The cyan line is the memory-bandwidth roof: <em>perf = AI × bandwidth</em>. The green line is the matrix-core fp16 ceiling. Below the ridge point, your kernel is memory-bound; above it, compute-bound. <code>bandwidth_memread</code> sits at the extreme left (AI = 0); <code>matrix_core</code>'s large-N GEMM sits at the extreme right. Most real workloads — attention at small batch, GEMM at moderate size, normalization — live on the steep cyan slope, which is why getting <code>bandwidth_memread</code>'s number right is the precondition for analyzing anything else.</div>
+</div>
+
+<div class="callout phosphor">
+  <span class="ctag">Practical move</span>
+  <p>Before running <em>any</em> performance experiment on a new node, run <code>bandwidth_memread</code> once. Record the read-only number. That is your ceiling for the day. If your "production" kernel's effective bandwidth is 30% of that number, you know you have a memory-access problem; if it is 90%, you know to look elsewhere (compute imbalance, sync overhead, launch cost).</p>
+</div>
+
+<h3>The dead-store trick, explained</h3>
+
+<p>Without the unreachable <code>if (v == magic) *p_dst = v</code> block, the compiler reasons: <em>"the function computes <code>v</code> but never writes it; therefore the loads can all be eliminated."</em> The whole kernel collapses to an empty loop, and the benchmark measures launch overhead instead of bandwidth. The magic-number comparison is opaque to the compiler — it cannot prove the condition is always false — so it must keep the loads in to compute <code>v</code> for the comparison. This trick generalizes: any time you write a microbenchmark whose result is not actually used downstream, you need a similar guard.</p>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- M4 — MFMA -->
+<!-- ====================================================== -->
+<section id="m4-mfma">
+<h2><span class="num">M4 · The instruction that pays your rent</span>Matrix Core · <em>MFMA</em> layouts</h2>
+
+<p>Everything in deep learning that is not memory-bound is paying for time on the matrix core. On CDNA3 these instructions are the <strong>MFMA</strong> family — <em>Matrix Fused Multiply-Add</em> — and they are not optional. A CDNA3 CU's peak fp16 throughput comes entirely from MFMA; the regular <code>v_fma_f16</code> instructions are roughly two orders of magnitude slower in aggregate. If you want to compete with NVIDIA tensor cores you must reason in MFMA terms.</p>
+
+<p><code>matrix_core/matrix_core.cc</code> is the cleanest pedagogical example. One workgroup, one wavefront, one <code>__builtin_amdgcn_mfma_f32_32x32x8f16</code> instruction. M = N = 32, K = 8. Three layout variants demonstrate that <em>the C-matrix layout is determined by the A/B layout you feed in</em>:</p>
+
+<ol class="tile-list">
+  <li>
+    <div class="ttl">Standard — <em>columns of C</em></div>
+    <div class="desc">Each thread holds four fp16 values along a column of C. Store-back is element-wise. This is the layout the instruction "wants" by default.</div>
+  </li>
+  <li>
+    <div class="ttl">Swap A/B — <em>rows of C, vector store</em></div>
+    <div class="desc">Swap the A and B pointers when calling MFMA. C is transposed; now each thread holds four fp16 along a row. Store-back can use <code>buffer_store_dwordx2</code> (4 fp16 in one 64-bit transaction).</div>
+  </li>
+  <li>
+    <div class="ttl">Swap + swizzle B — <em>wider vector store</em></div>
+    <div class="desc">Permute the B-side thread-to-row mapping so groups of 8 lanes hold contiguous fp16 values. Now store-back uses <code>buffer_store_dwordx4</code> (8 fp16 per transaction). The swizzle is computed in <code>matrix_core.cc:364-367</code>.</div>
+  </li>
+</ol>
+
+<!-- ============ PLATE V ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate V</span>
+    <span class="pname">MFMA 32×32×8 fp16 — the canonical tile shape</span>
+    <span class="pscale">v_mfma_f32_32x32x8f16 · one wave64</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <!-- A matrix (top-left), 32 rows × 8 cols -->
+  <text class="diag-text label phos" x="20" y="40">A · 32×8 fp16</text>
+  <rect class="zone phos" x="20" y="50" width="200" height="200" rx="2"/>
+  <g>
+    <!-- 32 rows × 8 cols -->
+    <text class="diag-text tiny dim" x="32" y="68">rows = M = 32</text>
+    <text class="diag-text tiny dim" x="32" y="80">cols = K = 8</text>
+    <!-- each lane reads 4 fp16 along K -->
+    <g>
+      <rect x="32" y="92" width="180" height="22" fill="#5ec9d4" opacity="0.25"/>
+      <text class="diag-text tiny cyn" x="38" y="106">L0  · fp16x4 · k0..3 of row 0</text>
+
+      <rect x="32" y="116" width="180" height="22" fill="#5ec9d4" opacity="0.25"/>
+      <text class="diag-text tiny cyn" x="38" y="130">L1  · fp16x4 · k0..3 of row 1</text>
+
+      <rect x="32" y="140" width="180" height="22" fill="#5ec9d4" opacity="0.25"/>
+      <text class="diag-text tiny cyn" x="38" y="154">L2  · fp16x4 · k0..3 of row 2</text>
+
+      <text class="diag-text tiny dim" x="38" y="174">⋮  L0..L31 → k0..3 (cycle group 0)</text>
+      <text class="diag-text tiny dim" x="38" y="190">L32..L63 → k4..7 (cycle group 1)</text>
+
+      <text class="diag-text tiny" x="38" y="212">each lane holds VGPR pair</text>
+      <text class="diag-text tiny" x="38" y="226">(v0, v1) = 4 × fp16</text>
+    </g>
+  </g>
+
+  <!-- B matrix (top-right), 8 rows × 32 cols -->
+  <text class="diag-text label phos" x="260" y="40">B · 8×32 fp16</text>
+  <rect class="zone phos" x="260" y="50" width="380" height="200" rx="2"/>
+  <g>
+    <text class="diag-text tiny dim" x="272" y="68">rows = K = 8 (split: L0..31 hold k0..3; L32..63 hold k4..7)</text>
+    <text class="diag-text tiny dim" x="272" y="80">cols = N = 32 (each lane = 1 col)</text>
+
+    <!-- vertical column slices, one per lane -->
+    <g>
+      <rect x="272" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <text class="diag-text tiny" x="272" y="166" transform="rotate(-90 280 166)">L0</text>
+
+      <rect x="284" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <text class="diag-text tiny" x="284" y="166" transform="rotate(-90 292 166)">L1</text>
+
+      <rect x="296" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <text class="diag-text tiny" x="308" y="166" transform="rotate(-90 304 166)">L2</text>
+
+      <rect x="308" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <text class="diag-text tiny" x="320" y="166" transform="rotate(-90 316 166)">L3</text>
+
+      <rect x="320" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="332" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="344" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="356" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="368" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="380" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+
+      <text class="diag-text tiny" x="424" y="124">…</text>
+
+      <rect x="440" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="452" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="464" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="476" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="488" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="500" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="512" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="524" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="536" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+
+      <text class="diag-text tiny" x="556" y="124">…</text>
+      <rect x="580" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <text class="diag-text tiny" x="592" y="166" transform="rotate(-90 588 166)">L31</text>
+
+      <rect x="592" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="604" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+      <rect x="616" y="92" width="11" height="60" fill="#6dd47e" opacity="0.25"/>
+    </g>
+    <text class="diag-text tiny" x="272" y="220">L32..63 cover k4..7 in the same column positions</text>
+    <text class="diag-text tiny" x="272" y="234">each lane holds (v0, v1) = 4 × fp16</text>
+  </g>
+
+  <!-- C matrix (bottom), 32×32 -->
+  <text class="diag-text label amb" x="680" y="40">C · 32×32 fp32</text>
+  <rect class="zone amb" x="680" y="50" width="280" height="200" rx="2"/>
+  <g>
+    <text class="diag-text tiny dim" x="692" y="68">rows = M, cols = N, stride = 4 acc cols per lane</text>
+    <text class="diag-text tiny dim" x="692" y="80">16 fp32 in AGPRs per lane (= 32×32 / 64)</text>
+
+    <!-- block visualization -->
+    <g>
+      <rect x="692" y="100" width="60" height="60" fill="#f5b338" opacity="0.25"/>
+      <text class="diag-text tiny amb" x="702" y="135">a0..a3</text>
+
+      <rect x="752" y="100" width="60" height="60" fill="#f5b338" opacity="0.25"/>
+      <text class="diag-text tiny amb" x="762" y="135">a4..a7</text>
+
+      <rect x="812" y="100" width="60" height="60" fill="#f5b338" opacity="0.25"/>
+      <text class="diag-text tiny amb" x="822" y="135">a8..a11</text>
+
+      <rect x="872" y="100" width="60" height="60" fill="#f5b338" opacity="0.25"/>
+      <text class="diag-text tiny amb" x="882" y="135">a12..a15</text>
+
+      <text class="diag-text tiny" x="692" y="180">each lane owns 16 fp32 spread</text>
+      <text class="diag-text tiny" x="692" y="194">in a 4-stride pattern across C.</text>
+
+      <text class="diag-text tiny crm" x="692" y="220">→ destination is AGPR ("a" constraint)</text>
+      <text class="diag-text tiny crm" x="692" y="234">→ needs s_nop 16 after MFMA</text>
+    </g>
+  </g>
+
+  <!-- arrow showing MFMA combines A,B → C -->
+  <g stroke="#6dd47e" stroke-width="1.5" fill="none" marker-end="url(#arr-phos)">
+    <path d="M 220 280 Q 450 320 670 270"/>
+  </g>
+  <text class="diag-text small phos" x="350" y="312">v_mfma_f32_32x32x8f16 v_C, v_A, v_B, v_C</text>
+  <text class="diag-text tiny dim" x="380" y="328">one instruction · ~64 cycles · 32 768 fp16 multiplies</text>
+
+</svg>
+  </div>
+  <div class="caption">A single 64-lane wavefront issues one MFMA. The A and B tiles together hold all 256+256 = 512 fp16 values spread across the lanes' VGPRs; the resulting C tile occupies 16 fp32 AGPRs <em>per lane</em>. The thread-to-element mapping shown here is the "standard" layout (column-major in C). Swapping A and B at the call site transposes C; swizzling B further lets you store contiguous fp16x8 chunks.</div>
+</div>
+
+<h3>AGPR scheduling — the cost the demo hides</h3>
+
+<p>The pedagogical kernel passes <code>v_a, v_b</code> as plain VGPRs and writes into <code>v_c</code> declared as a normal fp32 array. The compiler inserts <code>v_accvgpr_write/read</code> moves to shuffle values between VGPR and AGPR around each MFMA. <code>matrix_core/matrix_core.cc:139-212</code> shows the next step: declare the destination with the <code>"a"</code> ASM constraint so the compiler lets the value live in AGPR directly:</p>
+
+<div class="code"><span class="c-fname">matrix_core/matrix_core.cc · line 192</span>asm <span class="c-key">volatile</span>(<span class="c-str">"s_waitcnt vmcnt(0)"</span>  : : : <span class="c-str">"memory"</span>);
+asm <span class="c-key">volatile</span>(<span class="c-str">"v_mfma_f32_32x32x8f16 %0, %1, %2, %3\n"</span>
+             <span class="c-str">"s_nop 16"</span>         <span class="c-com">// resolve data dependency</span>
+             : <span class="c-str">"+v"</span>(v_c)
+             :  <span class="c-str">"a"</span>(v_a), <span class="c-str">"a"</span>(v_b),  <span class="c-str">"v"</span>(v_c) : );</div>
+
+<p>Two details worth noting. First, <code>s_nop 16</code> after the MFMA is the recommended dead-time before any subsequent instruction can read the accumulator — MFMA has a deep pipeline (16 cycles for 32×32 on gfx942). Skip the nop and you may get stale results. Second, the constraint <code>"a"</code> requests AGPR allocation; <code>"v"</code> requests VGPR. For the <em>destination</em> of MFMA, you must use <code>"a"</code>.</p>
+
+<h3>What <code>matrix_core_asm</code> adds</h3>
+
+<p>The <code>_asm</code> variant uses <code>v_mfma_f32_16x16x1f32</code> — a different shape (16×16 with K=1) chosen because it lets the kernel fit 128 MFMA instructions in a tight loop with single-VGPR A and B (<code>kernel.s:33-45</code>). The kernel is an IPS benchmark, not a real GEMM: it computes garbage into AGPRs for the sole purpose of measuring sustained MFMA throughput. The harness measures total instruction count divided by wall time. Use this when you want to know "how fast can this CU actually run MFMA back-to-back" — that number is the upper bound for any real kernel that uses the same shape.</p>
+
+<div class="callout magenta">
+  <span class="ctag">If you remember one thing</span>
+  <p>The MFMA tile shape <em>determines</em> how every other piece of the kernel must be structured. Pick the tile first (32x32x8 fp16 is the standard for large GEMM on CDNA3; 16x16x32 fp16 is better for FlashAttention-shaped work); then design A's load pattern to match the lane-to-fragment mapping; then design B's; then plan the C store-back. Trying to design the LDS layout first and bolt MFMA on after is how most novice AMD GEMMs end up at 30% of peak.</p>
+</div>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- M5 — DPP / cross-lane -->
+<!-- ====================================================== -->
+<section id="m5-dpp">
+<h2><span class="num">M5 · Lanes talking to each other</em></span>Cross-lane · <em>DPP wavefront</em></h2>
+
+<p>If you want to compute a reduction across the 64 lanes of a wavefront — softmax denominator, layer-norm variance, attention max — the naive approach is to write to LDS, synchronize, and read back. <strong>DPP</strong> (Data Parallel Primitives) is a much cheaper alternative: lane-to-lane communication baked directly into the operand of an ALU instruction. A <code>v_add_f32 v[res], v[result], v[result] dpp_ctrl:0xb1</code> reads <code>v[result]</code> from a <em>different lane</em> in addition to the current one, and adds them in one cycle.</p>
+
+<p><code>wave_reduce_dpp/wave_reduce_dpp.hpp</code> is the canonical implementation. It builds a 6-stage tree reduction over wave64 using six DPP control codes (<code>wave_reduce_dpp.hpp:14-77</code>). Each stage halves the active lane count:</p>
+
+<table class="tbl">
+  <thead><tr><th>Stage</th><th>DPP code</th><th>Operation</th><th>Active lanes after</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><code>0xb1</code></td><td><code>quad_perm:[1,0,3,2]</code> — swap pairs within quad</td><td>32</td></tr>
+    <tr><td class="num">2</td><td><code>0x4e</code></td><td><code>quad_perm:[2,3,0,1]</code> — swap halves within quad</td><td>16</td></tr>
+    <tr><td class="num">3</td><td><code>0x114</code></td><td><code>row_shr:4</code> — shift by 4 within 16-lane row</td><td>8</td></tr>
+    <tr><td class="num">4</td><td><code>0x118</code></td><td><code>row_shr:8</code> — shift by 8 within 16-lane row</td><td>4</td></tr>
+    <tr><td class="num">5</td><td><code>0x142</code></td><td><code>row_bcast:15</code> — broadcast lane 15 to lanes 16-31</td><td>2</td></tr>
+    <tr><td class="num">6</td><td><code>0x143</code></td><td><code>row_bcast:31</code> — broadcast lane 31 to lanes 32-63</td><td>1</td></tr>
+  </tbody>
+</table>
+
+<p>After all six stages the reduced value lives in the highest lane (lane 63). One final <code>__builtin_amdgcn_readlane(result, 63)</code> broadcasts it to every lane. Total cost: 6 ALU instructions + 1 readlane. Compare to LDS: 1 write + 1 barrier + 6 reads + 6 ALU = roughly 4–5× slower in steady state.</p>
+
+<!-- ============ PLATE VI ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VI</span>
+    <span class="pname">DPP butterfly — six stages over 64 lanes</span>
+    <span class="pscale">wave_reduce_dpp.hpp · wave_reduce&lt;float, 64&gt;</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Stage labels -->
+  <g class="diag-text label">
+    <text x="30" y="45">STAGE 1 · 0xb1</text>
+    <text x="30" y="85">STAGE 2 · 0x4e</text>
+    <text x="30" y="125">STAGE 3 · 0x114</text>
+    <text x="30" y="165">STAGE 4 · 0x118</text>
+    <text x="30" y="205">STAGE 5 · 0x142</text>
+    <text x="30" y="245">STAGE 6 · 0x143</text>
+    <text x="30" y="290">RESULT</text>
+  </g>
+
+  <!-- Lane axis -->
+  <text class="diag-text tiny" x="170" y="20">lane 0</text>
+  <text class="diag-text tiny" x="320" y="20">lane 16</text>
+  <text class="diag-text tiny" x="500" y="20">lane 32</text>
+  <text class="diag-text tiny" x="680" y="20">lane 48</text>
+  <text class="diag-text tiny" x="870" y="20">lane 63</text>
+
+  <!-- 64 lane positions: x = 170 + lane * 11 -->
+  <!-- Stage 1: pair swap -->
+  <g stroke="#6dd47e" stroke-width="0.6" fill="none" opacity="0.7">
+    <path d="M 175 50 L 186 36 L 197 50"/>
+    <path d="M 186 50 L 175 36 L 175 50"/>
+    <path d="M 197 50 L 208 36 L 219 50"/>
+    <path d="M 219 50 L 208 36 L 197 50"/>
+  </g>
+
+  <g fill="#6dd47e" opacity="0.85">
+    <circle cx="175" cy="50" r="2.5"/>
+    <circle cx="186" cy="50" r="2.5"/>
+    <circle cx="197" cy="50" r="2.5"/>
+    <circle cx="208" cy="50" r="2.5"/>
+    <circle cx="219" cy="50" r="2.5"/>
+    <circle cx="230" cy="50" r="2.5"/>
+    <circle cx="241" cy="50" r="2.5"/>
+    <circle cx="252" cy="50" r="2.5"/>
+    <circle cx="263" cy="50" r="2.5"/>
+    <circle cx="274" cy="50" r="2.5"/>
+    <circle cx="285" cy="50" r="2.5"/>
+    <circle cx="296" cy="50" r="2.5"/>
+    <circle cx="307" cy="50" r="2.5"/>
+    <circle cx="318" cy="50" r="2.5"/>
+    <circle cx="329" cy="50" r="2.5"/>
+    <circle cx="340" cy="50" r="2.5"/>
+    <circle cx="351" cy="50" r="2.5"/>
+    <circle cx="362" cy="50" r="2.5"/>
+    <circle cx="373" cy="50" r="2.5"/>
+    <circle cx="384" cy="50" r="2.5"/>
+    <circle cx="395" cy="50" r="2.5"/>
+    <circle cx="406" cy="50" r="2.5"/>
+    <circle cx="417" cy="50" r="2.5"/>
+    <circle cx="428" cy="50" r="2.5"/>
+    <circle cx="439" cy="50" r="2.5"/>
+    <circle cx="450" cy="50" r="2.5"/>
+    <circle cx="461" cy="50" r="2.5"/>
+    <circle cx="472" cy="50" r="2.5"/>
+    <circle cx="483" cy="50" r="2.5"/>
+    <circle cx="494" cy="50" r="2.5"/>
+    <circle cx="505" cy="50" r="2.5"/>
+    <circle cx="516" cy="50" r="2.5"/>
+    <circle cx="527" cy="50" r="2.5"/>
+    <circle cx="538" cy="50" r="2.5"/>
+    <circle cx="549" cy="50" r="2.5"/>
+    <circle cx="560" cy="50" r="2.5"/>
+    <circle cx="571" cy="50" r="2.5"/>
+    <circle cx="582" cy="50" r="2.5"/>
+    <circle cx="593" cy="50" r="2.5"/>
+    <circle cx="604" cy="50" r="2.5"/>
+    <circle cx="615" cy="50" r="2.5"/>
+    <circle cx="626" cy="50" r="2.5"/>
+    <circle cx="637" cy="50" r="2.5"/>
+    <circle cx="648" cy="50" r="2.5"/>
+    <circle cx="659" cy="50" r="2.5"/>
+    <circle cx="670" cy="50" r="2.5"/>
+    <circle cx="681" cy="50" r="2.5"/>
+    <circle cx="692" cy="50" r="2.5"/>
+    <circle cx="703" cy="50" r="2.5"/>
+    <circle cx="714" cy="50" r="2.5"/>
+    <circle cx="725" cy="50" r="2.5"/>
+    <circle cx="736" cy="50" r="2.5"/>
+    <circle cx="747" cy="50" r="2.5"/>
+    <circle cx="758" cy="50" r="2.5"/>
+    <circle cx="769" cy="50" r="2.5"/>
+    <circle cx="780" cy="50" r="2.5"/>
+    <circle cx="791" cy="50" r="2.5"/>
+    <circle cx="802" cy="50" r="2.5"/>
+    <circle cx="813" cy="50" r="2.5"/>
+    <circle cx="824" cy="50" r="2.5"/>
+    <circle cx="835" cy="50" r="2.5"/>
+    <circle cx="846" cy="50" r="2.5"/>
+    <circle cx="857" cy="50" r="2.5"/>
+    <circle cx="868" cy="50" r="2.5"/>
+  </g>
+
+  <!-- Stage 2: dots at half count -->
+  <g fill="#6dd47e" opacity="0.85">
+    <circle cx="175" cy="90" r="2.5"/>
+    <circle cx="197" cy="90" r="2.5"/>
+    <circle cx="219" cy="90" r="2.5"/>
+    <circle cx="241" cy="90" r="2.5"/>
+    <circle cx="263" cy="90" r="2.5"/>
+    <circle cx="285" cy="90" r="2.5"/>
+    <circle cx="307" cy="90" r="2.5"/>
+    <circle cx="329" cy="90" r="2.5"/>
+    <circle cx="351" cy="90" r="2.5"/>
+    <circle cx="373" cy="90" r="2.5"/>
+    <circle cx="395" cy="90" r="2.5"/>
+    <circle cx="417" cy="90" r="2.5"/>
+    <circle cx="439" cy="90" r="2.5"/>
+    <circle cx="461" cy="90" r="2.5"/>
+    <circle cx="483" cy="90" r="2.5"/>
+    <circle cx="505" cy="90" r="2.5"/>
+    <circle cx="527" cy="90" r="2.5"/>
+    <circle cx="549" cy="90" r="2.5"/>
+    <circle cx="571" cy="90" r="2.5"/>
+    <circle cx="593" cy="90" r="2.5"/>
+    <circle cx="615" cy="90" r="2.5"/>
+    <circle cx="637" cy="90" r="2.5"/>
+    <circle cx="659" cy="90" r="2.5"/>
+    <circle cx="681" cy="90" r="2.5"/>
+    <circle cx="703" cy="90" r="2.5"/>
+    <circle cx="725" cy="90" r="2.5"/>
+    <circle cx="747" cy="90" r="2.5"/>
+    <circle cx="769" cy="90" r="2.5"/>
+    <circle cx="791" cy="90" r="2.5"/>
+    <circle cx="813" cy="90" r="2.5"/>
+    <circle cx="835" cy="90" r="2.5"/>
+    <circle cx="857" cy="90" r="2.5"/>
+  </g>
+
+  <!-- Stage 3 -->
+  <g fill="#f5b338" opacity="0.85">
+    <circle cx="175" cy="130" r="2.5"/>
+    <circle cx="219" cy="130" r="2.5"/>
+    <circle cx="263" cy="130" r="2.5"/>
+    <circle cx="307" cy="130" r="2.5"/>
+    <circle cx="351" cy="130" r="2.5"/>
+    <circle cx="395" cy="130" r="2.5"/>
+    <circle cx="439" cy="130" r="2.5"/>
+    <circle cx="483" cy="130" r="2.5"/>
+    <circle cx="527" cy="130" r="2.5"/>
+    <circle cx="571" cy="130" r="2.5"/>
+    <circle cx="615" cy="130" r="2.5"/>
+    <circle cx="659" cy="130" r="2.5"/>
+    <circle cx="703" cy="130" r="2.5"/>
+    <circle cx="747" cy="130" r="2.5"/>
+    <circle cx="791" cy="130" r="2.5"/>
+    <circle cx="835" cy="130" r="2.5"/>
+  </g>
+
+  <!-- Stage 4 -->
+  <g fill="#f5b338" opacity="0.85">
+    <circle cx="175" cy="170" r="2.5"/>
+    <circle cx="263" cy="170" r="2.5"/>
+    <circle cx="351" cy="170" r="2.5"/>
+    <circle cx="439" cy="170" r="2.5"/>
+    <circle cx="527" cy="170" r="2.5"/>
+    <circle cx="615" cy="170" r="2.5"/>
+    <circle cx="703" cy="170" r="2.5"/>
+    <circle cx="791" cy="170" r="2.5"/>
+  </g>
+
+  <!-- Stage 5: row_bcast:15 to lanes 16-31 -->
+  <g fill="#d76dc4" opacity="0.85">
+    <circle cx="175" cy="210" r="2.5"/>
+    <circle cx="351" cy="210" r="2.5"/>
+    <circle cx="527" cy="210" r="2.5"/>
+    <circle cx="703" cy="210" r="2.5"/>
+  </g>
+
+  <!-- Stage 6: row_bcast:31 -->
+  <g fill="#d76dc4" opacity="0.85">
+    <circle cx="351" cy="250" r="3.5"/>
+    <circle cx="703" cy="250" r="3.5"/>
+  </g>
+
+  <!-- Result lane -->
+  <g fill="#e25555" opacity="0.95">
+    <circle cx="868" cy="290" r="5"/>
+  </g>
+  <text class="diag-text tiny crm" x="780" y="294">readlane(result, 63)</text>
+
+  <!-- Final broadcast as horizontal arrow back to all lanes -->
+  <line x1="868" y1="300" x2="175" y2="316" stroke="#e25555" stroke-width="0.7" stroke-dasharray="3 3"/>
+  <text class="diag-text tiny crm" x="270" y="316">broadcast to every lane</text>
+
+  <!-- Vertical guide -->
+  <g stroke="#1e242e" stroke-width="0.5" stroke-dasharray="2 3">
+    <line x1="170" y1="30" x2="170" y2="320"/>
+    <line x1="328" y1="30" x2="328" y2="320"/>
+    <line x1="506" y1="30" x2="506" y2="320"/>
+    <line x1="685" y1="30" x2="685" y2="320"/>
+    <line x1="868" y1="30" x2="868" y2="320"/>
+  </g>
+
+</svg>
+  </div>
+  <div class="caption">Six stages, each halving the count of active lanes (green = pair-quad shuffles; amber = row shuffles; magenta = cross-row broadcast). The result accumulates into lane 63, then a single <code>readlane</code> publishes it back to every lane. Compare against NVIDIA's <code>__shfl_*</code> tree: same shape, one extra stage (because wave64 vs warp32). On AMD the DPP code is fused into the consumer instruction's operand, so the "shuffle" doesn't even cost a separate cycle.</div>
+</div>
+
+<h3>The bpermute escape hatch</h3>
+
+<p>DPP control codes are limited to a fixed set of patterns (quad swaps, row shifts, row broadcasts). For arbitrary cross-lane permutations — bitonic sort, bit-reversal, scan operations — <code>wave_reduce_dpp.hpp:135-145</code> falls back to <code>__builtin_amdgcn_ds_bpermute</code>. This uses LDS as a one-cycle shuffle network: each lane writes its value at its own lane-id index, then reads at <em>another</em> lane's id. The LDS is purely a routing fabric — no actual storage is consumed.</p>
+
+<div class="callout">
+  <span class="ctag">Why this matters for attention</span>
+  <p>FlashAttention's online softmax needs three wave-reductions per tile (max, sum, normalize). On NVIDIA those are <code>__shfl_xor</code> trees. On AMD they are exactly the <code>wave_reduce</code> template you see here. If your attention kernel is using LDS reductions instead of DPP, you are paying a ~4× overhead on the inner loop's hottest path. <code>wave_reduce_dpp/</code> is the reference implementation to copy.</p>
+</div>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- M6 — iteration speed -->
+<!-- ====================================================== -->
+<section id="m6-iteration">
+<h2><span class="num">M6 · The compiler is not your friend</span>Iteration speed · <em>co-exec, measure_ips</em></h2>
+
+<p>Two folders in this repo do not contain "real" kernels. They are infrastructure — tools for closing the feedback loop between writing an assembly snippet and seeing it run. They are the most under-appreciated examples in the repo for anyone designing a kernel-generation system.</p>
+
+<h3><code>co-exec</code> — escape from hipcc</h3>
+
+<p><code>co-exec/test_coexec.py</code> is a single 320-line Python script that, on every invocation, regenerates both the C++ host launcher and the <code>.s</code> assembly kernel as inline strings, compiles them with <code>clang++</code> directly (no <code>hipcc</code> wrapper), and runs the resulting executable (<code>test_coexec.py:300-306</code>). The point is that <em>everything</em> is rebuildable in one Python call:</p>
+
+<div class="code"><span class="c-fname">test_coexec.py · line 117</span><span class="c-key">class</span> asm_src_t:
+    <span class="c-key">def</span> compile(self, src, target, working_dir):
+        cmd = <span class="c-str">"/opt/rocm/llvm/bin/clang++ "</span> \
+              <span class="c-str">"-x assembler -target amdgcn--amdhsa -mcpu={} "</span>.format(self.arch)
+        cmd += src + <span class="c-str">" -o {}"</span>.format(target)
+        <span class="c-com"># ...</span>
+    <span class="c-key">def</span> disassemble(self, hsaco, output, working_dir):
+        cmd = <span class="c-str">"/opt/rocm/llvm/bin/llvm-objdump "</span> \
+              <span class="c-str">"--disassemble --mcpu={} "</span>.format(self.arch) + hsaco
+        <span class="c-com"># ... pipe to output file</span></div>
+
+<p>For a kernel-generation agent, this template is the right shape. The agent's output is a string of <code>.s</code>; the executor's job is (1) write it to disk, (2) compile it (~200 ms), (3) load and run it (~10 ms), (4) read the profiling counters or output, (5) hand the result back to the agent. The whole loop closes in well under a second per variant.</p>
+
+<div class="callout phosphor">
+  <span class="ctag">Implication for kernel agents</span>
+  <p>If your agent invokes <code>hipcc</code> (which calls <code>clang</code> + <code>lld</code> + multiple ROCm linking passes), each variant compile is roughly 8-15 seconds. With <code>co-exec</code>'s direct <code>clang++ -x assembler</code> path, the same step is roughly 200 ms — a <strong>40×</strong> speedup. At 500 variants per day, that is the difference between a 70-minute job and a 28-hour job. Iteration speed compounds: faster loops let agents try more variants and stay in cached context.</p>
+</div>
+
+<h3><code>measure_ips</code> — what does this instruction actually cost?</h3>
+
+<p><code>measure_ips</code> answers the basic empirical question: <em>if I write back-to-back instances of instruction X, what throughput can a CU sustain?</em> The technique is brute-force — a kernel that does nothing but issue 256 copies of the target instruction in a tight loop (<code>measure_ips/kernel.s</code>), wrapped in a host benchmark that times <code>num_loops × num_blocks × num_cu × bdx</code> total instructions divided by wall time (<code>main.cpp:71-75</code>).</p>
+
+<p>The variants in <code>measure_ips_bench/</code> push this further with Python-generated assembly for many instruction kinds. The output is a table: for each (instruction, allocation_class) pair, sustained instructions-per-second per CU. This is the data you need to make informed scheduling decisions — should I rewrite that <code>v_mac_f32</code> as <code>v_fma_f32</code>? <code>measure_ips_bench</code> answers it empirically rather than asking the ISA manual.</p>
+
+<!-- ============ PLATE VII ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VII</span>
+    <span class="pname">Buffer SRD anatomy — the 128 bits that govern every buffer instruction</span>
+    <span class="pscale">gfx942 raw buffer · DATA_FORMAT = 32</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 240" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- 4 words laid out horizontally, 32 bits each -->
+  <!-- Each word: 220px wide, 60px tall, starting at x=40 -->
+
+  <!-- Word labels -->
+  <g class="diag-text label">
+    <text x="40" y="32">WORD 0  ·  bits 31..0</text>
+    <text x="280" y="32">WORD 1  ·  bits 31..0</text>
+    <text x="520" y="32">WORD 2  ·  bits 31..0</text>
+    <text x="760" y="32">WORD 3  ·  bits 31..0</text>
+  </g>
+
+  <!-- Word 0: base[31:0] -->
+  <rect class="zone cyn" x="40" y="42" width="220" height="56" rx="2"/>
+  <text class="diag-text mono cyn" x="50" y="62">base_address[31:0]</text>
+  <text class="diag-text tiny" x="50" y="78">low 32 bits of GPU pointer</text>
+  <text class="diag-text tiny dim" x="50" y="92">copied verbatim from s_load_dwordx2 result</text>
+
+  <!-- Word 1: base[47:32] + stride -->
+  <rect class="zone cyn" x="280" y="42" width="220" height="56" rx="2"/>
+  <text class="diag-text mono cyn" x="290" y="62">base_address[47:32]</text>
+  <text class="diag-text tiny" x="290" y="78">high 16 bits (top 16 must be 0)</text>
+  <text class="diag-text tiny crm" x="290" y="92">s_and_b32 ptr_hi, 0xFFFF  ← required</text>
+
+  <!-- Word 2: num_records -->
+  <rect class="zone amb" x="520" y="42" width="220" height="56" rx="2"/>
+  <text class="diag-text mono amb" x="530" y="62">num_records</text>
+  <text class="diag-text tiny" x="530" y="78">byte count — controls OOB behavior</text>
+  <text class="diag-text tiny phos" x="530" y="92">N * sizeof(element) → branchless loops</text>
+
+  <!-- Word 3: format/config -->
+  <rect class="zone mag" x="760" y="42" width="180" height="56" rx="2"/>
+  <text class="diag-text mono mag" x="770" y="62">0x00020000</text>
+  <text class="diag-text tiny" x="770" y="78">DATA_FORMAT = 32 (raw)</text>
+  <text class="diag-text tiny" x="770" y="92">TYPE = 0 → safe OOB</text>
+
+  <!-- OOB behavior table at bottom -->
+  <text class="diag-text label" x="40" y="138">CONSEQUENCE  ·  what happens at offset ≥ num_records</text>
+
+  <g>
+    <rect class="zone" x="40" y="148" width="200" height="36"/>
+    <text class="diag-text small cyn" x="50" y="166">buffer_load … offen</text>
+    <text class="diag-text tiny" x="50" y="178">returns 0 to VGPR (harmless)</text>
+
+    <rect class="zone" x="250" y="148" width="200" height="36"/>
+    <text class="diag-text small cyn" x="260" y="166">buffer_load … offen lds</text>
+    <text class="diag-text tiny" x="260" y="178">returns 0 to LDS (harmless)</text>
+
+    <rect class="zone" x="460" y="148" width="200" height="36"/>
+    <text class="diag-text small amb" x="470" y="166">buffer_store … offen</text>
+    <text class="diag-text tiny" x="470" y="178">silently dropped (harmless)</text>
+
+    <rect class="zone" x="670" y="148" width="270" height="36"/>
+    <text class="diag-text small crm" x="680" y="166">buffer_atomic_add … offen</text>
+    <text class="diag-text tiny crm" x="680" y="178">no-op (harmless, but check returns)</text>
+  </g>
+
+  <!-- Why it matters -->
+  <text class="diag-text small" x="40" y="208">The OOB-by-construction property is why hand-written CDNA kernels skip exec mask manipulation entirely. Set</text>
+  <text class="diag-text small" x="40" y="222">num_records correctly and the buffer SRD <tspan class="phos">does</tspan> the conditional-execution work the assembly would otherwise spell out.</text>
+
+</svg>
+  </div>
+  <div class="caption">The 128-bit Buffer SRD sits in 4 consecutive SGPRs. Its <code>num_records</code> field is the lever — set it tight and your loads/stores get branchless OOB protection from the hardware. This is the mechanism behind Pattern 4 in <code>vector_add_asm</code> and behind every <code>opus_*</code> kernel that uses <code>make_buffer_resource</code>.</div>
+</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- M7 — oddments -->
+<!-- ====================================================== -->
+<section id="m7-oddments">
+<h2><span class="num">M7 · The other forty katas</span>Oddments · <em>integer, atomics, type cvt</em></h2>
+
+<p>This section is a fast tour of the rest of the repo. None of these get a deep dive, but most are useful references when you reach for the corresponding pattern.</p>
+
+<h3>Integer arithmetic — <em>magic_integer_division</em></h3>
+
+<p>Division is expensive on every GPU; AMD is no exception. <code>magic_integer_division/magic_div.s</code> implements the classic Granlund-Montgomery substitution: replace <code>x / d</code> with <code>mul_hi(x, magic) + x &gt;&gt; shift</code>, where <code>magic</code> and <code>shift</code> are precomputed on the host. The macros are clean:</p>
+
+<div class="code"><span class="c-fname">magic_div.s · line 17</span><span class="c-com">; v_numer, s_denom only support uint32 within 31bit</span>
+<span class="c-key">.macro</span> .mdiv_u32_vs v_quot, v_numer, s_magic, s_shift, v_tmp
+    <span class="c-key">v_mul_hi_u32</span>  <span class="c-reg">v[\v_tmp]</span>, <span class="c-reg">s[\s_magic]</span>, <span class="c-reg">v[\v_numer]</span>
+    <span class="c-key">v_add_u32</span>     <span class="c-reg">v[\v_tmp]</span>, <span class="c-reg">v[\v_tmp]</span>, <span class="c-reg">v[\v_numer]</span>
+    <span class="c-key">v_lshrrev_b32</span> <span class="c-reg">v[\v_quot]</span>, <span class="c-reg">s[\s_shift]</span>, <span class="c-reg">v[\v_tmp]</span>
+<span class="c-key">.endm</span></div>
+
+<p>Use this any time you have a loop with <code>i / N</code> or <code>i % N</code> where <code>N</code> is loop-invariant (common in index calculations: <code>row = idx / cols</code>, <code>col = idx % cols</code>). Compute the magic/shift on host once, pass as kernarg, save 20+ cycles per access.</p>
+
+<h3>Type conversion — <em>cvt_fp8, pk_cvt, lqq</em></h3>
+
+<p>CDNA3 introduced first-class fp8 support (E4M3 and E5M2). The conversion intrinsics are <code>__builtin_amdgcn_cvt_pk_fp8_f32</code> and friends. <code>cvt_fp8/</code> shows the basic round-trip; <code>pk_cvt/</code> shows packed conversions (two fp8 values per 16-bit lane); <code>lqq/</code> shows int8 → int4 quantization with scale/zero subtraction. If you are doing W4A16 inference (Kimi-K2.5, Qwen3-Coder-Next), the patterns here are exactly the kernels you need.</p>
+
+<h3>Atomics — <em>cmpswap_atomic</em></h3>
+
+<p>bf16 does not have native atomic-add on most CDNA parts. <code>cmpswap_atomic/</code> implements it via the compare-and-swap loop: read current value, compute new value with the desired bf16 addition, attempt CAS, retry on failure. The bf16x2 variant packs two values per atomic to halve the contention. Useful for accumulation kernels — embedding gradient updates, histogram-style reductions across workgroups.</p>
+
+<h3>Hardware probing — <em>hwreg, smid</em></h3>
+
+<p><code>hwreg/</code> reads the <code>HW_ID</code> SGPR to figure out which physical CU and SIMD a wave is running on. This sounds esoteric but is invaluable for debugging: if you suspect bank conflicts, log <code>HW_ID</code> per workgroup and look for hotspots. The <code>smid/</code> example is similar but uses a simpler intrinsic. Both are read-only and have no performance impact.</p>
+
+<h3>Production patterns — <em>opus_attn, opus_gemm</em></h3>
+
+<p>The <code>opus_*</code> folders use the <a href="https://github.com/ROCm/aiter">aiter</a> library — a higher-level set of building blocks (buffer descriptors, MFMA dispatch, LDS allocation) that production AMD kernels actually use. <code>opus_attn/</code> is a flash-attention-shaped kernel; <code>opus_gemm/</code> is a more polished GEMM than <code>matrix_core/</code>. These are heavier reads (7 files each) and assume you have already internalized the patterns from M2–M5.</p>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- REEFS -->
+<!-- ====================================================== -->
+<section id="reefs">
+<h2><span class="num">§ R · Six places to crash</span>Reefs</h2>
+
+<p>Things in this repo that will silently produce wrong output, or noisily refuse to compile, in ways that take a long time to diagnose. Calling them out here so you do not have to learn them the hard way.</p>
+
+<ol class="tile-list">
+  <li>
+    <div class="ttl">Reef 1 — <em>buffer_load…lds</em> rejected by the assembler</div>
+    <div class="desc">The LLVM MC assembler does not accept the <code>lds</code> modifier on <code>buffer_load_dword</code> for GFX9/CDNA. You must hand-encode the MUBUF bits via <code>.long</code>. The disassembler will print the instruction back to you correctly, which makes it easy to think you wrote it correctly. <code>vector_add_kernel.s:147-158</code> shows the workaround.</div>
+  </li>
+  <li>
+    <div class="ttl">Reef 2 — missing <em>.amdhsa_accum_offset</em></div>
+    <div class="desc">On gfx90a/gfx940/gfx942, omitting this directive produces a cryptic assembler error. Even if you use zero AGPRs, set it equal to <code>.amdhsa_next_free_vgpr</code>. The directive declares where the AGPR range begins in the unified register file; without it, the allocator cannot lay out registers.</div>
+  </li>
+  <li>
+    <div class="ttl">Reef 3 — <em>vmcnt FIFO includes stores</em></div>
+    <div class="desc">It is tempting to think <code>vmcnt</code> tracks "loads in flight." It does not — <code>buffer_store</code> pushes onto the same FIFO. If you reason about your prefetch pipeline ignoring stores, you will pick the wrong wait value. <code>vector_add_asm</code>'s <code>vmcnt(3)</code> works precisely because it accounts for store traffic; <code>vmcnt(2)</code> would be wrong by exactly one.</div>
+  </li>
+  <li>
+    <div class="ttl">Reef 4 — <em>code object v3 vs v5 metadata</em></div>
+    <div class="desc">gfx942 with ROCm 6+ requires <code>amdhsa.version: [1, 2]</code> (CO v5). The older <code>[1, 0]</code> (v3) format causes <em>invalid HSA metadata</em> errors at assembly time. Several examples in this repo (e.g. <code>matrix_core_asm/kernel.s</code>) still use v3 metadata — they assemble on older ROCm but will need updating. Always check the version before copying a snippet.</div>
+  </li>
+  <li>
+    <div class="ttl">Reef 5 — <em>MFMA dest must be AGPR ("a")</em></div>
+    <div class="desc">Declaring the C accumulator as a <code>"+v"</code> (VGPR) instead of <code>"+a"</code> (AGPR) does not cause a compile error, but the compiler inserts <code>v_accvgpr_write/read</code> moves around every MFMA call — destroying the back-to-back MFMA throughput you were trying to measure. Always use <code>"a"</code> for the MFMA destination and let it stay in AGPR across MFMA iterations.</div>
+  </li>
+  <li>
+    <div class="ttl">Reef 6 — <em>s_nop after MFMA</em></div>
+    <div class="desc">MFMA has a deep pipeline. The recommended dead-time between an MFMA and the next instruction that reads its result is <code>s_nop 16</code> (for 32×32 shapes). Skip it and you get either stale data or pipeline stalls invisible to the profiler. <code>matrix_core/matrix_core.cc:194</code> shows the canonical pattern.</div>
+  </li>
+</ol>
+</section>
+
+<!-- ====================================================== -->
+<!-- RED LINES -->
+<!-- ====================================================== -->
+<section id="redlines">
+<h2><span class="num">§ RL · Questions that cut across all eight sections</span>Red lines for kernel agents</h2>
+
+<p>Three structural questions surfaced during this read that bear directly on the design of an autonomous kernel-optimization system. They are stated as questions because each has multiple defensible answers; the choice is engineering judgment, not deduction.</p>
+
+<h3>Red line 1 — what level does the agent emit at?</h3>
+
+<p>Choices: <strong>(a)</strong> raw <code>.s</code> assembly for clang to assemble, <strong>(b)</strong> HIP source with intrinsics (<code>__builtin_amdgcn_*</code>), <strong>(c)</strong> a higher-level DSL (aiter, opus, CK) where MFMA dispatch and SRD construction are abstracted. Each pushes the optimization frontier differently. Emitting <code>.s</code> gives maximum control but makes Reef 1 (the assembler's blind spot for <code>buffer_load…lds</code>) into a structural ceiling. Emitting HIP gives compiler optimizations for free but loses the ability to specify exact <code>vmcnt</code> values. Emitting DSL is the fastest iteration cycle but locks the agent into the DSL's expressive range.</p>
+
+<p>The honest answer is probably <em>all three, layered</em>: agents that emit DSL for fast exploration, escalate to HIP+intrinsics for promising candidates, and to <code>.s</code> for the last 5% of squeezing. <code>gcnasm</code> itself is structured this way — it has <code>matrix_core/</code> (HIP+intrinsic), <code>matrix_core_asm/</code> (raw assembly), and <code>opus_gemm/</code> (DSL) as three views of the same problem.</p>
+
+<h3>Red line 2 — how does the agent learn the <em>vmcnt(3)</em> heuristic?</h3>
+
+<p>The <code>vmcnt(3)</code> choice in <code>vector_add_asm</code> is not derivable from the ISA manual. It is a piece of engineering folklore — "count the number of operations from the previous half-iteration that are still useful to keep in flight." Three approaches: <strong>(a)</strong> hand-curate a knowledge base of such patterns and feed it to the agent as in-context examples, <strong>(b)</strong> let the agent search the integer space [0, FIFO_max] and measure performance, <strong>(c)</strong> teach the agent to read <code>rocprof</code> stall counters and infer the correct value from them.</p>
+
+<p>(b) is the cheapest to implement but wastes most variants. (c) is the most principled but requires that the agent already understands rocprof's output schema. (a) is the right starting point: a static curated set of "pattern templates" (persistent kernel + double buffer + vmcnt-tuned prefetch) the agent can recognize and instantiate, then refine with measurement.</p>
+
+<h3>Red line 3 — what is the right unit of search granularity?</h3>
+
+<p>"Generate a kernel variant" is too coarse — most random variants will be worse than the seed. "Change one instruction" is too fine — the search space is enormous and most single changes are uninteresting. The sweet spot, judging from gcnasm, is somewhere around <strong>"swap one optimization pattern for another"</strong>: replace flat loads with buffer loads (pattern swap), change <code>vmcnt(0)</code> to <code>vmcnt(3)</code> (parameter sweep within pattern), swap the standard MFMA layout for swap+swizzle (algorithmic restructure).</p>
+
+<p>Each pattern in <code>vector_add_asm</code>'s five-pattern list is the right granularity. If your agent's action space is "add or remove one pattern," you have a tractable search problem and a vocabulary that maps cleanly onto what experienced AMD engineers actually think about.</p>
+
+<div class="callout cyan">
+  <span class="ctag">A concrete proposal</span>
+  <p>Build the agent's prompt template around <code>gcnasm</code>'s pattern vocabulary directly. Seed each task with two examples: <em>"here is a slow version (uses pattern X)"</em> and <em>"here is a fast version (uses pattern Y)"</em>. The agent's job is to propose which pattern swap applies to the target kernel, then the system measures. The five patterns from <code>vector_add_asm</code> are a good initial action set; the three MFMA layouts from <code>matrix_core/</code> are a good second.</p>
+</div>
+
+</section>
+
+<!-- ====================================================== -->
+<!-- EPILOGUE -->
+<!-- ====================================================== -->
+<section id="epilogue">
+<h2><span class="num">§ End · What to do with this</span>Epilogue</h2>
+
+<p>This repo will not make you a CDNA3 expert. The ISA manual will, painfully and slowly. What gcnasm does is provide <em>worked examples</em> — the equivalent of solved problems in a math textbook — that let you check your understanding of the manual against actual running code. The two should be read alongside each other; either alone is incomplete.</p>
+
+<p>For kernel-agent work specifically, the most actionable artifacts in the repo are:</p>
+
+<ul class="tile-list">
+  <li><div class="ttl">Run <code>bandwidth_memread</code> first, on every machine</div><div class="desc">Establishes the roofline ceiling. Every subsequent benchmark is meaningless without this number.</div></li>
+  <li><div class="ttl">Fork <code>co-exec</code> as the agent's executor template</div><div class="desc">200ms compile-and-run vs 8-15s for hipcc. This is the iteration-speed unlock.</div></li>
+  <li><div class="ttl">Use <code>wave_reduce_dpp</code>, <code>magic_integer_division</code>, <code>transpose-lds</code> as building-block library</div><div class="desc">These are the patterns your generated kernels will assemble out of. Treat them as the agent's "vocabulary" of optimization moves.</div></li>
+  <li><div class="ttl">Treat <code>vector_add_asm</code>'s five patterns as the canonical action space</div><div class="desc">Persistent, double-LDS, async-to-LDS, OOB control flow, vmcnt pipelining. Any kernel the agent generates should be classifiable along these five axes.</div></li>
+</ul>
+
+<p>The repo is small enough that re-reading every six months is feasible. New examples appear occasionally — <code>mla_agentic_v0</code>, <code>wmma_opus_rdna4</code>, <code>matrix_core_gfx950</code> are recent additions that hint at where AMD optimization is moving (MLA for inference, RDNA4 WMMA for client-side, gfx950 as the imminent successor to MI300). It is worth a bookmark.</p>
+
+<p>The next entry in this series will likely cover either <a href="https://github.com/ROCm/aiter">aiter</a> (the production kernel library that <code>opus_*</code> examples build on) or Triton-ROCm's code generation pipeline. Both extend the chain started here in different directions — aiter pushes toward production patterns, Triton-ROCm pushes toward automated codegen. Either way, gcnasm is the foundation that makes the next two readable.</p>
+
+</section>
+
+</main>
+</div>
+
+<!-- ====================================================== -->
+<!-- COLOPHON -->
+<!-- ====================================================== -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl">Source</div>
+      <div class="val"><a href="https://github.com/carlushuang/gcnasm">github.com/carlushuang/gcnasm</a></div>
+      <div class="val">commit · master @ 2026.05</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Typography</div>
+      <div class="val">Newsreader · Manrope · Geist Mono</div>
+      <div class="val">font sizes 9.5–168 px · grid 36 px</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Palette</div>
+      <div class="val">
+        <span class="swatch" style="background:#07090c"></span>void
+        <span class="swatch" style="background:#e8e3d4"></span>vellum
+        <span class="swatch" style="background:#6dd47e"></span>phosphor
+      </div>
+      <div class="val">
+        <span class="swatch" style="background:#f5b338"></span>amber
+        <span class="swatch" style="background:#5ec9d4"></span>cyan
+        <span class="swatch" style="background:#d76dc4"></span>magenta
+        <span class="swatch" style="background:#e25555"></span>crimson
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl">Compiled for</div>
+      <div class="val">readers on gfx942 / gfx950 / gfx1030</div>
+      <div class="val">reading time ≈ 6 h · written 2026.05.17</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
