@@ -1,13 +1,17 @@
 ---
 name: source-reading-blog
-description: Author a bilingual (zh + en) "Source Reading" deep-dive blog post for jinnpan.com. Each entry consists of (a) a richly-designed self-contained HTML deep-dive with hand-coded SVG diagrams placed under public/sources/, and (b) two short markdown summaries under src/content/blog/{zh,en}/ that link to the full HTML. Use when the user says things like "write a source reading post on X", "do a deep dive on repo Y", "source-reading 004", or "add a new entry to the source reading series".
+description: Turn a pile of code + docs into a shareable, narrative-driven, "podcast-style" deep-dive on jinnpan.com. Produces (a) a richly-designed self-contained HTML with hand-coded SVG diagrams + bilingual EN/ZH toggle under public/sources/, and (b) two short markdown blog summaries under src/content/blog/{zh,en}/. Use whenever the user wants to take a body of knowledge — a repo, a paper, a kernel, a system internals walkthrough — and make it easy to read, easy to learn, easy to share. Triggers include "write a source reading post on X", "do a deep dive on repo Y", "source-reading NNN", "把 X 做成 portfolio html", "把这堆代码 / 文档变成一个 blog", "deep dive on X", "write a podcast-style HTML about X", "make X shareable / learnable".
 ---
 
-This skill produces one numbered entry in Jhin's "Source Reading" series on jinnpan.com. Each entry has three artifacts created together:
+This skill is Jhin's workflow for **converting raw knowledge (code, docs, papers) into a polished, podcast-style HTML deep dive** on jinnpan.com. Each invocation produces three artifacts together:
 
-1. **`public/sources/<slug>.html`** — a richly designed, self-contained HTML file with hand-coded SVG diagrams. No Mermaid, no runtime JS dependencies (except Google Fonts CDN).
+1. **`public/sources/<slug>.html`** — a richly designed, self-contained HTML file with hand-coded SVG diagrams and a built-in EN/ZH language toggle. No Mermaid, no runtime JS dependencies (except Google Fonts CDN).
 2. **`src/content/blog/en/source-reading-NNN-<slug>.md`** — English short-form blog (~600-1000 words) introducing and linking to the HTML.
 3. **`src/content/blog/zh/source-reading-NNN-<slug>.md`** — Chinese mirror of the same blog (same slug, same date, same images), following Chinese typography rules from this repo's CLAUDE.md.
+
+### When the entry is *not* a numbered "Source Reading"
+
+The default series is numbered. For one-off deep dives that don't belong to the series (a talk transcript, a project retrospective, a paper-reading write-up), skip Step 0's numbering and pick a freeform slug; place the HTML under `public/sources/<slug>.html` without the NNN prefix, and drop the `Source Reading NNN —` prefix from the markdown titles. Every other step in this skill still applies.
 
 ## Step 0 · Pick the number and slug
 
@@ -96,7 +100,108 @@ Structure (copy from any of the existing three for the skeleton, change palette 
 </body>
 ```
 
-Target file size: **70-120 KB · 1700-2300 lines**. Keep the article column to `max-width: 720px` for readability; widen only the plates.
+Target file size: **70-120 KB · 1700-2300 lines** (English-only). With the bilingual toggle from Step 4.5 this grows to **140-180 KB · 2200-2800 lines**. Keep the article column to `max-width: 720px` for readability; widen only the plates.
+
+## Step 4.5 · Add the EN/ZH language toggle (default-on)
+
+The HTML deep dive ships bilingual: every translatable paragraph, heading, callout, plate caption, table cell, and colophon row exists in both English and Chinese, with a floating button in the top-right that switches the visible language without a page reload. Default to having the toggle unless the user explicitly says "English only" or "single language."
+
+**Mechanics — the four moving parts:**
+
+1. **CSS visibility rule** in the `<style>` block, near the bottom:
+
+   ```css
+   body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+   body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+   ```
+
+2. **The toggle button**, placed right after `<body data-lang="en">`:
+
+   ```html
+   <div class="lang-toggle" role="group" aria-label="Language">
+     <button type="button" data-set="en" aria-label="English">EN</button>
+     <button type="button" data-set="zh" aria-label="中文">中文</button>
+   </div>
+   ```
+
+   Style it as a fixed-position pill in the top-right corner (sample CSS in `flydsl.html`). Match the aesthetic of the entry — borrow palette and typography from the existing `:root` variables.
+
+3. **The JS** just before `</body>` — first-visit picks browser language (`navigator.language.startsWith('zh')` → `zh`, else `en`), thereafter persists choice in `localStorage` under a per-page key like `<slug>-source-lang`:
+
+   ```html
+   <script>
+   (function() {
+     var KEY = '<slug>-source-lang';
+     var body = document.body;
+     var stored = null;
+     try { stored = localStorage.getItem(KEY); } catch (e) {}
+     if (stored === 'en' || stored === 'zh') {
+       body.setAttribute('data-lang', stored);
+     } else {
+       var nav = (navigator.language || 'en').toLowerCase();
+       body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+     }
+     document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+       btn.addEventListener('click', function() {
+         var v = btn.getAttribute('data-set');
+         body.setAttribute('data-lang', v);
+         try { localStorage.setItem(KEY, v); } catch (e) {}
+       });
+     });
+   })();
+   </script>
+   ```
+
+4. **The `[lang]` content pairs**. For every translatable block, add a sibling with the alternate language. Inline spans for short phrases inside a single sentence, separate elements for paragraphs and headings:
+
+   ```html
+   <h3 lang="en">The atom · Shape, Stride, Layout</h3>
+   <h3 lang="zh">原子 · Shape、 Stride、 Layout</h3>
+
+   <p lang="en">A <code>!fly.layout</code> is a pair of integer tuples...</p>
+   <p lang="zh">一个 <code>!fly.layout</code> 是两个整数 tuple 的对...</p>
+
+   <table class="tbl">
+     <thead>
+       <tr lang="en"><th>Call</th><th>Returns</th></tr>
+       <tr lang="zh"><th>调用</th><th>返回</th></tr>
+     </thead>
+     <tbody>
+       <tr>
+         <td><code>partition_S(bA)</code></td>
+         <td lang="en">per-thread view of source</td>
+         <td lang="zh">source 的 per-thread 视图</td>
+       </tr>
+     </tbody>
+   </table>
+   ```
+
+**What to translate vs leave language-neutral:**
+
+| Translate | Leave as-is |
+|---|---|
+| `<p>` body prose | Code blocks (`.code` elements) |
+| `<h2>`, `<h3>`, `<h4>` headings | Short SVG labels (`STAGE 0`, `MFMA`, `ds_read`) |
+| `<th>` / `<td>` prose | Inline `<code>` API names |
+| Callout `.ctag` and prose | URLs, file paths, line numbers |
+| Plate captions | The masthead `<h1>` brand name |
+| Colophon `.lbl` and `.val` prose | Numerical values in meta blocks |
+
+**Chinese typography in HTML content:** the same rules as `src/content/blog/zh/` markdown apply — half-width space after `。` `，` `：` followed by content characters, half-width spaces around `/` as alternative separator. Mentally scan `[。，：][^ \n*]` patterns before declaring done. Skip code blocks and inline code.
+
+**Pairing check** before commit:
+
+```bash
+# Excluding data-lang attribute and CSS [lang=...] selectors:
+python3 -c "
+import re
+html = open('public/sources/<slug>.html').read()
+en = len(re.findall(r'(?<!data-)lang=\"en\"', html))
+zh = len(re.findall(r'(?<!data-)lang=\"zh\"', html))
+print(f'en={en} zh={zh} {\"BALANCED\" if en == zh else \"MISMATCH\"}')"
+```
+
+The two counts must be equal — every English block has a Chinese counterpart, and vice versa. A 1-block discrepancy means one language has an orphaned block that will only render in one mode.
 
 ## Step 5 · Write the bilingual markdown blogs
 
@@ -170,18 +275,47 @@ git -C ~/jinnpan.com push origin main
 # Vercel auto-deploys in ~60 seconds.
 ```
 
+## Step 7.5 · Poll Vercel + spot-check the live page
+
+After pushing, don't tell the user "it's live" until it actually is. Poll for the new content and verify it renders:
+
+```bash
+# Background poll — finishes when the new HTML is reachable AND contains
+# a string unique to this entry (a translated phrase, the title, or a slug).
+URL=https://jinnpan.com/sources/<slug>.html
+until curl -sf -o /tmp/check.html "$URL" 2>/dev/null && \
+      grep -q '<unique-string-from-this-entry>' /tmp/check.html; do
+  sleep 8
+done
+echo "Vercel deploy live ✓ ($(wc -c < /tmp/check.html) bytes)"
+```
+
+Run this in the background with `run_in_background: true` so you keep working while it polls. Vercel typically finishes in 30–90 seconds; if it's been > 3 minutes, the deploy probably failed — check `gh run list` or the Vercel dashboard.
+
+Once the poll exits, do a quick WebFetch spot-check on **three URLs** to verify the live pages render as expected:
+
+- `https://jinnpan.com/sources/<slug>.html` — masthead title, rail anchors, plate count, language toggle markup
+- `https://jinnpan.com/en/blog/source-reading-NNN-<slug>/` — frontmatter title, date, tags, link to /sources/<slug>.html
+- `https://jinnpan.com/zh/blog/source-reading-NNN-<slug>/` — same checks in Chinese
+
+Note the URL prefix is `/en/blog/...` (not `/blog/...`) for English; the unprefixed `/blog/` path is the legacy alias and may 404.
+
+Only report "deployed and verified" once all three return 200 and contain the expected content. If the user asks to see the result, surface the URLs and a one-line summary of what each contains — don't claim it works without checking.
+
 ## Quality checklist before declaring done
 
 - [ ] HTML has 4+ inline SVG plates, all hand-coded coordinates
 - [ ] Aesthetic distinctly different from all previous entries (fonts AND colors)
+- [ ] **EN/ZH toggle present and content blocks paired** (see Step 4.5; `lang="en"` count == `lang="zh"` count, excluding `data-lang` and CSS selectors)
 - [ ] Every numeric claim (line count, file count) cross-checked against actual files via `wc -l`
 - [ ] Every code reference includes a `file_path:line_number`
-- [ ] zh blog passes typography rules (run a mental scan or grep for `[。，：][^ \n]` outside code blocks)
+- [ ] zh blog AND zh HTML content pass typography rules (half-width space after `。` `，` `：` + half-width spaces around `/` separators; skip code blocks)
 - [ ] Both blogs have the same date, same slug, same tags
 - [ ] At least one section ties to Jhin's AMD / kernel-optimization work where applicable
 - [ ] No emojis in the HTML or blog body (Jhin's style — only use if he explicitly asks)
 - [ ] No generic AI-writing patterns (run `/humanizer` mentally — avoid "delve into", "comprehensive", "leverage", em-dash overuse, rule-of-three lists when not natural)
 - [ ] **Anchor cross-check passes** (see below)
+- [ ] **Vercel deploy verified live** (Step 7.5: HTML URL + en blog URL + zh blog URL all return 200 with expected content)
 
 ### Anchor cross-check — MANDATORY before commit
 
