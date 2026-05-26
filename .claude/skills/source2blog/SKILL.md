@@ -1,5 +1,5 @@
 ---
-name: source-reading-blog
+name: source2blog
 description: Turn a pile of code + docs into a shareable, narrative-driven, "podcast-style" deep-dive on jinnpan.com. Produces (a) a richly-designed self-contained HTML with hand-coded SVG diagrams + bilingual EN/ZH toggle under public/sources/, and (b) two short markdown blog summaries under src/content/blog/{zh,en}/. Use whenever the user wants to take a body of knowledge — a repo, a paper, a kernel, a system internals walkthrough — and make it easy to read, easy to learn, easy to share. Triggers include "write a source reading post on X", "do a deep dive on repo Y", "source-reading NNN", "把 X 做成 portfolio html", "把这堆代码 / 文档变成一个 blog", "deep dive on X", "write a podcast-style HTML about X", "make X shareable / learnable".
 ---
 
