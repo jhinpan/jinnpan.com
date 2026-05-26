@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From Python to Silicon — A Primer · No.007</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Cinzel:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Engineering monograph palette — warm parchment + oxblood + forest + brass */
+  --paper: #f5ecd8;
+  --paper-soft: #ede2c4;
+  --paper-deep: #e6d8b3;
+  --paper-tint: #fbf5e6;
+
+  --ink: #1f1a12;
+  --ink-soft: #3a3122;
+  --ink-mute: #6b5e44;
+  --ink-faint: #8a7d63;
+
+  --rule: #c8b890;
+  --rule-soft: #d6c8a4;
+  --rule-faint: rgba(43, 35, 18, 0.06);
+
+  --oxblood: #6e1c1a;
+  --oxblood-deep: #4a1413;
+  --oxblood-soft: #95342f;
+  --forest: #2f4d34;
+  --forest-deep: #1f3522;
+  --forest-soft: #4a6d4f;
+  --brass: #a8842e;
+  --brass-deep: #816424;
+  --brass-soft: #c4a14e;
+  --copper: #a45c3a;
+  --copper-deep: #7a4128;
+  --indigo: #2a3c5c;
+
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --display: 'Cinzel', 'Trajan Pro', serif;
+  --mono: 'Space Mono', 'IBM Plex Mono', 'Courier New', monospace;
+  --sans: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+
+  --max-content: 720px;
+  --rail-w: 204px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  overflow-x: hidden;
+}
+
+/* Parchment texture: subtle horizontal hairline grain + warm vignette */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(31, 26, 18, 0.018) 0px, rgba(31, 26, 18, 0.018) 1px, transparent 1px, transparent 4px),
+    radial-gradient(ellipse 65% 50% at 50% 0%, rgba(168, 132, 46, 0.06), transparent 65%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(110, 28, 26, 0.045), transparent 70%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(74, 20, 19, 0.08) 100%);
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 80px 56px 64px;
+  border-bottom: 1.5px double var(--ink);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 44px;
+}
+.masthead .kicker .ornament {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--oxblood);
+  transform: rotate(45deg);
+}
+.masthead .kicker .ornament.bar {
+  width: 28px;
+  height: 1.5px;
+  background: var(--ink);
+  transform: none;
+}
+.masthead .kicker .chip {
+  color: var(--brass-deep);
+  font-weight: 600;
+}
+
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(54px, 8.5vw, 116px);
+  line-height: 0.98;
+  margin: 0;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.masthead h1 .ampersand {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--oxblood);
+  text-transform: none;
+  font-size: 0.85em;
+}
+.masthead h1 .arrow {
+  display: inline-block;
+  color: var(--brass);
+  font-family: var(--serif);
+  font-weight: 400;
+  margin: 0 0.05em;
+  font-size: 0.85em;
+}
+
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(19px, 2.1vw, 25px);
+  line-height: 1.42;
+  color: var(--ink-soft);
+  margin: 40px 0 0;
+  max-width: 760px;
+  letter-spacing: -0.003em;
+}
+
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin-top: 60px;
+  padding-top: 36px;
+  border-top: 1px solid var(--rule);
+  max-width: 960px;
+}
+.masthead .meta .item .label {
+  font-family: var(--display);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 12px;
+}
+.masthead .meta .item .value {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 21px;
+  color: var(--ink);
+  letter-spacing: -0.003em;
+  line-height: 1.22;
+}
+.masthead .meta .item .value .unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-mute);
+  margin-left: 6px;
+  font-weight: 400;
+}
+.masthead .meta .item .value .accent {
+  color: var(--oxblood);
+  font-style: italic;
+}
+
+/* ============ SHELL ============ */
+.shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 56px;
+  z-index: 1;
+}
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 88px auto;
+  padding: 0;
+}
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 52px 24px;
+  border-right: 1.5px double var(--ink);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  background: var(--paper-soft);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--rule); }
+
+.rail .brand {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.rail .brand em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--oxblood);
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+.rail .ref {
+  color: var(--ink-mute);
+  margin-bottom: 32px;
+  font-size: 10px;
+  font-family: var(--mono);
+}
+.rail .ref .pin {
+  color: var(--brass-deep);
+  font-weight: 700;
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: nav;
+}
+.rail ol li {
+  margin-bottom: 14px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 32px;
+}
+.rail ol li::before {
+  content: '§ ' counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--ink-mute);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+}
+.rail ol li a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 0.18s;
+  display: block;
+  line-height: 1.34;
+}
+.rail ol li a:hover { color: var(--oxblood); }
+.rail .divider {
+  height: 1px;
+  background: var(--rule);
+  margin: 18px 0;
+}
+.rail .ornament-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  align-items: center;
+}
+.rail .ornament-row .dot {
+  width: 5px;
+  height: 5px;
+  background: var(--oxblood);
+  transform: rotate(45deg);
+}
+.rail .ornament-row .dot.brass { background: var(--brass); }
+.rail .ornament-row .dot.forest { background: var(--forest); }
+.rail .ornament-row .dot.copper { background: var(--copper); }
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(34px, 4.2vw, 52px);
+  line-height: 1.08;
+  letter-spacing: 0.005em;
+  margin: 112px 0 28px;
+  color: var(--ink);
+  position: relative;
+  text-transform: uppercase;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  color: var(--oxblood);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.article h2 em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--oxblood);
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+
+.article h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 23px;
+  line-height: 1.3;
+  margin: 60px 0 14px;
+  color: var(--ink);
+  letter-spacing: -0.008em;
+}
+.article h3 em {
+  font-style: italic;
+  color: var(--brass-deep);
+  font-weight: 500;
+}
+
+.article h4 {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--forest-deep);
+  margin: 34px 0 12px;
+}
+
+.article p {
+  margin: 0 0 20px;
+  color: var(--ink-soft);
+  font-size: 16.5px;
+}
+.article p strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.article p em {
+  color: var(--oxblood);
+  font-style: italic;
+}
+.article p code, .article li code, .article td code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--paper-tint);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--forest-deep);
+  border: 1px solid var(--rule-soft);
+}
+.article a {
+  color: var(--oxblood);
+  text-decoration: none;
+  border-bottom: 1px solid var(--oxblood-soft);
+  transition: color 0.18s, border-color 0.18s;
+}
+.article a:hover { color: var(--copper); border-bottom-color: var(--copper); }
+
+.dropcap { display: block; }
+.dropcap::first-letter {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 64px;
+  line-height: 0.88;
+  float: left;
+  margin: 6px 14px 0 0;
+  color: var(--oxblood);
+}
+
+/* ============ ORNAMENTS ============ */
+.ornament-break {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 56px 0;
+  gap: 18px;
+  color: var(--brass);
+}
+.ornament-break .line {
+  flex: 0 0 60px;
+  height: 1px;
+  background: var(--brass);
+}
+.ornament-break .glyph {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.ornament-break .glyph .lozenge {
+  width: 8px;
+  height: 8px;
+  background: var(--brass);
+  transform: rotate(45deg);
+}
+.ornament-break .glyph .lozenge.fill-oxblood { background: var(--oxblood); }
+.ornament-break .glyph .lozenge.fill-forest { background: var(--forest); }
+
+/* ============ CODE BLOCKS ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.66;
+  background: var(--paper-tint);
+  border: 1px solid var(--rule-soft);
+  border-left: 3px solid var(--oxblood);
+  padding: 18px 22px;
+  margin: 24px 0;
+  overflow-x: auto;
+  color: var(--ink-soft);
+  white-space: pre;
+  border-radius: 1px;
+  box-shadow: 1px 1px 0 rgba(31, 26, 18, 0.04);
+}
+.code .c-key { color: var(--oxblood); font-weight: 700; }
+.code .c-str { color: var(--brass-deep); }
+.code .c-num { color: var(--copper-deep); }
+.code .c-com { color: var(--ink-mute); font-style: italic; }
+.code .c-cls { color: var(--forest-deep); font-weight: 700; }
+.code .c-warn { color: var(--copper); }
+.code .c-fname {
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 28px 0;
+  padding: 20px 24px;
+  background: var(--paper-soft);
+  border-left: 3px solid var(--brass);
+  position: relative;
+  border-right: 1px solid var(--rule-soft);
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+}
+.callout.oxblood { border-left-color: var(--oxblood); }
+.callout.forest { border-left-color: var(--forest); }
+.callout.copper { border-left-color: var(--copper); }
+.callout.indigo { border-left-color: var(--indigo); }
+.callout .ctag {
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--brass-deep);
+  margin-bottom: 10px;
+  display: block;
+}
+.callout.oxblood .ctag { color: var(--oxblood); }
+.callout.forest .ctag { color: var(--forest-deep); }
+.callout.copper .ctag { color: var(--copper-deep); }
+.callout.indigo .ctag { color: var(--indigo); }
+.callout p {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 15.5px;
+}
+.callout p:last-child { margin-bottom: 0; }
+
+/* ============ TABLES ============ */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 26px 0;
+  font-size: 14px;
+}
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 11px 14px 11px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+}
+.tbl th {
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  font-weight: 600;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 11px;
+}
+.tbl td { color: var(--ink-soft); }
+.tbl td code, .tbl th code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--forest-deep);
+  background: var(--paper-tint);
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid var(--rule-soft);
+}
+.tbl td.k { color: var(--ink); font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.tbl td.acc { color: var(--oxblood); font-weight: 600; }
+.tbl td.warn { color: var(--copper-deep); }
+.tbl td.num { color: var(--brass-deep); font-variant-numeric: tabular-nums; font-weight: 700; }
+.tbl td.ok { color: var(--forest-deep); font-weight: 600; }
+
+/* ============ PLATES (SVG) ============ */
+.plate {
+  margin: 60px 0;
+  padding: 0;
+}
+.plate.wide {
+  max-width: 1040px;
+  margin-left: calc(-1 * (1040px - var(--max-content)) / 2);
+}
+@media (max-width: 1100px) {
+  .plate.wide { max-width: 100%; margin-left: 0; }
+}
+.plate-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px double var(--ink);
+}
+.plate-meta .pnum {
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--oxblood);
+}
+.plate-meta .pname {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.plate-meta .pscale {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--ink-mute);
+}
+.plate-body {
+  background: var(--paper-tint);
+  border: 1px solid var(--rule);
+  padding: 24px;
+  position: relative;
+  box-shadow: 2px 2px 0 rgba(110, 28, 26, 0.08);
+}
+.plate-body svg { display: block; width: 100%; height: auto; }
+.plate .caption {
+  margin-top: 14px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14.5px;
+  color: var(--ink-mute);
+  line-height: 1.52;
+}
+
+/* SVG shared classes */
+.d-text { font-family: var(--sans); font-size: 11px; fill: var(--ink); }
+.d-text.mono { font-family: var(--mono); font-size: 10.5px; }
+.d-text.small { font-size: 9.5px; fill: var(--ink-mute); }
+.d-text.tiny { font-size: 8.5px; fill: var(--ink-faint); }
+.d-text.label { font-family: var(--display); font-size: 9px; letter-spacing: 0.16em; fill: var(--ink-mute); text-transform: uppercase; font-weight: 600; }
+.d-text.title { font-family: var(--serif); font-style: italic; font-size: 13px; fill: var(--ink); }
+.d-text.oxblood { fill: var(--oxblood); }
+.d-text.forest { fill: var(--forest-deep); }
+.d-text.brass { fill: var(--brass-deep); }
+.d-text.copper { fill: var(--copper-deep); }
+.d-text.indigo { fill: var(--indigo); }
+.d-text.dim { fill: var(--ink-mute); }
+.d-text.white { fill: var(--paper-tint); }
+
+.zone { fill: var(--paper-soft); stroke: var(--ink); stroke-width: 1; }
+.zone.tint { fill: var(--paper-tint); }
+.zone.deep { fill: var(--paper-deep); }
+.zone.oxblood { stroke: var(--oxblood); }
+.zone.forest { stroke: var(--forest); }
+.zone.brass { stroke: var(--brass); }
+.zone.copper { stroke: var(--copper); }
+.zone.indigo { stroke: var(--indigo); }
+.zone.filled-oxblood { fill: var(--oxblood); stroke: var(--oxblood-deep); }
+.zone.filled-forest { fill: var(--forest); stroke: var(--forest-deep); }
+.zone.filled-brass { fill: var(--brass); stroke: var(--brass-deep); }
+.zone.filled-copper { fill: var(--copper); stroke: var(--copper-deep); }
+
+.bp-line { stroke: var(--ink-mute); stroke-width: 1; fill: none; }
+.bp-line.dash { stroke-dasharray: 3 3; }
+.bp-line.oxblood { stroke: var(--oxblood); }
+.bp-line.forest { stroke: var(--forest); }
+.bp-line.brass { stroke: var(--brass); }
+.bp-line.copper { stroke: var(--copper); }
+.bp-line.thick { stroke-width: 1.6; }
+
+/* ============ FOOTER ============ */
+.colophon {
+  max-width: 1280px;
+  margin: 120px auto 0;
+  padding: 52px 56px 72px;
+  border-top: 1.5px double var(--ink);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  color: var(--ink-mute);
+  line-height: 1.72;
+}
+.colophon .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+}
+.colophon .field .lbl {
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+.colophon .field .val { color: var(--ink-soft); }
+.colophon .field .val a { color: var(--oxblood); text-decoration: none; border-bottom: 1px solid var(--oxblood-soft); }
+.colophon .swatch {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 5px;
+  vertical-align: middle;
+  border: 1px solid var(--ink);
+}
+.colophon .closing {
+  margin-top: 36px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-mute);
+  text-align: center;
+}
+
+/* ============ TILE LIST ============ */
+.tile-list {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+}
+.tile-list li {
+  padding: 16px 0 16px 30px;
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+}
+.tile-list li::before {
+  content: '§';
+  position: absolute;
+  left: 0;
+  top: 16px;
+  color: var(--oxblood);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+}
+.tile-list li .ttl {
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.tile-list li .ttl em {
+  font-style: italic;
+  color: var(--oxblood);
+  font-weight: 500;
+}
+.tile-list li .desc {
+  font-size: 14.5px;
+  color: var(--ink-soft);
+}
+
+.article > p:first-of-type { margin-top: 0; }
+section { scroll-margin-top: 32px; }
+
+/* ============ LANGUAGE TOGGLE ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+.lang-toggle {
+  position: fixed;
+  top: 26px;
+  right: 36px;
+  z-index: 150;
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--paper-tint);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  font-family: var(--display);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 rgba(31, 26, 18, 0.18);
+  overflow: hidden;
+}
+.lang-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  padding: 9px 14px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s;
+  border-right: 1px solid var(--ink);
+}
+.lang-toggle button:last-child { border-right: none; }
+.lang-toggle button:hover { color: var(--oxblood); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+  color: var(--paper-tint);
+  background: var(--oxblood);
+}
+
+/* ============ INLINE GLYPH ============ */
+.glyph {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--oxblood);
+  transform: rotate(45deg);
+  margin: 0 6px;
+  vertical-align: middle;
+}
+.glyph.brass { background: var(--brass); }
+.glyph.forest { background: var(--forest); }
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<!-- ================ RAIL ================ -->
+<nav class="rail">
+  <div class="brand">From Python<br><em>to silicon</em></div>
+  <div class="ref">N<span class="pin">.007</span> · 2026-05-26</div>
+  <ol>
+    <li><a href="#m0-prologue"><span lang="en">Why this primer</span><span lang="zh">为什么写这一篇</span></a></li>
+    <li><a href="#m1-stack"><span lang="en">The vertical stack</span><span lang="zh">纵向栈全景</span></a></li>
+    <li><a href="#m2-ir"><span lang="en">IR · the controlled vocabulary</span><span lang="zh">IR · 受控的词表</span></a></li>
+    <li><a href="#m3-mlir"><span lang="en">MLIR · IR for building IRs</span><span lang="zh">MLIR · 用来造 IR 的 IR</span></a></li>
+    <li><a href="#m4-llvm"><span lang="en">LLVM · the workhorse</span><span lang="zh">LLVM · 通用后端</span></a></li>
+    <li><a href="#m5-isa"><span lang="en">ISA · the chip's contract</span><span lang="zh">ISA · 芯片的契约</span></a></li>
+    <li><a href="#m6-ffi"><span lang="en">FFI · the boundary</span><span lang="zh">FFI · 边界与翻译</span></a></li>
+    <li><a href="#m7-trace"><span lang="en">One matmul, all the way down</span><span lang="zh">一个 matmul 一路下去</span></a></li>
+    <li><a href="#m8-reefs"><span lang="en">Reefs</span><span lang="zh">易混淆礁石</span></a></li>
+    <li><a href="#coda"><span lang="en">Coda &amp; reading list</span><span lang="zh">余话与阅读清单</span></a></li>
+  </ol>
+  <div class="divider"></div>
+  <div class="ornament-row">
+    <span class="dot"></span>
+    <span class="dot brass"></span>
+    <span class="dot forest"></span>
+    <span class="dot copper"></span>
+  </div>
+</nav>
+
+<!-- ================ MASTHEAD ================ -->
+<header class="masthead">
+  <div class="kicker" lang="en">
+    <span class="ornament bar"></span>
+    <span>N<span class="chip">.007</span></span>
+    <span class="ornament"></span>
+    <span>A Primer</span>
+    <span class="ornament"></span>
+    <span>2026-05-26</span>
+  </div>
+  <div class="kicker" lang="zh">
+    <span class="ornament bar"></span>
+    <span>N<span class="chip">.007</span></span>
+    <span class="ornament"></span>
+    <span>科普一集</span>
+    <span class="ornament"></span>
+    <span>2026-05-26</span>
+  </div>
+  <h1 lang="en">From Python <span class="arrow">→</span> <span class="ampersand">to</span> Silicon</h1>
+  <h1 lang="zh">从 <span class="ampersand">Python</span> <span class="arrow">→</span> 硅片</h1>
+  <p class="subtitle" lang="en">A field guide to IR, MLIR, LLVM, ISA, and FFI — for the working ML engineer who never quite finished the compilers course.</p>
+  <p class="subtitle" lang="zh">写给本科 CS 念过、 但是 Compiler 和 Computer Arch 没好好上过的 ML 工程师 —— 一份关于 IR、 MLIR、 LLVM、 ISA、 FFI 的口袋手册。</p>
+  <div class="meta">
+    <div class="item">
+      <div class="label" lang="en">Length</div>
+      <div class="label" lang="zh">体量</div>
+      <div class="value" lang="en">10 <span class="unit">chapters</span></div>
+      <div class="value" lang="zh">10 <span class="unit">章</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Audience</div>
+      <div class="label" lang="zh">读者</div>
+      <div class="value" lang="en"><span class="accent">curious</span> &amp; terminology-shy</div>
+      <div class="value" lang="zh"><span class="accent">好奇</span>而怕术语者</div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Map</div>
+      <div class="label" lang="zh">路线</div>
+      <div class="value" lang="en">Python <span class="accent">→</span> ASM</div>
+      <div class="value" lang="zh">Python <span class="accent">→</span> ASM</div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Compiled for</div>
+      <div class="label" lang="zh">编译为</div>
+      <div class="value" lang="en"><span class="accent">share-ready</span> primer</div>
+      <div class="value" lang="zh"><span class="accent">可分享</span>的入门</div>
+    </div>
+  </div>
+</header>
+
+<!-- ================ MAIN ARTICLE ================ -->
+<div class="shell">
+<main class="article">
+
+<!-- ============ M0 PROLOGUE ============ -->
+<section id="m0-prologue">
+<p class="dropcap" lang="en">You can write production ML systems for years without ever quite knowing what an IR is. You import <code>torch</code>, you call <code>torch.matmul</code>, the GPU lights up, and a few milliseconds later there is a tensor on the other side. Somewhere between your Python file and that tensor sit at least eight layers of software, three forms of intermediate representation, two compiler frameworks, one device driver, and a chip that speaks an instruction set someone in Bangalore or Sunnyvale spent two years specifying. Most of the time you do not need to know any of this. But every once in a while something underneath leaks — a kernel runs slower than it should, a new accelerator does not have a backend, a wheel built for CUDA 12.4 will not load on CUDA 12.6 — and the abstraction stops being free.</p>
+
+<p class="dropcap" lang="zh">你可以把生产级 ML 系统写好几年， 都不太知道 IR 是什么。 你 import 一个 <code>torch</code>， 调一个 <code>torch.matmul</code>， GPU 亮一下， 几毫秒后另一头就出来一个 tensor。 你这个 Python 文件和那个 tensor 之间， 至少夹着八层软件、 三种 IR、 两套编译器框架、 一份设备驱动、 和一颗讲着指令集（由某个在 Bangalore 或 Sunnyvale 的人花了两年定义的指令集）的芯片。 大多数时候你不需要知道这些。 但偶尔会有什么从下面漏出来 —— 一个 kernel 比预期慢、 一个新加速器没 backend、 一个为 CUDA 12.4 编的 wheel 在 CUDA 12.6 装不上 —— 这时抽象就不再免费。</p>
+
+<p lang="en">This essay is for the working ML engineer who hit one of those leaks and realized they could not quite name the pieces. It is not a textbook — Hennessy &amp; Patterson is still on the shelf — but it is the explanation I wish someone had given me before I had to read Hennessy &amp; Patterson. Each chapter takes one word from the stack (<em>IR</em>, <em>MLIR</em>, <em>LLVM</em>, <em>ISA</em>, <em>FFI</em>), shows you the smallest concrete example I could find, and explains why people in this field keep talking about it.</p>
+
+<p lang="zh">这篇文章是写给那种"漏了一次"才意识到自己讲不出这些零件名字的 ML 工程师。 它不是教科书 —— Hennessy &amp; Patterson 还在架子上 —— 但它是我希望在自己被迫去读 Hennessy &amp; Patterson 之前， 有人先给我讲的那个东西。 每一章拿栈里的一个词（<em>IR</em>、 <em>MLIR</em>、 <em>LLVM</em>、 <em>ISA</em>、 <em>FFI</em>）， 给出我能找到的最小的具体例子， 然后解释为什么这个领域的人老在聊它。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">How to read this</span>
+  <span class="ctag" lang="zh">怎么读</span>
+  <p lang="en">If you only have twenty minutes, read <strong>§ 1</strong> (the stack) and <strong>§ 7</strong> (one matmul, all the way down). Those two together give the mental model. The middle five chapters expand each layer in turn — you can skim them and return on demand.</p>
+  <p lang="zh">如果你只有二十分钟， 读 <strong>§ 1</strong>（整个栈的全景）和 <strong>§ 7</strong>（追一个 matmul 一路下去）。 这两章合在一起就给出了心智模型。 中间五章把每一层各自展开 —— 可以扫读， 用到再回来翻。</p>
+</div>
+
+<p lang="en">A note on bias. I work on AMD GPU kernels through MLIR, so when I need a concrete example I will reach for FlyDSL, ROCDL, MFMA, CDNA — the AMD vocabulary I touch every day. The shape of the argument is identical for NVIDIA, Intel, ARM, RISC-V. Wherever vendor-specific names appear I have tried to flag them.</p>
+
+<p lang="zh">一点偏见说明。 我日常做的是 AMD GPU kernel + MLIR， 所以例子大多来自 FlyDSL、 ROCDL、 MFMA、 CDNA 这套 AMD 词汇。 论证的形状对 NVIDIA、 Intel、 ARM、 RISC-V 完全一样。 凡是 vendor-specific 的名字， 我都尽量标了出来。</p>
+</section>
+
+<!-- ============ M1 THE STACK ============ -->
+<section id="m1-stack">
+<h2 lang="en"><span class="num">§ 1 · The map before the territory</span>The vertical <em>stack</em></h2>
+<h2 lang="zh"><span class="num">§ 1 · 先看地图再走路</span>纵向<em>栈</em>全景</h2>
+
+<p lang="en">Start with the question: what actually happens between <code>torch.matmul(A, B)</code> and a transistor switching? The answer is a vertical descent through layers, each translating from a slightly more abstract description into a slightly more concrete one. The plate on the next page draws the full descent on one page; this section is the verbal walk-through.</p>
+
+<p lang="zh">先问一个问题： <code>torch.matmul(A, B)</code> 到一个晶体管翻转之间， 实际上发生了什么？ 答案是一段纵向下降， 一层接一层， 每一层把"更抽象的描述"翻译成"更具体的描述"。 下一页那张图把整个下降画在一张纸上； 这一节是对照的文字讲解。</p>
+
+<!-- ============ PLATE I ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate I</span>
+  <span class="pname" lang="en">The vertical descent from Python to silicon</span>
+  <span class="pname" lang="zh">从 Python 到硅片的纵向下降</span>
+  <span class="pscale">— scale: conceptual —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 540" xmlns="http://www.w3.org/2000/svg">
+  <!-- title -->
+  <text x="500" y="22" class="d-text title" text-anchor="middle">The Vertical Descent · Python → Silicon</text>
+  <line x1="60" y1="34" x2="940" y2="34" class="bp-line"/>
+
+  <!-- left vertical axis: layers -->
+  <line x1="120" y1="60" x2="120" y2="500" class="bp-line oxblood thick"/>
+  <text x="105" y="58" class="d-text label" text-anchor="end" transform="rotate(-90, 105, 58)">HIGH-LEVEL</text>
+  <text x="105" y="502" class="d-text label" text-anchor="end" transform="rotate(-90, 105, 502)">SILICON</text>
+
+  <!-- arrowhead def -->
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--oxblood)"/>
+    </marker>
+    <marker id="ar-brass" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--brass-deep)"/>
+    </marker>
+  </defs>
+
+  <!-- Layer rows: zone + label + concrete -->
+  <!-- row 1: Python source -->
+  <rect x="160" y="60" width="320" height="40" class="zone tint"/>
+  <text x="175" y="84" class="d-text" font-weight="600">Python source</text>
+  <text x="500" y="84" class="d-text mono small">torch.matmul(A, B)</text>
+  <rect x="700" y="60" width="230" height="40" class="zone brass"/>
+  <text x="710" y="80" class="d-text small forest">writes</text>
+  <text x="710" y="93" class="d-text tiny dim">human-readable source code</text>
+
+  <!-- row 2: CPython bytecode -->
+  <rect x="160" y="106" width="320" height="40" class="zone tint"/>
+  <text x="175" y="130" class="d-text" font-weight="600">CPython bytecode</text>
+  <text x="500" y="130" class="d-text mono small">CALL · LOAD_ATTR · ...</text>
+  <rect x="700" y="106" width="230" height="40" class="zone brass"/>
+  <text x="710" y="126" class="d-text small forest">interprets</text>
+  <text x="710" y="139" class="d-text tiny dim">stack machine ops</text>
+
+  <!-- row 3: PyTorch dispatcher -->
+  <rect x="160" y="152" width="320" height="40" class="zone tint"/>
+  <text x="175" y="176" class="d-text" font-weight="600">PyTorch dispatcher</text>
+  <text x="500" y="176" class="d-text mono small">aten::matmul → CUDA / HIP backend</text>
+  <rect x="700" y="152" width="230" height="40" class="zone brass"/>
+  <text x="710" y="172" class="d-text small forest">routes</text>
+  <text x="710" y="185" class="d-text tiny dim">device · dtype · layout match</text>
+
+  <!-- row 4: ATen kernel (FFI) -->
+  <rect x="160" y="198" width="320" height="40" class="zone tint forest"/>
+  <text x="175" y="222" class="d-text" font-weight="600">ATen kernel · <tspan class="forest" font-style="italic">FFI hop</tspan></text>
+  <text x="500" y="222" class="d-text mono small">C++ entry · pybind11 / dlpack / TVM-FFI</text>
+  <rect x="700" y="198" width="230" height="40" class="zone forest"/>
+  <text x="710" y="218" class="d-text small forest">crosses</text>
+  <text x="710" y="231" class="d-text tiny dim">Python ⇄ C++ boundary</text>
+
+  <!-- row 5: Compiler frontend / DSL -->
+  <rect x="160" y="244" width="320" height="40" class="zone tint oxblood"/>
+  <text x="175" y="268" class="d-text" font-weight="600">DSL / framework · <tspan class="oxblood" font-style="italic">IR appears</tspan></text>
+  <text x="500" y="268" class="d-text mono small">FlyDSL / Triton / Inductor · trace → MLIR</text>
+  <rect x="700" y="244" width="230" height="40" class="zone oxblood"/>
+  <text x="710" y="264" class="d-text small oxblood">emits</text>
+  <text x="710" y="277" class="d-text tiny dim">typed graph in custom dialect</text>
+
+  <!-- row 6: MLIR pass pipeline -->
+  <rect x="160" y="290" width="320" height="40" class="zone tint oxblood"/>
+  <text x="175" y="314" class="d-text" font-weight="600">MLIR pipeline</text>
+  <text x="500" y="314" class="d-text mono small">linalg → affine → scf → memref → llvm</text>
+  <rect x="700" y="290" width="230" height="40" class="zone oxblood"/>
+  <text x="710" y="310" class="d-text small oxblood">lowers</text>
+  <text x="710" y="323" class="d-text tiny dim">dialect tower, top to bottom</text>
+
+  <!-- row 7: LLVM IR -->
+  <rect x="160" y="336" width="320" height="40" class="zone tint copper"/>
+  <text x="175" y="360" class="d-text" font-weight="600">LLVM IR</text>
+  <text x="500" y="360" class="d-text mono small">define i32 @ker(...) { %r = mul ... }</text>
+  <rect x="700" y="336" width="230" height="40" class="zone copper"/>
+  <text x="710" y="356" class="d-text small copper">optimizes</text>
+  <text x="710" y="369" class="d-text tiny dim">SSA · CFG · target-agnostic</text>
+
+  <!-- row 8: Target backend / asm -->
+  <rect x="160" y="382" width="320" height="40" class="zone tint copper"/>
+  <text x="175" y="406" class="d-text" font-weight="600">Target backend · ASM</text>
+  <text x="500" y="406" class="d-text mono small">v_mfma_f32_16x16x16_f16 · buffer_load_dwordx4</text>
+  <rect x="700" y="382" width="230" height="40" class="zone copper"/>
+  <text x="710" y="402" class="d-text small copper">selects</text>
+  <text x="710" y="415" class="d-text tiny dim">CDNA / RDNA / x86 / PTX ISA</text>
+
+  <!-- row 9: ISA / device -->
+  <rect x="160" y="428" width="320" height="40" class="zone deep"/>
+  <text x="175" y="452" class="d-text" font-weight="600" fill="var(--ink)">Machine code · device</text>
+  <text x="500" y="452" class="d-text mono small">HSACO / cubin · loaded by driver</text>
+  <rect x="700" y="428" width="230" height="40" class="zone indigo"/>
+  <text x="710" y="448" class="d-text small indigo">executes</text>
+  <text x="710" y="461" class="d-text tiny dim">microcode + transistors</text>
+
+  <!-- arrows down the left axis -->
+  <line x1="140" y1="100" x2="140" y2="496" class="bp-line oxblood" marker-end="url(#ar)"/>
+  <text x="156" y="280" class="d-text label oxblood" transform="rotate(-90, 156, 280)">LOWERING DIRECTION</text>
+
+  <!-- right side legend -->
+  <text x="815" y="500" class="d-text label" text-anchor="middle">what this layer does</text>
+
+  <!-- bottom note -->
+  <line x1="60" y1="510" x2="940" y2="510" class="bp-line"/>
+  <text x="60" y="528" class="d-text tiny dim">Each row collapses sub-layers — the dispatcher alone is a small library, the MLIR pipeline can be 30+ passes. Boundary lines on rows 4 and 5 flag where the </text>
+  <text x="60" y="538" class="d-text tiny dim">word "FFI" and the word "IR" first matter. The descent is not strictly linear in time (some optimizations refer back up the stack), but the layered picture is the right starting mental model.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate I — the same vertical descent, drawn once. Three boundaries matter most: the FFI hop (Python ⇄ C++), the IR boundary (where the program stops being an AST and starts being a typed graph), and the ISA boundary (where a CPU/GPU finally executes). Everything else is detail.</div>
+<div class="caption" lang="zh">Plate I —— 同一段纵向下降， 画在一张纸上。 三条边界最关键： FFI 跨越（Python ⇄ C++）、 IR 边界（程序从 AST 变成 typed graph）、 ISA 边界（CPU / GPU 真正执行的地方）。 其余都是细节。</div>
+</div>
+
+<h3 lang="en">A walking tour of the layers</h3>
+<h3 lang="zh">逐层走一遍</h3>
+
+<p lang="en"><strong>Python source.</strong> What you write. Human-readable, dynamic, garbage-collected.</p>
+<p lang="zh"><strong>Python 源码。</strong> 你写的东西。 人可读、 动态、 GC。</p>
+
+<p lang="en"><strong>CPython bytecode.</strong> Python compiles each function to bytecode (<code>dis.dis(fn)</code> shows it). A stack machine interprets the bytecode at runtime. This is the layer where overhead lives — every Python call passes through it.</p>
+<p lang="zh"><strong>CPython 字节码。</strong> Python 把每个函数先编译成字节码（<code>dis.dis(fn)</code> 能看到）， 然后由一个栈式机器在运行时解释。 Python 的开销主要长在这一层 —— 每次 Python 调用都要过它。</p>
+
+<p lang="en"><strong>PyTorch dispatcher.</strong> <code>torch.matmul</code> resolves to an ATen operator, which the dispatcher routes by device, dtype, and layout. The routing logic is itself a graph of registrations. After the dispatcher, you are no longer in Python — you are in C++.</p>
+<p lang="zh"><strong>PyTorch 分发器。</strong> <code>torch.matmul</code> 先变成 ATen 算子， 然后由 dispatcher 按 device、 dtype、 layout 路由。 路由本身就是一张注册图。 过了 dispatcher， 你就不再在 Python 里 —— 你在 C++ 里。</p>
+
+<p lang="en"><strong>ATen kernel (FFI boundary).</strong> The C++ side of the bridge. PyTorch uses pybind11 for the Python ⇄ C++ marshalling; tensors cross via DLPack to avoid copies. This is the first place the word <em>FFI</em> earns its keep.</p>
+<p lang="zh"><strong>ATen kernel（FFI 边界）。</strong> 桥的 C++ 这一侧。 PyTorch 用 pybind11 做 Python ⇄ C++ 的 marshalling； tensor 用 DLPack 跨过去避免拷贝。 这是 <em>FFI</em> 这个词第一次真正赚回它的复杂度。</p>
+
+<p lang="en"><strong>DSL / framework (where IR appears).</strong> If the kernel is hand-rolled CUDA / HIP, you jump straight to the assembler. If it is a DSL — Triton, FlyDSL, JAX-via-XLA, Inductor — the framework traces the Python into an in-memory typed graph. That graph is its IR. You have now left "code" and entered "data the compiler can reason about."</p>
+<p lang="zh"><strong>DSL / 框架（IR 在此出现）。</strong> 如果 kernel 是手写 CUDA / HIP， 直接跳到汇编器。 如果是 DSL —— Triton、 FlyDSL、 JAX-via-XLA、 Inductor —— 框架会把 Python trace 成一份内存里的 typed graph。 那张图就是它的 IR。 你已经离开"代码"， 进入"编译器可以推理的数据"。</p>
+
+<p lang="en"><strong>MLIR pass pipeline.</strong> The IR is rewritten by a sequence of <em>passes</em>, each a function (IR) → (IR). The pipeline progressively lowers from "linalg / linear algebra ops" through "affine loops" through "explicit memrefs" down to "LLVM dialect" — at which point you are one step from machine code.</p>
+<p lang="zh"><strong>MLIR pass 流水线。</strong> IR 被一连串 <em>pass</em> 改写， 每个 pass 都是一个 (IR) → (IR) 的函数。 流水线渐进地从"linalg / 线代 op"下降到"affine 循环"到"显式 memref"再到"LLVM dialect" —— 此时距机器码只差一步。</p>
+
+<p lang="en"><strong>LLVM IR.</strong> The lingua franca of modern compiler backends. SSA-form, typed, target-agnostic. The same LLVM IR can be sent to x86, ARM, RISC-V, AMDGPU, NVPTX, WebAssembly. Every modern compiler that targets more than one chip uses LLVM, or has imitated it.</p>
+<p lang="zh"><strong>LLVM IR。</strong> 现代编译器后端的通用语。 SSA 形式、 typed、 target-agnostic。 同一份 LLVM IR 可以送去 x86、 ARM、 RISC-V、 AMDGPU、 NVPTX、 WebAssembly。 凡是现代多 target 编译器都在用 LLVM， 或者模仿过它。</p>
+
+<p lang="en"><strong>Target backend / ASM.</strong> The LLVM target backend selects real instructions, allocates registers, schedules, and emits assembly (or directly machine code). For AMD GPUs this is the AMDGPU backend; for NVIDIA the NVPTX backend (which targets PTX, not SASS).</p>
+<p lang="zh"><strong>Target backend / 汇编。</strong> LLVM 的 target backend 选指令、 分配寄存器、 调度、 然后吐出汇编（或直接机器码）。 AMD GPU 用 AMDGPU backend； NVIDIA 用 NVPTX backend（它出的是 PTX， 不是 SASS）。</p>
+
+<p lang="en"><strong>Machine code &amp; device.</strong> The driver loads the binary onto the device, the device's command processor schedules wavefronts / warps, and the actual ISA stream feeds the execution units. From here it is microcode and transistors, and you cannot watch the program with a debugger anymore.</p>
+<p lang="zh"><strong>机器码 + 设备。</strong> 驱动把二进制加载到设备， 设备的 command processor 调度 wavefront / warp， 真正的 ISA 流送到执行单元。 再往下是微码和晶体管， 你拿 debugger 看不到了。</p>
+
+<div class="callout oxblood">
+  <span class="ctag" lang="en">The one-paragraph summary</span>
+  <span class="ctag" lang="zh">一段话总结</span>
+  <p lang="en">Every layer rewrites the program from "easier to write" toward "easier to execute." IR is the data type the compiler uses to do those rewrites. MLIR is a framework for building IRs at many levels. LLVM is one specific IR plus a battle-tested set of backends. The ISA is the chip's spec — what the backend must emit. FFI is how higher and lower layers talk across language and runtime boundaries. Everything else is engineering.</p>
+  <p lang="zh">每一层都把程序从"好写"改写成"好执行"。 IR 是编译器做这些改写时用的数据结构。 MLIR 是一个用来在多层造 IR 的框架。 LLVM 是一种具体的 IR 加上一整套打磨多年的 backend。 ISA 是芯片的规范 —— backend 必须吐出符合它的指令。 FFI 是上下两层跨过语言和运行时边界对话的方式。 其余都是工程细节。</p>
+</div>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-oxblood"></span><span class="lozenge"></span><span class="lozenge fill-forest"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M2 IR ============ -->
+<section id="m2-ir">
+<h2 lang="en"><span class="num">§ 2 · The word that means too many things</span>IR · the controlled <em>vocabulary</em></h2>
+<h2 lang="zh"><span class="num">§ 2 · 一个词覆盖太多东西</span>IR · 受控的<em>词表</em></h2>
+
+<p lang="en">"IR" stands for <em>intermediate representation</em>. The phrase is unhelpful in the way that "data structure" is unhelpful: technically accurate, but it does not tell you what the thing is for. A useful definition: <strong>an IR is a controlled vocabulary for describing what a program does, in a form that is easier to analyze and transform than the surface language.</strong></p>
+<p lang="zh">"IR" 是 <em>intermediate representation</em> 的缩写，"中间表示"。 这个翻译跟"数据结构"一样无用： 技术上准确， 但说不清它是干什么的。 一个更有用的定义： <strong>IR 是一套受控词表， 用来描述程序做了什么， 但写成一种比源语言更便于分析和改写的形式。</strong></p>
+
+<p lang="en">"More analyzable than source" matters because source code has too much sugar — generics, exceptions, syntactic shorthand, undefined ordering, late binding. "More structured than machine code" matters because machine code has too little — no variable names, no types, no control flow markers, just registers and branches. IR sits in between by design.</p>
+<p lang="zh">"比源更好分析"很关键， 因为源码语法糖太多 —— 泛型、 异常、 各种语法简写、 求值顺序不确定、 晚绑定。 "比机器码更有结构"也很关键， 因为机器码什么都没 —— 没变量名、 没类型、 没控制流标记， 只有寄存器和跳转。 IR 是有意设计在中间的。</p>
+
+<h3 lang="en">A minimal example</h3>
+<h3 lang="zh">一个最小例子</h3>
+
+<p lang="en">Take a trivial Python function:</p>
+<p lang="zh">拿一个琐碎的 Python 函数：</p>
+
+<div class="code"><span class="c-com"># Python source</span>
+<span class="c-key">def</span> <span class="c-cls">add</span>(a: <span class="c-cls">int</span>, b: <span class="c-cls">int</span>) -> <span class="c-cls">int</span>:
+    <span class="c-key">return</span> a + b</div>
+
+<p lang="en">Compiled to LLVM IR (via, say, Cython or Numba), the body becomes:</p>
+<p lang="zh">编译成 LLVM IR（用 Cython、 Numba 之类）， 函数体变成：</p>
+
+<div class="code"><span class="c-com">; LLVM IR · target-agnostic, SSA-form</span>
+<span class="c-key">define</span> <span class="c-cls">i32</span> <span class="c-str">@add</span>(<span class="c-cls">i32</span> <span class="c-num">%a</span>, <span class="c-cls">i32</span> <span class="c-num">%b</span>) {
+  <span class="c-num">%r</span> = <span class="c-key">add</span> <span class="c-cls">i32</span> <span class="c-num">%a</span>, <span class="c-num">%b</span>
+  <span class="c-key">ret</span> <span class="c-cls">i32</span> <span class="c-num">%r</span>
+}</div>
+
+<p lang="en">Three things changed. (1) Types became explicit: <code>i32</code>, not "int." (2) Each name is assigned exactly once — <code>%a</code>, <code>%b</code>, <code>%r</code> never get reassigned. That is <strong>SSA</strong> form: <em>Static Single Assignment</em>. (3) The function body is a flat list of operations connected by data flow, not a tree of expressions. There are no implicit conversions, no operator overloading, no surprises. The compiler can now do interesting things — fold constants, eliminate dead code, prove that <code>%r</code> never overflows — because the IR makes the analysis obvious.</p>
+<p lang="zh">三件事变了。 (1) 类型变显式了： <code>i32</code>， 不是含混的 "int"。 (2) 每个名字只被赋值一次 —— <code>%a</code>、 <code>%b</code>、 <code>%r</code> 都不会被重新赋值。 这就是 <strong>SSA</strong>： <em>Static Single Assignment</em>。 (3) 函数体是一串扁平的 op， 由数据流连起来， 不是表达式树。 没有隐式转换、 没有运算符重载、 没有惊喜。 编译器从这一刻开始可以做一些有意思的事 —— 常量折叠、 死代码消除、 证明 <code>%r</code> 不会溢出 —— 因为 IR 让分析变得显然。</p>
+
+<!-- ============ PLATE II ============ -->
+<div class="plate">
+<div class="plate-meta">
+  <span class="pnum">Plate II</span>
+  <span class="pname" lang="en">SSA · what the compiler actually sees</span>
+  <span class="pname" lang="zh">SSA · 编译器真正看到的形式</span>
+  <span class="pscale">— scale: function-local —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" class="d-text title" text-anchor="middle">A single basic block in SSA form</text>
+  <line x1="40" y1="34" x2="680" y2="34" class="bp-line"/>
+
+  <!-- left: source -->
+  <text x="50" y="62" class="d-text label">SOURCE</text>
+  <rect x="40" y="74" width="180" height="180" class="zone tint"/>
+  <text x="50" y="100" class="d-text mono">def f(x, y):</text>
+  <text x="50" y="118" class="d-text mono">    t = x * 2</text>
+  <text x="50" y="136" class="d-text mono">    if t > y:</text>
+  <text x="50" y="154" class="d-text mono">        z = t - y</text>
+  <text x="50" y="172" class="d-text mono">    else:</text>
+  <text x="50" y="190" class="d-text mono">        z = y - t</text>
+  <text x="50" y="208" class="d-text mono">    return z</text>
+  <text x="50" y="238" class="d-text tiny dim">human-readable · ambiguous order</text>
+
+  <!-- arrow -->
+  <line x1="232" y1="160" x2="270" y2="160" class="bp-line oxblood" marker-end="url(#ar)"/>
+  <text x="251" y="150" class="d-text small oxblood" text-anchor="middle">trace</text>
+
+  <!-- right: SSA -->
+  <text x="290" y="62" class="d-text label oxblood">SSA · IR</text>
+
+  <!-- entry block -->
+  <rect x="280" y="74" width="180" height="68" class="zone oxblood"/>
+  <text x="288" y="90" class="d-text label oxblood">block · entry</text>
+  <text x="288" y="106" class="d-text mono">%t1 = mul %x, 2</text>
+  <text x="288" y="122" class="d-text mono">%c  = icmp gt %t1, %y</text>
+  <text x="288" y="138" class="d-text mono">br %c, then, else</text>
+
+  <!-- then block -->
+  <rect x="280" y="158" width="85" height="58" class="zone forest"/>
+  <text x="285" y="174" class="d-text label forest">then</text>
+  <text x="285" y="190" class="d-text mono">%z1 = sub</text>
+  <text x="285" y="204" class="d-text mono">  %t1, %y</text>
+
+  <!-- else block -->
+  <rect x="375" y="158" width="85" height="58" class="zone copper"/>
+  <text x="380" y="174" class="d-text label copper">else</text>
+  <text x="380" y="190" class="d-text mono">%z2 = sub</text>
+  <text x="380" y="204" class="d-text mono">  %y, %t1</text>
+
+  <!-- merge with phi -->
+  <rect x="280" y="232" width="180" height="44" class="zone brass"/>
+  <text x="288" y="248" class="d-text label brass">merge · φ-node</text>
+  <text x="288" y="266" class="d-text mono">%z = phi %z1, %z2</text>
+
+  <!-- edges then/else → merge -->
+  <line x1="320" y1="216" x2="320" y2="232" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="418" y1="216" x2="418" y2="232" class="bp-line copper" marker-end="url(#ar-brass)"/>
+
+  <!-- legend -->
+  <text x="490" y="86" class="d-text label">key</text>
+  <rect x="490" y="94" width="14" height="10" class="zone oxblood"/><text x="510" y="103" class="d-text small">entry block</text>
+  <rect x="490" y="112" width="14" height="10" class="zone forest"/><text x="510" y="121" class="d-text small">true branch</text>
+  <rect x="490" y="130" width="14" height="10" class="zone copper"/><text x="510" y="139" class="d-text small">false branch</text>
+  <rect x="490" y="148" width="14" height="10" class="zone brass"/><text x="510" y="157" class="d-text small">merge w/ phi</text>
+
+  <text x="490" y="182" class="d-text small dim">Each name is assigned</text>
+  <text x="490" y="194" class="d-text small dim">exactly once. At the merge,</text>
+  <text x="490" y="206" class="d-text small dim">a φ-node picks the right value</text>
+  <text x="490" y="218" class="d-text small dim">based on the predecessor.</text>
+
+  <line x1="40" y1="296" x2="680" y2="296" class="bp-line"/>
+  <text x="40" y="312" class="d-text tiny dim">SSA's two superpowers: (i) every use has a single defining op (data flow is a DAG, not a tangle), and (ii) the compiler can ask "does anything read %t1 after this point?" in O(1).</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate II — a single Python function viewed as a control-flow graph in SSA form. The φ-node at the merge is the IR's way of saying "pick whichever predecessor we came from"; it has no runtime cost, it is a bookkeeping device for the optimizer.</div>
+<div class="caption" lang="zh">Plate II —— 同一个 Python 函数变成 SSA 形式的控制流图。 merge 处的 φ-node 是 IR 在说"挑刚才从哪条边过来的那个值"； 它没有运行时代价， 只是优化器的记账工具。</div>
+</div>
+
+<h3 lang="en">Why everyone has their own IR</h3>
+<h3 lang="zh">为什么每家都有自己的 IR</h3>
+
+<p lang="en">Once you accept that IR is just "the data type the compiler reasons about," it becomes obvious why every compiler invents one. Each level of abstraction wants a different vocabulary:</p>
+<p lang="zh">一旦接受 "IR 就是编译器拿来推理用的数据结构"， 你就会理解为什么每个编译器都自造一种。 每一层抽象都想要一套不同的词汇：</p>
+
+<table class="tbl">
+<thead>
+<tr lang="en"><th>System</th><th>IR</th><th>What it talks about</th></tr>
+<tr lang="zh"><th>系统</th><th>IR</th><th>它聊的是什么</th></tr>
+</thead>
+<tbody>
+<tr><td class="k">LLVM</td><td><code>LLVM IR</code></td><td lang="en">SSA scalars, integers, floats, pointers, basic blocks</td><td lang="zh">SSA 标量、 整型、 浮点、 指针、 基本块</td></tr>
+<tr><td class="k">MLIR</td><td><code>fly.layout</code>, <code>linalg.matmul</code>, ...</td><td lang="en">whatever each dialect needs — tensors, layouts, hardware atoms</td><td lang="zh">每个 dialect 想要什么就有什么 —— tensor、 layout、 硬件 atom</td></tr>
+<tr><td class="k">JVM</td><td><code>Java bytecode</code></td><td lang="en">stack-machine ops, typed locals, class references</td><td lang="zh">栈式机操作、 typed locals、 类引用</td></tr>
+<tr><td class="k">.NET</td><td><code>CIL / MSIL</code></td><td lang="en">same idea as JVM, different bytecode set</td><td lang="zh">和 JVM 思想一样， 字节码不同</td></tr>
+<tr><td class="k">Wasm</td><td><code>WebAssembly</code></td><td lang="en">portable bytecode for sandboxed execution</td><td lang="zh">面向沙盒的可移植字节码</td></tr>
+<tr><td class="k">GraalVM</td><td><code>Graal IR</code></td><td lang="en">SSA "sea-of-nodes" with explicit control/data edges</td><td lang="zh">SSA "sea-of-nodes"， 控制 / 数据边都显式</td></tr>
+<tr><td class="k">PyTorch 2</td><td><code>FX Graph</code>, <code>Inductor IR</code></td><td lang="en">tensor ops, then loop nests</td><td lang="zh">先 tensor op， 后循环嵌套</td></tr>
+<tr><td class="k">Triton</td><td><code>Triton IR</code></td><td lang="en">block-level tensor ops with layouts</td><td lang="zh">block 级别的 tensor op 带 layout</td></tr>
+<tr><td class="k">JAX / XLA</td><td><code>HLO</code></td><td lang="en">high-level operations on whole arrays</td><td lang="zh">面向整个数组的高层 op</td></tr>
+<tr><td class="k">SPIR-V</td><td><code>SPIR-V</code></td><td lang="en">portable IR for graphics &amp; compute shaders</td><td lang="zh">为图形 + 计算 shader 设计的可移植 IR</td></tr>
+</tbody>
+</table>
+
+<p lang="en">The word <em>IR</em> meaning a dozen different things at once is part of why this terminology feels slippery. When someone says "the compiler lowers the IR to LLVM IR," they mean "the compiler rewrites its own IR into LLVM's IR." Two different IRs, same word.</p>
+<p lang="zh"><em>IR</em> 这个词同时指十几种不同东西， 这正是术语让人滑手的原因。 有人说"编译器把 IR lower 到 LLVM IR"， 意思是"编译器把它自己的 IR 改写成 LLVM 的 IR"。 两个不同的 IR， 同一个词。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">Mental model</span>
+  <span class="ctag" lang="zh">心智模型</span>
+  <p lang="en">An IR is the file format the compiler talks to itself in. A pass is a function that takes one IR and returns another, often the same kind but simpler. A pipeline is a sequence of passes. That is it.</p>
+  <p lang="zh">IR 是编译器自言自语用的文件格式。 一个 pass 是把一份 IR 变成另一份的函数， 通常种类相同但更简单。 一个 pipeline 是一串 pass。 就这样。</p>
+</div>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-forest"></span><span class="lozenge"></span><span class="lozenge fill-oxblood"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M3 MLIR ============ -->
+<section id="m3-mlir">
+<h2 lang="en"><span class="num">§ 3 · The IR you build IRs with</span>MLIR · IR for building <em>IRs</em></h2>
+<h2 lang="zh"><span class="num">§ 3 · 用来造 IR 的 IR</span>MLIR · 拿来造 <em>IR</em> 的框架</h2>
+
+<p lang="en">If every project keeps inventing its own IR, the obvious next question is: can we share the infrastructure? Each IR needs a parser, a printer, a verifier, a pass manager, a type system, an attribute system, a graph data structure with use-def chains, debugging facilities. That stuff is engineering, not insight. <strong>MLIR</strong> is the answer: <em>Multi-Level Intermediate Representation.</em> A framework for building IRs that all share the same infrastructure, but can specialize the operations and types to any level of abstraction.</p>
+<p lang="zh">如果每个项目都在重造 IR， 下一个自然的问题是： 基础设施能不能复用？ 每个 IR 都需要 parser、 printer、 verifier、 pass manager、 类型系统、 属性系统、 use-def chain 的图数据结构、 调试设施。 这些都是工程， 不是 insight。 <strong>MLIR</strong> 就是答案： <em>Multi-Level Intermediate Representation。</em> 一个框架， 让你造 IR 时复用同一套基础设施， 但 op 和 type 可以专门化到任何抽象层级。</p>
+
+<p lang="en">MLIR was born at Google in 2019 (Chris Lattner and Tatiana Shpeisman led the early work), then upstreamed into the LLVM project where it lives today. The core abstraction is the <em>dialect</em>: a named bundle of ops, types, and attributes. The standard distribution ships a few dozen dialects covering everything from low-level LLVM IR to high-level array math.</p>
+<p lang="zh">MLIR 2019 年在 Google 起步（早期由 Chris Lattner 和 Tatiana Shpeisman 牵头）， 后来 upstream 进了 LLVM 项目， 现在住在那里。 核心抽象是 <em>dialect</em>： 一组带名字的 op、 type、 attribute 的捆绑。 标准发行版里有几十个 dialect， 覆盖从最底层的 LLVM IR 到最高层的数组数学。</p>
+
+<!-- ============ PLATE III ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate III</span>
+  <span class="pname" lang="en">The MLIR dialect tower</span>
+  <span class="pname" lang="zh">MLIR 的 dialect 高塔</span>
+  <span class="pscale">— scale: floors of one building —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="22" class="d-text title" text-anchor="middle">Dialects as floors · upper floors specialize in tensors, lower floors in addresses</text>
+  <line x1="60" y1="34" x2="940" y2="34" class="bp-line"/>
+
+  <!-- Building frame -->
+  <rect x="320" y="60" width="360" height="380" class="zone tint" stroke-width="1.5"/>
+
+  <!-- floors -->
+  <!-- floor 1: linalg / tensor (top) -->
+  <line x1="320" y1="100" x2="680" y2="100" class="bp-line"/>
+  <rect x="332" y="68" width="336" height="28" class="zone oxblood"/>
+  <text x="500" y="86" class="d-text" text-anchor="middle" font-weight="600">linalg · tosa · tensor · shape</text>
+  <text x="500" y="58" class="d-text label oxblood" text-anchor="middle">whole-array operations</text>
+
+  <line x1="320" y1="138" x2="680" y2="138" class="bp-line"/>
+  <rect x="332" y="108" width="336" height="26" class="zone oxblood"/>
+  <text x="500" y="126" class="d-text" text-anchor="middle" font-weight="600">affine · scf</text>
+  <text x="500" y="155" class="d-text label dim" text-anchor="middle">structured loops &amp; polyhedral</text>
+
+  <line x1="320" y1="180" x2="680" y2="180" class="bp-line"/>
+  <rect x="332" y="148" width="336" height="26" class="zone brass"/>
+  <text x="500" y="166" class="d-text" text-anchor="middle" font-weight="600">vector · memref · arith</text>
+  <text x="500" y="196" class="d-text label dim" text-anchor="middle">explicit memory &amp; vectors</text>
+
+  <line x1="320" y1="220" x2="680" y2="220" class="bp-line"/>
+  <rect x="332" y="188" width="336" height="28" class="zone brass"/>
+  <text x="500" y="206" class="d-text" text-anchor="middle" font-weight="600">gpu · async · transform</text>
+  <text x="500" y="235" class="d-text label dim" text-anchor="middle">device-aware ops &amp; rewrites</text>
+
+  <line x1="320" y1="260" x2="680" y2="260" class="bp-line"/>
+  <rect x="332" y="228" width="336" height="28" class="zone forest"/>
+  <text x="500" y="246" class="d-text" text-anchor="middle" font-weight="600">nvgpu · rocdl · nvvm · spv</text>
+  <text x="500" y="275" class="d-text label dim" text-anchor="middle">vendor-specific intrinsics</text>
+
+  <line x1="320" y1="300" x2="680" y2="300" class="bp-line"/>
+  <rect x="332" y="268" width="336" height="28" class="zone forest"/>
+  <text x="500" y="286" class="d-text" text-anchor="middle" font-weight="600">llvm dialect</text>
+  <text x="500" y="315" class="d-text label dim" text-anchor="middle">LLVM IR in MLIR clothing</text>
+
+  <line x1="320" y1="340" x2="680" y2="340" class="bp-line"/>
+  <rect x="332" y="308" width="336" height="28" class="zone copper"/>
+  <text x="500" y="326" class="d-text" text-anchor="middle" font-weight="600">→ llvm-translate</text>
+  <text x="500" y="355" class="d-text label dim" text-anchor="middle">bridge to real LLVM IR</text>
+
+  <line x1="320" y1="380" x2="680" y2="380" class="bp-line"/>
+  <rect x="332" y="348" width="336" height="28" class="zone deep"/>
+  <text x="500" y="366" class="d-text white" text-anchor="middle" font-weight="600">LLVM backend · assembly · machine code</text>
+
+  <!-- side: custom dialects examples on the left -->
+  <text x="80" y="60" class="d-text label">CUSTOM DIALECTS — examples</text>
+  <line x1="80" y1="66" x2="270" y2="66" class="bp-line dash"/>
+
+  <rect x="80" y="78" width="200" height="24" class="zone oxblood"/>
+  <text x="90" y="94" class="d-text small">fly · FlyDSL · layout algebra</text>
+  <line x1="280" y1="90" x2="332" y2="84" class="bp-line oxblood dash"/>
+
+  <rect x="80" y="110" width="200" height="24" class="zone oxblood"/>
+  <text x="90" y="126" class="d-text small">tt · Triton · block tensor ops</text>
+  <line x1="280" y1="122" x2="332" y2="116" class="bp-line oxblood dash"/>
+
+  <rect x="80" y="142" width="200" height="24" class="zone oxblood"/>
+  <text x="90" y="158" class="d-text small">torch · Torch-MLIR · graph IR</text>
+  <line x1="280" y1="154" x2="332" y2="122" class="bp-line oxblood dash"/>
+
+  <rect x="80" y="174" width="200" height="24" class="zone oxblood"/>
+  <text x="90" y="190" class="d-text small">tf · TensorFlow ops</text>
+  <line x1="280" y1="186" x2="332" y2="120" class="bp-line oxblood dash"/>
+
+  <rect x="80" y="206" width="200" height="24" class="zone oxblood"/>
+  <text x="90" y="222" class="d-text small">stablehlo · JAX / XLA portable IR</text>
+  <line x1="280" y1="218" x2="332" y2="120" class="bp-line oxblood dash"/>
+
+  <text x="80" y="252" class="d-text label dim">these enter at the top of the tower</text>
+
+  <!-- right: passes -->
+  <text x="920" y="60" class="d-text label" text-anchor="end">PASSES — between floors</text>
+  <line x1="730" y1="66" x2="920" y2="66" class="bp-line dash"/>
+
+  <text x="730" y="86" class="d-text small mono">--linalg-to-loops</text>
+  <text x="730" y="104" class="d-text small mono">--loop-tile / -loop-fuse</text>
+  <text x="730" y="122" class="d-text small mono">--vector-lower</text>
+  <text x="730" y="140" class="d-text small mono">--memref-to-llvm</text>
+  <text x="730" y="158" class="d-text small mono">--gpu-to-rocdl</text>
+  <text x="730" y="176" class="d-text small mono">--convert-llvm</text>
+
+  <text x="730" y="200" class="d-text label dim">each pass is</text>
+  <text x="730" y="212" class="d-text small dim">(IR) → (IR)</text>
+  <text x="730" y="232" class="d-text small dim">composing them is</text>
+  <text x="730" y="244" class="d-text small dim">the whole pipeline</text>
+
+  <!-- big down arrow on the right of building -->
+  <line x1="700" y1="78" x2="700" y2="370" class="bp-line oxblood thick" marker-end="url(#ar)"/>
+  <text x="710" y="220" class="d-text label oxblood">LOWER</text>
+
+  <line x1="60" y1="450" x2="940" y2="450" class="bp-line"/>
+  <text x="60" y="468" class="d-text tiny dim">Every dialect carries its own ops &amp; types but shares the MLIR infrastructure (parser, verifier, pass manager). Lowering passes between dialects are how a program walks down the building.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate III — the MLIR dialect tower. Programs enter at whatever floor matches their abstraction (a tensor-graph IR enters near the top; a hand-written LLVM-dialect program enters near the bottom), and a pipeline of lowering passes walks them down to the LLVM dialect, where the bridge to real LLVM IR (and from there to assembly) is a short step.</div>
+<div class="caption" lang="zh">Plate III —— MLIR 的 dialect 高塔。 程序在跟自身抽象层级匹配的那一层进入（一个 tensor 图 IR 进高层； 手写 LLVM dialect 进底层）， 然后一条 pipeline 把它一路 lower 到 llvm dialect， 再过桥到真正的 LLVM IR， 距离汇编只剩一步。</p></div>
+</div>
+
+<h3 lang="en">A peek at three dialects</h3>
+<h3 lang="zh">瞄一眼三个 dialect</h3>
+
+<p lang="en">To make this less abstract, here is the same idea — "a 4×8 matrix" — written in three MLIR dialects at three different levels:</p>
+<p lang="zh">为了不让这件事太抽象， 用三个 MLIR dialect 在三个层级表达同一个想法 ——"一个 4×8 矩阵"：</p>
+
+<div class="code"><span class="c-com">// linalg — whole tensor with named semantics</span>
+<span class="c-key">%C</span> = linalg.matmul ins(<span class="c-key">%A</span>, <span class="c-key">%B</span> : tensor&lt;4x8xf32&gt;, tensor&lt;8x4xf32&gt;)
+                   outs(<span class="c-key">%init</span> : tensor&lt;4x4xf32&gt;) -> tensor&lt;4x4xf32&gt;
+
+<span class="c-com">// memref + affine — explicit loops, explicit memory</span>
+affine.<span class="c-key">for</span> %i = 0 <span class="c-key">to</span> 4 {
+  affine.<span class="c-key">for</span> %j = 0 <span class="c-key">to</span> 4 {
+    %acc = arith.constant 0.0 : f32
+    %c = affine.<span class="c-key">for</span> %k = 0 <span class="c-key">to</span> 8 iter_args(%a = %acc) -> f32 {
+      <span class="c-com">// ... fused multiply-add into %a ...</span>
+    }
+    memref.store %c, %Cmem[%i, %j] : memref&lt;4x4xf32&gt;
+  }
+}
+
+<span class="c-com">// fly · FlyDSL custom dialect — layout-aware identity</span>
+%layout = fly.make_identity_layout(%shape)
+        : (!fly.int_tuple&lt;(4, 8)&gt;) -> !fly.layout&lt;(4, 8) : (1E0, 1E1)&gt;</div>
+
+<p lang="en">Same shape, three vocabularies. The top one is what an autotuner wants to optimize, the middle one is what a polyhedral compiler wants to tile and fuse, the bottom one is what a kernel author wants to reason about hardware lane layout in. MLIR is the framework that lets all three live in the same module and lower into each other.</p>
+<p lang="zh">同一个形状， 三套词汇。 最上面是 autotuner 想优化的形式； 中间是多面体编译器想 tile 和 fuse 的形式； 最下面是 kernel 作者想推理硬件 lane 布局的形式。 MLIR 就是让这三种共存在同一个 module 里并互相 lower 的框架。</p>
+
+<div class="callout forest">
+  <span class="ctag" lang="en">Why MLIR is a big deal</span>
+  <span class="ctag" lang="zh">MLIR 为什么是大事</span>
+  <p lang="en">Before MLIR, every ML compiler reinvented the IR infrastructure from scratch: TensorFlow had its own GraphDef + grappler, Glow had its own IR, ONNX had its own IR, Halide had its own IR, TVM had its own Relay + Tensor IR. After MLIR, most new compilers (Triton, FlyDSL, Torch-MLIR, IREE, OpenXLA) share a parser, a verifier, a pass manager. The infrastructure stopped being a tax.</p>
+  <p lang="zh">MLIR 之前， 每个 ML 编译器都从零重造 IR 基础设施： TensorFlow 有 GraphDef + grappler、 Glow 有自己的 IR、 ONNX 有自己的 IR、 Halide 有自己的 IR、 TVM 有 Relay + Tensor IR。 MLIR 之后， 大部分新编译器（Triton、 FlyDSL、 Torch-MLIR、 IREE、 OpenXLA）共享 parser、 verifier、 pass manager。 基础设施不再是一种税。</p>
+</div>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge"></span><span class="lozenge fill-oxblood"></span><span class="lozenge fill-forest"></span><span class="lozenge fill-oxblood"></span><span class="lozenge"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M4 LLVM ============ -->
+<section id="m4-llvm">
+<h2 lang="en"><span class="num">§ 4 · The compiler infrastructure that ate the world</span>LLVM · the <em>workhorse</em></h2>
+<h2 lang="zh"><span class="num">§ 4 · 吞下整个世界的编译器基建</span>LLVM · 干苦力的<em>主力</em></h2>
+
+<p lang="en">LLVM is — depending on how you count — either the most successful compiler infrastructure project in history, or tied with GCC. It started in 2000 as Chris Lattner's master's thesis at Illinois ("Low Level Virtual Machine"), grew into the technical backbone of Apple's clang in 2007, and has since become the universal backend for almost everything that is not Microsoft's own MSVC. If you write Rust, Swift, Julia, Zig, modern Fortran, or compile Python via Numba or Cython, you are using LLVM. If you write GPU kernels in CUDA, HIP, OpenCL, SYCL, or any MLIR-based DSL, you are using LLVM. If you flash a microcontroller with a Rust firmware, you are using LLVM.</p>
+<p lang="zh">LLVM —— 看你怎么数 —— 要么是史上最成功的编译器基建项目， 要么和 GCC 并列。 它 2000 年起步， 是 Chris Lattner 在 Illinois 的硕士论文（"Low Level Virtual Machine"）； 2007 年长成 Apple clang 的技术骨架； 之后变成几乎所有非微软自家 MSVC 的 universal backend。 你写 Rust、 Swift、 Julia、 Zig、 现代 Fortran， 或者用 Numba / Cython 编 Python， 你在用 LLVM。 你写 CUDA、 HIP、 OpenCL、 SYCL kernel， 或者任何基于 MLIR 的 DSL， 你在用 LLVM。 你给微控制器烧 Rust 固件， 你在用 LLVM。</p>
+
+<p lang="en">"LLVM" the brand covers three different things people sometimes confuse:</p>
+<p lang="zh">"LLVM"这个品牌覆盖三个有时被混淆的东西：</p>
+
+<table class="tbl">
+<thead>
+<tr lang="en"><th>Name</th><th>What it is</th></tr>
+<tr lang="zh"><th>名字</th><th>到底是什么</th></tr>
+</thead>
+<tbody>
+<tr><td class="k">LLVM Project</td><td lang="en">The umbrella repo. Holds clang, LLVM core, LLDB, libc++, compiler-rt, MLIR, BOLT, Flang, and a dozen more sub-projects.</td><td lang="zh">那个 umbrella 仓库， 装着 clang、 LLVM core、 LLDB、 libc++、 compiler-rt、 MLIR、 BOLT、 Flang 等十几个子项目。</td></tr>
+<tr><td class="k">LLVM IR</td><td lang="en">The intermediate representation. SSA-form, typed, target-agnostic. Has a textual form (<code>.ll</code>) and a binary form (<code>.bc</code>, "bitcode").</td><td lang="zh">那种 IR。 SSA、 typed、 target-agnostic。 有文本形式（<code>.ll</code>）和二进制形式（<code>.bc</code>， "bitcode"）。</td></tr>
+<tr><td class="k">LLVM Core</td><td lang="en">The library that contains the optimizer (~100 passes), the legalizer, the instruction selector, the register allocator, and the per-target code generators.</td><td lang="zh">那个核心库， 包含 optimizer（~100 个 pass）、 legalizer、 指令选择器、 寄存器分配器、 各 target 的代码生成器。</td></tr>
+</tbody>
+</table>
+
+<!-- ============ PLATE IV ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate IV</span>
+  <span class="pname" lang="en">LLVM as universal backend — one IR, many targets</span>
+  <span class="pname" lang="zh">LLVM 作为通用后端 —— 一份 IR， 多个目标</span>
+  <span class="pscale">— scale: hub-and-spoke —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="22" class="d-text title" text-anchor="middle">Frontends in, LLVM IR in the middle, backends out</text>
+  <line x1="60" y1="34" x2="940" y2="34" class="bp-line"/>
+
+  <!-- center hub: LLVM IR -->
+  <circle cx="500" cy="230" r="86" class="zone oxblood" stroke-width="2"/>
+  <text x="500" y="218" class="d-text" text-anchor="middle" font-weight="600" font-size="14">LLVM IR</text>
+  <text x="500" y="236" class="d-text mono small" text-anchor="middle">SSA · typed</text>
+  <text x="500" y="252" class="d-text small dim" text-anchor="middle">target-agnostic</text>
+
+  <!-- middle ring: LLVM Core -->
+  <circle cx="500" cy="230" r="135" class="zone tint" fill="none" stroke-dasharray="3 3"/>
+  <text x="500" y="105" class="d-text label brass" text-anchor="middle">LLVM CORE · OPTIMIZER · CODEGEN</text>
+
+  <!-- frontends (left side) -->
+  <text x="80" y="60" class="d-text label oxblood">FRONTENDS · feed LLVM IR</text>
+
+  <g font-size="11">
+    <rect x="60" y="80" width="160" height="26" class="zone forest"/>
+    <text x="68" y="98" class="d-text">clang · C / C++ / ObjC</text>
+
+    <rect x="60" y="116" width="160" height="26" class="zone forest"/>
+    <text x="68" y="134" class="d-text">rustc · Rust</text>
+
+    <rect x="60" y="152" width="160" height="26" class="zone forest"/>
+    <text x="68" y="170" class="d-text">swiftc · Swift</text>
+
+    <rect x="60" y="188" width="160" height="26" class="zone forest"/>
+    <text x="68" y="206" class="d-text">julia · Julia (JIT)</text>
+
+    <rect x="60" y="224" width="160" height="26" class="zone forest"/>
+    <text x="68" y="242" class="d-text">flang · modern Fortran</text>
+
+    <rect x="60" y="260" width="160" height="26" class="zone forest"/>
+    <text x="68" y="278" class="d-text">numba · Python (JIT)</text>
+
+    <rect x="60" y="296" width="160" height="26" class="zone forest"/>
+    <text x="68" y="314" class="d-text">zig · Zig</text>
+
+    <rect x="60" y="332" width="160" height="26" class="zone forest"/>
+    <text x="68" y="350" class="d-text">MLIR · via llvm dialect</text>
+  </g>
+
+  <!-- arrows frontends → hub -->
+  <line x1="226" y1="93" x2="414" y2="220" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="129" x2="414" y2="222" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="165" x2="414" y2="225" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="201" x2="414" y2="230" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="237" x2="414" y2="232" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="273" x2="414" y2="238" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="309" x2="414" y2="242" class="bp-line forest" marker-end="url(#ar-brass)"/>
+  <line x1="226" y1="345" x2="414" y2="248" class="bp-line forest" marker-end="url(#ar-brass)"/>
+
+  <!-- backends (right side) -->
+  <text x="780" y="60" class="d-text label copper" text-anchor="middle">TARGETS · emitted by backends</text>
+
+  <g font-size="11">
+    <rect x="780" y="80" width="160" height="26" class="zone copper"/>
+    <text x="788" y="98" class="d-text">x86 / x86-64</text>
+
+    <rect x="780" y="116" width="160" height="26" class="zone copper"/>
+    <text x="788" y="134" class="d-text">aarch64 · ARMv8 / v9</text>
+
+    <rect x="780" y="152" width="160" height="26" class="zone copper"/>
+    <text x="788" y="170" class="d-text">riscv32 / riscv64</text>
+
+    <rect x="780" y="188" width="160" height="26" class="zone copper"/>
+    <text x="788" y="206" class="d-text">AMDGPU · CDNA / RDNA</text>
+
+    <rect x="780" y="224" width="160" height="26" class="zone copper"/>
+    <text x="788" y="242" class="d-text">NVPTX → PTX → SASS</text>
+
+    <rect x="780" y="260" width="160" height="26" class="zone copper"/>
+    <text x="788" y="278" class="d-text">WebAssembly · wasm32</text>
+
+    <rect x="780" y="296" width="160" height="26" class="zone copper"/>
+    <text x="788" y="314" class="d-text">SPIR-V · graphics &amp; compute</text>
+
+    <rect x="780" y="332" width="160" height="26" class="zone copper"/>
+    <text x="788" y="350" class="d-text">embedded · AVR · Xtensa · ...</text>
+  </g>
+
+  <!-- arrows hub → backends -->
+  <line x1="586" y1="220" x2="774" y2="93" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="222" x2="774" y2="129" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="225" x2="774" y2="165" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="230" x2="774" y2="201" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="232" x2="774" y2="237" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="238" x2="774" y2="273" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="242" x2="774" y2="309" class="bp-line copper" marker-end="url(#ar-brass)"/>
+  <line x1="586" y1="248" x2="774" y2="345" class="bp-line copper" marker-end="url(#ar-brass)"/>
+
+  <!-- bottom annotation -->
+  <line x1="60" y1="400" x2="940" y2="400" class="bp-line"/>
+  <text x="60" y="420" class="d-text label dim">WHY THE HUB WINS</text>
+  <text x="60" y="438" class="d-text small dim">Each new frontend writes once. Each new chip writes one backend. The cost is O(frontends + targets), not O(frontends × targets).</text>
+  <text x="60" y="452" class="d-text small dim">That equation is what unlocked the modern compiler ecosystem.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate IV — the LLVM bargain. Without a shared IR, every language would need a code generator for every chip. With a shared IR, frontends only have to emit LLVM IR, and chip vendors only have to write one backend. This is the trick that made it economical to support, e.g., Rust on RISC-V six months after RISC-V landed.</div>
+<div class="caption" lang="zh">Plate IV —— LLVM 的交易。 没有共享 IR， 每个语言都得为每颗芯片写一份代码生成器。 有了共享 IR， 前端只需吐 LLVM IR， 芯片厂商只需写一份 backend。 正是这个 trick， 让"RISC-V 落地半年后就能跑 Rust"这种事在经济上变得可行。</div>
+</div>
+
+<h3 lang="en">What MLIR adds on top</h3>
+<h3 lang="zh">MLIR 在上面加了什么</h3>
+
+<p lang="en">LLVM IR is wonderful at register-level reasoning — instruction selection, scheduling, register allocation — but it knows nothing about tensors, layouts, or loop tiling. By the time your program is in LLVM IR, all the high-level structure has been lost. MLIR's job is to let the compiler do tensor-shaped optimizations <em>before</em> dropping to LLVM IR, so the LLVM backend gets a program that is already shaped for the target.</p>
+<p lang="zh">LLVM IR 擅长寄存器级别的推理 —— 指令选择、 调度、 寄存器分配 —— 但它不知道 tensor、 layout、 循环 tiling 是什么。 等程序变成 LLVM IR， 高层结构已经丢失。 MLIR 的工作是让编译器在掉到 LLVM IR <em>之前</em>把 tensor 级别的优化做掉， 这样 LLVM backend 接到的就是一段已经为目标硬件塑形过的程序。</p>
+
+<p lang="en">In practice this is why ML compilers stack MLIR <em>on top of</em> LLVM rather than replacing it. MLIR handles the part where "matmul of a 4096-cube tensor" turns into "a doubly-tiled loop nest with a software pipeline." LLVM handles the part where "this loop body needs eight MFMA instructions and four buffer loads, scheduled so the next iteration overlaps with the current one's accumulator write."</p>
+<p lang="zh">实际工程里这就是为什么 ML 编译器把 MLIR 叠在 LLVM <em>之上</em>而不是替代 LLVM。 MLIR 负责"4096 立方的 tensor matmul"变成"二重 tiled 循环嵌套加软件流水线"那一段。 LLVM 负责"这段循环体要发八个 MFMA 加四个 buffer load， 调度成下一轮和当前轮的累加器写回重叠"那一段。</p>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-oxblood"></span><span class="lozenge fill-brass"></span><span class="lozenge fill-oxblood"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M5 ISA ============ -->
+<section id="m5-isa">
+<h2 lang="en"><span class="num">§ 5 · The chip's contract with the world</span>ISA · where the <em>rubber meets silicon</em></h2>
+<h2 lang="zh"><span class="num">§ 5 · 芯片对外的契约</span>ISA · 真正<em>落到硅</em>的那一步</h2>
+
+<p lang="en">An <strong>ISA</strong> — <em>Instruction Set Architecture</em> — is the contract between a chip and any compiler that wants to use it. It specifies: the legal instructions, what they do, how they are encoded, the registers the program can address, the memory model, the exception/interrupt mechanisms. Two chips that implement the same ISA can run the same binary. Two chips with different ISAs cannot — that is why a binary built for Apple Silicon does not run on Intel, and vice versa.</p>
+<p lang="zh">一个 <strong>ISA</strong> —— <em>Instruction Set Architecture</em>， 指令集架构 —— 是芯片和任何想用它的编译器之间的契约。 它规定： 哪些指令是合法的、 每条指令做什么、 怎么编码、 程序能寻址哪些寄存器、 内存模型、 异常 / 中断机制。 两个实现同一个 ISA 的芯片可以跑同一个二进制； 两个不同 ISA 的不能 —— 这正是 Apple Silicon 编的二进制跑不了 Intel、 反过来也不行的原因。</p>
+
+<h3 lang="en">The major ISA families</h3>
+<h3 lang="zh">主要 ISA 家族</h3>
+
+<table class="tbl">
+<thead>
+<tr lang="en"><th>Family</th><th>Owner</th><th>Where you meet it</th></tr>
+<tr lang="zh"><th>家族</th><th>归属</th><th>你在哪里见过</th></tr>
+</thead>
+<tbody>
+<tr><td class="k">x86 / x86-64</td><td>Intel · AMD</td><td lang="en">desktops, servers, laptops, most cloud VMs</td><td lang="zh">桌面、 服务器、 笔记本、 大多数云上 VM</td></tr>
+<tr><td class="k">ARMv8 / v9 · AArch64</td><td>Arm Holdings</td><td lang="en">phones, Apple Silicon Macs, Graviton, NVIDIA Grace</td><td lang="zh">手机、 Apple Silicon Mac、 Graviton、 NVIDIA Grace</td></tr>
+<tr><td class="k">RISC-V</td><td lang="en">open ISA · UC Berkeley origin</td><td lang="zh">开放 ISA · 起源 UC Berkeley</td><td lang="en">embedded, accelerators, increasingly servers</td></tr>
+<tr><td class="k">NVIDIA PTX / SASS</td><td>NVIDIA</td><td lang="en">PTX is a portable virtual ISA; SASS is the real on-chip one (undocumented)</td><td lang="zh">PTX 是可移植虚拟 ISA； SASS 是芯片上真正的（未公开）</td></tr>
+<tr><td class="k">AMD GCN · RDNA · CDNA</td><td>AMD</td><td lang="en">Radeon (RDNA), Instinct/MI series (CDNA), Steam Deck APU</td><td lang="zh">Radeon (RDNA)、 Instinct / MI 系列 (CDNA)、 Steam Deck APU</td></tr>
+<tr><td class="k">PowerPC · Power ISA</td><td>IBM</td><td lang="en">mainframes, some HPC, recent Power10/11</td><td lang="zh">大型机、 一些 HPC、 最近的 Power10 / 11</td></tr>
+<tr><td class="k">MIPS · LoongArch</td><td lang="en">historic · Loongson (China)</td><td lang="zh">历史角色 · Loongson（中国）</td><td lang="en">routers, embedded, China domestic CPUs</td></tr>
+</tbody>
+</table>
+
+<h3 lang="en">Why ISA matters more for ML than it used to</h3>
+<h3 lang="zh">为什么 ISA 现在对 ML 比以前更重要</h3>
+
+<p lang="en">For most of CPU history, the ISA was a stable substrate — you didn't really care which x86 generation you were on, because the compiler handled it. ML changed that. The performance of a modern ML workload depends almost entirely on whether the compiler reaches the chip's specialized matrix-math instructions. Those instructions are the difference between 50 TFLOPS and 500 TFLOPS on the same silicon area. Every major vendor added them in the last decade, and they are all different.</p>
+<p lang="zh">CPU 史上的大部分时间里， ISA 是一个稳定的底座 —— 你不太在意自己跑在哪一代 x86 上， 因为编译器处理掉了。 ML 改变了这件事。 一个现代 ML 工作负载的性能， 几乎完全取决于编译器是否打到芯片上的专门矩阵数学指令。 这些指令是同一片硅上 50 TFLOPS 和 500 TFLOPS 的差别。 过去十年每个大厂都加了它们， 而且互不相同。</p>
+
+<!-- ============ PLATE V ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate V</span>
+  <span class="pname" lang="en">Matrix instructions across vendors · the modern ML ISA war</span>
+  <span class="pname" lang="zh">各厂的矩阵指令 · 现代 ML ISA 战争</span>
+  <span class="pscale">— scale: same operation, different opcodes —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="22" class="d-text title" text-anchor="middle">"Multiply two small matrices, accumulate" — every vendor's version</text>
+  <line x1="60" y1="34" x2="940" y2="34" class="bp-line"/>
+
+  <!-- center: same op -->
+  <rect x="380" y="58" width="240" height="48" class="zone tint" stroke-width="1.5"/>
+  <text x="500" y="78" class="d-text" text-anchor="middle" font-weight="600">D := A · B + C</text>
+  <text x="500" y="96" class="d-text small dim" text-anchor="middle">small-matrix multiply-accumulate</text>
+
+  <!-- six vendor blocks -->
+  <!-- INTEL AMX -->
+  <g>
+    <rect x="60" y="150" width="270" height="118" class="zone oxblood"/>
+    <text x="195" y="172" class="d-text" text-anchor="middle" font-weight="600">Intel AMX · Sapphire Rapids+</text>
+    <text x="195" y="190" class="d-text mono small" text-anchor="middle">tdpbf16ps · tdpbssd</text>
+    <text x="195" y="210" class="d-text small dim" text-anchor="middle">tile registers (8 × up to 1KB)</text>
+    <text x="195" y="226" class="d-text small dim" text-anchor="middle">BF16 / INT8 · 16×16 tiles</text>
+    <text x="195" y="246" class="d-text label brass" text-anchor="middle">also: AVX-512 VNNI · AVX-VNNI</text>
+    <text x="195" y="260" class="d-text small dim" text-anchor="middle">vpdpbusd / vpdpbssd for INT8 dot-product</text>
+  </g>
+
+  <!-- ARM SME -->
+  <g>
+    <rect x="350" y="150" width="270" height="118" class="zone forest"/>
+    <text x="485" y="172" class="d-text" text-anchor="middle" font-weight="600">ARM SME · Apple M4 / ARMv9</text>
+    <text x="485" y="190" class="d-text mono small" text-anchor="middle">smopa · sumopa · usmopa</text>
+    <text x="485" y="210" class="d-text small dim" text-anchor="middle">streaming SVE + outer-product</text>
+    <text x="485" y="226" class="d-text small dim" text-anchor="middle">ZA tile register (square, scalable)</text>
+    <text x="485" y="246" class="d-text label brass" text-anchor="middle">also: SVE / SVE2 vector dot-products</text>
+    <text x="485" y="260" class="d-text small dim" text-anchor="middle">vector-length agnostic</text>
+  </g>
+
+  <!-- NVIDIA Tensor Core -->
+  <g>
+    <rect x="640" y="150" width="290" height="118" class="zone copper"/>
+    <text x="785" y="172" class="d-text" text-anchor="middle" font-weight="600">NVIDIA Tensor Core · Volta → Blackwell</text>
+    <text x="785" y="190" class="d-text mono small" text-anchor="middle">mma · wgmma · tcgen05</text>
+    <text x="785" y="210" class="d-text small dim" text-anchor="middle">warp-level (32-thread) mma instructions</text>
+    <text x="785" y="226" class="d-text small dim" text-anchor="middle">FP16 / BF16 / FP8 / FP4 / INT8 / INT4 / TF32</text>
+    <text x="785" y="246" class="d-text label brass" text-anchor="middle">"HMMA" is the family of these instructions</text>
+    <text x="785" y="260" class="d-text small dim" text-anchor="middle">accessed via PTX mma intrinsics</text>
+  </g>
+
+  <!-- AMD MFMA -->
+  <g>
+    <rect x="60" y="288" width="270" height="118" class="zone oxblood"/>
+    <text x="195" y="310" class="d-text" text-anchor="middle" font-weight="600">AMD MFMA · CDNA (MI300X, MI355X)</text>
+    <text x="195" y="328" class="d-text mono small" text-anchor="middle">v_mfma_f32_16x16x16_f16</text>
+    <text x="195" y="348" class="d-text small dim" text-anchor="middle">wavefront-level (64-thread) matrix FMA</text>
+    <text x="195" y="364" class="d-text small dim" text-anchor="middle">FP16 / BF16 / FP8 / FP4 / INT8</text>
+    <text x="195" y="384" class="d-text label brass" text-anchor="middle">CDNA3 = 16×16×16 / 32×32×8 etc.</text>
+    <text x="195" y="398" class="d-text small dim" text-anchor="middle">CDNA4 adds MFMA-scale (microscaling FP4)</text>
+  </g>
+
+  <!-- AMD WMMA -->
+  <g>
+    <rect x="350" y="288" width="270" height="118" class="zone forest"/>
+    <text x="485" y="310" class="d-text" text-anchor="middle" font-weight="600">AMD WMMA · RDNA3 / RDNA4 · gfx11/12</text>
+    <text x="485" y="328" class="d-text mono small" text-anchor="middle">v_wmma_f32_16x16x16_f16</text>
+    <text x="485" y="348" class="d-text small dim" text-anchor="middle">wave32-level matrix FMA (Radeon GPUs)</text>
+    <text x="485" y="364" class="d-text small dim" text-anchor="middle">FP16 / BF16 / FP8 / FP4 / INT8</text>
+    <text x="485" y="384" class="d-text label brass" text-anchor="middle">consumer-GPU equivalent of MFMA</text>
+    <text x="485" y="398" class="d-text small dim" text-anchor="middle">used by AI PC inference workloads</text>
+  </g>
+
+  <!-- RISC-V Matrix Ext -->
+  <g>
+    <rect x="640" y="288" width="290" height="118" class="zone copper"/>
+    <text x="785" y="310" class="d-text" text-anchor="middle" font-weight="600">RISC-V · Matrix / Vector ext.</text>
+    <text x="785" y="328" class="d-text mono small" text-anchor="middle">RVV · matrix proposals · custom</text>
+    <text x="785" y="348" class="d-text small dim" text-anchor="middle">RVV is stable; matrix is still moving</text>
+    <text x="785" y="364" class="d-text small dim" text-anchor="middle">vendors add custom matrix exts (Andes, T-Head)</text>
+    <text x="785" y="384" class="d-text label brass" text-anchor="middle">the open ISA's matrix story is fragmenting</text>
+    <text x="785" y="398" class="d-text small dim" text-anchor="middle">single-vendor extensions slow adoption</text>
+  </g>
+
+  <!-- arrows from center to each block -->
+  <line x1="380" y1="106" x2="270" y2="150" class="bp-line oxblood dash"/>
+  <line x1="500" y1="106" x2="485" y2="150" class="bp-line forest dash"/>
+  <line x1="620" y1="106" x2="715" y2="150" class="bp-line copper dash"/>
+  <line x1="380" y1="106" x2="270" y2="288" class="bp-line oxblood dash"/>
+  <line x1="500" y1="106" x2="485" y2="288" class="bp-line forest dash"/>
+  <line x1="620" y1="106" x2="715" y2="288" class="bp-line copper dash"/>
+
+  <!-- footer note -->
+  <line x1="60" y1="420" x2="940" y2="420" class="bp-line"/>
+  <text x="60" y="436" class="d-text tiny dim">Every block above is a different ISA addition. The same matmul lowers to a different opcode per vendor. The compiler's job is to pick the right one — and to know when the tile shape doesn't fit (then you fall off the fast path).</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate V — six different vendors, six different ways to say "multiply two small matrices and accumulate." Whether your kernel uses these instructions is exactly the difference between a respectable kernel and a state-of-the-art one. This is also why ML compilers are a per-vendor problem: the matrix instruction surface is the most fragmented part of modern computing.</div>
+<div class="caption" lang="zh">Plate V —— 六家不同的厂、 六种说"两个小矩阵相乘再累加"的方式。 你的 kernel 是否打到这些指令上， 正是"过得去的 kernel"和"顶尖 kernel"的差别。 这也是为什么 ML 编译器变成每家厂一个项目： 矩阵指令面是现代计算里最碎的一片地。</div>
+</div>
+
+<div class="callout copper">
+  <span class="ctag" lang="en">ISA vs ABI · don't conflate them</span>
+  <span class="ctag" lang="zh">ISA 与 ABI · 不要混淆</span>
+  <p lang="en">ISA = what instructions exist and what they do. ABI (Application Binary Interface) = the conventions layered on top — how arguments are passed, which registers are caller-saved, how the stack is aligned, how exceptions propagate. Two compilers targeting the same ISA can still disagree at the ABI level. "x86-64 System V ABI" and "Microsoft x64 ABI" are both x86-64 binaries that cannot freely call each other.</p>
+  <p lang="zh">ISA = 有哪些指令、 每条做什么。 ABI（Application Binary Interface）= 叠在 ISA 之上的约定 —— 参数怎么传、 哪些寄存器是 caller-saved、 栈如何对齐、 异常如何传播。 两个编译器编同一个 ISA， 在 ABI 上仍可能不一致。 "x86-64 System V ABI"和"Microsoft x64 ABI"都是 x86-64 二进制， 但互相不能自由调用。</p>
+</div>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-forest"></span><span class="lozenge fill-oxblood"></span><span class="lozenge fill-forest"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M6 FFI ============ -->
+<section id="m6-ffi">
+<h2 lang="en"><span class="num">§ 6 · The bridge between worlds</span>FFI · the <em>boundary</em></h2>
+<h2 lang="zh"><span class="num">§ 6 · 跨世界的桥</span>FFI · <em>边界</em>与翻译</h2>
+
+<p lang="en"><strong>FFI</strong> stands for <em>Foreign Function Interface</em>. It is the mechanism a program written in one language uses to call a function written in another. Every modern ML system has at least one FFI inside it: Python ↔ C++, C++ ↔ CUDA, JIT-compiled binary ↔ runtime, Rust ↔ C, JavaScript ↔ Wasm. If a system feels stitched together, the seams are usually FFI calls.</p>
+<p lang="zh"><strong>FFI</strong> 是 <em>Foreign Function Interface</em>， "外部函数接口"。 一个语言写的程序通过 FFI 调用另一个语言写的函数。 每个现代 ML 系统至少包含一次 FFI： Python ↔ C++、 C++ ↔ CUDA、 JIT 出来的二进制 ↔ 运行时、 Rust ↔ C、 JavaScript ↔ Wasm。 一个系统若有"拼接感"， 缝合处通常都是 FFI 调用。</p>
+
+<p lang="en">An FFI has to solve three problems simultaneously:</p>
+<p lang="zh">一个 FFI 必须同时解决三件事：</p>
+
+<ol style="margin: 0 0 24px 24px;">
+  <li lang="en"><strong>ABI mismatch.</strong> The two languages may not even agree on what a function call looks like at the machine level.</li>
+  <li lang="zh"><strong>ABI 不一致。</strong> 两边的语言在机器层面也许都不同意"一次函数调用长什么样"。</li>
+  <li lang="en"><strong>Data representation.</strong> Python lists, C arrays, NumPy arrays, PyTorch tensors, JAX arrays — they all describe "a chunk of numbers" but with different metadata, layout, and ownership.</li>
+  <li lang="zh"><strong>数据表示。</strong> Python list、 C 数组、 NumPy array、 PyTorch tensor、 JAX array —— 都在描述"一段数字"， 但元数据、 布局、 所有权各不相同。</li>
+  <li lang="en"><strong>Lifetime &amp; ownership.</strong> A GC'd object passed into C++ must not be freed while the C++ side is still using it. A C++ object handed to Python must release its memory when Python loses the last reference.</li>
+  <li lang="zh"><strong>生命周期 + 所有权。</strong> 传给 C++ 的 GC 对象， 在 C++ 还用着时不能被回收； 给到 Python 的 C++ 对象， 最后一个引用消失时要释放。</li>
+</ol>
+
+<!-- ============ PLATE VI ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate VI</span>
+  <span class="pname" lang="en">FFI bridges in a typical ML stack</span>
+  <span class="pname" lang="zh">典型 ML 栈里的 FFI 桥</span>
+  <span class="pscale">— scale: language boundary —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="22" class="d-text title" text-anchor="middle">Python · C++ · CUDA / HIP · kernel — and the bridges between them</text>
+  <line x1="60" y1="34" x2="940" y2="34" class="bp-line"/>
+
+  <!-- four columns / zones -->
+  <rect x="60" y="60" width="200" height="280" class="zone tint forest"/>
+  <text x="160" y="84" class="d-text" text-anchor="middle" font-weight="600">Python world</text>
+  <text x="160" y="100" class="d-text small dim" text-anchor="middle">PyTorch / JAX / NumPy</text>
+
+  <rect x="280" y="60" width="220" height="280" class="zone tint oxblood"/>
+  <text x="390" y="84" class="d-text" text-anchor="middle" font-weight="600">C++ runtime</text>
+  <text x="390" y="100" class="d-text small dim" text-anchor="middle">ATen · libtorch · TVM-FFI</text>
+
+  <rect x="520" y="60" width="200" height="280" class="zone tint brass"/>
+  <text x="620" y="84" class="d-text" text-anchor="middle" font-weight="600">GPU runtime</text>
+  <text x="620" y="100" class="d-text small dim" text-anchor="middle">CUDA / HIP driver</text>
+
+  <rect x="740" y="60" width="200" height="280" class="zone tint copper"/>
+  <text x="840" y="84" class="d-text" text-anchor="middle" font-weight="600">Device kernel</text>
+  <text x="840" y="100" class="d-text small dim" text-anchor="middle">HSACO · cubin</text>
+
+  <!-- inside python world -->
+  <g font-size="11">
+    <rect x="80" y="130" width="160" height="22" class="zone forest"/>
+    <text x="88" y="146" class="d-text small">tensor.numpy()</text>
+    <rect x="80" y="158" width="160" height="22" class="zone forest"/>
+    <text x="88" y="174" class="d-text small">DLPack capsule</text>
+    <rect x="80" y="186" width="160" height="22" class="zone forest"/>
+    <text x="88" y="202" class="d-text small">torch.utils.dlpack</text>
+    <rect x="80" y="214" width="160" height="22" class="zone forest"/>
+    <text x="88" y="230" class="d-text small">jax.dlpack</text>
+    <text x="160" y="262" class="d-text label dim" text-anchor="middle">data exchange</text>
+    <text x="160" y="276" class="d-text label dim" text-anchor="middle">via DLPack</text>
+    <text x="160" y="290" class="d-text small dim" text-anchor="middle">(zero-copy when</text>
+    <text x="160" y="304" class="d-text small dim" text-anchor="middle">device matches)</text>
+  </g>
+
+  <!-- bridges -->
+  <line x1="240" y1="170" x2="290" y2="170" class="bp-line oxblood thick" marker-end="url(#ar)"/>
+  <text x="265" y="160" class="d-text label oxblood" text-anchor="middle">pybind11</text>
+  <text x="265" y="186" class="d-text small dim" text-anchor="middle">or TVM-FFI</text>
+
+  <!-- inside C++ world -->
+  <g font-size="11">
+    <rect x="300" y="130" width="180" height="22" class="zone oxblood"/>
+    <text x="308" y="146" class="d-text small">aten::matmul (impl)</text>
+    <rect x="300" y="158" width="180" height="22" class="zone oxblood"/>
+    <text x="308" y="174" class="d-text small">DLPack DLTensor *</text>
+    <rect x="300" y="186" width="180" height="22" class="zone oxblood"/>
+    <text x="308" y="202" class="d-text small">tvm_ffi::Function</text>
+    <rect x="300" y="214" width="180" height="22" class="zone oxblood"/>
+    <text x="308" y="230" class="d-text small">cuLaunchKernel / hip*</text>
+    <text x="390" y="262" class="d-text label dim" text-anchor="middle">stable C ABI ·</text>
+    <text x="390" y="276" class="d-text label dim" text-anchor="middle">framework-agnostic</text>
+    <text x="390" y="290" class="d-text small dim" text-anchor="middle">"one wheel, many</text>
+    <text x="390" y="304" class="d-text small dim" text-anchor="middle">frameworks"</text>
+  </g>
+
+  <!-- bridge to GPU runtime -->
+  <line x1="480" y1="225" x2="530" y2="225" class="bp-line oxblood thick" marker-end="url(#ar)"/>
+  <text x="505" y="215" class="d-text label oxblood" text-anchor="middle">driver call</text>
+
+  <!-- inside GPU runtime -->
+  <g font-size="11">
+    <rect x="540" y="130" width="160" height="22" class="zone brass"/>
+    <text x="548" y="146" class="d-text small">hipMalloc / cuMalloc</text>
+    <rect x="540" y="158" width="160" height="22" class="zone brass"/>
+    <text x="548" y="174" class="d-text small">hipMemcpy / cuMemcpy</text>
+    <rect x="540" y="186" width="160" height="22" class="zone brass"/>
+    <text x="548" y="202" class="d-text small">hipModuleLoad / cuModule</text>
+    <rect x="540" y="214" width="160" height="22" class="zone brass"/>
+    <text x="548" y="230" class="d-text small">hipLaunchKernel</text>
+    <text x="620" y="262" class="d-text label dim" text-anchor="middle">user → driver →</text>
+    <text x="620" y="276" class="d-text label dim" text-anchor="middle">command queue</text>
+    <text x="620" y="290" class="d-text small dim" text-anchor="middle">(stream-ordered</text>
+    <text x="620" y="304" class="d-text small dim" text-anchor="middle">on the device)</text>
+  </g>
+
+  <!-- bridge to kernel -->
+  <line x1="700" y1="220" x2="750" y2="220" class="bp-line oxblood thick" marker-end="url(#ar)"/>
+  <text x="725" y="210" class="d-text label oxblood" text-anchor="middle">dispatch</text>
+
+  <!-- inside kernel -->
+  <g font-size="11">
+    <rect x="760" y="130" width="160" height="22" class="zone copper"/>
+    <text x="768" y="146" class="d-text small">v_mfma_f32_16x16x16</text>
+    <rect x="760" y="158" width="160" height="22" class="zone copper"/>
+    <text x="768" y="174" class="d-text small">buffer_load_dwordx4</text>
+    <rect x="760" y="186" width="160" height="22" class="zone copper"/>
+    <text x="768" y="202" class="d-text small">ds_read_b128</text>
+    <rect x="760" y="214" width="160" height="22" class="zone copper"/>
+    <text x="768" y="230" class="d-text small">s_waitcnt vmcnt(0)</text>
+    <text x="840" y="262" class="d-text label dim" text-anchor="middle">ISA stream on</text>
+    <text x="840" y="276" class="d-text label dim" text-anchor="middle">wavefront</text>
+    <text x="840" y="290" class="d-text small dim" text-anchor="middle">no FFI down here —</text>
+    <text x="840" y="304" class="d-text small dim" text-anchor="middle">just transistors</text>
+  </g>
+
+  <!-- bottom: notes on each bridge -->
+  <line x1="60" y1="360" x2="940" y2="360" class="bp-line"/>
+  <text x="60" y="378" class="d-text label dim">THREE BRIDGES · THREE FAILURE MODES</text>
+  <text x="60" y="392" class="d-text tiny dim">Python ⇄ C++ (pybind11 / TVM-FFI): version skew, GIL, refcount.   C++ ⇄ driver: driver/runtime mismatch, ABI.   Driver ⇄ device: out-of-memory, lost device.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate VI — three FFI bridges sit between your Python and an MFMA instruction firing. Each bridge has a stable ABI that both sides agree on. The hottest area right now is the leftmost bridge, where projects like Apache TVM-FFI are trying to define a single C ABI that PyTorch, JAX, CuPy, and Paddle can all consume without per-framework glue.</div>
+<div class="caption" lang="zh">Plate VI —— 你的 Python 到一条 MFMA 指令发出之间， 中间夹着三道 FFI 桥。 每道桥都有一份两边都认的稳定 ABI。 目前最热的就是最左边那道桥， Apache TVM-FFI 这类项目想定义一份让 PyTorch、 JAX、 CuPy、 Paddle 都能直接用的 C ABI， 不再为每家框架写胶水。</div>
+</div>
+
+<h3 lang="en">A closer look at TVM-FFI</h3>
+<h3 lang="zh">细看 TVM-FFI</h3>
+
+<p lang="en">Apache TVM-FFI is the cleanest contemporary example of "stable C ABI for ML kernels." Its pitch: a kernel library — FlashInfer, TileLang, NVIDIA's cuteDSL — should be able to ship <em>one wheel</em> that PyTorch / JAX / CuPy / Paddle can all load. The way it gets there is:</p>
+<p lang="zh">Apache TVM-FFI 是当前"为 ML kernel 提供稳定 C ABI"最干净的例子。 卖点： 一个 kernel 库 —— FlashInfer、 TileLang、 NVIDIA 的 cuteDSL —— 应该能发<em>一个 wheel</em>， 让 PyTorch / JAX / CuPy / Paddle 都装得上。 它做法是：</p>
+
+<ul style="margin: 0 0 24px 24px;">
+  <li lang="en">A minimal C ABI for calls, errors, types — about a thousand lines of header.</li>
+  <li lang="zh">一份极小的 C ABI， 覆盖调用、 错误、 类型 —— 大约一千行头文件。</li>
+  <li lang="en">Tensor interop via <strong>DLPack</strong> — the cross-framework "I am a tensor in device memory at address X with strides Y" protocol.</li>
+  <li lang="zh">tensor 互通用 <strong>DLPack</strong> —— 跨框架的"我是一块设备内存上 X 地址、 stride 是 Y 的 tensor"协议。</li>
+  <li lang="en">Language bindings for Python, C++, Rust — same C ABI underneath.</li>
+  <li lang="zh">Python、 C++、 Rust 三种语言绑定 —— 底下都是同一个 C ABI。</li>
+</ul>
+
+<p lang="en">If you have ever debugged a kernel wheel that says <code>undefined symbol: _ZN3c106detail...</code> after a PyTorch upgrade, you have hit the problem that stable cross-framework ABIs are trying to solve.</p>
+<p lang="zh">如果你曾经在 PyTorch 升级后 debug 过 <code>undefined symbol: _ZN3c106detail...</code> 的 kernel wheel， 你就撞过"跨框架稳定 ABI"想解决的那个问题。</p>
+
+<div class="callout indigo">
+  <span class="ctag" lang="en">DLPack · the tensor passport</span>
+  <span class="ctag" lang="zh">DLPack · tensor 的护照</span>
+  <p lang="en">DLPack is a small struct describing a tensor: pointer, device, dtype, shape, strides, byte offset. Every major framework knows how to import and export this struct, so you can <code>torch.from_dlpack(jax_array)</code> and pass tensors across frameworks at zero copy. It is the unsexy plumbing that holds the modern ML ecosystem together.</p>
+  <p lang="zh">DLPack 是一个小 struct， 描述一个 tensor： pointer、 device、 dtype、 shape、 strides、 byte offset。 主流框架都知道如何导入导出这个 struct， 所以你可以 <code>torch.from_dlpack(jax_array)</code>， tensor 跨框架零拷贝传递。 它是把现代 ML 生态粘起来的不起眼的水管。</p>
+</div>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-oxblood"></span><span class="lozenge fill-forest"></span><span class="lozenge fill-brass"></span><span class="lozenge fill-forest"></span><span class="lozenge fill-oxblood"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M7 ONE MATMUL ============ -->
+<section id="m7-trace">
+<h2 lang="en"><span class="num">§ 7 · The whole stack on one example</span>One matmul, <em>all the way down</em></h2>
+<h2 lang="zh"><span class="num">§ 7 · 一个例子穿透整个栈</span>一个 matmul， <em>一路下去</em></h2>
+
+<p lang="en">Time to spend the vocabulary. Trace a single call — <code>C = torch.matmul(A, B)</code> for FP16 4096-cube tensors on an AMD MI300X — from Python entry to the actual MFMA instructions retiring on the wavefront. We will skip nothing important and add nothing extra.</p>
+<p lang="zh">把前面学的词花掉。 追一个调用 —— FP16 4096 立方的 <code>C = torch.matmul(A, B)</code> 在 AMD MI300X 上 —— 从 Python 入口到 MFMA 指令在 wavefront 上发完为止。 重点都不会跳过， 也不会加多余的细节。</p>
+
+<h3 lang="en">Step 1 · Python → CPython bytecode</h3>
+<h3 lang="zh">Step 1 · Python → CPython 字节码</h3>
+<p lang="en">CPython parses your <code>.py</code> file once into bytecode. <code>torch.matmul</code> resolves to a <code>LOAD_ATTR · CALL</code> sequence on the stack machine. Total cost: a couple of microseconds, paid every call.</p>
+<p lang="zh">CPython 把 <code>.py</code> 文件解析成一次字节码。 <code>torch.matmul</code> 解析成栈式机器上的一串 <code>LOAD_ATTR · CALL</code>。 总开销几微秒， 每次调用都付。</p>
+
+<h3 lang="en">Step 2 · PyTorch dispatcher → ATen kernel</h3>
+<h3 lang="zh">Step 2 · PyTorch dispatcher → ATen kernel</h3>
+<p lang="en">The dispatcher inspects the tensors' device (<code>cuda</code>/<code>hip</code>), dtype (<code>f16</code>), and layout, then looks up the registered implementation. We land in <code>aten::matmul</code>, which decides this is a 2D-by-2D case and delegates to <code>aten::mm</code>, which on a ROCm build delegates to <code>at::native::mm_out_hip</code>. That function asks hipBLAS / hipBLASLt for a GEMM, or — if you have flipped a config — calls into a fused custom kernel.</p>
+<p lang="zh">dispatcher 检查 tensor 的 device（<code>cuda</code> / <code>hip</code>）、 dtype（<code>f16</code>）、 layout， 然后查注册的实现。 落到 <code>aten::matmul</code>， 它判断这是 2D × 2D， 转交给 <code>aten::mm</code>， 在 ROCm 构建里又转交给 <code>at::native::mm_out_hip</code>。 这个函数请 hipBLAS / hipBLASLt 做一个 GEMM —— 或者在你切换了 config 时， 走进某个 fused 自定义 kernel。</p>
+
+<h3 lang="en">Step 3 · FFI · Python ⇄ C++ ⇄ HIP runtime</h3>
+<h3 lang="zh">Step 3 · FFI · Python ⇄ C++ ⇄ HIP runtime</h3>
+<p lang="en">Tensors cross the Python/C++ boundary through libtorch's pybind11 layer (or, in newer toolchains, via TVM-FFI). The HIP runtime — equivalent to NVIDIA's CUDA driver — accepts a launch request and enqueues it on the stream associated with this tensor.</p>
+<p lang="zh">tensor 通过 libtorch 的 pybind11 层穿过 Python / C++ 边界（新工具链里可能走 TVM-FFI）。 HIP 运行时 —— 类似 NVIDIA 的 CUDA driver —— 接收 launch 请求， 把它入到这个 tensor 关联的 stream。</p>
+
+<h3 lang="en">Step 4 · Compiled kernel binary (HSACO)</h3>
+<h3 lang="zh">Step 4 · 编译好的 kernel 二进制 (HSACO)</h3>
+<p lang="en">The kernel is not compiled at this moment; it was compiled when the library shipped (or the first time you ran it, if JIT). The binary is an HSACO file — AMD's equivalent of NVIDIA's <code>.cubin</code> — containing CDNA3 machine code for the MI300X's <code>gfx942</code> ISA. It was produced earlier by: a DSL (FlyDSL, Triton) → MLIR → LLVM IR → LLVM AMDGPU backend → assembler → HSACO.</p>
+<p lang="zh">kernel 不是此时编译的； 是库发布时（或第一次跑时， 如果是 JIT）就编好了。 二进制是 HSACO 文件 —— AMD 对应 NVIDIA <code>.cubin</code> 的格式 —— 含 MI300X 上 <code>gfx942</code> ISA 的 CDNA3 机器码。 它早先这样产生： DSL（FlyDSL、 Triton）→ MLIR → LLVM IR → LLVM AMDGPU backend → assembler → HSACO。</p>
+
+<h3 lang="en">Step 5 · Wavefront execution · MFMA instructions</h3>
+<h3 lang="zh">Step 5 · Wavefront 执行 · MFMA 指令</h3>
+<p lang="en">The MI300X's command processor schedules the kernel onto Compute Units. Each Compute Unit runs wavefronts of 64 threads. Inside the hot loop, the machine code is a tight sequence of <code>buffer_load_dwordx4</code> (load 16 bytes of A or B from global memory), <code>ds_write_b128</code> / <code>ds_read_b128</code> (stage through LDS), and <code>v_mfma_f32_16x16x16_f16</code> (the matrix-multiply-accumulate). Get this loop's instruction mix right and you push the chip to 90%+ of peak FP16 FLOPs. Get it wrong and you sit at 30%.</p>
+<p lang="zh">MI300X 的 command processor 把 kernel 调度到 Compute Unit。 每个 Compute Unit 跑 64 线程的 wavefront。 hot loop 里的机器码是一串紧凑的 <code>buffer_load_dwordx4</code>（从 global 内存加载 16 字节的 A / B）、 <code>ds_write_b128</code> / <code>ds_read_b128</code>（过 LDS 中转）、 <code>v_mfma_f32_16x16x16_f16</code>（矩阵乘加）。 这个循环的指令配比调对， 整片芯片能跑到 FP16 峰值 FLOPs 的 90%+。 调错， 就停在 30%。</p>
+
+<h3 lang="en">Step 6 · Result returns · GC</h3>
+<h3 lang="zh">Step 6 · 结果返回 · GC</h3>
+<p lang="en">When the kernel signals completion (via the stream's event), the runtime returns control to Python. The result tensor — a thin C++ object wrapping a device pointer + shape + strides + DLPack metadata — gets handed back to Python through pybind11. Python's GC owns the lifetime. When the last reference drops, the device memory is freed.</p>
+<p lang="zh">kernel 通过 stream 的 event 报告完成， 运行时把控制权还给 Python。 结果 tensor —— 一个 C++ 对象， 包着 device pointer + shape + strides + DLPack 元数据 —— 通过 pybind11 回到 Python。 Python GC 接管生命周期； 最后一个引用消失时， 设备内存释放。</p>
+
+<div class="callout forest">
+  <span class="ctag" lang="en">The whole journey in one sentence</span>
+  <span class="ctag" lang="zh">整段旅程一句话</span>
+  <p lang="en">Python source → bytecode → PyTorch dispatcher → ATen C++ → pybind11/TVM-FFI → HIP runtime → HSACO machine code → CDNA3 wavefront executing MFMAs → result back through the same bridges in reverse. Every layer is replaceable; the joints are what make the system feel either elegant or brittle.</p>
+  <p lang="zh">Python 源码 → 字节码 → PyTorch dispatcher → ATen C++ → pybind11 / TVM-FFI → HIP runtime → HSACO 机器码 → CDNA3 wavefront 跑 MFMA → 结果沿同一条路反向回来。 每一层都可替换； 真正决定系统优雅还是脆弱的， 是关节。</p>
+</div>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-copper"></span><span class="lozenge"></span><span class="lozenge fill-copper"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ M8 REEFS ============ -->
+<section id="m8-reefs">
+<h2 lang="en"><span class="num">§ 8 · The places people run aground</span>Reefs · <em>common confusions</em></h2>
+<h2 lang="zh"><span class="num">§ 8 · 大家容易搁浅的地方</span>易混淆礁石 <em>合集</em></h2>
+
+<p lang="en">A few patterns of confusion that keep recurring in conversations:</p>
+<p lang="zh">几个反复出现的混淆模式：</p>
+
+<ul class="tile-list">
+  <li>
+    <div class="ttl" lang="en">"<em>IR</em>" overloaded</div>
+    <div class="ttl" lang="zh">"<em>IR</em>"被严重重载</div>
+    <div class="desc" lang="en">A compiler can have a frontend IR, a middle IR, and a backend IR — three different IRs, same compiler. "Lowering the IR to LLVM IR" usually means "lowering my IR to LLVM's IR." Always pin down whose IR.</div>
+    <div class="desc" lang="zh">一个编译器可以同时有 frontend IR、 middle IR、 backend IR —— 三种不同的 IR， 同一个编译器。 "把 IR lower 到 LLVM IR"通常是说"把我的 IR lower 到 LLVM 的 IR"。 先问清楚谁的 IR。</div>
+  </li>
+  <li>
+    <div class="ttl" lang="en">LLVM IR ≠ MLIR</div>
+    <div class="ttl" lang="zh">LLVM IR ≠ MLIR</div>
+    <div class="desc" lang="en">LLVM IR is one specific IR. MLIR is a framework for building (potentially many) IRs. MLIR happens to live in the LLVM repo and includes a dialect that mirrors LLVM IR, but the two are not the same thing.</div>
+    <div class="desc" lang="zh">LLVM IR 是一种具体的 IR。 MLIR 是一个用于造（很多种） IR 的框架。 MLIR 恰好住在 LLVM 仓库里， 也包含一个镜像 LLVM IR 的 dialect， 但二者不是一回事。</div>
+  </li>
+  <li>
+    <div class="ttl" lang="en">PTX is virtual; SASS is real</div>
+    <div class="ttl" lang="zh">PTX 是虚拟的； SASS 才是真实的</div>
+    <div class="desc" lang="en">On NVIDIA GPUs, "the ISA" usually means PTX in conversation. PTX is a portable virtual ISA — the driver's JIT translates it to SASS, the real undocumented per-architecture ISA. You write PTX (or have a compiler emit it); you almost never see SASS unless you are debugging at the assembly level.</div>
+    <div class="desc" lang="zh">说"NVIDIA GPU 的 ISA"通常指 PTX。 PTX 是可移植的虚拟 ISA —— 驱动会把它 JIT 成 SASS， 即每代架构上真实的、 未公开的 ISA。 你写 PTX 或让编译器吐 PTX； 除非你在汇编级 debug， 否则几乎看不到 SASS。</div>
+  </li>
+  <li>
+    <div class="ttl" lang="en">ISA ≠ ABI</div>
+    <div class="ttl" lang="zh">ISA ≠ ABI</div>
+    <div class="desc" lang="en">ISA = what the chip executes. ABI = how compilers agree on calling conventions on top of that ISA. Same ISA, different ABIs is real — System V x86-64 and Microsoft x64 are both x86-64 but have different rules for which registers carry arguments.</div>
+    <div class="desc" lang="zh">ISA = 芯片执行的指令。 ABI = 在 ISA 之上编译器们对调用约定的协议。 同一 ISA、 不同 ABI 是常态 —— System V x86-64 和 Microsoft x64 都是 x86-64， 但参数走哪些寄存器规则不同。</div>
+  </li>
+  <li>
+    <div class="ttl" lang="en">"Tensor Core" is a brand, not a category</div>
+    <div class="ttl" lang="zh">"Tensor Core"是品牌， 不是品类</div>
+    <div class="desc" lang="en">"Tensor Core" is NVIDIA's marketing name for their matrix instructions. The category is matrix-multiply-accumulate, and every vendor has one: AMD MFMA (CDNA) / WMMA (RDNA), Intel AMX, ARM SME, Apple AMX (different from Intel's, confusingly). Talking about "Tensor Cores" on AMD hardware is fine in casual conversation but technically the instructions are MFMAs.</div>
+    <div class="desc" lang="zh">"Tensor Core"是 NVIDIA 给自家矩阵指令的营销名。 品类叫 matrix-multiply-accumulate， 每家都有： AMD MFMA (CDNA) / WMMA (RDNA)、 Intel AMX、 ARM SME、 Apple AMX（和 Intel 那个同名但不同， 经常搞混）。 在 AMD 硬件上口头说"Tensor Core"在非正式场合没事， 但严格说应叫 MFMA。</div>
+  </li>
+  <li>
+    <div class="ttl" lang="en">"Compiler" means at least three things in ML</div>
+    <div class="ttl" lang="zh">ML 里"编译器"至少指三种东西</div>
+    <div class="desc" lang="en">There is the AOT compiler (clang / rustc) that produces a binary from source. There is the framework compiler (torch.compile, JAX jit, XLA) that produces a graph from a Python function. There is the kernel compiler (Triton, FlyDSL) that produces a GPU binary from a kernel DSL. They share infrastructure but solve different problems.</div>
+    <div class="desc" lang="zh">有 AOT 编译器（clang / rustc）把源码编成二进制； 有框架编译器（torch.compile、 JAX jit、 XLA）把一个 Python 函数变成一张图； 有 kernel 编译器（Triton、 FlyDSL）把一段 kernel DSL 编成 GPU 二进制。 三者共享基建， 但解决的问题不同。</div>
+  </li>
+  <li>
+    <div class="ttl" lang="en">"AOT" vs "JIT"</div>
+    <div class="ttl" lang="zh">"AOT" vs "JIT"</div>
+    <div class="desc" lang="en">AOT (ahead-of-time): compile once, ship a binary. C/C++, Rust, Swift, Go work this way. JIT (just-in-time): compile at runtime, often shape-specialized. JVM, V8, Julia, PyTorch's torch.compile, every GPU kernel DSL works this way. Most ML systems blend both — the framework ships AOT, the kernels JIT per shape.</div>
+    <div class="desc" lang="zh">AOT（ahead-of-time）： 编一次， 发二进制。 C / C++、 Rust、 Swift、 Go 走这条路。 JIT（just-in-time）： 运行时编， 常按 shape 特化。 JVM、 V8、 Julia、 PyTorch 的 torch.compile、 每个 GPU kernel DSL 都走 JIT。 大多数 ML 系统两者并用 —— 框架 AOT， kernel 按 shape JIT。</div>
+  </li>
+</ul>
+</section>
+
+<div class="ornament-break">
+  <span class="line"></span>
+  <span class="glyph"><span class="lozenge fill-oxblood"></span><span class="lozenge fill-brass"></span><span class="lozenge fill-forest"></span><span class="lozenge fill-brass"></span><span class="lozenge fill-oxblood"></span></span>
+  <span class="line"></span>
+</div>
+
+<!-- ============ CODA ============ -->
+<section id="coda">
+<h2 lang="en"><span class="num">Coda</span>Where to <em>read next</em></h2>
+<h2 lang="zh"><span class="num">余话</span>接下来读<em>什么</em></h2>
+
+<p lang="en">If this primer convinced you that the territory is worth a closer look, here are the books and references that paid for themselves for me:</p>
+<p lang="zh">如果这篇科普让你觉得这片地值得再深看一眼， 这些是我自己花时间读过、 觉得值的书与文档：</p>
+
+<table class="tbl">
+<thead>
+<tr lang="en"><th>For</th><th>Read</th></tr>
+<tr lang="zh"><th>想学</th><th>读这个</th></tr>
+</thead>
+<tbody>
+<tr><td lang="en">Computer architecture, the canonical text</td><td lang="zh">计算机体系结构， 经典教材</td><td><em>Hennessy &amp; Patterson · Computer Architecture: A Quantitative Approach</em></td></tr>
+<tr><td lang="en">A friendlier compiler textbook</td><td lang="zh">更友好的编译原理教材</td><td><em>Cooper &amp; Torczon · Engineering a Compiler</em></td></tr>
+<tr><td lang="en">LLVM, the design retrospective</td><td lang="zh">LLVM 的设计回顾</td><td><em>The Architecture of Open Source Applications, Vol. 1 — Chapter on LLVM</em> (Chris Lattner, free online)</td></tr>
+<tr><td lang="en">MLIR, the original paper</td><td lang="zh">MLIR 原始论文</td><td><em>Lattner et al. · MLIR: A Compiler Infrastructure for the End of Moore's Law (2020)</em></td></tr>
+<tr><td lang="en">AMD GPU ISA reference</td><td lang="zh">AMD GPU ISA 参考</td><td><em>AMD CDNA3 ISA Reference Guide</em> (PDF on AMD's site)</td></tr>
+<tr><td lang="en">NVIDIA PTX reference</td><td lang="zh">NVIDIA PTX 参考</td><td><em>PTX ISA Programming Guide</em> (NVIDIA Docs)</td></tr>
+<tr><td lang="en">Real kernel code to learn from</td><td lang="zh">可以学的 kernel 代码</td><td><em>CUTLASS · FlashAttention · vLLM · FlyDSL · TileLang</em></td></tr>
+</tbody>
+</table>
+
+<p lang="en">And — meta — the other entries in this Source Reading series cover concrete repos in this stack: <a href="/sources/skypilot.html">SkyPilot</a> (orchestration), <a href="/sources/sglang.html">SGLang</a> and <a href="/sources/vllm.html">vLLM</a> (inference engines), <a href="/sources/mini-sglang.html">mini-SGLang</a> (teaching version), <a href="/sources/gcnasm.html">gcnasm</a> (AMD CDNA3 assembly), <a href="/sources/flydsl.html">FlyDSL</a> (layout-algebra Python DSL). Each is a worked example of one of the boxes in Plate I.</p>
+<p lang="zh">另外（meta） —— 这个 Source Reading 系列里其他几集， 各自精读了这个栈里的具体仓库： <a href="/sources/skypilot.html">SkyPilot</a>（编排）、 <a href="/sources/sglang.html">SGLang</a> 与 <a href="/sources/vllm.html">vLLM</a>（推理引擎）、 <a href="/sources/mini-sglang.html">mini-SGLang</a>（教学版）、 <a href="/sources/gcnasm.html">gcnasm</a>（AMD CDNA3 汇编）、 <a href="/sources/flydsl.html">FlyDSL</a>（layout 代数 Python DSL）。 每一集都是 Plate I 中某一格的"动手版"。</p>
+
+<p lang="en">The point of writing this primer was not to make you a compiler engineer. It was to give you back the vocabulary so that the next time something underneath leaks — the next time the abstraction stops being free — you can name what just happened. Naming things is most of debugging.</p>
+<p lang="zh">写这篇科普的目的不是要把你变成编译器工程师。 是把这套词汇还给你 —— 下一次有什么东西从下面漏出来、 抽象不再免费的时候， 你能给刚才发生的事起个名字。 而 debug 这件事大半就是命名。</p>
+</section>
+
+</main>
+</div>
+
+<!-- ================ COLOPHON ================ -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl" lang="en">Sources cited</div>
+      <div class="lbl" lang="zh">引用源</div>
+      <div class="val" lang="en">LLVM · MLIR · Apache TVM-FFI · DLPack · FlyDSL · AMD CDNA ISA · NVIDIA PTX · ARM SME · Intel AMX.</div>
+      <div class="val" lang="zh">LLVM、 MLIR、 Apache TVM-FFI、 DLPack、 FlyDSL、 AMD CDNA ISA、 NVIDIA PTX、 ARM SME、 Intel AMX。</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Typography</div>
+      <div class="lbl" lang="zh">字体</div>
+      <div class="val">Source Serif 4 · Cinzel · Space Mono · Source Sans 3</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Palette</div>
+      <div class="lbl" lang="zh">色板</div>
+      <div class="val">
+        <span class="swatch" style="background:#f5ecd8"></span>paper
+        <span class="swatch" style="background:#6e1c1a"></span>oxblood
+        <span class="swatch" style="background:#2f4d34"></span>forest
+        <span class="swatch" style="background:#a8842e"></span>brass
+        <span class="swatch" style="background:#a45c3a"></span>copper
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Compiled for</div>
+      <div class="lbl" lang="zh">编译为</div>
+      <div class="val" lang="en">working ML engineers who deserved a better compiler course.</div>
+      <div class="val" lang="zh">应该被给一门更好编译器课的 ML 工程师。</div>
+    </div>
+  </div>
+  <div class="closing" lang="en">N.007 · A primer · jinnpan.com · 2026 · made with patience and a parchment palette.</div>
+  <div class="closing" lang="zh">N.007 · 科普一集 · jinnpan.com · 2026 · 慢慢做， 用一张羊皮纸色板。</div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'from-python-to-silicon-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
