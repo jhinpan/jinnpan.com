@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyDSL — 一次源码精读 · No.006</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Cyanotype blueprint palette */
+  --bath: #0a2840;          /* deepest blueprint bath */
+  --paper: #0f344f;         /* primary background */
+  --paper-elev: #154362;
+  --paper-deep: #1b537a;
+  --rule: #2a6791;
+  --rule-soft: #1f4f73;
+  --grid: rgba(168, 200, 224, 0.04);
+
+  /* Chalk inks (slightly cool whites for blueprint feel) */
+  --chalk: #ecf1f7;
+  --chalk-dim: #c2d0de;
+  --chalk-soft: #92a8bc;
+  --chalk-mute: #6a8298;
+  --chalk-faint: #4a647a;
+
+  /* Annotation colors — drafting marks on blue */
+  --rust: #e8845a;          /* drafting orange-red */
+  --rust-deep: #b85a36;
+  --brass: #f0c764;         /* annotation yellow / brass */
+  --brass-deep: #b89432;
+  --jade: #8ec788;          /* verification green */
+  --jade-deep: #5a8c5a;
+  --coral: #e07a7a;         /* warnings */
+  --coral-deep: #b04e4e;
+  --teal: #6dc0c7;          /* secondary cool accent */
+
+  --serif: 'EB Garamond', 'Times New Roman', serif;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+
+  --max-content: 720px;
+  --rail-w: 196px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--paper);
+  color: var(--chalk);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.66;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Blueprint grid overlay + paper texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(240, 199, 100, 0.04), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(232, 132, 90, 0.025), transparent 70%);
+  background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  background-image: radial-gradient(ellipse at center, transparent 40%, rgba(10, 40, 64, 0.45) 100%);
+  opacity: 0.7;
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 72px 48px 60px;
+  border-bottom: 1px solid var(--rule);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--chalk-soft);
+  margin-bottom: 40px;
+}
+.masthead .kicker::before {
+  content: '';
+  width: 36px;
+  height: 1px;
+  background: var(--rust);
+  box-shadow: 0 0 4px rgba(232, 132, 90, 0.5);
+}
+.masthead .kicker .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--rust);
+  box-shadow: 0 0 6px rgba(232, 132, 90, 0.7);
+}
+.masthead .kicker .chip {
+  color: var(--chalk-mute);
+}
+
+.masthead h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(64px, 10vw, 138px);
+  line-height: 0.95;
+  margin: 0;
+  letter-spacing: -0.025em;
+  color: var(--chalk);
+}
+.masthead h1 em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--rust);
+}
+
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(19px, 2.1vw, 25px);
+  line-height: 1.38;
+  color: var(--chalk-dim);
+  margin: 36px 0 0;
+  max-width: 720px;
+  letter-spacing: -0.005em;
+}
+
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px dashed var(--rule-soft);
+  max-width: 920px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--chalk-mute);
+  margin-bottom: 10px;
+}
+.masthead .meta .item .value {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--chalk);
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+}
+.masthead .meta .item .value .unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--chalk-soft);
+  margin-left: 5px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+.masthead .meta .item .value .accent {
+  color: var(--rust);
+  font-style: italic;
+}
+
+/* ============ SHELL ============ */
+.shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  z-index: 1;
+}
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 88px auto;
+  padding: 0;
+}
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 48px 22px;
+  border-right: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, var(--bath) 0%, rgba(10, 40, 64, 0.96) 100%);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--rule-soft); }
+
+.rail .brand {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: var(--chalk);
+  margin-bottom: 4px;
+}
+.rail .brand em {
+  font-style: normal;
+  color: var(--rust);
+}
+.rail .ref {
+  color: var(--chalk-mute);
+  margin-bottom: 28px;
+  font-size: 9.5px;
+}
+.rail .ref .pin {
+  color: var(--brass);
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: nav;
+}
+.rail ol li {
+  margin-bottom: 12px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 30px;
+}
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--chalk-mute);
+  font-size: 9.5px;
+}
+.rail ol li a {
+  color: var(--chalk-dim);
+  text-decoration: none;
+  transition: color 0.18s;
+  display: block;
+  line-height: 1.32;
+}
+.rail ol li a:hover { color: var(--rust); }
+.rail .divider {
+  height: 1px;
+  background: var(--rule-soft);
+  margin: 16px 0;
+}
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(38px, 4.6vw, 58px);
+  line-height: 1.04;
+  letter-spacing: -0.022em;
+  margin: 104px 0 24px;
+  color: var(--chalk);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  color: var(--rust);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+.article h2 em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--rust);
+}
+
+.article h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.28;
+  margin: 56px 0 14px;
+  color: var(--chalk);
+  letter-spacing: -0.012em;
+}
+.article h3 em {
+  font-style: italic;
+  color: var(--brass);
+}
+
+.article h4 {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 32px 0 10px;
+}
+
+.article p {
+  margin: 0 0 18px;
+  color: var(--chalk-dim);
+}
+.article p strong {
+  color: var(--chalk);
+  font-weight: 600;
+}
+.article p em {
+  color: var(--brass);
+  font-style: italic;
+}
+.article p code, .article li code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--bath);
+  padding: 1px 6px;
+  border-radius: 2px;
+  color: var(--teal);
+  border: 1px solid var(--rule-soft);
+}
+.article a {
+  color: var(--rust);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--rust-deep);
+  transition: color 0.18s, border-color 0.18s;
+}
+.article a:hover { color: var(--brass); border-bottom-color: var(--brass-deep); }
+
+.dropcap { display: block; }
+.dropcap::first-letter {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 68px;
+  line-height: 0.85;
+  float: left;
+  margin: 6px 12px -2px 0;
+  color: var(--rust);
+  font-style: italic;
+}
+
+/* ============ CODE BLOCKS ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  background: var(--bath);
+  border: 1px solid var(--rule-soft);
+  border-left: 2px solid var(--rust-deep);
+  padding: 18px 22px;
+  margin: 22px 0;
+  overflow-x: auto;
+  color: var(--chalk-dim);
+  white-space: pre;
+  border-radius: 1px;
+}
+.code .c-key { color: var(--rust); }
+.code .c-str { color: var(--brass); }
+.code .c-num { color: var(--teal); }
+.code .c-com { color: var(--chalk-mute); font-style: italic; }
+.code .c-cls { color: var(--jade); }
+.code .c-warn { color: var(--coral); }
+.code .c-fname {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--chalk-mute);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 28px 0;
+  padding: 18px 22px 18px 24px;
+  background: var(--paper-elev);
+  border-left: 2px solid var(--brass);
+  position: relative;
+}
+.callout.rust { border-left-color: var(--rust); }
+.callout.coral { border-left-color: var(--coral); }
+.callout.jade { border-left-color: var(--jade); }
+.callout.teal { border-left-color: var(--teal); }
+.callout .ctag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 8px;
+  display: block;
+}
+.callout.rust .ctag { color: var(--rust); }
+.callout.coral .ctag { color: var(--coral); }
+.callout.jade .ctag { color: var(--jade); }
+.callout.teal .ctag { color: var(--teal); }
+.callout p {
+  margin: 0 0 8px;
+  color: var(--chalk);
+  font-size: 14.5px;
+}
+.callout p:last-child { margin-bottom: 0; }
+
+/* ============ TABLES ============ */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 22px 0;
+  font-size: 13.5px;
+}
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+}
+.tbl th {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--chalk-soft);
+  font-weight: 500;
+  border-bottom-color: var(--rule);
+  padding-bottom: 10px;
+}
+.tbl td { color: var(--chalk-dim); }
+.tbl td code, .tbl th code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--teal);
+  background: var(--bath);
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid var(--rule-soft);
+}
+.tbl td.k { color: var(--chalk); font-family: var(--mono); font-size: 12px; }
+.tbl td.acc { color: var(--rust); }
+.tbl td.warn { color: var(--coral); }
+.tbl td.num { color: var(--brass); font-variant-numeric: tabular-nums; }
+
+/* ============ PLATES (SVG) ============ */
+.plate {
+  margin: 56px 0;
+  padding: 0;
+}
+.plate.wide {
+  max-width: 1040px;
+  margin-left: calc(-1 * (1040px - var(--max-content)) / 2);
+}
+@media (max-width: 1100px) {
+  .plate.wide { max-width: 100%; margin-left: 0; }
+}
+.plate-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--rule-soft);
+}
+.plate-meta .pnum {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--rust);
+}
+.plate-meta .pname {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--chalk);
+  font-weight: 500;
+}
+.plate-meta .pscale {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--chalk-mute);
+}
+.plate-body {
+  background: var(--bath);
+  border: 1px solid var(--rule-soft);
+  padding: 22px;
+  position: relative;
+}
+.plate-body svg { display: block; width: 100%; height: auto; }
+.plate .caption {
+  margin-top: 12px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14.5px;
+  color: var(--chalk-soft);
+  line-height: 1.5;
+}
+
+/* SVG shared classes */
+.d-text { font-family: var(--sans); font-size: 11px; fill: var(--chalk); }
+.d-text.mono { font-family: var(--mono); font-size: 10.5px; }
+.d-text.small { font-size: 9.5px; fill: var(--chalk-soft); }
+.d-text.tiny { font-size: 8.5px; fill: var(--chalk-mute); }
+.d-text.label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; fill: var(--chalk-mute); text-transform: uppercase; }
+.d-text.title { font-family: var(--serif); font-style: italic; font-size: 13px; fill: var(--chalk); }
+.d-text.rust { fill: var(--rust); }
+.d-text.brass { fill: var(--brass); }
+.d-text.jade { fill: var(--jade); }
+.d-text.coral { fill: var(--coral); }
+.d-text.teal { fill: var(--teal); }
+.d-text.dim { fill: var(--chalk-soft); }
+
+.zone { fill: var(--paper-elev); stroke: var(--rule); stroke-width: 1; }
+.zone.deep { fill: var(--paper-deep); }
+.zone.rust { stroke: var(--rust); stroke-opacity: 0.5; }
+.zone.brass { stroke: var(--brass); stroke-opacity: 0.5; }
+.zone.jade { stroke: var(--jade); stroke-opacity: 0.45; }
+.zone.coral { stroke: var(--coral); stroke-opacity: 0.45; }
+.zone.teal { stroke: var(--teal); stroke-opacity: 0.45; }
+
+.bp-line { stroke: var(--chalk-mute); stroke-width: 1; fill: none; }
+.bp-line.dash { stroke-dasharray: 3 3; }
+.bp-line.rust { stroke: var(--rust); }
+.bp-line.brass { stroke: var(--brass); }
+.bp-line.jade { stroke: var(--jade); }
+.bp-line.teal { stroke: var(--teal); }
+.bp-line.thick { stroke-width: 1.6; }
+
+/* ============ FOOTER ============ */
+.colophon {
+  max-width: 1280px;
+  margin: 120px auto 0;
+  padding: 48px 48px 64px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--chalk-soft);
+  line-height: 1.7;
+}
+.colophon .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+}
+.colophon .field .lbl {
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--chalk-mute);
+  margin-bottom: 10px;
+}
+.colophon .field .val { color: var(--chalk-dim); }
+.colophon .field .val a { color: var(--rust); text-decoration: none; }
+.colophon .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: middle;
+  border: 1px solid var(--rule);
+}
+
+/* ============ TILE LIST ============ */
+.tile-list {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0;
+}
+.tile-list li {
+  padding: 14px 0 14px 28px;
+  border-bottom: 1px dashed var(--rule-soft);
+  position: relative;
+}
+.tile-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  color: var(--rust);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.tile-list li .ttl {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--chalk);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.tile-list li .ttl em {
+  font-style: italic;
+  color: var(--brass);
+}
+.tile-list li .desc {
+  font-size: 13.5px;
+  color: var(--chalk-dim);
+}
+
+.article > p:first-of-type { margin-top: 0; }
+section { scroll-margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <div class="brand"><em>FlyDSL</em></div>
+  <div class="ref">FILE № <span class="pin">006</span> · 2026.05.26</div>
+  <ol>
+    <li><a href="#prologue">Prologue</a></li>
+    <li><a href="#m0-compass">Compass of <em>four examples</em></a></li>
+    <li><a href="#m1-layout">Layout algebra in ten minutes</a></li>
+    <li><a href="#m2-vector-add">01 · <em>vectorAdd</em></a></li>
+    <li><a href="#m3-tiled-copy">02 · <em>tiledCopy</em></a></li>
+    <li><a href="#m4-tiled-mma">03 · <em>tiledMma</em> &amp; MFMA</a></li>
+    <li><a href="#m5-preshuffle">04 · <em>preshuffle GEMM</em></a></li>
+    <li><a href="#m6-pipeline">Compile pipeline · Python → fatbin</a></li>
+    <div class="divider"></div>
+    <li><a href="#reefs">Reefs (six traps)</a></li>
+    <li><a href="#amd-notes">AMD-specific notes</a></li>
+    <li><a href="#epilogue">Epilogue</a></li>
+    <li><a href="#references">References</a></li>
+  </ol>
+</nav>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="kicker">
+    <span>FILE № 006</span>
+    <span class="dot"></span>
+    <span>2026.05.26</span>
+    <span class="chip">·</span>
+    <span class="chip">gfx942 / gfx950 / MLIR</span>
+  </div>
+  <h1><em>Fly</em>DSL</h1>
+  <p class="subtitle">
+    Reading the AMD layout-algebra DSL from its four canonical examples —
+    how <em>logical_divide</em>, <em>tiled_copy</em>, <em>MFMA atoms</em>, and a
+    production GEMM with preshuffled B and hand-rolled instruction
+    scheduling assemble into one MLIR-backed Python stack.
+  </p>
+
+  <div class="meta">
+    <div class="item">
+      <div class="label">Examples</div>
+      <div class="value">4<span class="unit">graded ladder</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Tested GPU</div>
+      <div class="value">MI350X<span class="unit">gfx950</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Largest GEMM</div>
+      <div class="value"><span class="accent">4096³</span><span class="unit">FP16</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Reading time</div>
+      <div class="value">~4<span class="unit">hours, careful</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ARTICLE ============ -->
+<div class="shell">
+<main class="article">
+
+<!-- ====================================================== -->
+<!-- PROLOGUE -->
+<!-- ====================================================== -->
+<section id="prologue">
+<h2><span class="num">§ 00 · The fly that draws the blueprint</span>Prologue</h2>
+
+<p class="dropcap">There is a particular vertigo that comes from reading a modern GPU kernel and realizing how much of it is layout, not arithmetic. A 4096-cube FP16 GEMM is, viewed line-by-line, mostly bookkeeping — which thread loads which 8 elements, where in shared memory they land, in what order the MFMA instructions consume them, when the next K-block's prefetch overlaps with the current MFMA tail. The actual multiplication is two lines. Everything else is layout.</p>
+
+<p>FlyDSL — the Fly dialect plus its Python front-end — is one answer to that observation. It is the Python DSL and MLIR-native compiler stack that AMD's <a href="https://github.com/ROCm/FlyDSL">ROCm group</a> uses to author GPU kernels with explicit layouts and tiling. The name unpacks to <em>Flexible Layout pYthon DSL</em>. The design is unmistakably descended from <a href="https://github.com/NVIDIA/cutlass">NVIDIA CuTe</a>: layout = (shape, stride), composition / divide / product, thread-value layouts, tiled copies, MMA atoms. What FlyDSL adds is the MLIR machinery — a real <code>!fly.layout</code> type, a pass pipeline that lowers layout algebra to address arithmetic, copy atoms to ROCDL buffer instructions, and MMA atoms to MFMA — plus the Python tracing layer that lets you write all of this without leaving the editor.</p>
+
+<p>This entry reads FlyDSL through its <code>examples/</code> directory — four files that form a strict pedagogical ladder. Example 01 is a vector add. Example 02 introduces tiled copy. Example 03 wires up a single-block MFMA GEMM. Example 04 is a production-grade preshuffle GEMM with double-buffered LDS, two-stage software pipelining, and hand-written instruction scheduling. The four together demonstrate every machinery that real FlyDSL kernels use; everything in <code>kernels/</code> — paged attention, MoE GEMM, flash attention — is a recombination of the same pieces.</p>
+
+<div class="callout rust">
+  <span class="ctag">Reading order</span>
+  <p>If you only have an hour, read <strong>§ M1</strong> (layout algebra) and <strong>§ M3</strong> (tiledCopy). Those two cover the FlyDSL mental model. Add <strong>§ M5</strong> (preshuffle GEMM) for the production patterns. Skip this prologue if you already know why you opened the file.</p>
+</div>
+
+<p>What this writeup is not: it is not a build guide (the README at <code>FlyDSL-lab/README.md</code> handles that), and it is not a reference (<code>docs/layout_system_guide.md</code> has the full Quick Reference table). It is a reader's report on what each example teaches, where the abstractions earn their keep, and where the seams show.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M0 — COMPASS -->
+<!-- ====================================================== -->
+<section id="m0-compass">
+<h2><span class="num">M0 · The four-example ladder</span>Compass of <em>four examples</em></h2>
+
+<p>The repo contains thousands of lines of production kernels under <code>kernels/</code> and an exhaustive test suite under <code>tests/</code>, but its pedagogical core is just four files under <code>examples/</code>. Each one adds exactly one new concept to the previous, and reading them in order is the fastest way to internalize FlyDSL.</p>
+
+<table class="tbl">
+  <thead><tr><th>File</th><th>LOC</th><th>New concept</th><th>What it proves</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="k">01-vectorAdd.py</td>
+      <td class="num">137</td>
+      <td><code>@flyc.kernel</code> + <code>logical_divide</code> + <code>copy_atom_call</code></td>
+      <td>The minimum viable FlyDSL kernel: trace, compile, launch, capture in a CUDA Graph.</td>
+    </tr>
+    <tr>
+      <td class="k">02-tiledCopy.py</td>
+      <td class="num">69</td>
+      <td><code>make_layout_tv</code> + <code>partition_S/D</code> + <code>BufferCopy128b</code></td>
+      <td>Thread/value layouts that fan a tile across a wavefront, vectorized.</td>
+    </tr>
+    <tr>
+      <td class="k">03-tiledMma.py</td>
+      <td class="num">95</td>
+      <td><code>MFMA</code> atom + <code>make_tiled_copy_A/B/C</code> + <code>retile</code></td>
+      <td>Copy layouts derived from the MMA atom; same register read two ways.</td>
+    </tr>
+    <tr>
+      <td class="k">04-preshuffle_gemm.py</td>
+      <td class="num">211</td>
+      <td>preshuffle B + LDS swizzle + 2-stage pipeline + <code>sched_*</code></td>
+      <td>A real GEMM: 4096³ FP16 with hand-tuned instruction scheduling.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The ladder is steep on the last step. Example 04 is roughly the union of every optimization that separates a 30% kernel from a 95% one on CDNA3 / CDNA4: preshuffled weight layout so MFMA needs no LDS transpose, XOR swizzle so LDS reads hit 32 banks evenly, two-stage ping-pong so the prefetch of K-block <em>n+1</em> overlaps with the MFMA of K-block <em>n</em>, and a scheduler block that tells the LLVM AMDGPU backend exactly how to interleave <code>v_mfma</code>, <code>ds_read</code>, <code>buffer_load</code>, and <code>ds_write</code> instructions inside the hot loop. None of this is in 01–03. Reading them in order is the only way to keep the cognitive load manageable.</p>
+
+<!-- ============ PLATE I — Compilation pipeline ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <div class="pnum">Plate I</div>
+    <div class="pname">Python → MLIR → ROCDL → fatbin · the full descent</div>
+    <div class="pscale">scale · 1000 × 380</div>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr-rust" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e8845a"/>
+    </marker>
+    <marker id="arr-chalk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#92a8bc"/>
+    </marker>
+  </defs>
+
+  <!-- Vertical pipeline column on left -->
+  <text x="60" y="32" class="d-text label">FRONT END</text>
+  <rect x="60" y="44" width="240" height="56" class="zone rust" rx="2"/>
+  <text x="180" y="68" class="d-text title" text-anchor="middle">@flyc.kernel · @flyc.jit</text>
+  <text x="180" y="86" class="d-text small mono" text-anchor="middle">Python function with fx.* calls</text>
+
+  <line x1="180" y1="100" x2="180" y2="124" class="bp-line rust thick" marker-end="url(#arr-rust)"/>
+  <text x="190" y="116" class="d-text small mono">AST rewrite + tracing</text>
+
+  <text x="60" y="148" class="d-text label">MIDDLE END · MLIR</text>
+  <rect x="60" y="160" width="240" height="148" class="zone brass" rx="2"/>
+  <text x="180" y="180" class="d-text title" text-anchor="middle">fly.module</text>
+  <text x="76" y="200" class="d-text small mono">!fly.layout&lt;(M,N):(1,M)&gt;</text>
+  <text x="76" y="216" class="d-text small mono">!fly.copy_atom&lt;...&gt;</text>
+  <text x="76" y="232" class="d-text small mono">!fly.mma_atom&lt;...&gt;</text>
+  <line x1="76" y1="244" x2="284" y2="244" class="bp-line dash"/>
+  <text x="76" y="262" class="d-text small dim">+ gpu, arith, scf, memref</text>
+  <text x="76" y="278" class="d-text small dim">+ vector, llvm dialects</text>
+  <text x="76" y="294" class="d-text small dim">composed during tracing</text>
+
+  <line x1="180" y1="308" x2="180" y2="332" class="bp-line rust thick" marker-end="url(#arr-rust)"/>
+  <text x="190" y="324" class="d-text small mono">MlirCompiler.compile()</text>
+
+  <text x="60" y="356" class="d-text label">BACK END</text>
+  <rect x="60" y="362" width="240" height="14" fill="none" stroke="none"/>
+
+  <!-- Pass pipeline on right -->
+  <text x="360" y="32" class="d-text label">PASS PIPELINE</text>
+  <line x1="360" y1="44" x2="940" y2="44" class="bp-line dash"/>
+
+  <g font-family="JetBrains Mono, monospace" font-size="11" fill="#c2d0de">
+    <text x="370" y="68">1.</text><text x="395" y="68" fill="#ecf1f7">gpu-kernel-outlining</text>
+    <text x="600" y="68" fill="#6a8298" font-size="9.5">device code split into gpu.module</text>
+
+    <text x="370" y="92">2.</text><text x="395" y="92" fill="#ecf1f7">fly-canonicalize</text>
+    <text x="600" y="92" fill="#6a8298" font-size="9.5">fold layout algebra at compile time</text>
+
+    <text x="370" y="116">3.</text><text x="395" y="116" fill="#ecf1f7">fly-layout-lowering</text>
+    <text x="600" y="116" fill="#8ec788" font-size="9.5">!fly.layout → index math (arith)</text>
+
+    <text x="370" y="140">4.</text><text x="395" y="140" fill="#ecf1f7">convert-fly-to-rocdl</text>
+    <text x="600" y="140" fill="#8ec788" font-size="9.5">copy/MMA atoms → rocdl intrinsics</text>
+
+    <text x="370" y="164">5.</text><text x="395" y="164" fill="#ecf1f7">canonicalize + cse</text>
+    <text x="600" y="164" fill="#6a8298" font-size="9.5">arith fold, common-subexpr elim</text>
+
+    <text x="370" y="188">6.</text><text x="395" y="188" fill="#ecf1f7">gpu.module(convert-gpu-to-rocdl)</text>
+    <text x="600" y="188" fill="#6a8298" font-size="9.5">block_idx, barriers → ROCDL</text>
+
+    <text x="370" y="212">7.</text><text x="395" y="212" fill="#ecf1f7">rocdl-attach-target</text>
+    <text x="600" y="212" fill="#f0c764" font-size="9.5">chip = gfx942 / gfx950 / gfx1250</text>
+
+    <text x="370" y="236">8.</text><text x="395" y="236" fill="#ecf1f7">gpu-to-llvm + arith-to-llvm</text>
+    <text x="600" y="236" fill="#6a8298" font-size="9.5">final lower into LLVM IR</text>
+
+    <text x="370" y="260">9.</text><text x="395" y="260" fill="#ecf1f7">gpu-module-to-binary</text>
+    <text x="600" y="260" fill="#e8845a" font-size="9.5">format = fatbin (HSA code object)</text>
+  </g>
+
+  <!-- Cache callout on right -->
+  <rect x="700" y="290" width="240" height="74" class="zone teal" rx="2"/>
+  <text x="820" y="312" class="d-text title" text-anchor="middle">JIT disk cache</text>
+  <text x="820" y="330" class="d-text small mono" text-anchor="middle">~/.flydsl/cache/</text>
+  <text x="820" y="348" class="d-text small dim" text-anchor="middle">keyed on (type signature,</text>
+  <text x="820" y="360" class="d-text small dim" text-anchor="middle">Constexpr values, source hash)</text>
+
+  <!-- Flow arrows connecting columns -->
+  <line x1="300" y1="232" x2="360" y2="232" class="bp-line brass thick" marker-end="url(#arr-rust)"/>
+  <line x1="700" y1="260" x2="720" y2="290" class="bp-line teal" marker-end="url(#arr-chalk)"/>
+</svg>
+  </div>
+  <div class="caption">FlyDSL is a vertical descent through three layers. The Python tracer emits an MLIR module that mixes the <code>fly</code> dialect with stock <code>gpu</code>/<code>arith</code>/<code>scf</code>/<code>memref</code>. A nine-stage pass pipeline progressively lowers layout algebra to address arithmetic and copy/MMA atoms to ROCDL intrinsics, then the standard MLIR ROCDL path produces a HSA fatbin. Everything past stage 9 is cached on disk and keyed on the type signature plus the Constexpr values plus a source hash — change a <code>Constexpr[int]</code> value and you get a new cache key.</div>
+</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- M1 — LAYOUT ALGEBRA -->
+<!-- ====================================================== -->
+<section id="m1-layout">
+<h2><span class="num">M1 · The grammar before the kernels</span>Layout algebra <em>in ten minutes</em></h2>
+
+<p>Every line of every FlyDSL kernel rests on the same five-word vocabulary: <em>shape</em>, <em>stride</em>, <em>layout</em>, <em>divide</em>, <em>slice</em>. The function names get longer (<code>zipped_divide</code>, <code>logical_product</code>, <code>raked_product</code>, <code>composition</code>) but they all decorate the same primitive idea — a layout is a function from a coordinate tuple to a linear index, and the algebra on layouts is the algebra on those functions. Internalize the primitive and the rest is a vocabulary exercise.</p>
+
+<h3>The atom · <em>Shape, Stride, Layout</em></h3>
+
+<p>A <code>!fly.layout</code> is a pair of integer tuples: a shape and a stride. Given coordinates <code>(c<sub>0</sub>, c<sub>1</sub>, ..., c<sub>n-1</sub>)</code>, the layout computes a linear index as</p>
+
+<div class="code"><span class="c-com"># for layout ((8, 16), (1, 8)):</span>
+index((c0, c1)) = c0 * 1 + c1 * 8     <span class="c-com"># column-major 8x16</span>
+
+<span class="c-com"># for layout ((8, 16), (16, 1)):</span>
+index((c0, c1)) = c0 * 16 + c1 * 1    <span class="c-com"># row-major 8x16</span></div>
+
+<p>Strides are independent of shape, which is the whole point. A logical 8×16 matrix can be column-major <code>(1, 8)</code>, row-major <code>(16, 1)</code>, padded <code>(1, 9)</code>, swizzled, transposed, or have its rows broadcast — all of these are different strides on the same shape. FlyDSL kernels never compute addresses by hand; they construct layouts, divide and compose them, then call <code>copy</code> or <code>gemm</code> on a fragment that holds the resulting <code>(memory, layout)</code> pair.</p>
+
+<p>Three things to remember about shapes:</p>
+
+<ul>
+  <li><strong>Shapes can be nested.</strong> <code>fx.make_shape(9, (4, 8))</code> is a rank-2 shape whose second mode is itself a rank-2 tuple. Nested shapes are how multi-level tiling (block → warp → thread → instruction) gets expressed without an explosion of indices.</li>
+  <li><strong>Static and dynamic values mix freely.</strong> A shape entry can be a Python integer (folded at compile time) or an SSA value (a runtime <code>fx.Int32</code>). The MLIR type system tracks which is which.</li>
+  <li><strong>"Layout" is also the name of the primitive type.</strong> <code>!fly.layout&lt;(8,16):(1,8)&gt;</code> is a real MLIR type — operations consume and produce values of this type. This is what separates FlyDSL from a string-templated layout library: the layout algebra is a typed first-class IR, not a build-time string substitution.</li>
+</ul>
+
+<h3>The two operations you will actually use</h3>
+
+<p>The Quick Reference lists 14 product / divide variants. In <code>examples/</code>, exactly three appear: <code>logical_divide</code>, <code>zipped_divide</code>, and <code>flat_divide</code>. All three split a layout into a "tile" and a "rest of the grid" — they differ only in how the result is shaped.</p>
+
+<div class="code"><span class="c-com"># Input: 1-D layout (128,):(1,)</span>
+A = ...
+tA = fx.<span class="c-key">logical_divide</span>(A, fx.make_layout(<span class="c-num">64</span>, <span class="c-num">1</span>))
+<span class="c-com"># Result shape: ((64,), (2,))   — tile is 64, grid is 2 tiles</span>
+
+<span class="c-com"># Input: 2-D layout (24, 120):(1, 24)</span>
+bA = fx.<span class="c-key">zipped_divide</span>(A, (<span class="c-num">8</span>, <span class="c-num">24</span>))
+<span class="c-com"># Result shape: ((8, 24), (3, 5))   — tile is 8x24, grid is 3x5</span>
+
+<span class="c-com"># Same but with the grid flattened into outer modes</span>
+gA = fx.<span class="c-key">flat_divide</span>(A, (<span class="c-num">128</span>, <span class="c-num">64</span>))
+<span class="c-com"># Result shape: (128, 64, m, k)   — grid is two trailing modes</span></div>
+
+<p>Once you've divided, you pick a tile with <code>fx.slice</code> — passing <code>None</code> for the modes you want to keep and an index for the modes you want to collapse:</p>
+
+<div class="code">bA = fx.zipped_divide(A, (BM, BN))   <span class="c-com"># ((BM, BN), (m, n))</span>
+bA = fx.slice(bA, (<span class="c-num">None</span>, bid))   <span class="c-com"># pick block bid, keep (BM, BN)</span>
+
+<span class="c-com"># equivalent shorthand:</span>
+bA = bA[<span class="c-num">None</span>, bid]            <span class="c-com"># same as above</span>
+gA_k = fx.flat_divide(A, (BM, BK))[<span class="c-num">None</span>, <span class="c-num">None</span>, bid_x, <span class="c-num">None</span>]
+<span class="c-com">#   keep BM, BK; collapse bid_x; keep all of k</span></div>
+
+<p>These four lines are the entire grammar of "give me this block's tile" in FlyDSL. Every kernel in the repo starts with some form of this pattern. The first half-page of any kernel is layout construction; the back half is where actual loads, MFMAs, and stores happen.</p>
+
+<h3>Thread × value · the layout on top of the layout</h3>
+
+<p>A tile is a chunk of data. To execute on a GPU, you need a second layout that maps each <em>(thread, value-index)</em> pair to a coordinate inside the tile. This is the <em>thread/value</em> (TV) layout, and it is FlyDSL's central abstraction for fanning data across a wavefront.</p>
+
+<div class="code"><span class="c-com"># 4 threads laid out along M, each thread handles 1×8 values:</span>
+thr_layout = fx.make_layout((<span class="c-num">4</span>, <span class="c-num">1</span>), (<span class="c-num">1</span>, <span class="c-num">1</span>))
+val_layout = fx.make_layout((<span class="c-num">1</span>, <span class="c-num">8</span>), (<span class="c-num">1</span>, <span class="c-num">1</span>))
+
+tile_mn, tv_layout = fx.<span class="c-key">make_layout_tv</span>(thr_layout, val_layout)
+<span class="c-com"># tv_layout : (T, V) → tile coordinate (M, N)</span>
+<span class="c-com"># tile_mn  : the tile shape covered by one execution</span></div>
+
+<p>The TV layout is the magic. Once you have it, <code>partition_S(tensor)</code> on a thread slice gives you the fragment of <code>tensor</code> that this thread will touch — already shaped <code>(V, VM, VN)</code> with the right indexing math folded in. You never see the address arithmetic. The compiler does. The pass <code>fly-layout-lowering</code> at stage 3 of the pipeline materializes all of this into concrete index expressions.</p>
+
+<div class="callout teal">
+  <span class="ctag">The reframe</span>
+  <p>Layout is not a description of memory; it is a function. <code>make_layout(shape, stride)</code> defines a map <em>coord ↦ index</em>. <code>composition</code>, <code>divide</code>, and <code>product</code> are function composition on that map. Once you read FlyDSL through this lens, the gap between "what the code says" and "what the kernel does" closes by an order of magnitude.</p>
+</div>
+
+<p>Everything else in the layout API — <code>composition</code>, <code>complement</code>, <code>coalesce</code>, <code>right_inverse</code>, <code>raked_product</code>, <code>tiled_product</code> — is constructed from these primitives. The <a href="https://arxiv.org/abs/2601.05972">categorical foundations paper</a> for CuTe layouts works it out formally; for reading kernels, the four pictures above are enough.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M2 — EXAMPLE 01: VECTORADD -->
+<!-- ====================================================== -->
+<section id="m2-vector-add">
+<h2><span class="num">M2 · The two-line program</span>01 · <em>vectorAdd</em></h2>
+
+<p>The first example computes <code>C = A + B</code> for length-128 FP32 vectors. It is the minimum viable FlyDSL kernel — small enough that you can hold the whole pipeline in your head, large enough to exercise every required machinery. There are two functions:</p>
+
+<div class="code"><span class="c-key">@flyc.kernel</span>
+<span class="c-key">def</span> <span class="c-cls">vectorAddKernel</span>(
+    A: fx.Tensor, B: fx.Tensor, C: fx.Tensor,
+    block_dim: fx.Constexpr[<span class="c-cls">int</span>],
+):
+    bid = fx.block_idx.x
+    tid = fx.thread_idx.x
+    A = fx.rocdl.<span class="c-key">make_buffer_tensor</span>(A)
+
+    <span class="c-com"># two-stage divide: tile_per_block, then tile_per_thread</span>
+    tA = fx.<span class="c-key">logical_divide</span>(A, fx.make_layout(block_dim, <span class="c-num">1</span>))
+    tA = fx.<span class="c-key">slice</span>(tA, (<span class="c-num">None</span>, bid))
+    tA = fx.<span class="c-key">logical_divide</span>(tA, fx.make_layout(<span class="c-num">1</span>, <span class="c-num">1</span>))
+    <span class="c-com"># ... same for tB, tC ...</span>
+
+    copyAtomBuf = fx.<span class="c-key">make_copy_atom</span>(fx.rocdl.BufferCopy32b(), fx.Float32)
+    copyAtom    = fx.<span class="c-key">make_copy_atom</span>(fx.UniversalCopy32b(),    fx.Float32)
+
+    rA = fx.<span class="c-key">make_rmem_tensor</span>(fx.make_layout(<span class="c-num">1</span>, <span class="c-num">1</span>), fx.Float32)
+    rB = fx.<span class="c-key">make_rmem_tensor</span>(fx.make_layout(<span class="c-num">1</span>, <span class="c-num">1</span>), fx.Float32)
+    rC = fx.<span class="c-key">make_rmem_tensor</span>(fx.make_layout(<span class="c-num">1</span>, <span class="c-num">1</span>), fx.Float32)
+
+    fx.copy_atom_call(copyAtomBuf, fx.slice(tA, (<span class="c-num">None</span>, tid)), rA)
+    fx.copy_atom_call(copyAtom,    fx.slice(tB, (<span class="c-num">None</span>, tid)), rB)
+    vC = fx.arith.addf(fx.memref_load_vec(rA), fx.memref_load_vec(rB))
+    fx.memref_store_vec(vC, rC)
+    fx.copy_atom_call(copyAtom, rC, fx.slice(tC, (<span class="c-num">None</span>, tid)))</div>
+
+<p>The structure that all FlyDSL kernels share is visible here in miniature. Three phases: <em>layout construction</em>, <em>copy in</em>, <em>compute + copy out</em>. Phase one builds the per-thread view of the data. Phase two moves it from global memory into register fragments. Phase three runs the arithmetic and writes the result back. Once you can see this skeleton, every kernel in <code>kernels/</code> becomes a variation on it — a bigger compute phase, more sophisticated copies, an LDS staging buffer between phase two and three, but the same three-phase shape.</p>
+
+<!-- ============ PLATE II — Two-stage divide ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <div class="pnum">Plate II</div>
+    <div class="pname">Two-stage divide · vectorAdd's tile cascade</div>
+    <div class="pscale">scale · 1000 × 280</div>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e8845a"/>
+    </marker>
+  </defs>
+
+  <!-- Stage 0: original A -->
+  <text x="20" y="32" class="d-text label">STAGE 0 · raw</text>
+  <text x="20" y="50" class="d-text small mono">A : layout (128,):(1,)</text>
+  <g transform="translate(20, 64)">
+    <rect x="0" y="0" width="960" height="36" class="zone" rx="2"/>
+    <g font-family="JetBrains Mono, monospace" font-size="8.5" fill="#92a8bc">
+      <text x="6" y="22">0</text><text x="125" y="22">16</text><text x="245" y="22">32</text>
+      <text x="365" y="22">48</text><text x="485" y="22">64</text><text x="605" y="22">80</text>
+      <text x="725" y="22">96</text><text x="845" y="22">112</text><text x="940" y="22">127</text>
+    </g>
+  </g>
+
+  <!-- Arrow -->
+  <line x1="500" y1="110" x2="500" y2="126" class="bp-line rust thick" marker-end="url(#arr2)"/>
+  <text x="510" y="122" class="d-text small mono">logical_divide(A, layout(64, 1))</text>
+
+  <!-- Stage 1: divided into (64,)×(2,) -->
+  <text x="20" y="148" class="d-text label">STAGE 1 · divided</text>
+  <text x="20" y="166" class="d-text small mono">((64,), (2,))   — tile=64, grid=2</text>
+  <g transform="translate(20, 180)">
+    <rect x="0" y="0" width="470" height="32" class="zone rust" rx="2"/>
+    <text x="235" y="20" class="d-text title rust" text-anchor="middle">tile 0  (bid = 0)</text>
+    <rect x="490" y="0" width="470" height="32" class="zone" rx="2"/>
+    <text x="725" y="20" class="d-text title dim" text-anchor="middle">tile 1  (bid = 1)</text>
+  </g>
+
+  <!-- Arrow to thread tile -->
+  <line x1="235" y1="220" x2="235" y2="234" class="bp-line rust thick" marker-end="url(#arr2)"/>
+  <text x="248" y="230" class="d-text small mono">slice(.., (None, bid))  then  logical_divide(.., layout(1,1))</text>
+
+  <!-- Stage 2: per-thread (64 cells) -->
+  <text x="20" y="248" class="d-text label">STAGE 2 · per thread (block bid=0)</text>
+  <g transform="translate(20, 256)">
+    <rect x="0" y="0" width="470" height="20" class="zone deep" rx="1"/>
+    <g font-family="JetBrains Mono, monospace" font-size="6.5" fill="#ecf1f7">
+      <!-- 64 cells -->
+      <g>
+        <!-- draw 64 thin cells -->
+      </g>
+    </g>
+    <!-- 64 cell dividers + tid labels every 4 -->
+    <g stroke="#2a6791" stroke-width="0.5">
+      <line x1="7.34" y1="0" x2="7.34" y2="20"/>
+      <line x1="14.68" y1="0" x2="14.68" y2="20"/>
+      <line x1="22.02" y1="0" x2="22.02" y2="20"/>
+      <line x1="29.36" y1="0" x2="29.36" y2="20"/>
+      <line x1="36.7" y1="0" x2="36.7" y2="20"/>
+      <line x1="44.04" y1="0" x2="44.04" y2="20"/>
+      <line x1="51.38" y1="0" x2="51.38" y2="20"/>
+      <line x1="58.72" y1="0" x2="58.72" y2="20"/>
+      <line x1="66.06" y1="0" x2="66.06" y2="20"/>
+      <line x1="73.4" y1="0" x2="73.4" y2="20"/>
+      <line x1="80.74" y1="0" x2="80.74" y2="20"/>
+      <line x1="88.08" y1="0" x2="88.08" y2="20"/>
+      <line x1="95.42" y1="0" x2="95.42" y2="20"/>
+      <line x1="102.76" y1="0" x2="102.76" y2="20"/>
+      <line x1="110.1" y1="0" x2="110.1" y2="20"/>
+      <line x1="117.44" y1="0" x2="117.44" y2="20"/>
+      <line x1="124.78" y1="0" x2="124.78" y2="20"/>
+      <line x1="132.12" y1="0" x2="132.12" y2="20"/>
+      <line x1="139.46" y1="0" x2="139.46" y2="20"/>
+      <line x1="146.8" y1="0" x2="146.8" y2="20"/>
+      <line x1="154.14" y1="0" x2="154.14" y2="20"/>
+      <line x1="161.48" y1="0" x2="161.48" y2="20"/>
+      <line x1="168.82" y1="0" x2="168.82" y2="20"/>
+      <line x1="176.16" y1="0" x2="176.16" y2="20"/>
+      <line x1="183.5" y1="0" x2="183.5" y2="20"/>
+      <line x1="190.84" y1="0" x2="190.84" y2="20"/>
+      <line x1="198.18" y1="0" x2="198.18" y2="20"/>
+      <line x1="205.52" y1="0" x2="205.52" y2="20"/>
+      <line x1="212.86" y1="0" x2="212.86" y2="20"/>
+      <line x1="220.2" y1="0" x2="220.2" y2="20"/>
+      <line x1="227.54" y1="0" x2="227.54" y2="20"/>
+      <line x1="234.88" y1="0" x2="234.88" y2="20"/>
+      <line x1="242.22" y1="0" x2="242.22" y2="20"/>
+      <line x1="249.56" y1="0" x2="249.56" y2="20"/>
+      <line x1="256.9" y1="0" x2="256.9" y2="20"/>
+      <line x1="264.24" y1="0" x2="264.24" y2="20"/>
+      <line x1="271.58" y1="0" x2="271.58" y2="20"/>
+      <line x1="278.92" y1="0" x2="278.92" y2="20"/>
+      <line x1="286.26" y1="0" x2="286.26" y2="20"/>
+      <line x1="293.6" y1="0" x2="293.6" y2="20"/>
+      <line x1="300.94" y1="0" x2="300.94" y2="20"/>
+      <line x1="308.28" y1="0" x2="308.28" y2="20"/>
+      <line x1="315.62" y1="0" x2="315.62" y2="20"/>
+      <line x1="322.96" y1="0" x2="322.96" y2="20"/>
+      <line x1="330.3" y1="0" x2="330.3" y2="20"/>
+      <line x1="337.64" y1="0" x2="337.64" y2="20"/>
+      <line x1="344.98" y1="0" x2="344.98" y2="20"/>
+      <line x1="352.32" y1="0" x2="352.32" y2="20"/>
+      <line x1="359.66" y1="0" x2="359.66" y2="20"/>
+      <line x1="367" y1="0" x2="367" y2="20"/>
+      <line x1="374.34" y1="0" x2="374.34" y2="20"/>
+      <line x1="381.68" y1="0" x2="381.68" y2="20"/>
+      <line x1="389.02" y1="0" x2="389.02" y2="20"/>
+      <line x1="396.36" y1="0" x2="396.36" y2="20"/>
+      <line x1="403.7" y1="0" x2="403.7" y2="20"/>
+      <line x1="411.04" y1="0" x2="411.04" y2="20"/>
+      <line x1="418.38" y1="0" x2="418.38" y2="20"/>
+      <line x1="425.72" y1="0" x2="425.72" y2="20"/>
+      <line x1="433.06" y1="0" x2="433.06" y2="20"/>
+      <line x1="440.4" y1="0" x2="440.4" y2="20"/>
+      <line x1="447.74" y1="0" x2="447.74" y2="20"/>
+      <line x1="455.08" y1="0" x2="455.08" y2="20"/>
+      <line x1="462.42" y1="0" x2="462.42" y2="20"/>
+    </g>
+    <g font-family="JetBrains Mono, monospace" font-size="7" fill="#f0c764">
+      <text x="3.5" y="14">t0</text>
+      <text x="62" y="14">t8</text>
+      <text x="120.5" y="14">t16</text>
+      <text x="179" y="14">t24</text>
+      <text x="234" y="14">t32</text>
+      <text x="293" y="14">t40</text>
+      <text x="351" y="14">t48</text>
+      <text x="410" y="14">t56</text>
+      <text x="450" y="14">t63</text>
+    </g>
+  </g>
+</svg>
+  </div>
+  <div class="caption">The vectorAdd kernel does <em>two divisions</em>. The first splits the global vector into per-block tiles — <code>logical_divide(A, layout(64,1))</code> produces a shape <code>((64,), (2,))</code> where the first mode is "what fits in one block" and the second mode is "how many blocks." <code>slice(.., (None, bid))</code> then collapses the second mode for the current block. The second division splits the per-block tile into per-thread slots; with a trivial divisor of <code>1</code>, each thread gets one element. The same cascade appears in every kernel — the difference is the divisor sizes and how many levels you stack.</div>
+</div>
+
+<h3>The two copy atoms · <em>BufferCopy vs UniversalCopy</em></h3>
+
+<p>Look at the two atoms FlyDSL constructs for this kernel. They are not the same:</p>
+
+<div class="code">copyAtomBuf = fx.make_copy_atom(fx.rocdl.<span class="c-key">BufferCopy32b</span>(), fx.Float32)
+copyAtom    = fx.make_copy_atom(fx.<span class="c-key">UniversalCopy32b</span>(),    fx.Float32)
+
+fx.copy_atom_call(copyAtomBuf, fx.slice(tA, (<span class="c-num">None</span>, tid)), rA)  <span class="c-com"># A uses buffer</span>
+fx.copy_atom_call(copyAtom,    fx.slice(tB, (<span class="c-num">None</span>, tid)), rB)  <span class="c-com"># B uses universal</span></div>
+
+<p><code>UniversalCopy32b</code> lowers to a generic <code>flat_load_dword</code> — pointer + offset, no extras. <code>BufferCopy32b</code> lowers to <code>buffer_load_dword</code>, which uses a four-SGPR <em>buffer resource descriptor</em> set up earlier by <code>make_buffer_tensor</code>. The buffer descriptor carries a <code>num_records</code> field, and the AMD GPU hardware checks every access against it: out-of-bounds loads return zero <em>without</em> raising a page fault, and out-of-bounds stores are silently dropped. This is the same OOB-by-SRD trick that <a href="/sources/gcnasm.html">gcnasm</a>'s vector_add kernel makes a centerpiece of.</p>
+
+<p>The example deliberately uses both — A via buffer, B via universal — to make the contrast visible. In production code, you would use BufferCopy for both: it costs the same to issue and gets you branch-free boundary handling for free.</p>
+
+<h3>The launch wrapper · <em>@flyc.jit</em></h3>
+
+<div class="code"><span class="c-key">@flyc.jit</span>
+<span class="c-key">def</span> <span class="c-cls">vectorAdd</span>(
+    A: fx.Tensor, B: fx.Tensor, C,
+    n: fx.<span class="c-cls">Int32</span>,                  <span class="c-com"># runtime int (no cache effect)</span>
+    const_n: fx.Constexpr[<span class="c-cls">int</span>],     <span class="c-com"># compile-time int (affects cache key)</span>
+    stream: fx.Stream = fx.Stream(<span class="c-num">None</span>),
+):
+    block_dim = <span class="c-num">64</span>
+    grid_x = (n + block_dim - <span class="c-num">1</span>) // block_dim
+    vectorAddKernel(A, B, C, block_dim).launch(
+        grid=(grid_x, <span class="c-num">1</span>, <span class="c-num">1</span>), block=[block_dim, <span class="c-num">1</span>, <span class="c-num">1</span>], stream=stream,
+    )</div>
+
+<p>The annotations on <code>vectorAdd</code> tell the compiler what to do with each parameter: <code>fx.Int32</code> is dynamic (it becomes a kernel argument), <code>fx.Constexpr[int]</code> is static (it gets baked in and contributes to the JIT cache key). Change a <code>Constexpr</code> value and you get a fresh compile; change a dynamic value and the cached binary is reused. This is the same Triton-style autotune model with type annotations doing the work that <code>tl.constexpr</code> does in Triton.</p>
+
+<div class="callout jade">
+  <span class="ctag">CUDA Graph compatibility</span>
+  <p>The example's second test captures the kernel into a <code>torch.cuda.CUDAGraph</code> and replays it. This works because FlyDSL's launch path goes through <em>fly-gpu-stream-inject</em>, a pass that threads the stream argument into the actual launch instead of consulting a TLS variable. For an inference engine that batches kernels into a captured graph for replay (vLLM, SGLang), this is the difference between FlyDSL kernels being usable and being a special case.</p>
+</div>
+
+<p>Run it on a MI350X:</p>
+
+<div class="code">$ python examples/01-vectorAdd.py
+[Eager] Result correct: True
+[Graph Capture] Result correct: True
+All passed: True</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- M3 — EXAMPLE 02: TILEDCOPY -->
+<!-- ====================================================== -->
+<section id="m3-tiled-copy">
+<h2><span class="num">M3 · Fanning a tile across threads</span>02 · <em>tiledCopy</em></h2>
+
+<p>Example 02 is the smallest kernel in the repo (69 lines) and the most useful for understanding FlyDSL's central abstraction. It copies a 24×120 FP32 matrix from <code>A</code> to <code>B</code> using block tiles of <code>(8, 24)</code> and only <em>four threads per block</em>. The thread count is deliberately small — small enough that you can draw the full thread-value layout on one sheet of paper and verify by hand that it covers the tile correctly.</p>
+
+<div class="code"><span class="c-key">@flyc.kernel</span>
+<span class="c-key">def</span> <span class="c-cls">copy_kernel</span>(A: fx.Tensor, B: fx.Tensor):
+    tid = fx.thread_idx.x
+    bid = fx.block_idx.x
+    block_m, block_n = <span class="c-num">8</span>, <span class="c-num">24</span>
+
+    A = fx.rocdl.make_buffer_tensor(A)
+    B = fx.rocdl.make_buffer_tensor(B)
+
+    bA = fx.<span class="c-key">zipped_divide</span>(A, (block_m, block_n))   <span class="c-com"># ((8,24), (3,5))</span>
+    bB = fx.<span class="c-key">zipped_divide</span>(B, (block_m, block_n))
+    bA = fx.slice(bA, (<span class="c-num">None</span>, bid))                  <span class="c-com"># (8, 24)</span>
+    bB = fx.slice(bB, (<span class="c-num">None</span>, bid))
+
+    thr_layout = fx.make_layout((<span class="c-num">4</span>, <span class="c-num">1</span>), (<span class="c-num">1</span>, <span class="c-num">1</span>))
+    val_layout = fx.make_layout((<span class="c-num">1</span>, <span class="c-num">8</span>), (<span class="c-num">1</span>, <span class="c-num">1</span>))
+    copy_atom  = fx.make_copy_atom(fx.rocdl.<span class="c-key">BufferCopy128b</span>(), fx.Float32)
+
+    tile_mn, tv_layout = fx.<span class="c-key">make_layout_tv</span>(thr_layout, val_layout)
+    tiled_copy = fx.<span class="c-key">make_tiled_copy</span>(copy_atom, tv_layout, tile_mn)
+    thr_copy   = tiled_copy.get_slice(tid)
+
+    partition_src = thr_copy.partition_S(bA)
+    partition_dst = thr_copy.partition_D(bB)
+    frag = fx.make_fragment_like(partition_src)
+
+    fx.copy(copy_atom, partition_src, frag)
+    fx.copy(copy_atom, frag, partition_dst)</div>
+
+<h3>The arithmetic of the TV layout</h3>
+
+<p>An (8, 24) tile has 192 elements. Four threads issuing 128-bit (= 8 × FP32) loads can move 32 elements per round, so the tile takes <em>six rounds</em> to drain. The TV layout says how those six rounds tile the (8, 24) plane:</p>
+
+<ul>
+  <li><strong>thr_layout = ((4,1), (1,1))</strong> — four threads, laid out 4 along M, 1 along N.</li>
+  <li><strong>val_layout = ((1,8), (1,1))</strong> — each thread reads a 1×8 block of values.</li>
+  <li><strong>one execution covers <code>(4×1) × (1×8) = (4, 8)</code></strong> of the tile.</li>
+  <li><strong>the tile is (8, 24), so the execution repeats <code>(8/4, 24/8) = (2, 3)</code> times</strong> — that's the <em>(VM, VN)</em> shape that <code>partition_S</code> returns.</li>
+</ul>
+
+<!-- ============ PLATE III — TV layout coverage grid ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <div class="pnum">Plate III</div>
+    <div class="pname">Thread × value layout covering the (8, 24) tile</div>
+    <div class="pscale">scale · 1000 × 380</div>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="t0pat" patternUnits="userSpaceOnUse" width="6" height="6">
+      <rect width="6" height="6" fill="#e8845a" fill-opacity="0.7"/>
+    </pattern>
+  </defs>
+
+  <text x="20" y="32" class="d-text label">TILE LAYOUT · (M=8) × (N=24)</text>
+  <text x="20" y="48" class="d-text small mono">each cell = one f32; colored by owning thread; grouped by repeat (VM, VN)</text>
+
+  <!-- The big tile -->
+  <g transform="translate(60, 70)">
+    <!-- Background grid (8 rows x 24 cols) — cell size 32 x 32 -->
+    <!-- M axis on left, N axis on top -->
+    <!-- Top N labels -->
+    <g font-family="JetBrains Mono, monospace" font-size="8.5" fill="#92a8bc">
+      <text x="380" y="-8" text-anchor="middle">N (24 cols)</text>
+    </g>
+    <text x="-12" y="130" class="d-text small mono" text-anchor="middle" transform="rotate(-90, -12, 130)">M (8 rows)</text>
+
+    <!-- VN=0 block: cols 0-7 -->
+    <!-- VN=1 block: cols 8-15 -->
+    <!-- VN=2 block: cols 16-23 -->
+    <!-- VM=0 block: rows 0-3 (t0,t1,t2,t3 each owns one row) -->
+    <!-- VM=1 block: rows 4-7 -->
+
+    <!-- For each (vm, vn) = (0..1, 0..2), draw a 4-row x 8-col block, with each row colored by thread -->
+    <!-- Cell size: 32 x 32 -->
+
+    <!-- VM=0, VN=0 (rows 0-3, cols 0-7) -->
+    <g>
+      <!-- t0 row -->
+      <rect x="0"   y="0" width="256" height="32" fill="#e8845a" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="0"  y="32" width="256" height="32" fill="#f0c764" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="0"  y="64" width="256" height="32" fill="#8ec788" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="0"  y="96" width="256" height="32" fill="#6dc0c7" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+    </g>
+    <!-- VM=0, VN=1 -->
+    <g>
+      <rect x="256"  y="0" width="256" height="32" fill="#e8845a" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="32" width="256" height="32" fill="#f0c764" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="64" width="256" height="32" fill="#8ec788" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="96" width="256" height="32" fill="#6dc0c7" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+    </g>
+    <!-- VM=0, VN=2 -->
+    <g>
+      <rect x="512"  y="0" width="256" height="32" fill="#e8845a" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="32" width="256" height="32" fill="#f0c764" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="64" width="256" height="32" fill="#8ec788" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="96" width="256" height="32" fill="#6dc0c7" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+    </g>
+
+    <!-- VM=1 (rows 4-7) -->
+    <g>
+      <rect x="0"   y="128" width="256" height="32" fill="#e8845a" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="0"   y="160" width="256" height="32" fill="#f0c764" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="0"   y="192" width="256" height="32" fill="#8ec788" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="0"   y="224" width="256" height="32" fill="#6dc0c7" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="128" width="256" height="32" fill="#e8845a" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="160" width="256" height="32" fill="#f0c764" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="192" width="256" height="32" fill="#8ec788" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="256" y="224" width="256" height="32" fill="#6dc0c7" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="128" width="256" height="32" fill="#e8845a" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="160" width="256" height="32" fill="#f0c764" fill-opacity="0.7" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="192" width="256" height="32" fill="#8ec788" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+      <rect x="512" y="224" width="256" height="32" fill="#6dc0c7" fill-opacity="0.65" stroke="#0a2840" stroke-width="0.5"/>
+    </g>
+
+    <!-- Thick boundaries between (VM, VN) blocks -->
+    <line x1="0" y1="128" x2="768" y2="128" stroke="#ecf1f7" stroke-width="1.5"/>
+    <line x1="256" y1="0" x2="256" y2="256" stroke="#ecf1f7" stroke-width="1.5"/>
+    <line x1="512" y1="0" x2="512" y2="256" stroke="#ecf1f7" stroke-width="1.5"/>
+
+    <!-- Outer frame -->
+    <rect x="0" y="0" width="768" height="256" fill="none" stroke="#ecf1f7" stroke-width="1.5"/>
+
+    <!-- Annotations: (VM, VN) labels in each block -->
+    <g font-family="JetBrains Mono, monospace" font-size="10" fill="#0a2840" font-weight="600">
+      <text x="248" y="14" text-anchor="end">(0,0)</text>
+      <text x="504" y="14" text-anchor="end">(0,1)</text>
+      <text x="760" y="14" text-anchor="end">(0,2)</text>
+      <text x="248" y="142" text-anchor="end">(1,0)</text>
+      <text x="504" y="142" text-anchor="end">(1,1)</text>
+      <text x="760" y="142" text-anchor="end">(1,2)</text>
+    </g>
+
+    <!-- Thread labels on left side -->
+    <g font-family="JetBrains Mono, monospace" font-size="9" fill="#92a8bc">
+      <text x="-30" y="20">tid 0</text>
+      <text x="-30" y="52">tid 1</text>
+      <text x="-30" y="84">tid 2</text>
+      <text x="-30" y="116">tid 3</text>
+      <text x="-30" y="148">tid 0</text>
+      <text x="-30" y="180">tid 1</text>
+      <text x="-30" y="212">tid 2</text>
+      <text x="-30" y="244">tid 3</text>
+    </g>
+
+    <!-- One row labeled as "8 f32 = 128 bit" -->
+    <g>
+      <line x1="0" y1="280" x2="256" y2="280" class="bp-line brass thick"/>
+      <text x="128" y="298" class="d-text small mono brass" text-anchor="middle">8 f32 = 128 bit  (one BufferCopy128b call)</text>
+    </g>
+  </g>
+
+  <!-- Right side legend -->
+  <g transform="translate(840, 80)">
+    <text x="0" y="-12" class="d-text label">LEGEND</text>
+    <rect x="0" y="0" width="14" height="14" fill="#e8845a" fill-opacity="0.7"/>
+    <text x="22" y="12" class="d-text small mono">tid 0</text>
+    <rect x="0" y="22" width="14" height="14" fill="#f0c764" fill-opacity="0.7"/>
+    <text x="22" y="34" class="d-text small mono">tid 1</text>
+    <rect x="0" y="44" width="14" height="14" fill="#8ec788" fill-opacity="0.65"/>
+    <text x="22" y="56" class="d-text small mono">tid 2</text>
+    <rect x="0" y="66" width="14" height="14" fill="#6dc0c7" fill-opacity="0.65"/>
+    <text x="22" y="78" class="d-text small mono">tid 3</text>
+
+    <text x="0" y="120" class="d-text label">COUNT</text>
+    <text x="0" y="138" class="d-text small mono">4 thr × 8 val × 6 (VM,VN)</text>
+    <text x="0" y="154" class="d-text small mono">= 192 f32 = full tile</text>
+  </g>
+</svg>
+  </div>
+  <div class="caption">Each colored cell is one FP32, colored by its owning thread. One <em>execution</em> of the tiled copy issues four <code>BufferCopy128b</code> instructions — one per thread, each fetching its 8 consecutive FP32s. The (VM=2, VN=3) outer indexing means the execution repeats <em>six</em> times to cover the full (8, 24) tile, giving every thread a fragment of shape <em>(V=8, VM=2, VN=3) = 48 values</em>. <code>partition_S</code> hands you that exact fragment shape — no address arithmetic, just an indexable tensor.</div>
+</div>
+
+<h3>partition_S, partition_D, fragment · <em>the three calls that matter</em></h3>
+
+<p>Three method calls do all the work that would otherwise be a page of address math:</p>
+
+<table class="tbl">
+  <thead><tr><th>Call</th><th>Returns</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td><code>thr_copy.partition_S(bA)</code></td><td>per-thread view of source, shape <code>(V, VM, VN)</code></td><td>where the load reads</td></tr>
+    <tr><td><code>thr_copy.partition_D(bB)</code></td><td>per-thread view of destination, same shape</td><td>where the load writes</td></tr>
+    <tr><td><code>fx.make_fragment_like(part)</code></td><td>register tensor with same logical shape</td><td>the in-register staging area</td></tr>
+  </tbody>
+</table>
+
+<p>Then <code>fx.copy(atom, src, dst)</code> issues the actual instructions, walking the <code>(VM, VN)</code> outer modes and emitting one atom call per (VM, VN) coordinate. Six iterations, one BufferCopy128b each, four threads in parallel, 192 elements total — exactly the picture above.</p>
+
+<div class="callout teal">
+  <span class="ctag">Compare to 01</span>
+  <p>In 01-vectorAdd, the partitioning is hand-rolled with two <code>logical_divide</code> + <code>slice</code> calls. Here it is delegated to <code>tiled_copy</code> + <code>partition_S/D</code>. The new abstraction earns its keep when you have more than a trivial number of threads and want vectorization: it would be tedious to compute a 128-bit-aligned load offset for each of 256 threads by hand, but <code>make_layout_tv</code> + <code>partition_S</code> compiles down to exactly that — without you ever writing the byte-offset arithmetic.</p>
+</div>
+
+<p>Run it:</p>
+
+<div class="code">$ python examples/02-tiledCopy.py
+Result correct: True</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- M4 — EXAMPLE 03: TILEDMMA -->
+<!-- ====================================================== -->
+<section id="m4-tiled-mma">
+<h2><span class="num">M4 · First contact with MFMA</span>03 · <em>tiledMma</em> &amp; MFMA</h2>
+
+<p>Example 03 is the first kernel that actually multiplies. It computes <code>C(64, 64) = A(64, 8) · B(64, 8)ᵀ</code> on FP32, in a single block with 256 threads (four wavefronts), entirely in registers — no LDS, no K-loop, no software pipeline. The point is to introduce MFMA atoms and the way copy layouts are <em>derived</em> from a tiled MMA, without yet bringing in the optimization machinery of example 04.</p>
+
+<div class="code">block_m, block_n, block_k = <span class="c-num">64</span>, <span class="c-num">64</span>, <span class="c-num">8</span>
+
+<span class="c-key">@flyc.kernel</span>
+<span class="c-key">def</span> <span class="c-cls">gemm_kernel</span>(A: fx.Tensor, B: fx.Tensor, C: fx.Tensor):
+    tid = fx.thread_idx.x
+    bid = fx.block_idx.x
+
+    A = fx.rocdl.make_buffer_tensor(A)
+    B = fx.rocdl.make_buffer_tensor(B)
+    C = fx.rocdl.make_buffer_tensor(C)
+
+    bA = fx.zipped_divide(A, (block_m, block_k))
+    bB = fx.zipped_divide(B, (block_n, block_k))
+    bC = fx.zipped_divide(C, (block_m, block_n))
+    bA = fx.slice(bA, (<span class="c-num">None</span>, bid))
+    bB = fx.slice(bB, (<span class="c-num">None</span>, bid))
+    bC = fx.slice(bC, (<span class="c-num">None</span>, bid))
+
+    mma_atom  = fx.<span class="c-key">make_mma_atom</span>(fx.rocdl.<span class="c-key">MFMA</span>(<span class="c-num">16</span>, <span class="c-num">16</span>, <span class="c-num">4</span>, fx.Float32))
+    tiled_mma = fx.<span class="c-key">make_tiled_mma</span>(mma_atom, fx.make_layout((<span class="c-num">2</span>,<span class="c-num">2</span>,<span class="c-num">1</span>), (<span class="c-num">1</span>,<span class="c-num">2</span>,<span class="c-num">0</span>)))
+    thr_mma   = tiled_mma.thr_slice(tid)</div>
+
+<h3>The MFMA atom · a single-instruction matrix multiply</h3>
+
+<p>The CDNA matrix core executes Matrix Fused Multiply-Add instructions — <code>v_mfma_f32_16x16x4f32</code> in this case. One instruction, 64 lanes, computes <code>C(16, 16) += A(16, 4) · B(4, 16)</code> in a fixed lane-distribution pattern dictated by the hardware. The constructor argument <code>MFMA(16, 16, 4, fx.Float32)</code> picks that exact variant; FlyDSL knows the lane layouts the instruction demands and exposes them as <code>mma_atom.tv_layout_A/B/C</code>.</p>
+
+<p><code>make_tiled_mma(atom, layout((2, 2, 1), (1, 2, 0)))</code> says: tile this atom by laying four wavefronts out as <em>2 along M, 2 along N, 1 along K</em>. The stride <code>(1, 2, 0)</code> maps the wave id to (M, N, K) indices — wave 0 → (M=0, N=0), wave 1 → (M=1, N=0), wave 2 → (M=0, N=1), wave 3 → (M=1, N=1). All four waves cooperate along the K dimension (stride 0 means K is broadcast across waves).</p>
+
+<!-- ============ PLATE IV — MFMA wave tiling ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <div class="pnum">Plate IV</div>
+    <div class="pname">Four wavefronts tiling a 64×64 block via 2×2×1 wave layout</div>
+    <div class="pscale">scale · 1000 × 380</div>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="32" class="d-text label">BLOCK TILE C · 64 × 64 · single-block GEMM</text>
+
+  <!-- The 64x64 C tile, broken into a 2x2 wave grid, each wave doing 2x2 atom repeats of 16x16 -->
+  <g transform="translate(40, 60)">
+    <!-- Wave 0: top-left, 32x32 -->
+    <rect x="0" y="0" width="160" height="160" fill="#e8845a" fill-opacity="0.18" stroke="#e8845a" stroke-width="1.6"/>
+    <text x="80" y="-8" class="d-text small mono" text-anchor="middle">N : 0 → 32</text>
+    <text x="-12" y="84" class="d-text small mono" text-anchor="middle" transform="rotate(-90, -12, 84)">M : 0 → 32</text>
+    <!-- 2x2 atom subdivision within wave 0 -->
+    <g stroke="#e8845a" stroke-opacity="0.6" stroke-dasharray="3 3" fill="none">
+      <line x1="80" y1="0" x2="80" y2="160"/>
+      <line x1="0" y1="80" x2="160" y2="80"/>
+    </g>
+    <g font-family="JetBrains Mono, monospace" font-size="9" fill="#e8845a">
+      <text x="40" y="46" text-anchor="middle">atom</text>
+      <text x="40" y="58" text-anchor="middle">(0,0)</text>
+      <text x="120" y="46" text-anchor="middle">atom</text>
+      <text x="120" y="58" text-anchor="middle">(0,1)</text>
+      <text x="40" y="126" text-anchor="middle">atom</text>
+      <text x="40" y="138" text-anchor="middle">(1,0)</text>
+      <text x="120" y="126" text-anchor="middle">atom</text>
+      <text x="120" y="138" text-anchor="middle">(1,1)</text>
+    </g>
+    <text x="80" y="96" class="d-text title rust" text-anchor="middle">wave 0</text>
+
+    <!-- Wave 1: top-right, 32x32 -->
+    <rect x="160" y="0" width="160" height="160" fill="#f0c764" fill-opacity="0.16" stroke="#f0c764" stroke-width="1.6"/>
+    <text x="240" y="-8" class="d-text small mono" text-anchor="middle">N : 32 → 64</text>
+    <g stroke="#f0c764" stroke-opacity="0.6" stroke-dasharray="3 3" fill="none">
+      <line x1="240" y1="0" x2="240" y2="160"/>
+      <line x1="160" y1="80" x2="320" y2="80"/>
+    </g>
+    <text x="240" y="96" class="d-text title brass" text-anchor="middle">wave 2</text>
+
+    <!-- Wave 2: bottom-left, 32x32 -->
+    <rect x="0" y="160" width="160" height="160" fill="#8ec788" fill-opacity="0.16" stroke="#8ec788" stroke-width="1.6"/>
+    <text x="-12" y="244" class="d-text small mono" text-anchor="middle" transform="rotate(-90, -12, 244)">M : 32 → 64</text>
+    <g stroke="#8ec788" stroke-opacity="0.5" stroke-dasharray="3 3" fill="none">
+      <line x1="80" y1="160" x2="80" y2="320"/>
+      <line x1="0" y1="240" x2="160" y2="240"/>
+    </g>
+    <text x="80" y="256" class="d-text title jade" text-anchor="middle">wave 1</text>
+
+    <!-- Wave 3: bottom-right, 32x32 -->
+    <rect x="160" y="160" width="160" height="160" fill="#6dc0c7" fill-opacity="0.16" stroke="#6dc0c7" stroke-width="1.6"/>
+    <g stroke="#6dc0c7" stroke-opacity="0.5" stroke-dasharray="3 3" fill="none">
+      <line x1="240" y1="160" x2="240" y2="320"/>
+      <line x1="160" y1="240" x2="320" y2="240"/>
+    </g>
+    <text x="240" y="256" class="d-text title teal" text-anchor="middle">wave 3</text>
+
+    <!-- Frame -->
+    <rect x="0" y="0" width="320" height="320" fill="none" stroke="#ecf1f7" stroke-width="2"/>
+  </g>
+
+  <!-- Right side annotation -->
+  <g transform="translate(420, 60)">
+    <text x="0" y="0" class="d-text label">WAVE LAYOUT</text>
+    <text x="0" y="20" class="d-text title">make_tiled_mma(atom, make_layout((2,2,1), (1,2,0)))</text>
+
+    <text x="0" y="56" class="d-text label">MNK shape</text>
+    <text x="0" y="76" class="d-text small mono">(M=2 waves) × (N=2 waves) × (K=1 wave)</text>
+    <text x="0" y="92" class="d-text small mono">4 waves × 64 thr/wave = 256 thr (matches block)</text>
+
+    <text x="0" y="124" class="d-text label">Stride · wave-id → (M, N, K)</text>
+    <text x="0" y="144" class="d-text small mono">wave 0 → M=0 N=0    wave 1 → M=1 N=0</text>
+    <text x="0" y="160" class="d-text small mono">wave 2 → M=0 N=1    wave 3 → M=1 N=1</text>
+    <text x="0" y="180" class="d-text small mono dim">K stride = 0 ⇒ all waves reduce along K together</text>
+
+    <text x="0" y="216" class="d-text label">ATOM REPEAT</text>
+    <text x="0" y="236" class="d-text small mono">block_m / (2 · 16) = 2 atoms</text>
+    <text x="0" y="252" class="d-text small mono">block_n / (2 · 16) = 2 atoms</text>
+    <text x="0" y="268" class="d-text small mono">block_k / (1 · 4)  = 2 atoms</text>
+    <text x="0" y="284" class="d-text small mono brass">→ frag_C per wave : 2×2 = 4 atom outputs</text>
+
+    <text x="0" y="320" class="d-text label">PER-LANE</text>
+    <text x="0" y="340" class="d-text small mono">MFMA writes 4 fp32 / lane / atom</text>
+    <text x="0" y="356" class="d-text small mono brass">→ 4 atoms × 4 fp32 = 16 fp32 in AGPRs / lane</text>
+  </g>
+</svg>
+  </div>
+  <div class="caption">The (2, 2, 1) wave layout tiles four wavefronts across the M and N dimensions of the 64×64 C tile, with all four waves cooperating along K. Inside each wave, the 32×32 sub-tile is in turn covered by a 2×2 grid of MFMA-16×16 atom outputs — each lane of each wave ends up with 4 outputs × 4 fp32 = 16 fp32 in AGPRs. The thread-id-to-position mapping is the stride <code>(1, 2, 0)</code>: <code>wave 0 → (0,0)</code>, <code>wave 1 → (1,0)</code>, <code>wave 2 → (0,1)</code>, <code>wave 3 → (1,1)</code>. The same wave-layout idiom scales: example 04 uses <code>(1, 4, 1)</code> with a much larger atom permutation.</div>
+</div>
+
+<h3>make_tiled_copy_A · <em>copy layouts inherited from the MMA</em></h3>
+
+<p>The MFMA instruction demands a specific lane-to-element layout for its A and B inputs and for its C output. Get this wrong and you load <em>correct data into the wrong lane</em> — the kernel runs without crashing and produces noise. The conventional fix is to read the MFMA documentation and hand-write copy layouts that match. FlyDSL inverts the direction:</p>
+
+<div class="code"><span class="c-com"># instead of writing the A-copy layout from scratch:</span>
+copy_atom    = fx.make_copy_atom(fx.rocdl.BufferCopy32b(), fx.Float32)
+tiled_copy_A = fx.<span class="c-key">make_tiled_copy_A</span>(copy_atom, tiled_mma)
+tiled_copy_B = fx.<span class="c-key">make_tiled_copy_B</span>(copy_atom, tiled_mma)
+tiled_copy_C = fx.<span class="c-key">make_tiled_copy_C</span>(copy_atom, tiled_mma)
+
+thr_copy_A = tiled_copy_A.get_slice(tid)
+copy_src_A = thr_copy_A.partition_S(bA)   <span class="c-com"># MMA-correct partition of A</span></div>
+
+<p><code>make_tiled_copy_A</code> reads the MMA atom's <code>tv_layout_A</code> and constructs a copy whose <em>per-thread fragment shape</em> is exactly what the MFMA will consume. The compiler guarantees lane correctness; you never reason about which lane gets which element. The same trick gives you <code>tiled_copy_B</code> for the second operand and <code>tiled_copy_C</code> for the accumulator store.</p>
+
+<h3>retile · <em>one register, two views</em></h3>
+
+<p>The same register fragment is read by two different consumers: the copy instructions (which want it in "vector load" shape) and the MFMA instruction (which wants it in "lane assignment" shape). The two shapes are isomorphic — same total bytes, same number of registers — but indexed differently. <code>retile</code> gives you the second view without reallocation:</p>
+
+<div class="code">frag_A      = thr_mma.<span class="c-key">make_fragment_A</span>(bA)        <span class="c-com"># MMA view</span>
+copy_frag_A = thr_copy_A.<span class="c-key">retile</span>(frag_A)        <span class="c-com"># same memory, copy view</span>
+
+<span class="c-com"># Load into the copy view, then operate on the MMA view:</span>
+fx.copy(copy_atom, copy_src_A, copy_frag_A, pred=<span class="c-num">None</span>)
+fx.gemm(mma_atom, frag_C, frag_A, frag_B, frag_C)</div>
+
+<div class="callout brass">
+  <span class="ctag">Why retile matters</span>
+  <p>Without <code>retile</code>, you'd allocate one fragment for "after the load," then issue copies between it and a second "for the MMA" fragment — moving registers around unnecessarily. <code>retile</code> is FlyDSL's recognition that the data already in your registers can be addressed two ways at zero cost. The MLIR pass pipeline collapses both views into the same VGPR allocation; the only IR-level operation is a type reinterpret.</p>
+</div>
+
+<p>Run it:</p>
+
+<div class="code">$ python examples/03-tiledMma.py
+Result correct: True</div>
+
+<p>Example 03 is the first example whose abstraction-to-mechanism ratio is dramatic. Less than 80 lines of layout code produce a working tiled MFMA — the equivalent hand-written ROCDL would be 300+ lines of register juggling and the lane-correctness check would be done with a tensor of fp32 ones loaded against a known-good reference. The abstractions are not just convenient; they make the kernel <em>verifiable by inspection</em>.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M5 — EXAMPLE 04: PRESHUFFLE GEMM -->
+<!-- ====================================================== -->
+<section id="m5-preshuffle">
+<h2><span class="num">M5 · The production kernel</span>04 · <em>preshuffle GEMM</em></h2>
+
+<p>The fourth example is where it stops being a tutorial. 211 lines, a 4096³ FP16 GEMM, BLOCK = (128, 128, 64), two-stage LDS double buffer with XOR swizzle, double-buffered B in registers, a hand-written instruction scheduler in the hot loop, and a host-side weight preshuffle that flattens an MFMA-specific lane layout into a contiguous global memory pattern. Every optimization that production CDNA GEMMs use is here in compact form. The example earns its place at the top of the ladder.</p>
+
+<h3>The four pieces that make a fast GEMM</h3>
+
+<table class="tbl">
+  <thead><tr><th>Optimization</th><th>What it costs</th><th>What it buys</th></tr></thead>
+  <tbody>
+    <tr><td>Preshuffle B (host-side)</td><td>One memory reshape at load time</td><td>MFMA gets lane-correct data from raw <code>buffer_load_dwordx4</code> — no LDS transpose</td></tr>
+    <tr><td>XOR swizzle on LDS A</td><td>One <code>fly.composed_layout</code> wrapper</td><td>Bank conflicts on 64-lane <code>ds_read</code> drop from 8× to 1×</td></tr>
+    <tr><td>2-stage software pipeline</td><td>Double the LDS for A · double the B registers</td><td>Next K-block's <code>buffer_load</code> overlaps current MFMA</td></tr>
+    <tr><td>Explicit instruction schedule</td><td>~30 lines of <code>fx.rocdl.sched_*</code></td><td>~30% lift in peak FLOPs by filling issue slots</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ PLATE V — Preshuffle B layout ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <div class="pnum">Plate V</div>
+    <div class="pname">Preshuffle B · host reshape so MFMA needs no LDS transpose</div>
+    <div class="pscale">scale · 1000 × 400</div>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e8845a"/>
+    </marker>
+  </defs>
+
+  <!-- Left: original B in row-major -->
+  <text x="40" y="32" class="d-text label">B · ORIGINAL · (N, K) row-major</text>
+  <g transform="translate(40, 50)">
+    <rect x="0" y="0" width="360" height="240" class="zone" rx="2"/>
+    <!-- Annotate as 16x16 grid stand-in -->
+    <g stroke="#2a6791" stroke-width="0.4">
+      <line x1="0" y1="15" x2="360" y2="15"/>
+      <line x1="0" y1="30" x2="360" y2="30"/>
+      <line x1="0" y1="45" x2="360" y2="45"/>
+      <line x1="0" y1="60" x2="360" y2="60"/>
+      <line x1="0" y1="75" x2="360" y2="75"/>
+      <line x1="0" y1="90" x2="360" y2="90"/>
+      <line x1="0" y1="105" x2="360" y2="105"/>
+      <line x1="0" y1="120" x2="360" y2="120"/>
+      <line x1="0" y1="135" x2="360" y2="135"/>
+      <line x1="0" y1="150" x2="360" y2="150"/>
+      <line x1="0" y1="165" x2="360" y2="165"/>
+      <line x1="0" y1="180" x2="360" y2="180"/>
+      <line x1="0" y1="195" x2="360" y2="195"/>
+      <line x1="0" y1="210" x2="360" y2="210"/>
+      <line x1="0" y1="225" x2="360" y2="225"/>
+    </g>
+    <!-- Highlight one row -->
+    <rect x="0" y="30" width="360" height="15" fill="#e8845a" fill-opacity="0.55" stroke="#e8845a" stroke-width="1"/>
+    <text x="370" y="40" class="d-text small mono rust">row n: 32 contiguous fp16</text>
+
+    <text x="180" y="270" class="d-text small mono" text-anchor="middle">layout (N, K) : (K, 1) row-major</text>
+  </g>
+
+  <!-- Middle: arrow -->
+  <line x1="430" y1="170" x2="510" y2="170" class="bp-line rust thick" marker-end="url(#arr5)"/>
+  <text x="470" y="160" class="d-text small mono rust" text-anchor="middle">shuffle_weight</text>
+  <text x="470" y="184" class="d-text small mono" text-anchor="middle">(host PyTorch)</text>
+
+  <!-- Right: preshuffled B layout -->
+  <text x="540" y="32" class="d-text label">B · PRESHUFFLED · MFMA-friendly chunked</text>
+  <g transform="translate(540, 50)">
+    <rect x="0" y="0" width="360" height="240" class="zone deep" rx="2"/>
+
+    <!-- Show the chunked structure: (16 N-inner, 8 K-inner) chunks tiled -->
+    <g stroke="#2a6791" stroke-width="0.4">
+      <line x1="0" y1="60" x2="360" y2="60"/>
+      <line x1="0" y1="120" x2="360" y2="120"/>
+      <line x1="0" y1="180" x2="360" y2="180"/>
+      <line x1="90" y1="0" x2="90" y2="240"/>
+      <line x1="180" y1="0" x2="180" y2="240"/>
+      <line x1="270" y1="0" x2="270" y2="240"/>
+    </g>
+
+    <!-- Highlight one chunk -->
+    <rect x="0" y="0" width="90" height="60" fill="#8ec788" fill-opacity="0.42" stroke="#8ec788" stroke-width="1.4"/>
+    <text x="45" y="34" class="d-text small mono jade" text-anchor="middle">16 × 8</text>
+    <text x="45" y="48" class="d-text small mono jade" text-anchor="middle">chunk</text>
+
+    <g font-family="JetBrains Mono, monospace" font-size="9" fill="#92a8bc">
+      <text x="135" y="34" text-anchor="middle">chunk</text>
+      <text x="225" y="34" text-anchor="middle">chunk</text>
+      <text x="315" y="34" text-anchor="middle">chunk</text>
+      <text x="45" y="94" text-anchor="middle">chunk</text>
+      <text x="135" y="94" text-anchor="middle">chunk</text>
+      <text x="225" y="94" text-anchor="middle">chunk</text>
+      <text x="315" y="94" text-anchor="middle">chunk</text>
+    </g>
+
+    <!-- Arrow inside green chunk showing buffer_load_dwordx4 reads exactly this -->
+    <line x1="0" y1="56" x2="86" y2="56" class="bp-line jade thick" marker-end="url(#arr5)"/>
+    <text x="45" y="80" class="d-text small mono jade" text-anchor="middle">one buffer_load · 128 bit · 8 fp16</text>
+    <text x="45" y="92" class="d-text small mono jade" text-anchor="middle">— directly MFMA-lane-correct</text>
+
+    <text x="180" y="270" class="d-text small mono" text-anchor="middle">composed layout: ((16, N/16), (8, 4, K/32)) : ((8, 16·K), (1, 8·16, 8·16·4))</text>
+  </g>
+
+  <!-- Bottom annotation -->
+  <text x="500" y="320" class="d-text title" text-anchor="middle">The kernel sees the same (N, K) logical shape — only the stride changes.</text>
+  <text x="500" y="346" class="d-text small mono dim" text-anchor="middle">composed_layout reinterprets the preshuffled buffer with a stride pattern that maps each MFMA</text>
+  <text x="500" y="362" class="d-text small mono dim" text-anchor="middle">lane's logical coordinate to the byte offset where its data physically lives, after the host shuffle.</text>
+  <text x="500" y="378" class="d-text small mono brass" text-anchor="middle">No LDS stop, no transpose, no swizzle on B. The MFMA reads from VGPRs filled by buffer_load.</text>
+</svg>
+  </div>
+  <div class="caption">MFMA-16×16×16 on FP16 needs a specific lane-to-element layout for its B operand. The canonical solution is to load B normally and transpose-then-swizzle it through LDS. The preshuffle alternative does the reshape <em>once</em> on the host (<code>shuffle_weight</code> in <code>tests/utils.py</code>) so that a plain <code>buffer_load_dwordx4</code> off the global B already lands MFMA-lane-correct in VGPRs. The kernel then constructs a composed <code>!fly.layout</code> whose strides describe the chunked physical layout — same logical <code>(N, K)</code> shape, different stride math. For inference weights that never change, this trade saves the entire LDS round-trip on B.</div>
+</div>
+
+<h3>The LDS · <em>XOR swizzle and double buffer</em></h3>
+
+<div class="code"><span class="c-com"># composed_layout_A wraps a swizzle around an ordered layout</span>
+composed_layout_A = fx.<span class="c-key">make_composed_layout</span>(
+    fx.static(fx.<span class="c-key">SwizzleType</span>.get(<span class="c-num">3</span>, <span class="c-num">3</span>, <span class="c-num">3</span>)),
+    fx.make_ordered_layout((BLOCK_M, BLOCK_K, STAGES_A), (<span class="c-num">1</span>, <span class="c-num">0</span>, <span class="c-num">2</span>)),
+)
+sA = fx.<span class="c-key">make_view</span>(fx.get_dyn_shared(fx.Float16), composed_layout_A)
+<span class="c-com"># sA : (BM, BK, 2 stages) — two-deep ping-pong</span></div>
+
+<p>The XOR swizzle <code>(3, 3, 3)</code> is the CuTe convention for "bank-conflict-free LDS access" — three bits of upper-order address XOR'd into three bits of lower-order address, in groups of three. With it, the 64-lane <code>ds_read_b128</code> hits each of the 32 LDS banks exactly twice instead of all hitting one. Without the swizzle, the same access pattern would serialize over 8 cycles instead of completing in 1.</p>
+
+<p>The trailing dimension <code>STAGES_A = 2</code> is the double buffer — half the LDS holds the K-block currently being consumed by MFMA, half holds the K-block being filled by the next iteration's <code>buffer_load → ds_write</code>. Both halves are addressed by the same swizzle, which means a single composed layout serves the whole ping-pong without per-stage stride math.</p>
+
+<h3>The pipeline · <em>read stage, write stage, ping-pong</em></h3>
+
+<!-- ============ PLATE VI — Pipeline timing ============ -->
+<div class="plate wide">
+  <div class="plate-meta">
+    <div class="pnum">Plate VI</div>
+    <div class="pname">Software pipeline · prefetch next K while MFMA consumes current</div>
+    <div class="pscale">scale · 1000 × 320</div>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg">
+  <text x="20" y="28" class="d-text label">TIME →</text>
+  <line x1="80" y1="32" x2="980" y2="32" class="bp-line dim"/>
+  <g font-family="JetBrains Mono, monospace" font-size="9" fill="#6a8298">
+    <text x="100" y="46">iter 0 (read=0)</text>
+    <text x="320" y="46">iter 1 (read=1)</text>
+    <text x="540" y="46">iter 2 (read=0)</text>
+    <text x="760" y="46">iter 3 (read=1)</text>
+  </g>
+
+  <!-- Channels: A-load, B-load, ds_write, ds_read, MFMA -->
+  <g font-family="JetBrains Mono, monospace" font-size="9" fill="#c2d0de">
+    <text x="20" y="92">buffer_load A</text>
+    <text x="20" y="130">buffer_load B</text>
+    <text x="20" y="168">ds_write A</text>
+    <text x="20" y="206">ds_read sA</text>
+    <text x="20" y="244">MFMA</text>
+    <text x="20" y="282">barrier</text>
+  </g>
+
+  <!-- buffer_load A : prefetches next iter -->
+  <g>
+    <rect x="100" y="78" width="160" height="20" fill="#e8845a" fill-opacity="0.5" stroke="#e8845a"/>
+    <text x="180" y="92" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">load k=1 → reg</text>
+    <rect x="320" y="78" width="160" height="20" fill="#e8845a" fill-opacity="0.5" stroke="#e8845a"/>
+    <text x="400" y="92" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">load k=2 → reg</text>
+    <rect x="540" y="78" width="160" height="20" fill="#e8845a" fill-opacity="0.5" stroke="#e8845a"/>
+    <text x="620" y="92" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">load k=3 → reg</text>
+    <rect x="760" y="78" width="160" height="20" fill="#e8845a" fill-opacity="0.18" stroke="#e8845a" stroke-dasharray="3 3"/>
+    <text x="840" y="92" class="d-text small mono dim" text-anchor="middle">drain</text>
+  </g>
+
+  <!-- buffer_load B -->
+  <g>
+    <rect x="100" y="116" width="160" height="20" fill="#f0c764" fill-opacity="0.45" stroke="#f0c764"/>
+    <text x="180" y="130" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">load k=1 → B[1]</text>
+    <rect x="320" y="116" width="160" height="20" fill="#f0c764" fill-opacity="0.45" stroke="#f0c764"/>
+    <text x="400" y="130" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">load k=2 → B[0]</text>
+    <rect x="540" y="116" width="160" height="20" fill="#f0c764" fill-opacity="0.45" stroke="#f0c764"/>
+    <text x="620" y="130" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">load k=3 → B[1]</text>
+    <rect x="760" y="116" width="160" height="20" fill="#f0c764" fill-opacity="0.18" stroke="#f0c764" stroke-dasharray="3 3"/>
+    <text x="840" y="130" class="d-text small mono dim" text-anchor="middle">drain</text>
+  </g>
+
+  <!-- ds_write A -->
+  <g>
+    <rect x="220" y="154" width="40" height="20" fill="#8ec788" fill-opacity="0.5" stroke="#8ec788"/>
+    <text x="240" y="168" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">→sA[1]</text>
+    <rect x="440" y="154" width="40" height="20" fill="#8ec788" fill-opacity="0.5" stroke="#8ec788"/>
+    <text x="460" y="168" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">→sA[0]</text>
+    <rect x="660" y="154" width="40" height="20" fill="#8ec788" fill-opacity="0.5" stroke="#8ec788"/>
+    <text x="680" y="168" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">→sA[1]</text>
+  </g>
+
+  <!-- ds_read sA -->
+  <g>
+    <rect x="100" y="192" width="120" height="20" fill="#6dc0c7" fill-opacity="0.5" stroke="#6dc0c7"/>
+    <text x="160" y="206" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">read sA[0]</text>
+    <rect x="320" y="192" width="120" height="20" fill="#6dc0c7" fill-opacity="0.5" stroke="#6dc0c7"/>
+    <text x="380" y="206" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">read sA[1]</text>
+    <rect x="540" y="192" width="120" height="20" fill="#6dc0c7" fill-opacity="0.5" stroke="#6dc0c7"/>
+    <text x="600" y="206" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">read sA[0]</text>
+    <rect x="760" y="192" width="120" height="20" fill="#6dc0c7" fill-opacity="0.5" stroke="#6dc0c7"/>
+    <text x="820" y="206" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">read sA[1]</text>
+  </g>
+
+  <!-- MFMA -->
+  <g>
+    <rect x="100" y="230" width="120" height="20" fill="#e07a7a" fill-opacity="0.55" stroke="#e07a7a"/>
+    <text x="160" y="244" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">C += A·B[0]</text>
+    <rect x="320" y="230" width="120" height="20" fill="#e07a7a" fill-opacity="0.55" stroke="#e07a7a"/>
+    <text x="380" y="244" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">C += A·B[1]</text>
+    <rect x="540" y="230" width="120" height="20" fill="#e07a7a" fill-opacity="0.55" stroke="#e07a7a"/>
+    <text x="600" y="244" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">C += A·B[0]</text>
+    <rect x="760" y="230" width="120" height="20" fill="#e07a7a" fill-opacity="0.55" stroke="#e07a7a"/>
+    <text x="820" y="244" class="d-text small mono" text-anchor="middle" fill="#0a2840" font-weight="600">C += A·B[1]</text>
+  </g>
+
+  <!-- barrier ticks -->
+  <g>
+    <line x1="280" y1="268" x2="280" y2="296" class="bp-line jade thick"/>
+    <text x="280" y="310" class="d-text small mono jade" text-anchor="middle">barrier</text>
+    <line x1="500" y1="268" x2="500" y2="296" class="bp-line jade thick"/>
+    <text x="500" y="310" class="d-text small mono jade" text-anchor="middle">barrier</text>
+    <line x1="720" y1="268" x2="720" y2="296" class="bp-line jade thick"/>
+    <text x="720" y="310" class="d-text small mono jade" text-anchor="middle">barrier</text>
+    <line x1="940" y1="268" x2="940" y2="296" class="bp-line jade thick"/>
+    <text x="940" y="310" class="d-text small mono jade" text-anchor="middle">barrier</text>
+  </g>
+
+  <!-- vertical iter dividers -->
+  <g stroke="#2a6791" stroke-width="0.5" stroke-dasharray="2 4">
+    <line x1="280" y1="32" x2="280" y2="268"/>
+    <line x1="500" y1="32" x2="500" y2="268"/>
+    <line x1="720" y1="32" x2="720" y2="268"/>
+    <line x1="940" y1="32" x2="940" y2="268"/>
+  </g>
+</svg>
+  </div>
+  <div class="caption">Each iteration of the K-loop runs two phases — read-stage 0 then read-stage 1 — alternating which LDS half the MFMA consumes and which gets written. The orange and yellow tracks are global <code>buffer_load</code>s that prefetch K-block <em>n+1</em> while the MFMA on track 5 is still grinding through K-block <em>n</em>. Track 3's <code>ds_write</code> stores the prefetched A into the <em>other</em> LDS stage (write = read ^ 1). The barriers separate iterations because <code>ds_write</code> from this iter must complete before next iter's <code>ds_read</code> begins. The B operand is fully register-resident with two stages — there's no <code>ds_write B</code> track because preshuffle eliminated the LDS round-trip on B entirely.</div>
+</div>
+
+<div class="code"><span class="c-key">def</span> <span class="c-cls">run_pipeline_stage</span>(read_stage, next_k, read_next=<span class="c-num">True</span>):
+    write_stage = read_stage ^ <span class="c-num">1</span>
+
+    <span class="c-key">if</span> fx.const_expr(read_next):
+        fx.copy(buffer_copy_128b, thr_gA_k[<span class="c-num">None</span>,<span class="c-num">None</span>,<span class="c-num">None</span>,<span class="c-num">0</span>], copy_frag_A,
+                soffset=next_k * gA_k_stride)
+        fx.copy(buffer_copy_128b, thr_gB_k[<span class="c-num">None</span>,<span class="c-num">None</span>,<span class="c-num">None</span>,<span class="c-num">0</span>],
+                mma_frag_B_retile[<span class="c-num">None</span>,<span class="c-num">None</span>,<span class="c-num">None</span>,write_stage],
+                soffset=next_k * gB_k_stride)
+
+    <span class="c-key">for</span> block_k_iter <span class="c-key">in</span> fx.range_constexpr(BLOCK_K // <span class="c-num">32</span>):
+        fx.copy(uni_copy_128b,
+                thr_sA_s2r[<span class="c-num">None</span>,<span class="c-num">None</span>,block_k_iter,read_stage],
+                mma_frag_A_retile[<span class="c-num">None</span>,<span class="c-num">None</span>,block_k_iter])
+        fx.<span class="c-key">gemm</span>(tiled_mma, mma_frag_C,
+                mma_frag_A[<span class="c-num">None</span>,<span class="c-num">None</span>,(<span class="c-num">None</span>,block_k_iter)],
+                mma_frag_B[<span class="c-num">None</span>,<span class="c-num">None</span>,(<span class="c-num">None</span>,block_k_iter),read_stage],
+                mma_frag_C,
+                traversal_order=fx.GemmTraversalOrder.KNM)
+
+    fx.copy(uni_copy_128b, copy_frag_A, thr_sA[<span class="c-num">None</span>,<span class="c-num">None</span>,<span class="c-num">None</span>,write_stage])
+    fx.gpu.barrier()
+    hot_loop_scheduler()</div>
+
+<p>The <code>soffset=next_k * gA_k_stride</code> argument is worth pausing on. It is not byte arithmetic on a global pointer — it's the <em>scalar offset</em> field of the ROCDL <code>buffer_load</code> instruction. The buffer resource descriptor is built once at kernel entry; subsequent loads from different K-positions just vary the SGPR-held scalar offset. No <code>v_add</code> on a VGPR address per lane, no per-thread index computation. <a href="/sources/gcnasm.html">gcnasm</a>'s vector_add lives on the same mechanism.</p>
+
+<h3>hot_loop_scheduler · <em>telling the backend where to put each instruction</em></h3>
+
+<p>The last bit is the most foreign to anyone coming from Triton or CUDA C. After the algorithmic body of <code>run_pipeline_stage</code>, the kernel calls <code>hot_loop_scheduler()</code>, which emits a sequence of <code>fx.rocdl.sched_*</code> intrinsics:</p>
+
+<div class="code"><span class="c-key">def</span> <span class="c-cls">hot_loop_scheduler</span>():
+    fx.rocdl.<span class="c-key">sched_dsrd</span>(<span class="c-num">2</span>); fx.rocdl.<span class="c-key">sched_mfma</span>(<span class="c-num">2</span>)
+    fx.rocdl.sched_dsrd(<span class="c-num">1</span>); fx.rocdl.sched_mfma(<span class="c-num">1</span>)
+    fx.rocdl.sched_dsrd(<span class="c-num">1</span>); fx.rocdl.sched_mfma(<span class="c-num">2</span>)
+
+    <span class="c-key">def</span> <span class="c-cls">sched_main_iter</span>(with_vmem=<span class="c-num">False</span>, with_dswr=<span class="c-num">False</span>):
+        <span class="c-key">if</span> with_vmem: fx.rocdl.<span class="c-key">sched_vmem</span>(<span class="c-num">1</span>)
+        fx.rocdl.sched_mfma(<span class="c-num">2</span>)
+        fx.rocdl.sched_dsrd(<span class="c-num">1</span>)
+        fx.rocdl.sched_mfma(<span class="c-num">2</span>)
+        <span class="c-key">if</span> with_dswr: fx.rocdl.<span class="c-key">sched_dswr</span>(<span class="c-num">1</span>)
+
+    <span class="c-key">for</span> _ <span class="c-key">in</span> fx.range_constexpr(<span class="c-num">8</span>): sched_main_iter(with_vmem=<span class="c-num">True</span>)
+    sched_main_iter()
+    <span class="c-key">for</span> _ <span class="c-key">in</span> fx.range_constexpr(<span class="c-num">7</span>): sched_main_iter(with_dswr=<span class="c-num">True</span>)
+
+    fx.rocdl.<span class="c-key">sched_barrier</span>(<span class="c-num">0</span>)</div>
+
+<p>These are not real instructions. They are <em>scheduling hints</em> that the LLVM AMDGPU backend respects: <code>sched_mfma(2)</code> says "place exactly 2 MFMA instructions at this point in the schedule, in addition to whatever has already been scheduled here." The compiler picks <em>which</em> MFMAs (from the surrounding code) to put here, but the count and ordering are pinned.</p>
+
+<p>Why it matters: the CDNA matrix core has a long latency. A single MFMA can take 16–32 cycles to retire, and the wave can issue other instructions during the wait — <code>ds_read</code>, <code>buffer_load</code>, <code>ds_write</code>. Without hints, LLVM's scheduler does an okay job but tends to cluster same-class instructions. With hints, you can interleave them so that each issue slot during the MFMA latency holds <em>something useful</em>. The 8 leading iterations of <code>sched_main_iter(with_vmem=True)</code> spread <code>buffer_load</code>s evenly across the early hot-loop body; the trailing 7 with <code>with_dswr=True</code> spread <code>ds_write</code>s across the tail. This pattern is the difference between 60% and 90%+ of MFMA peak in real kernels.</p>
+
+<div class="callout coral">
+  <span class="ctag">A warning</span>
+  <p>Schedulers are <em>fragile</em>. Changing <code>BLOCK_K</code>, swapping MFMA shape, or even adding a single instruction inside the hot loop can invalidate the count assumptions and tank performance. <code>kernels/preshuffle_gemm.py</code> in production uses a different scheduler for each (BM, BN, BK, MFMA-shape) tuple, often tuned with the ATT trace analyzer (<code>capture-kernel-trace</code>). For a first pass at a new GEMM, write it without a scheduler and add one only after you've profiled.</p>
+</div>
+
+<p>Run it:</p>
+
+<div class="code">$ PYTHONPATH=/sgl-workspace/FlyDSL-lab python examples/04-preshuffle_gemm.py
+Result correct: True</div>
+
+<p>The kernel runs and is correct. To measure how close to peak it gets, swap the example for the production <code>kernels/preshuffle_gemm.py</code> and use <code>tests/kernels/test_preshuffle_gemm.py</code> as the harness — that's the path the AMD team uses for tuning.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- M6 — COMPILE PIPELINE -->
+<!-- ====================================================== -->
+<section id="m6-pipeline">
+<h2><span class="num">M6 · Underneath the @decorators</span>Compile pipeline · <em>Python → fatbin</em></h2>
+
+<p>The Python you wrote was traced into MLIR. What happens next is worth knowing in outline, because most FlyDSL debugging happens at the IR level — when a kernel produces NaN or a wrong number, the first move is <code>FLYDSL_DUMP_IR=1</code> and reading <code>module-after-fly-layout-lowering.mlir</code>.</p>
+
+<h3>Tracing · @flyc.kernel</h3>
+
+<p>The <code>@flyc.kernel</code> decorator wraps the Python function in a tracer. On first call with a given type signature, the tracer rewrites the function's AST to intercept each <code>fx.*</code> call, then executes the function in a context where each operation emits MLIR ops instead of computing values. By the end of the trace, you have a <code>gpu.module</code> with a single <code>gpu.func</code> kernel inside, expressed in a mix of the <code>fly</code>, <code>gpu</code>, <code>arith</code>, <code>scf</code>, <code>memref</code>, and <code>vector</code> dialects.</p>
+
+<p>Two facts about tracing are load-bearing for kernel authors:</p>
+
+<ul>
+  <li><strong>Python <code>if</code> on traced values is illegal.</strong> The trace runs once. If a branch depends on a kernel-time value (e.g., <code>tid</code>), there's no way to materialize both branches. Use <code>fx.const_expr(cond)</code> when the condition is compile-time, or <code>scf.if</code> (via FlyDSL's <code>if_else</code>) when it must be runtime.</li>
+  <li><strong>Python <code>for</code> over a list unrolls.</strong> Use <code>fx.range_constexpr(n)</code> for fully-unrolled compile-time loops, plain <code>range(start, stop, step, init=[acc])</code> for an <code>scf.for</code> with loop-carried values.</li>
+</ul>
+
+<h3>The pass pipeline · what each stage does</h3>
+
+<table class="tbl">
+  <thead><tr><th>Stage</th><th>Pass</th><th>What it turns into what</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><code>gpu-kernel-outlining</code></td><td>splits device code into a <code>gpu.module</code> separate from the host launcher</td></tr>
+    <tr><td class="num">2</td><td><code>fly-canonicalize</code></td><td>folds <code>!fly.layout</code> algebra at compile time when shapes are static</td></tr>
+    <tr><td class="num">3</td><td><code>fly-layout-lowering</code></td><td>turns <code>fly.crd2idx</code>, partitions, divides into concrete <code>arith</code> + <code>vector</code> ops</td></tr>
+    <tr><td class="num">4</td><td><code>convert-fly-to-rocdl</code></td><td>copy atoms become <code>rocdl.buffer_load</code>; MMA atoms become <code>rocdl.mfma.*</code></td></tr>
+    <tr><td class="num">5</td><td><code>canonicalize + cse</code></td><td>arith folding, common subexpression elimination</td></tr>
+    <tr><td class="num">6</td><td><code>gpu.module(convert-gpu-to-rocdl)</code></td><td>thread/block indices, barriers, dyn_shared → ROCDL intrinsics</td></tr>
+    <tr><td class="num">7</td><td><code>rocdl-attach-target {chip=gfxNNN}</code></td><td>tags the module with the target chip for later codegen</td></tr>
+    <tr><td class="num">8</td><td><code>gpu-to-llvm + arith/func-to-llvm</code></td><td>final lower into LLVM IR</td></tr>
+    <tr><td class="num">9</td><td><code>gpu-module-to-binary {format=fatbin}</code></td><td>invokes LLVM AMDGPU backend → HSA fatbin</td></tr>
+  </tbody>
+</table>
+
+<p>Pass 3 is where most kernel-level bugs surface. If your <code>partition_S</code> produces a fragment of unexpected shape, it's because the layout algebra simplifies to something other than what you intended. Dump the IR after this pass to see what FlyDSL actually believes the indexing is. <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> dumps after every pass; <code>FLYDSL_DUMP_DIR=./ir</code> sends them to a directory you can grep through.</p>
+
+<h3>The JIT cache</h3>
+
+<p>The compiled fatbin is keyed on the type signature, the Constexpr values, and a source hash of the kernel function (closure included). It is stored under <code>~/.flydsl/cache/</code>. The cache invalidates on source changes to the kernel function itself, but <em>not</em> on changes to C++ passes or helper modules that aren't part of the traced closure. So:</p>
+
+<div class="code"><span class="c-com"># After editing a C++ pass or a helper that lives outside the closure:</span>
+$ rm -rf ~/.flydsl/cache
+$ <span class="c-com"># or, for a single run:</span>
+$ FLYDSL_RUNTIME_ENABLE_CACHE=0 python my_kernel.py</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- REEFS -->
+<!-- ====================================================== -->
+<section id="reefs">
+<h2><span class="num">§ R · Six traps from real debugging</span>Reefs</h2>
+
+<p>The patterns FlyDSL gets wrong, the mistakes that survive review, the workarounds that take three days to discover.</p>
+
+<ol class="tile-list">
+  <li>
+    <div class="ttl">1 · <em>Branch-only values</em> kill MLIR dominance.</div>
+    <div class="desc">Defining a value inside one branch of a Python <code>if</code> and using it after is the most common compile-time failure. The IR has no merge point for the two branches' definitions, so you get a dominance error. Hoist the value above the branch or return it as an explicit merged result.</div>
+  </li>
+  <li>
+    <div class="ttl">2 · <em>SmemPtr._view_cache</em> survives scf.for.</div>
+    <div class="desc">If a shared-memory view is constructed inside <code>scf.for</code> and consumed after, the cached view points to an SSA value that doesn't dominate the consumer. Clear the cache: <code>SmemPtr._view_cache = None</code> on loop exit.</div>
+  </li>
+  <li>
+    <div class="ttl">3 · <em>Closure values</em> don't trigger cache invalidation.</div>
+    <div class="desc">JIT cache hashes the kernel function and its closure. If you change a Python constant defined outside the kernel and the kernel doesn't reference it through its closure, the cache won't invalidate. Either pass the value as a <code>Constexpr</code> argument, or clear the cache manually.</div>
+  </li>
+  <li>
+    <div class="ttl">4 · <em>BufferCopy soffset</em> is in elements, not bytes.</div>
+    <div class="desc">The <code>soffset</code> argument to <code>fx.copy</code> with a BufferCopy atom is in <em>elements</em> of the atom's dtype, not bytes. <code>soffset=next_k * gA_k_stride</code> in example 04 multiplies a K-iter by the stride that already accounts for the element size. Triple-check this when chasing addressing-off-by-1.</div>
+  </li>
+  <li>
+    <div class="ttl">5 · <em>MFMA traversal order</em> changes register pressure.</div>
+    <div class="desc">The <code>traversal_order</code> argument to <code>fx.gemm</code> chooses how the inner three nested loops over (M-atom, N-atom, K-atom) are ordered. <code>KNM</code> typically minimizes A-fragment register pressure; <code>MNK</code> minimizes accumulator pressure. The wrong choice can spill VGPRs and crater performance.</div>
+  </li>
+  <li>
+    <div class="ttl">6 · <em>Stale schedulers</em> after a tile change.</div>
+    <div class="desc">A <code>hot_loop_scheduler</code> tuned for (BM=128, BN=128, BK=64) breaks silently when you change the tile — performance drops, the kernel still gives correct numbers. Profile any tile-size change with the kernel trace analyzer before assuming the scheduler still fits.</div>
+  </li>
+</ol>
+</section>
+
+<!-- ====================================================== -->
+<!-- AMD-SPECIFIC NOTES -->
+<!-- ====================================================== -->
+<section id="amd-notes">
+<h2><span class="num">§ A · Where this lands for AMD work</span>AMD-specific notes</h2>
+
+<p>FlyDSL is, in 2026, the cleanest abstraction layer for writing high-performance kernels on AMD CDNA. Triton-ROCm exists and produces correct kernels, but its scheduling model is opaque — you cannot pin "two MFMAs then one ds_read then two MFMAs" the way <code>fx.rocdl.sched_*</code> lets you. Composable Kernel (CK) gives you that control but in C++ templates that take 30 minutes to compile. FlyDSL is the middle: Python ergonomics, MLIR backbone, AMD-specific scheduling primitives.</p>
+
+<p>Three observations worth carrying:</p>
+
+<ol>
+  <li><strong>The layout API is the AMD-specific contribution.</strong> CuTe gave the world layout algebra; FlyDSL gives it a typed MLIR home with passes that lower it. The fact that <code>!fly.layout</code> is a first-class type means an MLIR-aware tool (a verifier, an autotuner, an optimization pass) can <em>reason about layouts</em> in the IR, not just consume strings.</li>
+  <li><strong>Preshuffle is a recurring idea, not a one-off.</strong> The <code>shuffle_weight</code> trick in example 04 — reshape on the host so the kernel needs no transpose — appears across the production kernels for <em>every</em> weight tensor whose layout is more constrained than its compute pattern. MoE GEMM, blockscale GEMM, INT4 GEMM all use it. If you're writing a new AMD GEMM and not preshuffling, ask yourself why.</li>
+  <li><strong>Scheduling is where peak FLOPs hide.</strong> A FlyDSL kernel without <code>sched_*</code> hints will hit 60–70% of peak. With a tuned scheduler it can hit 90%+. The gap is purely instruction-mix-in-the-hot-loop, and it cannot be recovered after the fact by tweaking LLVM flags. Production kernels in this repo treat <code>hot_loop_scheduler</code> as a separate <em>artifact</em> of the kernel, tuned with ATT traces from <code>capture-kernel-trace</code> and reviewed independently of the algorithmic body.</li>
+</ol>
+
+<div class="callout jade">
+  <span class="ctag">A practical workflow</span>
+  <p>For a new kernel on CDNA3/CDNA4: (1) start from an example, (2) get correctness first, (3) profile with <code>capture-kernel-trace</code> + <code>kernel-trace-analysis</code>, (4) identify the top stall — usually <code>lgkmcnt</code> waits on <code>ds_read</code>, or <code>vmcnt</code> waits on <code>buffer_load</code> — (5) add the appropriate optimization (LDS swizzle for the former, prefetch + scheduler for the latter), (6) re-profile, repeat. The Skills in this repo (<code>gemm-optimization</code>, <code>lds-optimization</code>, <code>prefetch-data-load</code>) are tuned shortcuts for each of these steps.</p>
+</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- EPILOGUE -->
+<!-- ====================================================== -->
+<section id="epilogue">
+<h2><span class="num">§ ∞ · What four examples teach</span>Epilogue</h2>
+
+<p>The shape of the four examples is the shape of every FlyDSL kernel. Construct a layout. Slice it to the current block. Partition the slice to the current thread. Allocate a register fragment. Issue a copy. Maybe move through LDS. Issue a compute. Maybe overlap with prefetch. Write back. The vocabulary that walks through this scales from a 16-line vector add to a 1500-line production paged-attention kernel without ever changing form.</p>
+
+<p>What is genuinely surprising — and what kept me reading the repo after the four examples — is how much of "GPU kernel optimization" turns out to be the same optimization repeated against different layouts. Preshuffle B for an MFMA-friendly load. Swizzle A in LDS for bank-free <code>ds_read</code>. Double-buffer everything so memory and compute overlap. Pin the instruction schedule so the matrix core doesn't idle. Every kernel I read in <code>kernels/</code> applied some subset of these. The variations were in the geometry — tile sizes, MFMA shapes, atom permutations — but the optimization vocabulary was constant.</p>
+
+<p>That constancy is what FlyDSL captures. By making layout algebra a typed primitive and copy/MMA atoms a composable algebra, it turns "GPU kernel optimization" from a list of tricks into a calculus that can be reasoned about, transformed, and verified. Whether that calculus is the right abstraction for the next generation of AMD silicon (CDNA5, the unified RDNA/CDNA path) is an open question — but for what runs on MI300/MI350/MI450 today, it's the cleanest tool I've used.</p>
+
+<p>The next entry in this series is likely <a href="https://github.com/ROCm/aiter">aiter</a> — the production kernel library that the FlyDSL kernels target, and the test scaffolding that this repo borrows. Reading FlyDSL alone gives you the language; reading aiter shows you the dictionary.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- REFERENCES -->
+<!-- ====================================================== -->
+<section id="references">
+<h2><span class="num">§ References · the docs to read alongside</span>References</h2>
+
+<ol class="tile-list">
+  <li>
+    <div class="ttl"><em>FlyDSL</em> · <a href="https://github.com/ROCm/FlyDSL">github.com/ROCm/FlyDSL</a></div>
+    <div class="desc">The source. <code>docs/layout_system_guide.md</code> has the complete Quick Reference for layout algebra; <code>docs/kernel_authoring_guide.md</code> has the practical patterns; <code>kernels/</code> has the production reference implementations.</div>
+  </li>
+  <li>
+    <div class="ttl"><em>CuTe</em> · <a href="https://github.com/NVIDIA/cutlass/tree/main/include/cute">NVIDIA CUTLASS · cute/</a></div>
+    <div class="desc">The intellectual parent. The layout algebra, the copy/MMA atom design, and the <code>partition_S/D</code> idiom are all CuTe ideas. Reading the CuTe docs alongside FlyDSL clarifies which choices are universal and which are AMD-specific.</div>
+  </li>
+  <li>
+    <div class="ttl"><em>Categorical Foundations for CuTe Layouts</em> · <a href="https://arxiv.org/abs/2601.05972">arxiv 2601.05972</a></div>
+    <div class="desc">Colfax Research's formal treatment of layout algebra as a category. Sufficient to derive every algebraic identity FlyDSL relies on, and the right reading if you want to extend the algebra (e.g., custom <code>product</code> variants).</div>
+  </li>
+  <li>
+    <div class="ttl"><em>AMD CDNA3 ISA Reference</em> · <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-mi300-cdna3-instruction-set-architecture.pdf">amd.com · CDNA3 ISA</a></div>
+    <div class="desc">Authoritative on every instruction FlyDSL's lowering pipeline emits. § 8 (MUBUF) for <code>buffer_load</code>, § 10 (MFMA) for the matrix core, § 6 (<code>s_waitcnt</code>) for the vmcnt/lgkmcnt that scheduling controls.</div>
+  </li>
+  <li>
+    <div class="ttl"><em>MLIR documentation</em> · <a href="https://mlir.llvm.org/">mlir.llvm.org</a></div>
+    <div class="desc">For reading <code>FLYDSL_DUMP_IR</code> output and understanding the <code>gpu</code>, <code>arith</code>, <code>scf</code>, <code>memref</code>, <code>vector</code>, and <code>rocdl</code> dialects that FlyDSL composes with.</div>
+  </li>
+  <li>
+    <div class="ttl"><em>FlyDSL Tile Programming</em> · the in-repo skill</div>
+    <div class="desc">If working in this repo with Claude Code, the <code>flydsl-tile-programming</code> and <code>flydsl-kernel-authoring</code> skills are tuned references for kernel construction patterns. Use them before re-deriving idioms from scratch.</div>
+  </li>
+</ol>
+</section>
+
+</main>
+</div>
+
+<!-- ====================================================== -->
+<!-- COLOPHON -->
+<!-- ====================================================== -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl">Source</div>
+      <div class="val"><a href="https://github.com/ROCm/FlyDSL">github.com/ROCm/FlyDSL</a></div>
+      <div class="val">read @ 2026.05 · examples/ × 4</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Typography</div>
+      <div class="val">EB Garamond · IBM Plex Sans · JetBrains Mono</div>
+      <div class="val">grid 32 px · content width 720 px</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Palette · cyanotype</div>
+      <div class="val">
+        <span class="swatch" style="background:#0a2840"></span>bath
+        <span class="swatch" style="background:#0f344f"></span>paper
+        <span class="swatch" style="background:#ecf1f7"></span>chalk
+      </div>
+      <div class="val">
+        <span class="swatch" style="background:#e8845a"></span>rust
+        <span class="swatch" style="background:#f0c764"></span>brass
+        <span class="swatch" style="background:#8ec788"></span>jade
+        <span class="swatch" style="background:#6dc0c7"></span>teal
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl">Compiled for</div>
+      <div class="val">readers on gfx942 / gfx950 / gfx1250</div>
+      <div class="val">reading time ≈ 4 h · written 2026.05.26</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
