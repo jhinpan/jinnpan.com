@@ -634,28 +634,82 @@ body::after {
 
 .article > p:first-of-type { margin-top: 0; }
 section { scroll-margin-top: 32px; }
+
+/* ============ LANGUAGE TOGGLE ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+.lang-toggle {
+  position: fixed;
+  top: 24px;
+  right: 32px;
+  z-index: 150;
+  display: inline-flex;
+  align-items: stretch;
+  background: rgba(10, 40, 64, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.lang-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--chalk-soft);
+  padding: 9px 14px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s;
+  border-right: 1px solid var(--rule-soft);
+}
+.lang-toggle button:last-child { border-right: none; }
+.lang-toggle button:hover { color: var(--chalk); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+  color: var(--paper);
+  background: var(--rust);
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .lang-toggle { top: 14px; right: 14px; font-size: 9.5px; }
+  .lang-toggle button { padding: 7px 10px; }
+}
 </style>
 </head>
-<body>
+<body data-lang="en">
+
+<!-- ============ LANGUAGE TOGGLE ============ -->
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
 
 <!-- ============ NAV RAIL ============ -->
 <nav class="rail">
   <div class="brand"><em>FlyDSL</em></div>
   <div class="ref">FILE № <span class="pin">006</span> · 2026.05.26</div>
   <ol>
-    <li><a href="#prologue">Prologue</a></li>
-    <li><a href="#m0-compass">Compass of <em>four examples</em></a></li>
-    <li><a href="#m1-layout">Layout algebra in ten minutes</a></li>
+    <li><a href="#prologue"><span lang="en">Prologue</span><span lang="zh">序言</span></a></li>
+    <li><a href="#m0-compass"><span lang="en">Compass of <em>four examples</em></span><span lang="zh">四个例子的<em>罗盘</em></span></a></li>
+    <li><a href="#m1-layout"><span lang="en">Layout algebra in ten minutes</span><span lang="zh">十分钟 layout 代数</span></a></li>
     <li><a href="#m2-vector-add">01 · <em>vectorAdd</em></a></li>
     <li><a href="#m3-tiled-copy">02 · <em>tiledCopy</em></a></li>
     <li><a href="#m4-tiled-mma">03 · <em>tiledMma</em> &amp; MFMA</a></li>
     <li><a href="#m5-preshuffle">04 · <em>preshuffle GEMM</em></a></li>
-    <li><a href="#m6-pipeline">Compile pipeline · Python → fatbin</a></li>
+    <li><a href="#m6-pipeline"><span lang="en">Compile pipeline · Python → fatbin</span><span lang="zh">编译流水线 · Python → fatbin</span></a></li>
     <div class="divider"></div>
-    <li><a href="#reefs">Reefs (six traps)</a></li>
-    <li><a href="#amd-notes">AMD-specific notes</a></li>
-    <li><a href="#epilogue">Epilogue</a></li>
-    <li><a href="#references">References</a></li>
+    <li><a href="#reefs"><span lang="en">Reefs (six traps)</span><span lang="zh">暗礁 (六个陷阱)</span></a></li>
+    <li><a href="#amd-notes"><span lang="en">AMD-specific notes</span><span lang="zh">AMD 相关说明</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    <li><a href="#references"><span lang="en">References</span><span lang="zh">参考资料</span></a></li>
   </ol>
 </nav>
 
@@ -669,29 +723,41 @@ section { scroll-margin-top: 32px; }
     <span class="chip">gfx942 / gfx950 / MLIR</span>
   </div>
   <h1><em>Fly</em>DSL</h1>
-  <p class="subtitle">
+  <p class="subtitle" lang="en">
     Reading the AMD layout-algebra DSL from its four canonical examples —
     how <em>logical_divide</em>, <em>tiled_copy</em>, <em>MFMA atoms</em>, and a
     production GEMM with preshuffled B and hand-rolled instruction
     scheduling assemble into one MLIR-backed Python stack.
   </p>
+  <p class="subtitle" lang="zh">
+    用 <code>examples/</code> 下面的 4 个例子读 AMD 的 layout 代数 DSL ——
+    <em>logical_divide</em>、 <em>tiled_copy</em>、 <em>MFMA atom</em> 和
+    一个带 preshuffle B 与手写指令调度的 production GEMM,
+    如何组装成一个 MLIR 撑骨架的 Python 栈。
+  </p>
 
   <div class="meta">
     <div class="item">
-      <div class="label">Examples</div>
-      <div class="value">4<span class="unit">graded ladder</span></div>
+      <div class="label" lang="en">Examples</div>
+      <div class="label" lang="zh">例子数量</div>
+      <div class="value" lang="en">4<span class="unit">graded ladder</span></div>
+      <div class="value" lang="zh">4<span class="unit">递进阶梯</span></div>
     </div>
     <div class="item">
-      <div class="label">Tested GPU</div>
+      <div class="label" lang="en">Tested GPU</div>
+      <div class="label" lang="zh">实测 GPU</div>
       <div class="value">MI350X<span class="unit">gfx950</span></div>
     </div>
     <div class="item">
-      <div class="label">Largest GEMM</div>
+      <div class="label" lang="en">Largest GEMM</div>
+      <div class="label" lang="zh">最大 GEMM</div>
       <div class="value"><span class="accent">4096³</span><span class="unit">FP16</span></div>
     </div>
     <div class="item">
-      <div class="label">Reading time</div>
-      <div class="value">~4<span class="unit">hours, careful</span></div>
+      <div class="label" lang="en">Reading time</div>
+      <div class="label" lang="zh">阅读时长</div>
+      <div class="value" lang="en">~4<span class="unit">hours, careful</span></div>
+      <div class="value" lang="zh">~4<span class="unit">小时, 细读</span></div>
     </div>
   </div>
 </header>
@@ -704,61 +770,79 @@ section { scroll-margin-top: 32px; }
 <!-- PROLOGUE -->
 <!-- ====================================================== -->
 <section id="prologue">
-<h2><span class="num">§ 00 · The fly that draws the blueprint</span>Prologue</h2>
+<h2 lang="en"><span class="num">§ 00 · The fly that draws the blueprint</span>Prologue</h2>
+<h2 lang="zh"><span class="num">§ 00 · 画蓝图的那只蝇</span>序言</h2>
 
-<p class="dropcap">There is a particular vertigo that comes from reading a modern GPU kernel and realizing how much of it is layout, not arithmetic. A 4096-cube FP16 GEMM is, viewed line-by-line, mostly bookkeeping — which thread loads which 8 elements, where in shared memory they land, in what order the MFMA instructions consume them, when the next K-block's prefetch overlaps with the current MFMA tail. The actual multiplication is two lines. Everything else is layout.</p>
+<p class="dropcap" lang="en">There is a particular vertigo that comes from reading a modern GPU kernel and realizing how much of it is layout, not arithmetic. A 4096-cube FP16 GEMM is, viewed line-by-line, mostly bookkeeping — which thread loads which 8 elements, where in shared memory they land, in what order the MFMA instructions consume them, when the next K-block's prefetch overlaps with the current MFMA tail. The actual multiplication is two lines. Everything else is layout.</p>
+<p class="dropcap" lang="zh">读一个现代 GPU kernel 会有一种特殊的眩晕感: 你会意识到这段代码大部分不是算术, 是 layout。 一个 4096 立方的 FP16 GEMM, 逐行看下来, 绝大部分是簿记 —— 哪个 thread 加载哪 8 个元素、 共享内存里它们落在哪、 MFMA 指令以什么顺序消费它们、 下一个 K 块的 prefetch 在当前 MFMA 的尾巴上以多大比例重叠。 真正的乘法是两行。 其余全是 layout。</p>
 
-<p>FlyDSL — the Fly dialect plus its Python front-end — is one answer to that observation. It is the Python DSL and MLIR-native compiler stack that AMD's <a href="https://github.com/ROCm/FlyDSL">ROCm group</a> uses to author GPU kernels with explicit layouts and tiling. The name unpacks to <em>Flexible Layout pYthon DSL</em>. The design is unmistakably descended from <a href="https://github.com/NVIDIA/cutlass">NVIDIA CuTe</a>: layout = (shape, stride), composition / divide / product, thread-value layouts, tiled copies, MMA atoms. What FlyDSL adds is the MLIR machinery — a real <code>!fly.layout</code> type, a pass pipeline that lowers layout algebra to address arithmetic, copy atoms to ROCDL buffer instructions, and MMA atoms to MFMA — plus the Python tracing layer that lets you write all of this without leaving the editor.</p>
+<p lang="en">FlyDSL — the Fly dialect plus its Python front-end — is one answer to that observation. It is the Python DSL and MLIR-native compiler stack that AMD's <a href="https://github.com/ROCm/FlyDSL">ROCm group</a> uses to author GPU kernels with explicit layouts and tiling. The name unpacks to <em>Flexible Layout pYthon DSL</em>. The design is unmistakably descended from <a href="https://github.com/NVIDIA/cutlass">NVIDIA CuTe</a>: layout = (shape, stride), composition / divide / product, thread-value layouts, tiled copies, MMA atoms. What FlyDSL adds is the MLIR machinery — a real <code>!fly.layout</code> type, a pass pipeline that lowers layout algebra to address arithmetic, copy atoms to ROCDL buffer instructions, and MMA atoms to MFMA — plus the Python tracing layer that lets you write all of this without leaving the editor.</p>
+<p lang="zh">FlyDSL —— Fly dialect 加上它的 Python 前端 —— 是对这个观察的一种回应。 它是 AMD <a href="https://github.com/ROCm/FlyDSL">ROCm 组</a>用来写 GPU kernel 的 Python DSL + MLIR-native 编译器栈, kernel 中 layout 和 tiling 都是显式的。 名字展开就是 <em>Flexible Layout pYthon DSL</em>。 设计明显继承自 <a href="https://github.com/NVIDIA/cutlass">NVIDIA CuTe</a>: layout = (shape, stride), composition / divide / product, thread-value layout, tiled copy, MMA atom。 FlyDSL 多加的是 MLIR 那一层 —— 一个真实的 <code>!fly.layout</code> 类型、 一整套把 layout 代数 lower 到地址算术、 把 copy atom lower 到 ROCDL buffer 指令、 把 MMA atom lower 到 MFMA 的 pass 流水线 —— 再加上 Python tracing 层, 让你不用离开编辑器就能写完这些。</p>
 
-<p>This entry reads FlyDSL through its <code>examples/</code> directory — four files that form a strict pedagogical ladder. Example 01 is a vector add. Example 02 introduces tiled copy. Example 03 wires up a single-block MFMA GEMM. Example 04 is a production-grade preshuffle GEMM with double-buffered LDS, two-stage software pipelining, and hand-written instruction scheduling. The four together demonstrate every machinery that real FlyDSL kernels use; everything in <code>kernels/</code> — paged attention, MoE GEMM, flash attention — is a recombination of the same pieces.</p>
+<p lang="en">This entry reads FlyDSL through its <code>examples/</code> directory — four files that form a strict pedagogical ladder. Example 01 is a vector add. Example 02 introduces tiled copy. Example 03 wires up a single-block MFMA GEMM. Example 04 is a production-grade preshuffle GEMM with double-buffered LDS, two-stage software pipelining, and hand-written instruction scheduling. The four together demonstrate every machinery that real FlyDSL kernels use; everything in <code>kernels/</code> — paged attention, MoE GEMM, flash attention — is a recombination of the same pieces.</p>
+<p lang="zh">这一篇通过 <code>examples/</code> 目录来读 FlyDSL —— 四个文件构成一条严格的教学阶梯。 例 01 是向量加。 例 02 引入 tiled copy。 例 03 接好一个单 block 的 MFMA GEMM。 例 04 是生产级的 preshuffle GEMM, 带双 buffer 的 LDS、 两阶段软件流水线、 手写指令调度。 四个加起来演示了真实 FlyDSL kernel 用到的全部机械; <code>kernels/</code> 目录里所有东西 —— paged attention、 MoE GEMM、 flash attention —— 都是同一批零件的重新组合。</p>
 
 <div class="callout rust">
-  <span class="ctag">Reading order</span>
-  <p>If you only have an hour, read <strong>§ M1</strong> (layout algebra) and <strong>§ M3</strong> (tiledCopy). Those two cover the FlyDSL mental model. Add <strong>§ M5</strong> (preshuffle GEMM) for the production patterns. Skip this prologue if you already know why you opened the file.</p>
+  <span class="ctag" lang="en">Reading order</span>
+  <span class="ctag" lang="zh">推荐阅读顺序</span>
+  <p lang="en">If you only have an hour, read <strong>§ M1</strong> (layout algebra) and <strong>§ M3</strong> (tiledCopy). Those two cover the FlyDSL mental model. Add <strong>§ M5</strong> (preshuffle GEMM) for the production patterns. Skip this prologue if you already know why you opened the file.</p>
+  <p lang="zh">如果你只有一小时, 读 <strong>§ M1</strong> (layout 代数) 和 <strong>§ M3</strong> (tiledCopy) 这两节, 它们覆盖了 FlyDSL 的心智模型。 再加 <strong>§ M5</strong> (preshuffle GEMM) 就能看到生产 pattern。 如果你已经知道为什么要打开这个文件, 跳过这段序言就行。</p>
 </div>
 
-<p>What this writeup is not: it is not a build guide (the README at <code>FlyDSL-lab/README.md</code> handles that), and it is not a reference (<code>docs/layout_system_guide.md</code> has the full Quick Reference table). It is a reader's report on what each example teaches, where the abstractions earn their keep, and where the seams show.</p>
+<p lang="en">What this writeup is not: it is not a build guide (the README at <code>FlyDSL-lab/README.md</code> handles that), and it is not a reference (<code>docs/layout_system_guide.md</code> has the full Quick Reference table). It is a reader's report on what each example teaches, where the abstractions earn their keep, and where the seams show.</p>
+<p lang="zh">这篇文章不是什么: 它不是编译指南 (这事 <code>FlyDSL-lab/README.md</code> 已经管了), 也不是 API 手册 (<code>docs/layout_system_guide.md</code> 有完整的 Quick Reference 表)。 它是一份读者报告 —— 每个例子教了什么, 抽象在哪里赚回了它的复杂度, 接缝在哪里能看出来。</p>
 </section>
 
 <!-- ====================================================== -->
 <!-- M0 — COMPASS -->
 <!-- ====================================================== -->
 <section id="m0-compass">
-<h2><span class="num">M0 · The four-example ladder</span>Compass of <em>four examples</em></h2>
+<h2 lang="en"><span class="num">M0 · The four-example ladder</span>Compass of <em>four examples</em></h2>
+<h2 lang="zh"><span class="num">M0 · 四例阶梯</span>四个例子的<em>罗盘</em></h2>
 
-<p>The repo contains thousands of lines of production kernels under <code>kernels/</code> and an exhaustive test suite under <code>tests/</code>, but its pedagogical core is just four files under <code>examples/</code>. Each one adds exactly one new concept to the previous, and reading them in order is the fastest way to internalize FlyDSL.</p>
+<p lang="en">The repo contains thousands of lines of production kernels under <code>kernels/</code> and an exhaustive test suite under <code>tests/</code>, but its pedagogical core is just four files under <code>examples/</code>. Each one adds exactly one new concept to the previous, and reading them in order is the fastest way to internalize FlyDSL.</p>
+<p lang="zh">repo 里 <code>kernels/</code> 下面有数千行 production kernel, <code>tests/</code> 下面有详尽的测试套件, 但它的教学核心只有 <code>examples/</code> 下面 4 个文件。 每一个都比上一个多引入恰好一个新概念, 按顺序读它们是吃透 FlyDSL 最快的路径。</p>
 
 <table class="tbl">
-  <thead><tr><th>File</th><th>LOC</th><th>New concept</th><th>What it proves</th></tr></thead>
+  <thead>
+    <tr lang="en"><th>File</th><th>LOC</th><th>New concept</th><th>What it proves</th></tr>
+    <tr lang="zh"><th>文件</th><th>行数</th><th>新概念</th><th>展示什么</th></tr>
+  </thead>
   <tbody>
     <tr>
       <td class="k">01-vectorAdd.py</td>
       <td class="num">137</td>
       <td><code>@flyc.kernel</code> + <code>logical_divide</code> + <code>copy_atom_call</code></td>
-      <td>The minimum viable FlyDSL kernel: trace, compile, launch, capture in a CUDA Graph.</td>
+      <td lang="en">The minimum viable FlyDSL kernel: trace, compile, launch, capture in a CUDA Graph.</td>
+      <td lang="zh">最小可用的 FlyDSL kernel: trace、 编译、 launch、 被 CUDA Graph 捕获。</td>
     </tr>
     <tr>
       <td class="k">02-tiledCopy.py</td>
       <td class="num">69</td>
       <td><code>make_layout_tv</code> + <code>partition_S/D</code> + <code>BufferCopy128b</code></td>
-      <td>Thread/value layouts that fan a tile across a wavefront, vectorized.</td>
+      <td lang="en">Thread/value layouts that fan a tile across a wavefront, vectorized.</td>
+      <td lang="zh">用 thread / value layout 把一个 tile 向量化地分发给一个 wavefront。</td>
     </tr>
     <tr>
       <td class="k">03-tiledMma.py</td>
       <td class="num">95</td>
       <td><code>MFMA</code> atom + <code>make_tiled_copy_A/B/C</code> + <code>retile</code></td>
-      <td>Copy layouts derived from the MMA atom; same register read two ways.</td>
+      <td lang="en">Copy layouts derived from the MMA atom; same register read two ways.</td>
+      <td lang="zh">copy layout 从 MMA atom 反推; 同一段寄存器两种视角。</td>
     </tr>
     <tr>
       <td class="k">04-preshuffle_gemm.py</td>
       <td class="num">211</td>
-      <td>preshuffle B + LDS swizzle + 2-stage pipeline + <code>sched_*</code></td>
-      <td>A real GEMM: 4096³ FP16 with hand-tuned instruction scheduling.</td>
+      <td lang="en">preshuffle B + LDS swizzle + 2-stage pipeline + <code>sched_*</code></td>
+      <td lang="zh">preshuffle B + LDS swizzle + 两阶段流水 + <code>sched_*</code></td>
+      <td lang="en">A real GEMM: 4096³ FP16 with hand-tuned instruction scheduling.</td>
+      <td lang="zh">一个真实的 GEMM: 4096³ FP16, 带手调指令调度。</td>
     </tr>
   </tbody>
 </table>
 
-<p>The ladder is steep on the last step. Example 04 is roughly the union of every optimization that separates a 30% kernel from a 95% one on CDNA3 / CDNA4: preshuffled weight layout so MFMA needs no LDS transpose, XOR swizzle so LDS reads hit 32 banks evenly, two-stage ping-pong so the prefetch of K-block <em>n+1</em> overlaps with the MFMA of K-block <em>n</em>, and a scheduler block that tells the LLVM AMDGPU backend exactly how to interleave <code>v_mfma</code>, <code>ds_read</code>, <code>buffer_load</code>, and <code>ds_write</code> instructions inside the hot loop. None of this is in 01–03. Reading them in order is the only way to keep the cognitive load manageable.</p>
+<p lang="en">The ladder is steep on the last step. Example 04 is roughly the union of every optimization that separates a 30% kernel from a 95% one on CDNA3 / CDNA4: preshuffled weight layout so MFMA needs no LDS transpose, XOR swizzle so LDS reads hit 32 banks evenly, two-stage ping-pong so the prefetch of K-block <em>n+1</em> overlaps with the MFMA of K-block <em>n</em>, and a scheduler block that tells the LLVM AMDGPU backend exactly how to interleave <code>v_mfma</code>, <code>ds_read</code>, <code>buffer_load</code>, and <code>ds_write</code> instructions inside the hot loop. None of this is in 01–03. Reading them in order is the only way to keep the cognitive load manageable.</p>
+<p lang="zh">阶梯最后一级很陡。 例 04 大致是 CDNA3 / CDNA4 上把一个 30% kernel 拉到 95% 所有优化的并集: preshuffle 过的权重 layout 让 MFMA 不需要 LDS 转置、 XOR swizzle 让 LDS 读均匀打到 32 个 bank、 两阶段 ping-pong 让 K 块 <em>n+1</em> 的 prefetch 与 K 块 <em>n</em> 的 MFMA 重叠、 一段 scheduler 告诉 LLVM AMDGPU backend 在 hot loop 里如何精确交错 <code>v_mfma</code>、 <code>ds_read</code>、 <code>buffer_load</code>、 <code>ds_write</code>。 这些 01–03 都没有。 按顺序读才能保持认知负担在可控范围。</p>
 
 <!-- ============ PLATE I — Compilation pipeline ============ -->
 <div class="plate wide">
@@ -849,7 +933,8 @@ section { scroll-margin-top: 32px; }
   <line x1="700" y1="260" x2="720" y2="290" class="bp-line teal" marker-end="url(#arr-chalk)"/>
 </svg>
   </div>
-  <div class="caption">FlyDSL is a vertical descent through three layers. The Python tracer emits an MLIR module that mixes the <code>fly</code> dialect with stock <code>gpu</code>/<code>arith</code>/<code>scf</code>/<code>memref</code>. A nine-stage pass pipeline progressively lowers layout algebra to address arithmetic and copy/MMA atoms to ROCDL intrinsics, then the standard MLIR ROCDL path produces a HSA fatbin. Everything past stage 9 is cached on disk and keyed on the type signature plus the Constexpr values plus a source hash — change a <code>Constexpr[int]</code> value and you get a new cache key.</div>
+  <div class="caption" lang="en">FlyDSL is a vertical descent through three layers. The Python tracer emits an MLIR module that mixes the <code>fly</code> dialect with stock <code>gpu</code>/<code>arith</code>/<code>scf</code>/<code>memref</code>. A nine-stage pass pipeline progressively lowers layout algebra to address arithmetic and copy/MMA atoms to ROCDL intrinsics, then the standard MLIR ROCDL path produces a HSA fatbin. Everything past stage 9 is cached on disk and keyed on the type signature plus the Constexpr values plus a source hash — change a <code>Constexpr[int]</code> value and you get a new cache key.</div>
+  <div class="caption" lang="zh">FlyDSL 是一次纵向下降, 穿过三层。 Python tracer 产出一个 MLIR module, 把 <code>fly</code> dialect 和官方的 <code>gpu</code> / <code>arith</code> / <code>scf</code> / <code>memref</code> 混在一起。 一个九阶段的 pass 流水线把 layout 代数渐进 lower 到地址算术、 把 copy / MMA atom 渐进 lower 到 ROCDL intrinsic, 之后标准的 MLIR ROCDL 路径产出 HSA fatbin。 第 9 阶段以后的东西全部落盘缓存, 缓存 key 由类型签名 + Constexpr 值 + 源码 hash 组成 —— 改一个 <code>Constexpr[int]</code> 的值就会生成新的 cache key。</div>
 </div>
 </section>
 
@@ -857,13 +942,17 @@ section { scroll-margin-top: 32px; }
 <!-- M1 — LAYOUT ALGEBRA -->
 <!-- ====================================================== -->
 <section id="m1-layout">
-<h2><span class="num">M1 · The grammar before the kernels</span>Layout algebra <em>in ten minutes</em></h2>
+<h2 lang="en"><span class="num">M1 · The grammar before the kernels</span>Layout algebra <em>in ten minutes</em></h2>
+<h2 lang="zh"><span class="num">M1 · 读 kernel 之前的语法</span><em>十分钟</em> layout 代数</h2>
 
-<p>Every line of every FlyDSL kernel rests on the same five-word vocabulary: <em>shape</em>, <em>stride</em>, <em>layout</em>, <em>divide</em>, <em>slice</em>. The function names get longer (<code>zipped_divide</code>, <code>logical_product</code>, <code>raked_product</code>, <code>composition</code>) but they all decorate the same primitive idea — a layout is a function from a coordinate tuple to a linear index, and the algebra on layouts is the algebra on those functions. Internalize the primitive and the rest is a vocabulary exercise.</p>
+<p lang="en">Every line of every FlyDSL kernel rests on the same five-word vocabulary: <em>shape</em>, <em>stride</em>, <em>layout</em>, <em>divide</em>, <em>slice</em>. The function names get longer (<code>zipped_divide</code>, <code>logical_product</code>, <code>raked_product</code>, <code>composition</code>) but they all decorate the same primitive idea — a layout is a function from a coordinate tuple to a linear index, and the algebra on layouts is the algebra on those functions. Internalize the primitive and the rest is a vocabulary exercise.</p>
+<p lang="zh">每一行 FlyDSL kernel 都建立在同样的五个词上: <em>shape</em>、 <em>stride</em>、 <em>layout</em>、 <em>divide</em>、 <em>slice</em>。 函数名会越长 (<code>zipped_divide</code>、 <code>logical_product</code>、 <code>raked_product</code>、 <code>composition</code>) 但它们都装饰同一个原始概念 —— layout 是一个从坐标 tuple 到线性 index 的函数, layout 上的代数就是这些函数上的代数。 把这个原始概念吃透, 剩下的就是词汇练习。</p>
 
-<h3>The atom · <em>Shape, Stride, Layout</em></h3>
+<h3 lang="en">The atom · <em>Shape, Stride, Layout</em></h3>
+<h3 lang="zh">原子 · <em>Shape, Stride, Layout</em></h3>
 
-<p>A <code>!fly.layout</code> is a pair of integer tuples: a shape and a stride. Given coordinates <code>(c<sub>0</sub>, c<sub>1</sub>, ..., c<sub>n-1</sub>)</code>, the layout computes a linear index as</p>
+<p lang="en">A <code>!fly.layout</code> is a pair of integer tuples: a shape and a stride. Given coordinates <code>(c<sub>0</sub>, c<sub>1</sub>, ..., c<sub>n-1</sub>)</code>, the layout computes a linear index as</p>
+<p lang="zh">一个 <code>!fly.layout</code> 是两个整数 tuple 的对: shape 和 stride。 给定坐标 <code>(c<sub>0</sub>, c<sub>1</sub>, ..., c<sub>n-1</sub>)</code>, layout 这样计算线性 index:</p>
 
 <div class="code"><span class="c-com"># for layout ((8, 16), (1, 8)):</span>
 index((c0, c1)) = c0 * 1 + c1 * 8     <span class="c-com"># column-major 8x16</span>
@@ -871,19 +960,28 @@ index((c0, c1)) = c0 * 1 + c1 * 8     <span class="c-com"># column-major 8x16</s
 <span class="c-com"># for layout ((8, 16), (16, 1)):</span>
 index((c0, c1)) = c0 * 16 + c1 * 1    <span class="c-com"># row-major 8x16</span></div>
 
-<p>Strides are independent of shape, which is the whole point. A logical 8×16 matrix can be column-major <code>(1, 8)</code>, row-major <code>(16, 1)</code>, padded <code>(1, 9)</code>, swizzled, transposed, or have its rows broadcast — all of these are different strides on the same shape. FlyDSL kernels never compute addresses by hand; they construct layouts, divide and compose them, then call <code>copy</code> or <code>gemm</code> on a fragment that holds the resulting <code>(memory, layout)</code> pair.</p>
+<p lang="en">Strides are independent of shape, which is the whole point. A logical 8×16 matrix can be column-major <code>(1, 8)</code>, row-major <code>(16, 1)</code>, padded <code>(1, 9)</code>, swizzled, transposed, or have its rows broadcast — all of these are different strides on the same shape. FlyDSL kernels never compute addresses by hand; they construct layouts, divide and compose them, then call <code>copy</code> or <code>gemm</code> on a fragment that holds the resulting <code>(memory, layout)</code> pair.</p>
+<p lang="zh">stride 和 shape 是独立的, 这正是关键。 一个逻辑上 8×16 的矩阵可以是列主 <code>(1, 8)</code>、 行主 <code>(16, 1)</code>、 padded 的 <code>(1, 9)</code>、 swizzled、 转置、 或行广播 —— 这些都是同一个 shape 上的不同 stride。 FlyDSL kernel 从来不手算地址; 它们构造 layout、 切分组合 layout, 然后对一个持有 <code>(memory, layout)</code> 对的 fragment 调用 <code>copy</code> 或 <code>gemm</code>。</p>
 
-<p>Three things to remember about shapes:</p>
+<p lang="en">Three things to remember about shapes:</p>
+<p lang="zh">关于 shape 有三点要记住:</p>
 
-<ul>
+<ul lang="en">
   <li><strong>Shapes can be nested.</strong> <code>fx.make_shape(9, (4, 8))</code> is a rank-2 shape whose second mode is itself a rank-2 tuple. Nested shapes are how multi-level tiling (block → warp → thread → instruction) gets expressed without an explosion of indices.</li>
   <li><strong>Static and dynamic values mix freely.</strong> A shape entry can be a Python integer (folded at compile time) or an SSA value (a runtime <code>fx.Int32</code>). The MLIR type system tracks which is which.</li>
   <li><strong>"Layout" is also the name of the primitive type.</strong> <code>!fly.layout&lt;(8,16):(1,8)&gt;</code> is a real MLIR type — operations consume and produce values of this type. This is what separates FlyDSL from a string-templated layout library: the layout algebra is a typed first-class IR, not a build-time string substitution.</li>
 </ul>
+<ul lang="zh">
+  <li><strong>shape 可以嵌套。</strong> <code>fx.make_shape(9, (4, 8))</code> 是一个 rank-2 的 shape, 其第二维本身又是 rank-2 的 tuple。 嵌套 shape 是分层 tiling (block → warp → thread → instruction) 不用索引爆炸就能表达的关键。</li>
+  <li><strong>静态值和动态值可以自由混用。</strong> shape 的某一维可以是 Python int (编译期折掉) 或 SSA 值 (运行期 <code>fx.Int32</code>)。 MLIR 类型系统会追踪哪个是哪个。</li>
+  <li><strong>"Layout" 也是这个 primitive 类型的名字。</strong> <code>!fly.layout&lt;(8,16):(1,8)&gt;</code> 是一个真实的 MLIR 类型 —— 各 op 消费和产出这个类型的值。 这正是把 FlyDSL 和"模板字符串拼接 layout 库"区分开的关键: layout 代数是 typed 一等公民 IR, 不是 build-time 字符串替换。</li>
+</ul>
 
-<h3>The two operations you will actually use</h3>
+<h3 lang="en">The two operations you will actually use</h3>
+<h3 lang="zh">你实际会用的两个操作</h3>
 
-<p>The Quick Reference lists 14 product / divide variants. In <code>examples/</code>, exactly three appear: <code>logical_divide</code>, <code>zipped_divide</code>, and <code>flat_divide</code>. All three split a layout into a "tile" and a "rest of the grid" — they differ only in how the result is shaped.</p>
+<p lang="en">The Quick Reference lists 14 product / divide variants. In <code>examples/</code>, exactly three appear: <code>logical_divide</code>, <code>zipped_divide</code>, and <code>flat_divide</code>. All three split a layout into a "tile" and a "rest of the grid" — they differ only in how the result is shaped.</p>
+<p lang="zh">Quick Reference 表里列了 14 个 product / divide 变体。 在 <code>examples/</code> 里实际出现的只有 3 个: <code>logical_divide</code>、 <code>zipped_divide</code>、 <code>flat_divide</code>。 三个都是把一个 layout 切成"tile"和"剩余网格"两部分 —— 只是结果的形状不同。</p>
 
 <div class="code"><span class="c-com"># Input: 1-D layout (128,):(1,)</span>
 A = ...
@@ -898,7 +996,8 @@ bA = fx.<span class="c-key">zipped_divide</span>(A, (<span class="c-num">8</span
 gA = fx.<span class="c-key">flat_divide</span>(A, (<span class="c-num">128</span>, <span class="c-num">64</span>))
 <span class="c-com"># Result shape: (128, 64, m, k)   — grid is two trailing modes</span></div>
 
-<p>Once you've divided, you pick a tile with <code>fx.slice</code> — passing <code>None</code> for the modes you want to keep and an index for the modes you want to collapse:</p>
+<p lang="en">Once you've divided, you pick a tile with <code>fx.slice</code> — passing <code>None</code> for the modes you want to keep and an index for the modes you want to collapse:</p>
+<p lang="zh">divide 之后用 <code>fx.slice</code> 选 tile —— 想保留的维度传 <code>None</code>, 想折掉的维度传 index:</p>
 
 <div class="code">bA = fx.zipped_divide(A, (BM, BN))   <span class="c-com"># ((BM, BN), (m, n))</span>
 bA = fx.slice(bA, (<span class="c-num">None</span>, bid))   <span class="c-com"># pick block bid, keep (BM, BN)</span>
@@ -908,11 +1007,14 @@ bA = bA[<span class="c-num">None</span>, bid]            <span class="c-com"># s
 gA_k = fx.flat_divide(A, (BM, BK))[<span class="c-num">None</span>, <span class="c-num">None</span>, bid_x, <span class="c-num">None</span>]
 <span class="c-com">#   keep BM, BK; collapse bid_x; keep all of k</span></div>
 
-<p>These four lines are the entire grammar of "give me this block's tile" in FlyDSL. Every kernel in the repo starts with some form of this pattern. The first half-page of any kernel is layout construction; the back half is where actual loads, MFMAs, and stores happen.</p>
+<p lang="en">These four lines are the entire grammar of "give me this block's tile" in FlyDSL. Every kernel in the repo starts with some form of this pattern. The first half-page of any kernel is layout construction; the back half is where actual loads, MFMAs, and stores happen.</p>
+<p lang="zh">这四行就是 FlyDSL 里"把这个 block 的 tile 给我"的全部语法。 repo 里每个 kernel 都从这种 pattern 开始。 任何 kernel 的前半页都是 layout 构造; 后半页才是实际的 load、 MFMA、 store。</p>
 
-<h3>Thread × value · the layout on top of the layout</h3>
+<h3 lang="en">Thread × value · the layout on top of the layout</h3>
+<h3 lang="zh">Thread × value · layout 之上的 layout</h3>
 
-<p>A tile is a chunk of data. To execute on a GPU, you need a second layout that maps each <em>(thread, value-index)</em> pair to a coordinate inside the tile. This is the <em>thread/value</em> (TV) layout, and it is FlyDSL's central abstraction for fanning data across a wavefront.</p>
+<p lang="en">A tile is a chunk of data. To execute on a GPU, you need a second layout that maps each <em>(thread, value-index)</em> pair to a coordinate inside the tile. This is the <em>thread/value</em> (TV) layout, and it is FlyDSL's central abstraction for fanning data across a wavefront.</p>
+<p lang="zh">一个 tile 是一坨数据。 要在 GPU 上执行, 你需要第二个 layout, 把每对 <em>(thread, value-index)</em> 映射到 tile 内的一个坐标。 这就是 <em>thread / value</em> (TV) layout, 也是 FlyDSL 把数据分发给一个 wavefront 的核心抽象。</p>
 
 <div class="code"><span class="c-com"># 4 threads laid out along M, each thread handles 1×8 values:</span>
 thr_layout = fx.make_layout((<span class="c-num">4</span>, <span class="c-num">1</span>), (<span class="c-num">1</span>, <span class="c-num">1</span>))
@@ -922,23 +1024,29 @@ tile_mn, tv_layout = fx.<span class="c-key">make_layout_tv</span>(thr_layout, va
 <span class="c-com"># tv_layout : (T, V) → tile coordinate (M, N)</span>
 <span class="c-com"># tile_mn  : the tile shape covered by one execution</span></div>
 
-<p>The TV layout is the magic. Once you have it, <code>partition_S(tensor)</code> on a thread slice gives you the fragment of <code>tensor</code> that this thread will touch — already shaped <code>(V, VM, VN)</code> with the right indexing math folded in. You never see the address arithmetic. The compiler does. The pass <code>fly-layout-lowering</code> at stage 3 of the pipeline materializes all of this into concrete index expressions.</p>
+<p lang="en">The TV layout is the magic. Once you have it, <code>partition_S(tensor)</code> on a thread slice gives you the fragment of <code>tensor</code> that this thread will touch — already shaped <code>(V, VM, VN)</code> with the right indexing math folded in. You never see the address arithmetic. The compiler does. The pass <code>fly-layout-lowering</code> at stage 3 of the pipeline materializes all of this into concrete index expressions.</p>
+<p lang="zh">TV layout 是关键。 有了它之后, 在一个 thread slice 上调 <code>partition_S(tensor)</code>, 你拿到的就是这个 thread 要碰的那块 <code>tensor</code> —— 形状已经是 <code>(V, VM, VN)</code>, 正确的索引算术已经折进去了。 你看不到地址算术, 编译器在背后做。 流水线第 3 阶段的 <code>fly-layout-lowering</code> pass 把这一切物化成具体的 index 表达式。</p>
 
 <div class="callout teal">
-  <span class="ctag">The reframe</span>
-  <p>Layout is not a description of memory; it is a function. <code>make_layout(shape, stride)</code> defines a map <em>coord ↦ index</em>. <code>composition</code>, <code>divide</code>, and <code>product</code> are function composition on that map. Once you read FlyDSL through this lens, the gap between "what the code says" and "what the kernel does" closes by an order of magnitude.</p>
+  <span class="ctag" lang="en">The reframe</span>
+  <span class="ctag" lang="zh">视角重置</span>
+  <p lang="en">Layout is not a description of memory; it is a function. <code>make_layout(shape, stride)</code> defines a map <em>coord ↦ index</em>. <code>composition</code>, <code>divide</code>, and <code>product</code> are function composition on that map. Once you read FlyDSL through this lens, the gap between "what the code says" and "what the kernel does" closes by an order of magnitude.</p>
+  <p lang="zh">layout 不是对内存的描述, 是一个函数。 <code>make_layout(shape, stride)</code> 定义了一个映射 <em>coord ↦ index</em>。 <code>composition</code>、 <code>divide</code>、 <code>product</code> 是这个映射上的函数组合。 一旦你用这个视角去读 FlyDSL, "代码说什么"和"kernel 在做什么"之间的距离会瞬间缩小一个数量级。</p>
 </div>
 
-<p>Everything else in the layout API — <code>composition</code>, <code>complement</code>, <code>coalesce</code>, <code>right_inverse</code>, <code>raked_product</code>, <code>tiled_product</code> — is constructed from these primitives. The <a href="https://arxiv.org/abs/2601.05972">categorical foundations paper</a> for CuTe layouts works it out formally; for reading kernels, the four pictures above are enough.</p>
+<p lang="en">Everything else in the layout API — <code>composition</code>, <code>complement</code>, <code>coalesce</code>, <code>right_inverse</code>, <code>raked_product</code>, <code>tiled_product</code> — is constructed from these primitives. The <a href="https://arxiv.org/abs/2601.05972">categorical foundations paper</a> for CuTe layouts works it out formally; for reading kernels, the four pictures above are enough.</p>
+<p lang="zh">layout API 里所有其他东西 —— <code>composition</code>、 <code>complement</code>、 <code>coalesce</code>、 <code>right_inverse</code>、 <code>raked_product</code>、 <code>tiled_product</code> —— 都是从这些 primitive 构造出来的。 CuTe 的<a href="https://arxiv.org/abs/2601.05972">范畴论基础那篇文章</a>把这套形式化推出来了; 读 kernel 的话上面这四张图就够。</p>
 </section>
 
 <!-- ====================================================== -->
 <!-- M2 — EXAMPLE 01: VECTORADD -->
 <!-- ====================================================== -->
 <section id="m2-vector-add">
-<h2><span class="num">M2 · The two-line program</span>01 · <em>vectorAdd</em></h2>
+<h2 lang="en"><span class="num">M2 · The two-line program</span>01 · <em>vectorAdd</em></h2>
+<h2 lang="zh"><span class="num">M2 · 两行的程序</span>01 · <em>vectorAdd</em></h2>
 
-<p>The first example computes <code>C = A + B</code> for length-128 FP32 vectors. It is the minimum viable FlyDSL kernel — small enough that you can hold the whole pipeline in your head, large enough to exercise every required machinery. There are two functions:</p>
+<p lang="en">The first example computes <code>C = A + B</code> for length-128 FP32 vectors. It is the minimum viable FlyDSL kernel — small enough that you can hold the whole pipeline in your head, large enough to exercise every required machinery. There are two functions:</p>
+<p lang="zh">第一个例子计算长度为 128 的 FP32 向量 <code>C = A + B</code>。 这是最小可用的 FlyDSL kernel —— 小到整条流水线能一次性放在脑子里, 又大到把必需的机械全部用一遍。 一共两个函数:</p>
 
 <div class="code"><span class="c-key">@flyc.kernel</span>
 <span class="c-key">def</span> <span class="c-cls">vectorAddKernel</span>(
@@ -968,7 +1076,8 @@ tile_mn, tv_layout = fx.<span class="c-key">make_layout_tv</span>(thr_layout, va
     fx.memref_store_vec(vC, rC)
     fx.copy_atom_call(copyAtom, rC, fx.slice(tC, (<span class="c-num">None</span>, tid)))</div>
 
-<p>The structure that all FlyDSL kernels share is visible here in miniature. Three phases: <em>layout construction</em>, <em>copy in</em>, <em>compute + copy out</em>. Phase one builds the per-thread view of the data. Phase two moves it from global memory into register fragments. Phase three runs the arithmetic and writes the result back. Once you can see this skeleton, every kernel in <code>kernels/</code> becomes a variation on it — a bigger compute phase, more sophisticated copies, an LDS staging buffer between phase two and three, but the same three-phase shape.</p>
+<p lang="en">The structure that all FlyDSL kernels share is visible here in miniature. Three phases: <em>layout construction</em>, <em>copy in</em>, <em>compute + copy out</em>. Phase one builds the per-thread view of the data. Phase two moves it from global memory into register fragments. Phase three runs the arithmetic and writes the result back. Once you can see this skeleton, every kernel in <code>kernels/</code> becomes a variation on it — a bigger compute phase, more sophisticated copies, an LDS staging buffer between phase two and three, but the same three-phase shape.</p>
+<p lang="zh">所有 FlyDSL kernel 都共用的结构在这里以最小规模呈现。 三个阶段: <em>构造 layout</em>、 <em>拷入</em>、 <em>计算 + 拷出</em>。 阶段一建立数据的 per-thread 视图; 阶段二把数据从 global 搬到 register fragment; 阶段三跑算术然后写回。 看到这个骨架, <code>kernels/</code> 里每个 kernel 都变成它的变体 —— 更大的计算阶段、 更复杂的 copy、 阶段二和三之间多一层 LDS staging buffer, 但是同一个三阶段结构。</p>
 
 <!-- ============ PLATE II — Two-stage divide ============ -->
 <div class="plate wide">
@@ -1105,12 +1214,15 @@ tile_mn, tv_layout = fx.<span class="c-key">make_layout_tv</span>(thr_layout, va
   </g>
 </svg>
   </div>
-  <div class="caption">The vectorAdd kernel does <em>two divisions</em>. The first splits the global vector into per-block tiles — <code>logical_divide(A, layout(64,1))</code> produces a shape <code>((64,), (2,))</code> where the first mode is "what fits in one block" and the second mode is "how many blocks." <code>slice(.., (None, bid))</code> then collapses the second mode for the current block. The second division splits the per-block tile into per-thread slots; with a trivial divisor of <code>1</code>, each thread gets one element. The same cascade appears in every kernel — the difference is the divisor sizes and how many levels you stack.</div>
+  <div class="caption" lang="en">The vectorAdd kernel does <em>two divisions</em>. The first splits the global vector into per-block tiles — <code>logical_divide(A, layout(64,1))</code> produces a shape <code>((64,), (2,))</code> where the first mode is "what fits in one block" and the second mode is "how many blocks." <code>slice(.., (None, bid))</code> then collapses the second mode for the current block. The second division splits the per-block tile into per-thread slots; with a trivial divisor of <code>1</code>, each thread gets one element. The same cascade appears in every kernel — the difference is the divisor sizes and how many levels you stack.</div>
+  <div class="caption" lang="zh">vectorAdd kernel 做了<em>两次切分</em>。 第一次把全局向量切成 per-block tile —— <code>logical_divide(A, layout(64,1))</code> 产出 <code>((64,), (2,))</code>, 第一维是"一个 block 装得下多少", 第二维是"一共多少 block"。 然后 <code>slice(.., (None, bid))</code> 把第二维折成当前 block。 第二次切分把 per-block tile 切成 per-thread 槽位; divisor 取 <code>1</code>, 每个 thread 拿一个元素。 这种级联在每个 kernel 里都出现 —— 差别只是 divisor 多大、 叠几层。</div>
 </div>
 
-<h3>The two copy atoms · <em>BufferCopy vs UniversalCopy</em></h3>
+<h3 lang="en">The two copy atoms · <em>BufferCopy vs UniversalCopy</em></h3>
+<h3 lang="zh">两种 copy atom · <em>BufferCopy 与 UniversalCopy</em></h3>
 
-<p>Look at the two atoms FlyDSL constructs for this kernel. They are not the same:</p>
+<p lang="en">Look at the two atoms FlyDSL constructs for this kernel. They are not the same:</p>
+<p lang="zh">看这个 kernel 里 FlyDSL 构造的两个 atom。 它们不一样:</p>
 
 <div class="code">copyAtomBuf = fx.make_copy_atom(fx.rocdl.<span class="c-key">BufferCopy32b</span>(), fx.Float32)
 copyAtom    = fx.make_copy_atom(fx.<span class="c-key">UniversalCopy32b</span>(),    fx.Float32)
@@ -1118,11 +1230,14 @@ copyAtom    = fx.make_copy_atom(fx.<span class="c-key">UniversalCopy32b</span>()
 fx.copy_atom_call(copyAtomBuf, fx.slice(tA, (<span class="c-num">None</span>, tid)), rA)  <span class="c-com"># A uses buffer</span>
 fx.copy_atom_call(copyAtom,    fx.slice(tB, (<span class="c-num">None</span>, tid)), rB)  <span class="c-com"># B uses universal</span></div>
 
-<p><code>UniversalCopy32b</code> lowers to a generic <code>flat_load_dword</code> — pointer + offset, no extras. <code>BufferCopy32b</code> lowers to <code>buffer_load_dword</code>, which uses a four-SGPR <em>buffer resource descriptor</em> set up earlier by <code>make_buffer_tensor</code>. The buffer descriptor carries a <code>num_records</code> field, and the AMD GPU hardware checks every access against it: out-of-bounds loads return zero <em>without</em> raising a page fault, and out-of-bounds stores are silently dropped. This is the same OOB-by-SRD trick that <a href="/sources/gcnasm.html">gcnasm</a>'s vector_add kernel makes a centerpiece of.</p>
+<p lang="en"><code>UniversalCopy32b</code> lowers to a generic <code>flat_load_dword</code> — pointer + offset, no extras. <code>BufferCopy32b</code> lowers to <code>buffer_load_dword</code>, which uses a four-SGPR <em>buffer resource descriptor</em> set up earlier by <code>make_buffer_tensor</code>. The buffer descriptor carries a <code>num_records</code> field, and the AMD GPU hardware checks every access against it: out-of-bounds loads return zero <em>without</em> raising a page fault, and out-of-bounds stores are silently dropped. This is the same OOB-by-SRD trick that <a href="/sources/gcnasm.html">gcnasm</a>'s vector_add kernel makes a centerpiece of.</p>
+<p lang="zh"><code>UniversalCopy32b</code> 会 lower 成普通的 <code>flat_load_dword</code> —— 指针 + offset, 没多余东西。 <code>BufferCopy32b</code> 会 lower 成 <code>buffer_load_dword</code>, 它用一个由四个 SGPR 组成的 <em>buffer resource descriptor</em>, 这个 descriptor 在前面 <code>make_buffer_tensor</code> 时已经建好。 descriptor 里有 <code>num_records</code> 字段, AMD GPU 硬件每次访问都对它检查: 越界 load 返回 0 而<em>不</em>触发 page fault, 越界 store 静默丢弃。 这正是 <a href="/sources/gcnasm.html">gcnasm</a> vector_add kernel 中作为核心的"OOB-by-SRD"技巧。</p>
 
-<p>The example deliberately uses both — A via buffer, B via universal — to make the contrast visible. In production code, you would use BufferCopy for both: it costs the same to issue and gets you branch-free boundary handling for free.</p>
+<p lang="en">The example deliberately uses both — A via buffer, B via universal — to make the contrast visible. In production code, you would use BufferCopy for both: it costs the same to issue and gets you branch-free boundary handling for free.</p>
+<p lang="zh">这个例子故意两种都用 —— A 走 buffer、 B 走 universal —— 把对比露出来。 生产代码里两者都会用 BufferCopy: 发射成本一样, 但能免费拿到无分支的边界处理。</p>
 
-<h3>The launch wrapper · <em>@flyc.jit</em></h3>
+<h3 lang="en">The launch wrapper · <em>@flyc.jit</em></h3>
+<h3 lang="zh">启动包装器 · <em>@flyc.jit</em></h3>
 
 <div class="code"><span class="c-key">@flyc.jit</span>
 <span class="c-key">def</span> <span class="c-cls">vectorAdd</span>(
@@ -1137,14 +1252,18 @@ fx.copy_atom_call(copyAtom,    fx.slice(tB, (<span class="c-num">None</span>, ti
         grid=(grid_x, <span class="c-num">1</span>, <span class="c-num">1</span>), block=[block_dim, <span class="c-num">1</span>, <span class="c-num">1</span>], stream=stream,
     )</div>
 
-<p>The annotations on <code>vectorAdd</code> tell the compiler what to do with each parameter: <code>fx.Int32</code> is dynamic (it becomes a kernel argument), <code>fx.Constexpr[int]</code> is static (it gets baked in and contributes to the JIT cache key). Change a <code>Constexpr</code> value and you get a fresh compile; change a dynamic value and the cached binary is reused. This is the same Triton-style autotune model with type annotations doing the work that <code>tl.constexpr</code> does in Triton.</p>
+<p lang="en">The annotations on <code>vectorAdd</code> tell the compiler what to do with each parameter: <code>fx.Int32</code> is dynamic (it becomes a kernel argument), <code>fx.Constexpr[int]</code> is static (it gets baked in and contributes to the JIT cache key). Change a <code>Constexpr</code> value and you get a fresh compile; change a dynamic value and the cached binary is reused. This is the same Triton-style autotune model with type annotations doing the work that <code>tl.constexpr</code> does in Triton.</p>
+<p lang="zh"><code>vectorAdd</code> 上的类型注解告诉编译器每个参数怎么处理: <code>fx.Int32</code> 是动态的 (会变成 kernel 实参), <code>fx.Constexpr[int]</code> 是静态的 (会被烤进去, 同时参与 JIT cache key)。 改一个 <code>Constexpr</code> 值会触发重编, 改动态值则复用缓存。 这是 Triton 风格的 autotune 模型, 只是 <code>tl.constexpr</code> 的活由类型注解来干。</p>
 
 <div class="callout jade">
-  <span class="ctag">CUDA Graph compatibility</span>
-  <p>The example's second test captures the kernel into a <code>torch.cuda.CUDAGraph</code> and replays it. This works because FlyDSL's launch path goes through <em>fly-gpu-stream-inject</em>, a pass that threads the stream argument into the actual launch instead of consulting a TLS variable. For an inference engine that batches kernels into a captured graph for replay (vLLM, SGLang), this is the difference between FlyDSL kernels being usable and being a special case.</p>
+  <span class="ctag" lang="en">CUDA Graph compatibility</span>
+  <span class="ctag" lang="zh">CUDA Graph 兼容</span>
+  <p lang="en">The example's second test captures the kernel into a <code>torch.cuda.CUDAGraph</code> and replays it. This works because FlyDSL's launch path goes through <em>fly-gpu-stream-inject</em>, a pass that threads the stream argument into the actual launch instead of consulting a TLS variable. For an inference engine that batches kernels into a captured graph for replay (vLLM, SGLang), this is the difference between FlyDSL kernels being usable and being a special case.</p>
+  <p lang="zh">这个例子的第二个测试把 kernel capture 进 <code>torch.cuda.CUDAGraph</code> 然后 replay。 能跑通是因为 FlyDSL 的启动路径过的是 <em>fly-gpu-stream-inject</em> —— 一个把用户传入的 stream 直接编进 launch 的 pass, 不依赖 TLS 变量。 对把 kernel 批量塞进 captured graph 做回放的推理引擎 (vLLM、 SGLang), 这就是"FlyDSL kernel 能用"和"FlyDSL kernel 需要特殊处理"的区别。</p>
 </div>
 
-<p>Run it on a MI350X:</p>
+<p lang="en">Run it on a MI350X:</p>
+<p lang="zh">在 MI350X 上跑:</p>
 
 <div class="code">$ python examples/01-vectorAdd.py
 [Eager] Result correct: True
@@ -1156,9 +1275,11 @@ All passed: True</div>
 <!-- M3 — EXAMPLE 02: TILEDCOPY -->
 <!-- ====================================================== -->
 <section id="m3-tiled-copy">
-<h2><span class="num">M3 · Fanning a tile across threads</span>02 · <em>tiledCopy</em></h2>
+<h2 lang="en"><span class="num">M3 · Fanning a tile across threads</span>02 · <em>tiledCopy</em></h2>
+<h2 lang="zh"><span class="num">M3 · 把一个 tile 扇到一群 thread</span>02 · <em>tiledCopy</em></h2>
 
-<p>Example 02 is the smallest kernel in the repo (69 lines) and the most useful for understanding FlyDSL's central abstraction. It copies a 24×120 FP32 matrix from <code>A</code> to <code>B</code> using block tiles of <code>(8, 24)</code> and only <em>four threads per block</em>. The thread count is deliberately small — small enough that you can draw the full thread-value layout on one sheet of paper and verify by hand that it covers the tile correctly.</p>
+<p lang="en">Example 02 is the smallest kernel in the repo (69 lines) and the most useful for understanding FlyDSL's central abstraction. It copies a 24×120 FP32 matrix from <code>A</code> to <code>B</code> using block tiles of <code>(8, 24)</code> and only <em>four threads per block</em>. The thread count is deliberately small — small enough that you can draw the full thread-value layout on one sheet of paper and verify by hand that it covers the tile correctly.</p>
+<p lang="zh">例 02 是 repo 里最小的 kernel (69 行), 也是理解 FlyDSL 核心抽象最有用的一个。 它用 <code>(8, 24)</code> 的 block tile 把 24×120 的 FP32 矩阵从 <code>A</code> 拷到 <code>B</code>, <em>每个 block 只有 4 个 thread</em>。 thread 数故意做这么小 —— 小到完整的 thread-value layout 可以画在一张纸上, 用手验它确实覆盖了整个 tile。</p>
 
 <div class="code"><span class="c-key">@flyc.kernel</span>
 <span class="c-key">def</span> <span class="c-cls">copy_kernel</span>(A: fx.Tensor, B: fx.Tensor):
@@ -1189,15 +1310,23 @@ All passed: True</div>
     fx.copy(copy_atom, partition_src, frag)
     fx.copy(copy_atom, frag, partition_dst)</div>
 
-<h3>The arithmetic of the TV layout</h3>
+<h3 lang="en">The arithmetic of the TV layout</h3>
+<h3 lang="zh">TV layout 的算账</h3>
 
-<p>An (8, 24) tile has 192 elements. Four threads issuing 128-bit (= 8 × FP32) loads can move 32 elements per round, so the tile takes <em>six rounds</em> to drain. The TV layout says how those six rounds tile the (8, 24) plane:</p>
+<p lang="en">An (8, 24) tile has 192 elements. Four threads issuing 128-bit (= 8 × FP32) loads can move 32 elements per round, so the tile takes <em>six rounds</em> to drain. The TV layout says how those six rounds tile the (8, 24) plane:</p>
+<p lang="zh">一个 (8, 24) tile 有 192 个元素。 4 个 thread 每次发 128-bit (= 8 × FP32) load, 一轮能搬 32 个, 所以这个 tile 需要 <em>6 轮</em>才搬完。 TV layout 说的就是这 6 轮如何在 (8, 24) 平面上铺开:</p>
 
-<ul>
+<ul lang="en">
   <li><strong>thr_layout = ((4,1), (1,1))</strong> — four threads, laid out 4 along M, 1 along N.</li>
   <li><strong>val_layout = ((1,8), (1,1))</strong> — each thread reads a 1×8 block of values.</li>
   <li><strong>one execution covers <code>(4×1) × (1×8) = (4, 8)</code></strong> of the tile.</li>
   <li><strong>the tile is (8, 24), so the execution repeats <code>(8/4, 24/8) = (2, 3)</code> times</strong> — that's the <em>(VM, VN)</em> shape that <code>partition_S</code> returns.</li>
+</ul>
+<ul lang="zh">
+  <li><strong>thr_layout = ((4,1), (1,1))</strong> —— 4 个 thread, 沿 M 排 4 个、 沿 N 排 1 个。</li>
+  <li><strong>val_layout = ((1,8), (1,1))</strong> —— 每个 thread 一次读 1×8 个值。</li>
+  <li><strong>一次执行覆盖 tile 里 <code>(4×1) × (1×8) = (4, 8)</code></strong>。</li>
+  <li><strong>tile 是 (8, 24), 所以执行重复 <code>(8/4, 24/8) = (2, 3)</code> 次</strong> —— 这就是 <code>partition_S</code> 返回值里的 <em>(VM, VN)</em> 形状。</li>
 </ul>
 
 <!-- ============ PLATE III — TV layout coverage grid ============ -->
@@ -1331,30 +1460,58 @@ All passed: True</div>
   </g>
 </svg>
   </div>
-  <div class="caption">Each colored cell is one FP32, colored by its owning thread. One <em>execution</em> of the tiled copy issues four <code>BufferCopy128b</code> instructions — one per thread, each fetching its 8 consecutive FP32s. The (VM=2, VN=3) outer indexing means the execution repeats <em>six</em> times to cover the full (8, 24) tile, giving every thread a fragment of shape <em>(V=8, VM=2, VN=3) = 48 values</em>. <code>partition_S</code> hands you that exact fragment shape — no address arithmetic, just an indexable tensor.</div>
+  <div class="caption" lang="en">Each colored cell is one FP32, colored by its owning thread. One <em>execution</em> of the tiled copy issues four <code>BufferCopy128b</code> instructions — one per thread, each fetching its 8 consecutive FP32s. The (VM=2, VN=3) outer indexing means the execution repeats <em>six</em> times to cover the full (8, 24) tile, giving every thread a fragment of shape <em>(V=8, VM=2, VN=3) = 48 values</em>. <code>partition_S</code> hands you that exact fragment shape — no address arithmetic, just an indexable tensor.</div>
+  <div class="caption" lang="zh">每个有色单元是一个 FP32, 颜色表示拥有它的 thread。 tiled copy 的一次<em>执行</em>发射 4 条 <code>BufferCopy128b</code> 指令 —— 每个 thread 一条, 各取自己连续的 8 个 FP32。 外层 (VM=2, VN=3) 的索引意味着执行要重复<em>六</em>次才能覆盖整个 (8, 24) tile, 让每个 thread 拿到形状为 <em>(V=8, VM=2, VN=3) = 48 个值</em>的 fragment。 <code>partition_S</code> 直接把这个 fragment 形状给你 —— 没有地址算术, 只有一个可索引的 tensor。</div>
 </div>
 
-<h3>partition_S, partition_D, fragment · <em>the three calls that matter</em></h3>
+<h3 lang="en">partition_S, partition_D, fragment · <em>the three calls that matter</em></h3>
+<h3 lang="zh">partition_S, partition_D, fragment · <em>三个关键调用</em></h3>
 
-<p>Three method calls do all the work that would otherwise be a page of address math:</p>
+<p lang="en">Three method calls do all the work that would otherwise be a page of address math:</p>
+<p lang="zh">三个方法调用做完了原本需要一整页地址算术才能完成的事:</p>
 
 <table class="tbl">
-  <thead><tr><th>Call</th><th>Returns</th><th>Used for</th></tr></thead>
+  <thead>
+    <tr lang="en"><th>Call</th><th>Returns</th><th>Used for</th></tr>
+    <tr lang="zh"><th>调用</th><th>返回</th><th>用途</th></tr>
+  </thead>
   <tbody>
-    <tr><td><code>thr_copy.partition_S(bA)</code></td><td>per-thread view of source, shape <code>(V, VM, VN)</code></td><td>where the load reads</td></tr>
-    <tr><td><code>thr_copy.partition_D(bB)</code></td><td>per-thread view of destination, same shape</td><td>where the load writes</td></tr>
-    <tr><td><code>fx.make_fragment_like(part)</code></td><td>register tensor with same logical shape</td><td>the in-register staging area</td></tr>
+    <tr>
+      <td><code>thr_copy.partition_S(bA)</code></td>
+      <td lang="en">per-thread view of source, shape <code>(V, VM, VN)</code></td>
+      <td lang="zh">source 的 per-thread 视图, 形状 <code>(V, VM, VN)</code></td>
+      <td lang="en">where the load reads</td>
+      <td lang="zh">load 从哪里读</td>
+    </tr>
+    <tr>
+      <td><code>thr_copy.partition_D(bB)</code></td>
+      <td lang="en">per-thread view of destination, same shape</td>
+      <td lang="zh">destination 的 per-thread 视图, 同形状</td>
+      <td lang="en">where the load writes</td>
+      <td lang="zh">load 写到哪里</td>
+    </tr>
+    <tr>
+      <td><code>fx.make_fragment_like(part)</code></td>
+      <td lang="en">register tensor with same logical shape</td>
+      <td lang="zh">同逻辑形状的寄存器 tensor</td>
+      <td lang="en">the in-register staging area</td>
+      <td lang="zh">寄存器里的暂存区</td>
+    </tr>
   </tbody>
 </table>
 
-<p>Then <code>fx.copy(atom, src, dst)</code> issues the actual instructions, walking the <code>(VM, VN)</code> outer modes and emitting one atom call per (VM, VN) coordinate. Six iterations, one BufferCopy128b each, four threads in parallel, 192 elements total — exactly the picture above.</p>
+<p lang="en">Then <code>fx.copy(atom, src, dst)</code> issues the actual instructions, walking the <code>(VM, VN)</code> outer modes and emitting one atom call per (VM, VN) coordinate. Six iterations, one BufferCopy128b each, four threads in parallel, 192 elements total — exactly the picture above.</p>
+<p lang="zh">然后 <code>fx.copy(atom, src, dst)</code> 发射真正的指令, 沿外层 <code>(VM, VN)</code> 维走一遍, 每个 (VM, VN) 坐标发一次 atom 调用。 6 次迭代, 每次一条 BufferCopy128b, 4 个 thread 并行, 共 192 个元素 —— 正好是上图。</p>
 
 <div class="callout teal">
-  <span class="ctag">Compare to 01</span>
-  <p>In 01-vectorAdd, the partitioning is hand-rolled with two <code>logical_divide</code> + <code>slice</code> calls. Here it is delegated to <code>tiled_copy</code> + <code>partition_S/D</code>. The new abstraction earns its keep when you have more than a trivial number of threads and want vectorization: it would be tedious to compute a 128-bit-aligned load offset for each of 256 threads by hand, but <code>make_layout_tv</code> + <code>partition_S</code> compiles down to exactly that — without you ever writing the byte-offset arithmetic.</p>
+  <span class="ctag" lang="en">Compare to 01</span>
+  <span class="ctag" lang="zh">对比例 01</span>
+  <p lang="en">In 01-vectorAdd, the partitioning is hand-rolled with two <code>logical_divide</code> + <code>slice</code> calls. Here it is delegated to <code>tiled_copy</code> + <code>partition_S/D</code>. The new abstraction earns its keep when you have more than a trivial number of threads and want vectorization: it would be tedious to compute a 128-bit-aligned load offset for each of 256 threads by hand, but <code>make_layout_tv</code> + <code>partition_S</code> compiles down to exactly that — without you ever writing the byte-offset arithmetic.</p>
+  <p lang="zh">在 01-vectorAdd 里, partition 是用两次 <code>logical_divide</code> + <code>slice</code> 手写的。 这里则交给 <code>tiled_copy</code> + <code>partition_S/D</code>。 当 thread 数不再是 trivial 的几个、 又要做向量化时, 这个新抽象就赚回了它的复杂度: 256 个 thread 每个手算 128-bit 对齐的 load 偏移会很烦, <code>make_layout_tv</code> + <code>partition_S</code> 编出来正是这个 —— 而你从头到尾没写过一行字节偏移算术。</p>
 </div>
 
-<p>Run it:</p>
+<p lang="en">Run it:</p>
+<p lang="zh">跑一下:</p>
 
 <div class="code">$ python examples/02-tiledCopy.py
 Result correct: True</div>
@@ -1364,9 +1521,11 @@ Result correct: True</div>
 <!-- M4 — EXAMPLE 03: TILEDMMA -->
 <!-- ====================================================== -->
 <section id="m4-tiled-mma">
-<h2><span class="num">M4 · First contact with MFMA</span>03 · <em>tiledMma</em> &amp; MFMA</h2>
+<h2 lang="en"><span class="num">M4 · First contact with MFMA</span>03 · <em>tiledMma</em> &amp; MFMA</h2>
+<h2 lang="zh"><span class="num">M4 · 第一次接触 MFMA</span>03 · <em>tiledMma</em> 与 MFMA</h2>
 
-<p>Example 03 is the first kernel that actually multiplies. It computes <code>C(64, 64) = A(64, 8) · B(64, 8)ᵀ</code> on FP32, in a single block with 256 threads (four wavefronts), entirely in registers — no LDS, no K-loop, no software pipeline. The point is to introduce MFMA atoms and the way copy layouts are <em>derived</em> from a tiled MMA, without yet bringing in the optimization machinery of example 04.</p>
+<p lang="en">Example 03 is the first kernel that actually multiplies. It computes <code>C(64, 64) = A(64, 8) · B(64, 8)ᵀ</code> on FP32, in a single block with 256 threads (four wavefronts), entirely in registers — no LDS, no K-loop, no software pipeline. The point is to introduce MFMA atoms and the way copy layouts are <em>derived</em> from a tiled MMA, without yet bringing in the optimization machinery of example 04.</p>
+<p lang="zh">例 03 是第一个真正做乘法的 kernel。 它在 FP32 上计算 <code>C(64, 64) = A(64, 8) · B(64, 8)ᵀ</code>, 单 block 256 thread (4 个 wavefront), 全程在寄存器里 —— 没有 LDS、 没有 K-loop、 没有软件流水。 目的是介绍 MFMA atom 以及 copy layout 如何从一个 tiled MMA <em>反推</em>, 还不引入例 04 的那些优化机械。</p>
 
 <div class="code">block_m, block_n, block_k = <span class="c-num">64</span>, <span class="c-num">64</span>, <span class="c-num">8</span>
 
@@ -1390,11 +1549,14 @@ Result correct: True</div>
     tiled_mma = fx.<span class="c-key">make_tiled_mma</span>(mma_atom, fx.make_layout((<span class="c-num">2</span>,<span class="c-num">2</span>,<span class="c-num">1</span>), (<span class="c-num">1</span>,<span class="c-num">2</span>,<span class="c-num">0</span>)))
     thr_mma   = tiled_mma.thr_slice(tid)</div>
 
-<h3>The MFMA atom · a single-instruction matrix multiply</h3>
+<h3 lang="en">The MFMA atom · a single-instruction matrix multiply</h3>
+<h3 lang="zh">MFMA atom · 一条指令一个矩阵乘</h3>
 
-<p>The CDNA matrix core executes Matrix Fused Multiply-Add instructions — <code>v_mfma_f32_16x16x4f32</code> in this case. One instruction, 64 lanes, computes <code>C(16, 16) += A(16, 4) · B(4, 16)</code> in a fixed lane-distribution pattern dictated by the hardware. The constructor argument <code>MFMA(16, 16, 4, fx.Float32)</code> picks that exact variant; FlyDSL knows the lane layouts the instruction demands and exposes them as <code>mma_atom.tv_layout_A/B/C</code>.</p>
+<p lang="en">The CDNA matrix core executes Matrix Fused Multiply-Add instructions — <code>v_mfma_f32_16x16x4f32</code> in this case. One instruction, 64 lanes, computes <code>C(16, 16) += A(16, 4) · B(4, 16)</code> in a fixed lane-distribution pattern dictated by the hardware. The constructor argument <code>MFMA(16, 16, 4, fx.Float32)</code> picks that exact variant; FlyDSL knows the lane layouts the instruction demands and exposes them as <code>mma_atom.tv_layout_A/B/C</code>.</p>
+<p lang="zh">CDNA matrix core 执行 Matrix Fused Multiply-Add 指令 —— 这里是 <code>v_mfma_f32_16x16x4f32</code>。 一条指令, 64 个 lane, 按硬件固定的 lane 分布 pattern 计算 <code>C(16, 16) += A(16, 4) · B(4, 16)</code>。 构造参数 <code>MFMA(16, 16, 4, fx.Float32)</code> 选出这个具体变体; FlyDSL 知道这条指令要求的 lane layout, 通过 <code>mma_atom.tv_layout_A/B/C</code> 暴露出来。</p>
 
-<p><code>make_tiled_mma(atom, layout((2, 2, 1), (1, 2, 0)))</code> says: tile this atom by laying four wavefronts out as <em>2 along M, 2 along N, 1 along K</em>. The stride <code>(1, 2, 0)</code> maps the wave id to (M, N, K) indices — wave 0 → (M=0, N=0), wave 1 → (M=1, N=0), wave 2 → (M=0, N=1), wave 3 → (M=1, N=1). All four waves cooperate along the K dimension (stride 0 means K is broadcast across waves).</p>
+<p lang="en"><code>make_tiled_mma(atom, layout((2, 2, 1), (1, 2, 0)))</code> says: tile this atom by laying four wavefronts out as <em>2 along M, 2 along N, 1 along K</em>. The stride <code>(1, 2, 0)</code> maps the wave id to (M, N, K) indices — wave 0 → (M=0, N=0), wave 1 → (M=1, N=0), wave 2 → (M=0, N=1), wave 3 → (M=1, N=1). All four waves cooperate along the K dimension (stride 0 means K is broadcast across waves).</p>
+<p lang="zh"><code>make_tiled_mma(atom, layout((2, 2, 1), (1, 2, 0)))</code> 表示: 把这个 atom 用 4 个 wavefront 按 <em>M 方向 2 个、 N 方向 2 个、 K 方向 1 个</em> 平铺。 stride <code>(1, 2, 0)</code> 把 wave id 映射到 (M, N, K) 索引 —— wave 0 → (M=0, N=0), wave 1 → (M=1, N=0), wave 2 → (M=0, N=1), wave 3 → (M=1, N=1)。 4 个 wave 在 K 维上一起 reduce (stride 0 表示 K 在 wave 间广播)。</p>
 
 <!-- ============ PLATE IV — MFMA wave tiling ============ -->
 <div class="plate wide">
@@ -1486,12 +1648,15 @@ Result correct: True</div>
   </g>
 </svg>
   </div>
-  <div class="caption">The (2, 2, 1) wave layout tiles four wavefronts across the M and N dimensions of the 64×64 C tile, with all four waves cooperating along K. Inside each wave, the 32×32 sub-tile is in turn covered by a 2×2 grid of MFMA-16×16 atom outputs — each lane of each wave ends up with 4 outputs × 4 fp32 = 16 fp32 in AGPRs. The thread-id-to-position mapping is the stride <code>(1, 2, 0)</code>: <code>wave 0 → (0,0)</code>, <code>wave 1 → (1,0)</code>, <code>wave 2 → (0,1)</code>, <code>wave 3 → (1,1)</code>. The same wave-layout idiom scales: example 04 uses <code>(1, 4, 1)</code> with a much larger atom permutation.</div>
+  <div class="caption" lang="en">The (2, 2, 1) wave layout tiles four wavefronts across the M and N dimensions of the 64×64 C tile, with all four waves cooperating along K. Inside each wave, the 32×32 sub-tile is in turn covered by a 2×2 grid of MFMA-16×16 atom outputs — each lane of each wave ends up with 4 outputs × 4 fp32 = 16 fp32 in AGPRs. The thread-id-to-position mapping is the stride <code>(1, 2, 0)</code>: <code>wave 0 → (0,0)</code>, <code>wave 1 → (1,0)</code>, <code>wave 2 → (0,1)</code>, <code>wave 3 → (1,1)</code>. The same wave-layout idiom scales: example 04 uses <code>(1, 4, 1)</code> with a much larger atom permutation.</div>
+  <div class="caption" lang="zh">(2, 2, 1) 这个 wave layout 把 4 个 wavefront 平铺到 64×64 C tile 的 M、 N 方向, 4 个 wave 在 K 维一起 reduce。 每个 wave 内, 32×32 子 tile 由 2×2 个 MFMA-16×16 atom 输出覆盖 —— 每个 wave 的每个 lane 最终有 4 × 4 = 16 个 FP32 在 AGPR 里。 wave-id 到位置的映射就是 stride <code>(1, 2, 0)</code>: <code>wave 0 → (0,0)</code>, <code>wave 1 → (1,0)</code>, <code>wave 2 → (0,1)</code>, <code>wave 3 → (1,1)</code>。 这个 wave layout 习语可以扩展: 例 04 用 <code>(1, 4, 1)</code>, 配合一个大得多的 atom permutation。</div>
 </div>
 
-<h3>make_tiled_copy_A · <em>copy layouts inherited from the MMA</em></h3>
+<h3 lang="en">make_tiled_copy_A · <em>copy layouts inherited from the MMA</em></h3>
+<h3 lang="zh">make_tiled_copy_A · <em>从 MMA 反推 copy layout</em></h3>
 
-<p>The MFMA instruction demands a specific lane-to-element layout for its A and B inputs and for its C output. Get this wrong and you load <em>correct data into the wrong lane</em> — the kernel runs without crashing and produces noise. The conventional fix is to read the MFMA documentation and hand-write copy layouts that match. FlyDSL inverts the direction:</p>
+<p lang="en">The MFMA instruction demands a specific lane-to-element layout for its A and B inputs and for its C output. Get this wrong and you load <em>correct data into the wrong lane</em> — the kernel runs without crashing and produces noise. The conventional fix is to read the MFMA documentation and hand-write copy layouts that match. FlyDSL inverts the direction:</p>
+<p lang="zh">MFMA 指令对 A 和 B 输入、 以及 C 输出, 都要求特定的 lane-to-element layout。 写错的话, 你会把<em>正确的数据装到错误的 lane</em> —— kernel 不崩溃, 但产出噪声。 常规修法是去读 MFMA 文档, 手写匹配的 copy layout。 FlyDSL 把这个方向反过来:</p>
 
 <div class="code"><span class="c-com"># instead of writing the A-copy layout from scratch:</span>
 copy_atom    = fx.make_copy_atom(fx.rocdl.BufferCopy32b(), fx.Float32)
@@ -1502,11 +1667,14 @@ tiled_copy_C = fx.<span class="c-key">make_tiled_copy_C</span>(copy_atom, tiled_
 thr_copy_A = tiled_copy_A.get_slice(tid)
 copy_src_A = thr_copy_A.partition_S(bA)   <span class="c-com"># MMA-correct partition of A</span></div>
 
-<p><code>make_tiled_copy_A</code> reads the MMA atom's <code>tv_layout_A</code> and constructs a copy whose <em>per-thread fragment shape</em> is exactly what the MFMA will consume. The compiler guarantees lane correctness; you never reason about which lane gets which element. The same trick gives you <code>tiled_copy_B</code> for the second operand and <code>tiled_copy_C</code> for the accumulator store.</p>
+<p lang="en"><code>make_tiled_copy_A</code> reads the MMA atom's <code>tv_layout_A</code> and constructs a copy whose <em>per-thread fragment shape</em> is exactly what the MFMA will consume. The compiler guarantees lane correctness; you never reason about which lane gets which element. The same trick gives you <code>tiled_copy_B</code> for the second operand and <code>tiled_copy_C</code> for the accumulator store.</p>
+<p lang="zh"><code>make_tiled_copy_A</code> 读 MMA atom 的 <code>tv_layout_A</code>, 构造一个 copy, 它的 <em>per-thread fragment 形状</em>正好是 MFMA 要消费的。 编译器保证 lane 正确, 你完全不必推哪个 lane 拿哪个元素。 同样的把戏给你 <code>tiled_copy_B</code> 用于第二个操作数, <code>tiled_copy_C</code> 用于累加器写回。</p>
 
-<h3>retile · <em>one register, two views</em></h3>
+<h3 lang="en">retile · <em>one register, two views</em></h3>
+<h3 lang="zh">retile · <em>一段寄存器, 两种视角</em></h3>
 
-<p>The same register fragment is read by two different consumers: the copy instructions (which want it in "vector load" shape) and the MFMA instruction (which wants it in "lane assignment" shape). The two shapes are isomorphic — same total bytes, same number of registers — but indexed differently. <code>retile</code> gives you the second view without reallocation:</p>
+<p lang="en">The same register fragment is read by two different consumers: the copy instructions (which want it in "vector load" shape) and the MFMA instruction (which wants it in "lane assignment" shape). The two shapes are isomorphic — same total bytes, same number of registers — but indexed differently. <code>retile</code> gives you the second view without reallocation:</p>
+<p lang="zh">同一段 register fragment 被两个消费者读: copy 指令 (想要它是"向量 load"的形状), 以及 MFMA 指令 (想要它是"lane 分配"的形状)。 两种形状同构 —— 总字节数相同、 寄存器数相同 —— 只是索引方式不同。 <code>retile</code> 给你第二个视角而不需要重新分配:</p>
 
 <div class="code">frag_A      = thr_mma.<span class="c-key">make_fragment_A</span>(bA)        <span class="c-com"># MMA view</span>
 copy_frag_A = thr_copy_A.<span class="c-key">retile</span>(frag_A)        <span class="c-com"># same memory, copy view</span>
@@ -1516,35 +1684,73 @@ fx.copy(copy_atom, copy_src_A, copy_frag_A, pred=<span class="c-num">None</span>
 fx.gemm(mma_atom, frag_C, frag_A, frag_B, frag_C)</div>
 
 <div class="callout brass">
-  <span class="ctag">Why retile matters</span>
-  <p>Without <code>retile</code>, you'd allocate one fragment for "after the load," then issue copies between it and a second "for the MMA" fragment — moving registers around unnecessarily. <code>retile</code> is FlyDSL's recognition that the data already in your registers can be addressed two ways at zero cost. The MLIR pass pipeline collapses both views into the same VGPR allocation; the only IR-level operation is a type reinterpret.</p>
+  <span class="ctag" lang="en">Why retile matters</span>
+  <span class="ctag" lang="zh">retile 为什么重要</span>
+  <p lang="en">Without <code>retile</code>, you'd allocate one fragment for "after the load," then issue copies between it and a second "for the MMA" fragment — moving registers around unnecessarily. <code>retile</code> is FlyDSL's recognition that the data already in your registers can be addressed two ways at zero cost. The MLIR pass pipeline collapses both views into the same VGPR allocation; the only IR-level operation is a type reinterpret.</p>
+  <p lang="zh">没有 <code>retile</code> 你要分配一个 "load 完之后"用的 fragment, 再发 copy 指令搬到第二个 "给 MMA 用"的 fragment —— 白白挪寄存器。 <code>retile</code> 是 FlyDSL 对一个事实的承认: 寄存器里的数据可以用两种方式寻址, 零成本。 MLIR pass 流水线把两个视角折叠成同一份 VGPR 分配; IR 层只有一个类型重新解释。</p>
 </div>
 
-<p>Run it:</p>
+<p lang="en">Run it:</p>
+<p lang="zh">跑一下:</p>
 
 <div class="code">$ python examples/03-tiledMma.py
 Result correct: True</div>
 
-<p>Example 03 is the first example whose abstraction-to-mechanism ratio is dramatic. Less than 80 lines of layout code produce a working tiled MFMA — the equivalent hand-written ROCDL would be 300+ lines of register juggling and the lane-correctness check would be done with a tensor of fp32 ones loaded against a known-good reference. The abstractions are not just convenient; they make the kernel <em>verifiable by inspection</em>.</p>
+<p lang="en">Example 03 is the first example whose abstraction-to-mechanism ratio is dramatic. Less than 80 lines of layout code produce a working tiled MFMA — the equivalent hand-written ROCDL would be 300+ lines of register juggling and the lane-correctness check would be done with a tensor of fp32 ones loaded against a known-good reference. The abstractions are not just convenient; they make the kernel <em>verifiable by inspection</em>.</p>
+<p lang="zh">例 03 是第一个抽象与机制比例显著的例子。 不到 80 行 layout 代码产出一个可跑的 tiled MFMA —— 等价的手写 ROCDL 要 300+ 行寄存器周旋, 而 lane 正确性还得用一个 FP32 全 1 的 tensor 对照已知好的参考来验。 这些抽象不仅是方便, 它们让 kernel <em>看一眼就能验证正确性</em>。</p>
 </section>
 
 <!-- ====================================================== -->
 <!-- M5 — EXAMPLE 04: PRESHUFFLE GEMM -->
 <!-- ====================================================== -->
 <section id="m5-preshuffle">
-<h2><span class="num">M5 · The production kernel</span>04 · <em>preshuffle GEMM</em></h2>
+<h2 lang="en"><span class="num">M5 · The production kernel</span>04 · <em>preshuffle GEMM</em></h2>
+<h2 lang="zh"><span class="num">M5 · 生产 kernel</span>04 · <em>preshuffle GEMM</em></h2>
 
-<p>The fourth example is where it stops being a tutorial. 211 lines, a 4096³ FP16 GEMM, BLOCK = (128, 128, 64), two-stage LDS double buffer with XOR swizzle, double-buffered B in registers, a hand-written instruction scheduler in the hot loop, and a host-side weight preshuffle that flattens an MFMA-specific lane layout into a contiguous global memory pattern. Every optimization that production CDNA GEMMs use is here in compact form. The example earns its place at the top of the ladder.</p>
+<p lang="en">The fourth example is where it stops being a tutorial. 211 lines, a 4096³ FP16 GEMM, BLOCK = (128, 128, 64), two-stage LDS double buffer with XOR swizzle, double-buffered B in registers, a hand-written instruction scheduler in the hot loop, and a host-side weight preshuffle that flattens an MFMA-specific lane layout into a contiguous global memory pattern. Every optimization that production CDNA GEMMs use is here in compact form. The example earns its place at the top of the ladder.</p>
+<p lang="zh">第四个例子已经不是 tutorial 了。 211 行, 4096³ FP16 GEMM, BLOCK = (128, 128, 64), 两阶段 LDS 双缓冲 + XOR swizzle、 寄存器里双 buffer B、 hot loop 里手写的指令调度器, 还有一个 host 端权重预洗, 把 MFMA 特有的 lane 布局摊平到 global 内存中的连续 pattern。 production CDNA GEMM 用到的每一项优化都以紧凑形式出现在这里。 它当之无愧地坐在阶梯顶端。</p>
 
-<h3>The four pieces that make a fast GEMM</h3>
+<h3 lang="en">The four pieces that make a fast GEMM</h3>
+<h3 lang="zh">让 GEMM 跑快的四件套</h3>
 
 <table class="tbl">
-  <thead><tr><th>Optimization</th><th>What it costs</th><th>What it buys</th></tr></thead>
+  <thead>
+    <tr lang="en"><th>Optimization</th><th>What it costs</th><th>What it buys</th></tr>
+    <tr lang="zh"><th>优化</th><th>代价</th><th>收益</th></tr>
+  </thead>
   <tbody>
-    <tr><td>Preshuffle B (host-side)</td><td>One memory reshape at load time</td><td>MFMA gets lane-correct data from raw <code>buffer_load_dwordx4</code> — no LDS transpose</td></tr>
-    <tr><td>XOR swizzle on LDS A</td><td>One <code>fly.composed_layout</code> wrapper</td><td>Bank conflicts on 64-lane <code>ds_read</code> drop from 8× to 1×</td></tr>
-    <tr><td>2-stage software pipeline</td><td>Double the LDS for A · double the B registers</td><td>Next K-block's <code>buffer_load</code> overlaps current MFMA</td></tr>
-    <tr><td>Explicit instruction schedule</td><td>~30 lines of <code>fx.rocdl.sched_*</code></td><td>~30% lift in peak FLOPs by filling issue slots</td></tr>
+    <tr>
+      <td lang="en">Preshuffle B (host-side)</td>
+      <td lang="zh">Preshuffle B (host 端)</td>
+      <td lang="en">One memory reshape at load time</td>
+      <td lang="zh">加载时一次内存 reshape</td>
+      <td lang="en">MFMA gets lane-correct data from raw <code>buffer_load_dwordx4</code> — no LDS transpose</td>
+      <td lang="zh">MFMA 直接从原始 <code>buffer_load_dwordx4</code> 拿到 lane-correct 数据 —— 不用 LDS 转置</td>
+    </tr>
+    <tr>
+      <td lang="en">XOR swizzle on LDS A</td>
+      <td lang="zh">LDS A 的 XOR swizzle</td>
+      <td lang="en">One <code>fly.composed_layout</code> wrapper</td>
+      <td lang="zh">一个 <code>fly.composed_layout</code> 包装</td>
+      <td lang="en">Bank conflicts on 64-lane <code>ds_read</code> drop from 8× to 1×</td>
+      <td lang="zh">64 lane <code>ds_read</code> 的 bank conflict 从 8× 降到 1×</td>
+    </tr>
+    <tr>
+      <td lang="en">2-stage software pipeline</td>
+      <td lang="zh">两阶段软件流水线</td>
+      <td lang="en">Double the LDS for A · double the B registers</td>
+      <td lang="zh">A 的 LDS 翻倍, B 的寄存器翻倍</td>
+      <td lang="en">Next K-block's <code>buffer_load</code> overlaps current MFMA</td>
+      <td lang="zh">下一个 K 块的 <code>buffer_load</code> 与当前 MFMA 重叠</td>
+    </tr>
+    <tr>
+      <td lang="en">Explicit instruction schedule</td>
+      <td lang="zh">显式指令调度</td>
+      <td lang="en">~30 lines of <code>fx.rocdl.sched_*</code></td>
+      <td lang="zh">大约 30 行的 <code>fx.rocdl.sched_*</code></td>
+      <td lang="en">~30% lift in peak FLOPs by filling issue slots</td>
+      <td lang="zh">填满 issue slot, 峰值 FLOPs 提升约 30%</td>
+    </tr>
   </tbody>
 </table>
 
@@ -1642,10 +1848,12 @@ Result correct: True</div>
   <text x="500" y="378" class="d-text small mono brass" text-anchor="middle">No LDS stop, no transpose, no swizzle on B. The MFMA reads from VGPRs filled by buffer_load.</text>
 </svg>
   </div>
-  <div class="caption">MFMA-16×16×16 on FP16 needs a specific lane-to-element layout for its B operand. The canonical solution is to load B normally and transpose-then-swizzle it through LDS. The preshuffle alternative does the reshape <em>once</em> on the host (<code>shuffle_weight</code> in <code>tests/utils.py</code>) so that a plain <code>buffer_load_dwordx4</code> off the global B already lands MFMA-lane-correct in VGPRs. The kernel then constructs a composed <code>!fly.layout</code> whose strides describe the chunked physical layout — same logical <code>(N, K)</code> shape, different stride math. For inference weights that never change, this trade saves the entire LDS round-trip on B.</div>
+  <div class="caption" lang="en">MFMA-16×16×16 on FP16 needs a specific lane-to-element layout for its B operand. The canonical solution is to load B normally and transpose-then-swizzle it through LDS. The preshuffle alternative does the reshape <em>once</em> on the host (<code>shuffle_weight</code> in <code>tests/utils.py</code>) so that a plain <code>buffer_load_dwordx4</code> off the global B already lands MFMA-lane-correct in VGPRs. The kernel then constructs a composed <code>!fly.layout</code> whose strides describe the chunked physical layout — same logical <code>(N, K)</code> shape, different stride math. For inference weights that never change, this trade saves the entire LDS round-trip on B.</div>
+  <div class="caption" lang="zh">FP16 的 MFMA-16×16×16 对 B 操作数要求一个特定的 lane-to-element 布局。 标准做法是把 B 正常 load, 通过 LDS 转置加 swizzle。 preshuffle 这条路换成在 host 端做<em>一次</em>重排 (<code>tests/utils.py</code> 里的 <code>shuffle_weight</code>), 让一条普通的 <code>buffer_load_dwordx4</code> 从 global B 加载出来就已经是 MFMA lane-correct 的 VGPR 数据。 kernel 然后构造一个 composed <code>!fly.layout</code>, 它的 stride 描述这种 chunked 物理布局 —— 同样的逻辑 <code>(N, K)</code> shape, 不同的 stride 算术。 对推理时不变的权重, 这个 trade 省掉 B 的整个 LDS 来回。</div>
 </div>
 
-<h3>The LDS · <em>XOR swizzle and double buffer</em></h3>
+<h3 lang="en">The LDS · <em>XOR swizzle and double buffer</em></h3>
+<h3 lang="zh">LDS · <em>XOR swizzle 与双缓冲</em></h3>
 
 <div class="code"><span class="c-com"># composed_layout_A wraps a swizzle around an ordered layout</span>
 composed_layout_A = fx.<span class="c-key">make_composed_layout</span>(
@@ -1655,11 +1863,14 @@ composed_layout_A = fx.<span class="c-key">make_composed_layout</span>(
 sA = fx.<span class="c-key">make_view</span>(fx.get_dyn_shared(fx.Float16), composed_layout_A)
 <span class="c-com"># sA : (BM, BK, 2 stages) — two-deep ping-pong</span></div>
 
-<p>The XOR swizzle <code>(3, 3, 3)</code> is the CuTe convention for "bank-conflict-free LDS access" — three bits of upper-order address XOR'd into three bits of lower-order address, in groups of three. With it, the 64-lane <code>ds_read_b128</code> hits each of the 32 LDS banks exactly twice instead of all hitting one. Without the swizzle, the same access pattern would serialize over 8 cycles instead of completing in 1.</p>
+<p lang="en">The XOR swizzle <code>(3, 3, 3)</code> is the CuTe convention for "bank-conflict-free LDS access" — three bits of upper-order address XOR'd into three bits of lower-order address, in groups of three. With it, the 64-lane <code>ds_read_b128</code> hits each of the 32 LDS banks exactly twice instead of all hitting one. Without the swizzle, the same access pattern would serialize over 8 cycles instead of completing in 1.</p>
+<p lang="zh">XOR swizzle <code>(3, 3, 3)</code> 是 CuTe 里"LDS 无 bank conflict 访问"的惯例 —— 把 3 位高位地址 XOR 到 3 位低位地址, 三位一组。 有了它, 64 lane 的 <code>ds_read_b128</code> 正好命中 32 个 LDS bank 各 2 次, 而不是全部撞在 1 个 bank 上。 没有 swizzle 的话, 同样的访问 pattern 会被串行化成 8 周期, 而不是 1 周期完成。</p>
 
-<p>The trailing dimension <code>STAGES_A = 2</code> is the double buffer — half the LDS holds the K-block currently being consumed by MFMA, half holds the K-block being filled by the next iteration's <code>buffer_load → ds_write</code>. Both halves are addressed by the same swizzle, which means a single composed layout serves the whole ping-pong without per-stage stride math.</p>
+<p lang="en">The trailing dimension <code>STAGES_A = 2</code> is the double buffer — half the LDS holds the K-block currently being consumed by MFMA, half holds the K-block being filled by the next iteration's <code>buffer_load → ds_write</code>. Both halves are addressed by the same swizzle, which means a single composed layout serves the whole ping-pong without per-stage stride math.</p>
+<p lang="zh">尾维 <code>STAGES_A = 2</code> 就是双缓冲 —— LDS 一半装当前被 MFMA 消费的 K 块, 另一半装下一轮 <code>buffer_load → ds_write</code> 正在填的 K 块。 两半用同一个 swizzle 寻址, 这意味着一个 composed layout 就能服务整个 ping-pong, 不需要按 stage 算 stride。</p>
 
-<h3>The pipeline · <em>read stage, write stage, ping-pong</em></h3>
+<h3 lang="en">The pipeline · <em>read stage, write stage, ping-pong</em></h3>
+<h3 lang="zh">流水线 · <em>read stage, write stage, ping-pong</em></h3>
 
 <!-- ============ PLATE VI — Pipeline timing ============ -->
 <div class="plate wide">
@@ -1768,7 +1979,8 @@ sA = fx.<span class="c-key">make_view</span>(fx.get_dyn_shared(fx.Float16), comp
   </g>
 </svg>
   </div>
-  <div class="caption">Each iteration of the K-loop runs two phases — read-stage 0 then read-stage 1 — alternating which LDS half the MFMA consumes and which gets written. The orange and yellow tracks are global <code>buffer_load</code>s that prefetch K-block <em>n+1</em> while the MFMA on track 5 is still grinding through K-block <em>n</em>. Track 3's <code>ds_write</code> stores the prefetched A into the <em>other</em> LDS stage (write = read ^ 1). The barriers separate iterations because <code>ds_write</code> from this iter must complete before next iter's <code>ds_read</code> begins. The B operand is fully register-resident with two stages — there's no <code>ds_write B</code> track because preshuffle eliminated the LDS round-trip on B entirely.</div>
+  <div class="caption" lang="en">Each iteration of the K-loop runs two phases — read-stage 0 then read-stage 1 — alternating which LDS half the MFMA consumes and which gets written. The orange and yellow tracks are global <code>buffer_load</code>s that prefetch K-block <em>n+1</em> while the MFMA on track 5 is still grinding through K-block <em>n</em>. Track 3's <code>ds_write</code> stores the prefetched A into the <em>other</em> LDS stage (write = read ^ 1). The barriers separate iterations because <code>ds_write</code> from this iter must complete before next iter's <code>ds_read</code> begins. The B operand is fully register-resident with two stages — there's no <code>ds_write B</code> track because preshuffle eliminated the LDS round-trip on B entirely.</div>
+  <div class="caption" lang="zh">K-loop 的每次迭代跑两个阶段 —— read-stage 0 然后 read-stage 1 —— 在两半 LDS 之间轮换被 MFMA 消费和被写入的角色。 橙色和黄色轨道是全局 <code>buffer_load</code>, 它们在轨道 5 上的 MFMA 还在嗑 K 块 <em>n</em> 的时候预取 K 块 <em>n+1</em>。 轨道 3 的 <code>ds_write</code> 把预取的 A 写到<em>另一半</em> LDS stage (write = read ^ 1)。 barrier 把迭代分开, 因为本迭代的 <code>ds_write</code> 必须在下一迭代的 <code>ds_read</code> 开始前完成。 B 操作数完全驻留在寄存器中, 两个 stage —— 没有 <code>ds_write B</code> 轨道, 因为 preshuffle 已经把 B 的 LDS 来回完全消掉了。</div>
 </div>
 
 <div class="code"><span class="c-key">def</span> <span class="c-cls">run_pipeline_stage</span>(read_stage, next_k, read_next=<span class="c-num">True</span>):
@@ -1795,11 +2007,14 @@ sA = fx.<span class="c-key">make_view</span>(fx.get_dyn_shared(fx.Float16), comp
     fx.gpu.barrier()
     hot_loop_scheduler()</div>
 
-<p>The <code>soffset=next_k * gA_k_stride</code> argument is worth pausing on. It is not byte arithmetic on a global pointer — it's the <em>scalar offset</em> field of the ROCDL <code>buffer_load</code> instruction. The buffer resource descriptor is built once at kernel entry; subsequent loads from different K-positions just vary the SGPR-held scalar offset. No <code>v_add</code> on a VGPR address per lane, no per-thread index computation. <a href="/sources/gcnasm.html">gcnasm</a>'s vector_add lives on the same mechanism.</p>
+<p lang="en">The <code>soffset=next_k * gA_k_stride</code> argument is worth pausing on. It is not byte arithmetic on a global pointer — it's the <em>scalar offset</em> field of the ROCDL <code>buffer_load</code> instruction. The buffer resource descriptor is built once at kernel entry; subsequent loads from different K-positions just vary the SGPR-held scalar offset. No <code>v_add</code> on a VGPR address per lane, no per-thread index computation. <a href="/sources/gcnasm.html">gcnasm</a>'s vector_add lives on the same mechanism.</p>
+<p lang="zh"><code>soffset=next_k * gA_k_stride</code> 这个参数值得停一下。 它不是全局指针的字节算术 —— 它是 ROCDL <code>buffer_load</code> 指令的 <em>scalar offset</em> 字段。 buffer resource descriptor 在 kernel 入口建一次; 后续从不同 K 位置 load 只是变 SGPR 里的 scalar offset。 没有 per-lane 在 VGPR 地址上做 <code>v_add</code>, 没有 per-thread 索引计算。 <a href="/sources/gcnasm.html">gcnasm</a> 的 vector_add 就吃这个机制。</p>
 
-<h3>hot_loop_scheduler · <em>telling the backend where to put each instruction</em></h3>
+<h3 lang="en">hot_loop_scheduler · <em>telling the backend where to put each instruction</em></h3>
+<h3 lang="zh">hot_loop_scheduler · <em>告诉 backend 每条指令放哪里</em></h3>
 
-<p>The last bit is the most foreign to anyone coming from Triton or CUDA C. After the algorithmic body of <code>run_pipeline_stage</code>, the kernel calls <code>hot_loop_scheduler()</code>, which emits a sequence of <code>fx.rocdl.sched_*</code> intrinsics:</p>
+<p lang="en">The last bit is the most foreign to anyone coming from Triton or CUDA C. After the algorithmic body of <code>run_pipeline_stage</code>, the kernel calls <code>hot_loop_scheduler()</code>, which emits a sequence of <code>fx.rocdl.sched_*</code> intrinsics:</p>
+<p lang="zh">最后这块对 Triton 或 CUDA C 出身的人最陌生。 在 <code>run_pipeline_stage</code> 的算法主体后面, kernel 调 <code>hot_loop_scheduler()</code>, 它发出一序列 <code>fx.rocdl.sched_*</code> intrinsic:</p>
 
 <div class="code"><span class="c-key">def</span> <span class="c-cls">hot_loop_scheduler</span>():
     fx.rocdl.<span class="c-key">sched_dsrd</span>(<span class="c-num">2</span>); fx.rocdl.<span class="c-key">sched_mfma</span>(<span class="c-num">2</span>)
@@ -1819,64 +2034,122 @@ sA = fx.<span class="c-key">make_view</span>(fx.get_dyn_shared(fx.Float16), comp
 
     fx.rocdl.<span class="c-key">sched_barrier</span>(<span class="c-num">0</span>)</div>
 
-<p>These are not real instructions. They are <em>scheduling hints</em> that the LLVM AMDGPU backend respects: <code>sched_mfma(2)</code> says "place exactly 2 MFMA instructions at this point in the schedule, in addition to whatever has already been scheduled here." The compiler picks <em>which</em> MFMAs (from the surrounding code) to put here, but the count and ordering are pinned.</p>
+<p lang="en">These are not real instructions. They are <em>scheduling hints</em> that the LLVM AMDGPU backend respects: <code>sched_mfma(2)</code> says "place exactly 2 MFMA instructions at this point in the schedule, in addition to whatever has already been scheduled here." The compiler picks <em>which</em> MFMAs (from the surrounding code) to put here, but the count and ordering are pinned.</p>
+<p lang="zh">这些不是真实指令。 它们是 <em>调度提示</em>, LLVM AMDGPU backend 会尊重它们: <code>sched_mfma(2)</code> 说"在调度的这个位置, 在已经放在这里的指令之外, 再放正好 2 条 MFMA 指令"。 编译器自己挑<em>哪些</em>MFMA (从周围代码里挑) 放在这里, 但数量和顺序是钉死的。</p>
 
-<p>Why it matters: the CDNA matrix core has a long latency. A single MFMA can take 16–32 cycles to retire, and the wave can issue other instructions during the wait — <code>ds_read</code>, <code>buffer_load</code>, <code>ds_write</code>. Without hints, LLVM's scheduler does an okay job but tends to cluster same-class instructions. With hints, you can interleave them so that each issue slot during the MFMA latency holds <em>something useful</em>. The 8 leading iterations of <code>sched_main_iter(with_vmem=True)</code> spread <code>buffer_load</code>s evenly across the early hot-loop body; the trailing 7 with <code>with_dswr=True</code> spread <code>ds_write</code>s across the tail. This pattern is the difference between 60% and 90%+ of MFMA peak in real kernels.</p>
+<p lang="en">Why it matters: the CDNA matrix core has a long latency. A single MFMA can take 16–32 cycles to retire, and the wave can issue other instructions during the wait — <code>ds_read</code>, <code>buffer_load</code>, <code>ds_write</code>. Without hints, LLVM's scheduler does an okay job but tends to cluster same-class instructions. With hints, you can interleave them so that each issue slot during the MFMA latency holds <em>something useful</em>. The 8 leading iterations of <code>sched_main_iter(with_vmem=True)</code> spread <code>buffer_load</code>s evenly across the early hot-loop body; the trailing 7 with <code>with_dswr=True</code> spread <code>ds_write</code>s across the tail. This pattern is the difference between 60% and 90%+ of MFMA peak in real kernels.</p>
+<p lang="zh">为什么重要: CDNA matrix core 的延迟很长。 一条 MFMA 退役要 16–32 周期, wave 在等待期间可以发其他指令 —— <code>ds_read</code>、 <code>buffer_load</code>、 <code>ds_write</code>。 不给提示, LLVM scheduler 会干得还行, 但倾向于把同类指令聚在一起。 给提示之后, 你可以把它们交错排开, 让 MFMA 延迟期间每个 issue slot 都装着<em>有用的东西</em>。 开头 8 次 <code>sched_main_iter(with_vmem=True)</code> 把 <code>buffer_load</code> 均匀撒在 hot loop 前段; 末尾 7 次 <code>with_dswr=True</code> 把 <code>ds_write</code> 撒在 hot loop 后段。 真实 kernel 上, 这个 pattern 就是 60% 和 90%+ MFMA peak 的差距。</p>
 
 <div class="callout coral">
-  <span class="ctag">A warning</span>
-  <p>Schedulers are <em>fragile</em>. Changing <code>BLOCK_K</code>, swapping MFMA shape, or even adding a single instruction inside the hot loop can invalidate the count assumptions and tank performance. <code>kernels/preshuffle_gemm.py</code> in production uses a different scheduler for each (BM, BN, BK, MFMA-shape) tuple, often tuned with the ATT trace analyzer (<code>capture-kernel-trace</code>). For a first pass at a new GEMM, write it without a scheduler and add one only after you've profiled.</p>
+  <span class="ctag" lang="en">A warning</span>
+  <span class="ctag" lang="zh">一个警告</span>
+  <p lang="en">Schedulers are <em>fragile</em>. Changing <code>BLOCK_K</code>, swapping MFMA shape, or even adding a single instruction inside the hot loop can invalidate the count assumptions and tank performance. <code>kernels/preshuffle_gemm.py</code> in production uses a different scheduler for each (BM, BN, BK, MFMA-shape) tuple, often tuned with the ATT trace analyzer (<code>capture-kernel-trace</code>). For a first pass at a new GEMM, write it without a scheduler and add one only after you've profiled.</p>
+  <p lang="zh">scheduler 很<em>脆弱</em>。 改 <code>BLOCK_K</code>、 换 MFMA 形状、 甚至在 hot loop 里多加一条指令, 都可能让数量假设失效、 性能暴跌。 production 的 <code>kernels/preshuffle_gemm.py</code> 给每个 (BM, BN, BK, MFMA-shape) 元组各用一份 scheduler, 通常用 ATT trace 分析器 (<code>capture-kernel-trace</code>) 调出来的。 写新 GEMM 的第一遍, 先不放 scheduler, 等 profile 完再加。</p>
 </div>
 
-<p>Run it:</p>
+<p lang="en">Run it:</p>
+<p lang="zh">跑一下:</p>
 
 <div class="code">$ PYTHONPATH=/sgl-workspace/FlyDSL-lab python examples/04-preshuffle_gemm.py
 Result correct: True</div>
 
-<p>The kernel runs and is correct. To measure how close to peak it gets, swap the example for the production <code>kernels/preshuffle_gemm.py</code> and use <code>tests/kernels/test_preshuffle_gemm.py</code> as the harness — that's the path the AMD team uses for tuning.</p>
+<p lang="en">The kernel runs and is correct. To measure how close to peak it gets, swap the example for the production <code>kernels/preshuffle_gemm.py</code> and use <code>tests/kernels/test_preshuffle_gemm.py</code> as the harness — that's the path the AMD team uses for tuning.</p>
+<p lang="zh">kernel 跑通了, 结果正确。 要看它离 peak 多近, 把这个例子换成 production 的 <code>kernels/preshuffle_gemm.py</code>, 用 <code>tests/kernels/test_preshuffle_gemm.py</code> 当 harness —— 这是 AMD 团队调优时走的路径。</p>
 </section>
 
 <!-- ====================================================== -->
 <!-- M6 — COMPILE PIPELINE -->
 <!-- ====================================================== -->
 <section id="m6-pipeline">
-<h2><span class="num">M6 · Underneath the @decorators</span>Compile pipeline · <em>Python → fatbin</em></h2>
+<h2 lang="en"><span class="num">M6 · Underneath the @decorators</span>Compile pipeline · <em>Python → fatbin</em></h2>
+<h2 lang="zh"><span class="num">M6 · @ 装饰器之下</span>编译流水线 · <em>Python → fatbin</em></h2>
 
-<p>The Python you wrote was traced into MLIR. What happens next is worth knowing in outline, because most FlyDSL debugging happens at the IR level — when a kernel produces NaN or a wrong number, the first move is <code>FLYDSL_DUMP_IR=1</code> and reading <code>module-after-fly-layout-lowering.mlir</code>.</p>
+<p lang="en">The Python you wrote was traced into MLIR. What happens next is worth knowing in outline, because most FlyDSL debugging happens at the IR level — when a kernel produces NaN or a wrong number, the first move is <code>FLYDSL_DUMP_IR=1</code> and reading <code>module-after-fly-layout-lowering.mlir</code>.</p>
+<p lang="zh">你写的 Python 被 trace 成 MLIR。 接下来发生的事值得大概知道, 因为 FlyDSL 大部分调试都发生在 IR 层 —— kernel 出 NaN 或者数算错时, 第一步是 <code>FLYDSL_DUMP_IR=1</code>, 然后读 <code>module-after-fly-layout-lowering.mlir</code>。</p>
 
-<h3>Tracing · @flyc.kernel</h3>
+<h3 lang="en">Tracing · @flyc.kernel</h3>
+<h3 lang="zh">Tracing · @flyc.kernel</h3>
 
-<p>The <code>@flyc.kernel</code> decorator wraps the Python function in a tracer. On first call with a given type signature, the tracer rewrites the function's AST to intercept each <code>fx.*</code> call, then executes the function in a context where each operation emits MLIR ops instead of computing values. By the end of the trace, you have a <code>gpu.module</code> with a single <code>gpu.func</code> kernel inside, expressed in a mix of the <code>fly</code>, <code>gpu</code>, <code>arith</code>, <code>scf</code>, <code>memref</code>, and <code>vector</code> dialects.</p>
+<p lang="en">The <code>@flyc.kernel</code> decorator wraps the Python function in a tracer. On first call with a given type signature, the tracer rewrites the function's AST to intercept each <code>fx.*</code> call, then executes the function in a context where each operation emits MLIR ops instead of computing values. By the end of the trace, you have a <code>gpu.module</code> with a single <code>gpu.func</code> kernel inside, expressed in a mix of the <code>fly</code>, <code>gpu</code>, <code>arith</code>, <code>scf</code>, <code>memref</code>, and <code>vector</code> dialects.</p>
+<p lang="zh"><code>@flyc.kernel</code> 装饰器把 Python 函数包进一个 tracer。 第一次以某个类型签名调用时, tracer 改写函数的 AST 来拦截每个 <code>fx.*</code> 调用, 然后在一个特殊上下文里执行函数 —— 每个操作发射 MLIR op 而不是计算具体值。 trace 结束时你得到一个 <code>gpu.module</code>, 里面有一个 <code>gpu.func</code> kernel, 用 <code>fly</code>、 <code>gpu</code>、 <code>arith</code>、 <code>scf</code>、 <code>memref</code>、 <code>vector</code> dialect 的混合体表达。</p>
 
-<p>Two facts about tracing are load-bearing for kernel authors:</p>
+<p lang="en">Two facts about tracing are load-bearing for kernel authors:</p>
+<p lang="zh">tracing 有两件事对 kernel 作者很关键:</p>
 
-<ul>
+<ul lang="en">
   <li><strong>Python <code>if</code> on traced values is illegal.</strong> The trace runs once. If a branch depends on a kernel-time value (e.g., <code>tid</code>), there's no way to materialize both branches. Use <code>fx.const_expr(cond)</code> when the condition is compile-time, or <code>scf.if</code> (via FlyDSL's <code>if_else</code>) when it must be runtime.</li>
   <li><strong>Python <code>for</code> over a list unrolls.</strong> Use <code>fx.range_constexpr(n)</code> for fully-unrolled compile-time loops, plain <code>range(start, stop, step, init=[acc])</code> for an <code>scf.for</code> with loop-carried values.</li>
 </ul>
+<ul lang="zh">
+  <li><strong>对 traced 值用 Python <code>if</code> 不合法。</strong> trace 只跑一次。 如果分支依赖一个 kernel-time 值 (比如 <code>tid</code>), 没办法把两条分支都物化。 编译期条件用 <code>fx.const_expr(cond)</code>; 必须运行期的话用 <code>scf.if</code> (FlyDSL 的 <code>if_else</code>)。</li>
+  <li><strong>Python <code>for</code> 遍历一个列表会展开。</strong> 完全展开的编译期循环用 <code>fx.range_constexpr(n)</code>; 带循环携带值的 <code>scf.for</code> 用 <code>range(start, stop, step, init=[acc])</code>。</li>
+</ul>
 
-<h3>The pass pipeline · what each stage does</h3>
+<h3 lang="en">The pass pipeline · what each stage does</h3>
+<h3 lang="zh">Pass 流水线 · 每个阶段在做什么</h3>
 
 <table class="tbl">
-  <thead><tr><th>Stage</th><th>Pass</th><th>What it turns into what</th></tr></thead>
+  <thead>
+    <tr lang="en"><th>Stage</th><th>Pass</th><th>What it turns into what</th></tr>
+    <tr lang="zh"><th>阶段</th><th>Pass</th><th>把什么变成什么</th></tr>
+  </thead>
   <tbody>
-    <tr><td class="num">1</td><td><code>gpu-kernel-outlining</code></td><td>splits device code into a <code>gpu.module</code> separate from the host launcher</td></tr>
-    <tr><td class="num">2</td><td><code>fly-canonicalize</code></td><td>folds <code>!fly.layout</code> algebra at compile time when shapes are static</td></tr>
-    <tr><td class="num">3</td><td><code>fly-layout-lowering</code></td><td>turns <code>fly.crd2idx</code>, partitions, divides into concrete <code>arith</code> + <code>vector</code> ops</td></tr>
-    <tr><td class="num">4</td><td><code>convert-fly-to-rocdl</code></td><td>copy atoms become <code>rocdl.buffer_load</code>; MMA atoms become <code>rocdl.mfma.*</code></td></tr>
-    <tr><td class="num">5</td><td><code>canonicalize + cse</code></td><td>arith folding, common subexpression elimination</td></tr>
-    <tr><td class="num">6</td><td><code>gpu.module(convert-gpu-to-rocdl)</code></td><td>thread/block indices, barriers, dyn_shared → ROCDL intrinsics</td></tr>
-    <tr><td class="num">7</td><td><code>rocdl-attach-target {chip=gfxNNN}</code></td><td>tags the module with the target chip for later codegen</td></tr>
-    <tr><td class="num">8</td><td><code>gpu-to-llvm + arith/func-to-llvm</code></td><td>final lower into LLVM IR</td></tr>
-    <tr><td class="num">9</td><td><code>gpu-module-to-binary {format=fatbin}</code></td><td>invokes LLVM AMDGPU backend → HSA fatbin</td></tr>
+    <tr>
+      <td class="num">1</td><td><code>gpu-kernel-outlining</code></td>
+      <td lang="en">splits device code into a <code>gpu.module</code> separate from the host launcher</td>
+      <td lang="zh">把 device 代码从 host launcher 里拆出来, 独立成 <code>gpu.module</code></td>
+    </tr>
+    <tr>
+      <td class="num">2</td><td><code>fly-canonicalize</code></td>
+      <td lang="en">folds <code>!fly.layout</code> algebra at compile time when shapes are static</td>
+      <td lang="zh">静态 shape 时, 在编译期折叠 <code>!fly.layout</code> 代数</td>
+    </tr>
+    <tr>
+      <td class="num">3</td><td><code>fly-layout-lowering</code></td>
+      <td lang="en">turns <code>fly.crd2idx</code>, partitions, divides into concrete <code>arith</code> + <code>vector</code> ops</td>
+      <td lang="zh">把 <code>fly.crd2idx</code>、 partition、 divide 变成具体的 <code>arith</code> + <code>vector</code> op</td>
+    </tr>
+    <tr>
+      <td class="num">4</td><td><code>convert-fly-to-rocdl</code></td>
+      <td lang="en">copy atoms become <code>rocdl.buffer_load</code>; MMA atoms become <code>rocdl.mfma.*</code></td>
+      <td lang="zh">copy atom 变成 <code>rocdl.buffer_load</code>; MMA atom 变成 <code>rocdl.mfma.*</code></td>
+    </tr>
+    <tr>
+      <td class="num">5</td><td><code>canonicalize + cse</code></td>
+      <td lang="en">arith folding, common subexpression elimination</td>
+      <td lang="zh">arith 折叠、 公共子表达式消除</td>
+    </tr>
+    <tr>
+      <td class="num">6</td><td><code>gpu.module(convert-gpu-to-rocdl)</code></td>
+      <td lang="en">thread/block indices, barriers, dyn_shared → ROCDL intrinsics</td>
+      <td lang="zh">thread / block 索引、 barrier、 dyn_shared → ROCDL intrinsic</td>
+    </tr>
+    <tr>
+      <td class="num">7</td><td><code>rocdl-attach-target {chip=gfxNNN}</code></td>
+      <td lang="en">tags the module with the target chip for later codegen</td>
+      <td lang="zh">给 module 打上目标芯片标签, 给后续 codegen 用</td>
+    </tr>
+    <tr>
+      <td class="num">8</td><td><code>gpu-to-llvm + arith/func-to-llvm</code></td>
+      <td lang="en">final lower into LLVM IR</td>
+      <td lang="zh">最终 lower 到 LLVM IR</td>
+    </tr>
+    <tr>
+      <td class="num">9</td><td><code>gpu-module-to-binary {format=fatbin}</code></td>
+      <td lang="en">invokes LLVM AMDGPU backend → HSA fatbin</td>
+      <td lang="zh">调 LLVM AMDGPU backend → HSA fatbin</td>
+    </tr>
   </tbody>
 </table>
 
-<p>Pass 3 is where most kernel-level bugs surface. If your <code>partition_S</code> produces a fragment of unexpected shape, it's because the layout algebra simplifies to something other than what you intended. Dump the IR after this pass to see what FlyDSL actually believes the indexing is. <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> dumps after every pass; <code>FLYDSL_DUMP_DIR=./ir</code> sends them to a directory you can grep through.</p>
+<p lang="en">Pass 3 is where most kernel-level bugs surface. If your <code>partition_S</code> produces a fragment of unexpected shape, it's because the layout algebra simplifies to something other than what you intended. Dump the IR after this pass to see what FlyDSL actually believes the indexing is. <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> dumps after every pass; <code>FLYDSL_DUMP_DIR=./ir</code> sends them to a directory you can grep through.</p>
+<p lang="zh">Pass 3 是大部分 kernel 级 bug 浮出水面的地方。 如果 <code>partition_S</code> 产出的 fragment 形状不对, 是因为 layout 代数简化成了你预期之外的东西。 dump 这个 pass 之后的 IR, 看 FlyDSL 实际认为索引是什么。 <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> 每个 pass 后都 dump; <code>FLYDSL_DUMP_DIR=./ir</code> 把它们写到一个目录, 方便 grep。</p>
 
-<h3>The JIT cache</h3>
+<h3 lang="en">The JIT cache</h3>
+<h3 lang="zh">JIT 缓存</h3>
 
-<p>The compiled fatbin is keyed on the type signature, the Constexpr values, and a source hash of the kernel function (closure included). It is stored under <code>~/.flydsl/cache/</code>. The cache invalidates on source changes to the kernel function itself, but <em>not</em> on changes to C++ passes or helper modules that aren't part of the traced closure. So:</p>
+<p lang="en">The compiled fatbin is keyed on the type signature, the Constexpr values, and a source hash of the kernel function (closure included). It is stored under <code>~/.flydsl/cache/</code>. The cache invalidates on source changes to the kernel function itself, but <em>not</em> on changes to C++ passes or helper modules that aren't part of the traced closure. So:</p>
+<p lang="zh">编译出的 fatbin 用类型签名 + Constexpr 值 + kernel 函数 (含 closure) 的源码 hash 作为 key。 落在 <code>~/.flydsl/cache/</code> 下面。 修改 kernel 函数本身的源码会让缓存失效, 但修改 C++ pass 或不属于 traced closure 的 helper module<em>不会</em>。 所以:</p>
 
 <div class="code"><span class="c-com"># After editing a C++ pass or a helper that lives outside the closure:</span>
 $ rm -rf ~/.flydsl/cache
@@ -1888,34 +2161,48 @@ $ FLYDSL_RUNTIME_ENABLE_CACHE=0 python my_kernel.py</div>
 <!-- REEFS -->
 <!-- ====================================================== -->
 <section id="reefs">
-<h2><span class="num">§ R · Six traps from real debugging</span>Reefs</h2>
+<h2 lang="en"><span class="num">§ R · Six traps from real debugging</span>Reefs</h2>
+<h2 lang="zh"><span class="num">§ R · 真实调试踩过的六个坑</span>暗礁</h2>
 
-<p>The patterns FlyDSL gets wrong, the mistakes that survive review, the workarounds that take three days to discover.</p>
+<p lang="en">The patterns FlyDSL gets wrong, the mistakes that survive review, the workarounds that take three days to discover.</p>
+<p lang="zh">FlyDSL 容易出问题的 pattern, 能逃过 review 的失误, 要花三天才能想到的解法。</p>
 
 <ol class="tile-list">
   <li>
-    <div class="ttl">1 · <em>Branch-only values</em> kill MLIR dominance.</div>
-    <div class="desc">Defining a value inside one branch of a Python <code>if</code> and using it after is the most common compile-time failure. The IR has no merge point for the two branches' definitions, so you get a dominance error. Hoist the value above the branch or return it as an explicit merged result.</div>
+    <div class="ttl" lang="en">1 · <em>Branch-only values</em> kill MLIR dominance.</div>
+    <div class="ttl" lang="zh">1 · <em>分支限定值</em>破坏 MLIR dominance。</div>
+    <div class="desc" lang="en">Defining a value inside one branch of a Python <code>if</code> and using it after is the most common compile-time failure. The IR has no merge point for the two branches' definitions, so you get a dominance error. Hoist the value above the branch or return it as an explicit merged result.</div>
+    <div class="desc" lang="zh">在 Python <code>if</code> 的一个分支里定义一个值, 在 if 之后再用 —— 这是最常见的编译期失败。 IR 里两个分支的定义没有汇合点, 所以你拿到 dominance 错误。 把这个值提到分支之前定义, 或者显式作为合并后的返回值。</div>
   </li>
   <li>
-    <div class="ttl">2 · <em>SmemPtr._view_cache</em> survives scf.for.</div>
-    <div class="desc">If a shared-memory view is constructed inside <code>scf.for</code> and consumed after, the cached view points to an SSA value that doesn't dominate the consumer. Clear the cache: <code>SmemPtr._view_cache = None</code> on loop exit.</div>
+    <div class="ttl" lang="en">2 · <em>SmemPtr._view_cache</em> survives scf.for.</div>
+    <div class="ttl" lang="zh">2 · <em>SmemPtr._view_cache</em> 跨 scf.for 残留。</div>
+    <div class="desc" lang="en">If a shared-memory view is constructed inside <code>scf.for</code> and consumed after, the cached view points to an SSA value that doesn't dominate the consumer. Clear the cache: <code>SmemPtr._view_cache = None</code> on loop exit.</div>
+    <div class="desc" lang="zh">如果共享内存的 view 在 <code>scf.for</code> 里构造, 在循环外消费, 缓存里的 view 指向一个不 dominate 消费者的 SSA 值。 退出循环时清掉: <code>SmemPtr._view_cache = None</code>。</div>
   </li>
   <li>
-    <div class="ttl">3 · <em>Closure values</em> don't trigger cache invalidation.</div>
-    <div class="desc">JIT cache hashes the kernel function and its closure. If you change a Python constant defined outside the kernel and the kernel doesn't reference it through its closure, the cache won't invalidate. Either pass the value as a <code>Constexpr</code> argument, or clear the cache manually.</div>
+    <div class="ttl" lang="en">3 · <em>Closure values</em> don't trigger cache invalidation.</div>
+    <div class="ttl" lang="zh">3 · <em>closure 值</em>不触发缓存失效。</div>
+    <div class="desc" lang="en">JIT cache hashes the kernel function and its closure. If you change a Python constant defined outside the kernel and the kernel doesn't reference it through its closure, the cache won't invalidate. Either pass the value as a <code>Constexpr</code> argument, or clear the cache manually.</div>
+    <div class="desc" lang="zh">JIT 缓存 hash 的是 kernel 函数和它的 closure。 如果你改一个 kernel 之外的 Python 常量, 而 kernel 没有通过 closure 引用它, 缓存不会失效。 要么把这个值作为 <code>Constexpr</code> 参数传进去, 要么手动清缓存。</div>
   </li>
   <li>
-    <div class="ttl">4 · <em>BufferCopy soffset</em> is in elements, not bytes.</div>
-    <div class="desc">The <code>soffset</code> argument to <code>fx.copy</code> with a BufferCopy atom is in <em>elements</em> of the atom's dtype, not bytes. <code>soffset=next_k * gA_k_stride</code> in example 04 multiplies a K-iter by the stride that already accounts for the element size. Triple-check this when chasing addressing-off-by-1.</div>
+    <div class="ttl" lang="en">4 · <em>BufferCopy soffset</em> is in elements, not bytes.</div>
+    <div class="ttl" lang="zh">4 · <em>BufferCopy soffset</em> 单位是 element, 不是 byte。</div>
+    <div class="desc" lang="en">The <code>soffset</code> argument to <code>fx.copy</code> with a BufferCopy atom is in <em>elements</em> of the atom's dtype, not bytes. <code>soffset=next_k * gA_k_stride</code> in example 04 multiplies a K-iter by the stride that already accounts for the element size. Triple-check this when chasing addressing-off-by-1.</div>
+    <div class="desc" lang="zh"><code>fx.copy</code> 配 BufferCopy atom 时, <code>soffset</code> 参数的单位是 atom dtype 的<em>元素数</em>, 不是字节。 例 04 里 <code>soffset=next_k * gA_k_stride</code> 是 K-iter 乘上一个已经把元素大小算进去的 stride。 排查地址 off-by-1 时多查几遍这点。</div>
   </li>
   <li>
-    <div class="ttl">5 · <em>MFMA traversal order</em> changes register pressure.</div>
-    <div class="desc">The <code>traversal_order</code> argument to <code>fx.gemm</code> chooses how the inner three nested loops over (M-atom, N-atom, K-atom) are ordered. <code>KNM</code> typically minimizes A-fragment register pressure; <code>MNK</code> minimizes accumulator pressure. The wrong choice can spill VGPRs and crater performance.</div>
+    <div class="ttl" lang="en">5 · <em>MFMA traversal order</em> changes register pressure.</div>
+    <div class="ttl" lang="zh">5 · <em>MFMA traversal order</em> 影响寄存器压力。</div>
+    <div class="desc" lang="en">The <code>traversal_order</code> argument to <code>fx.gemm</code> chooses how the inner three nested loops over (M-atom, N-atom, K-atom) are ordered. <code>KNM</code> typically minimizes A-fragment register pressure; <code>MNK</code> minimizes accumulator pressure. The wrong choice can spill VGPRs and crater performance.</div>
+    <div class="desc" lang="zh"><code>fx.gemm</code> 的 <code>traversal_order</code> 参数决定 (M-atom, N-atom, K-atom) 三层内嵌循环的顺序。 <code>KNM</code> 通常最小化 A 的 fragment 寄存器压力; <code>MNK</code> 最小化累加器压力。 选错会 spill VGPR, 性能崩盘。</div>
   </li>
   <li>
-    <div class="ttl">6 · <em>Stale schedulers</em> after a tile change.</div>
-    <div class="desc">A <code>hot_loop_scheduler</code> tuned for (BM=128, BN=128, BK=64) breaks silently when you change the tile — performance drops, the kernel still gives correct numbers. Profile any tile-size change with the kernel trace analyzer before assuming the scheduler still fits.</div>
+    <div class="ttl" lang="en">6 · <em>Stale schedulers</em> after a tile change.</div>
+    <div class="ttl" lang="zh">6 · 改 tile 之后 scheduler <em>悄悄失效</em>。</div>
+    <div class="desc" lang="en">A <code>hot_loop_scheduler</code> tuned for (BM=128, BN=128, BK=64) breaks silently when you change the tile — performance drops, the kernel still gives correct numbers. Profile any tile-size change with the kernel trace analyzer before assuming the scheduler still fits.</div>
+    <div class="desc" lang="zh">为 (BM=128, BN=128, BK=64) 调过的 <code>hot_loop_scheduler</code>, 在你改了 tile 之后会悄悄失效 —— 性能掉, kernel 数还是对的。 任何 tile 改动之后, 都用 kernel trace analyzer profile 一下再假设 scheduler 还合身。</div>
   </li>
 </ol>
 </section>
@@ -1924,21 +2211,31 @@ $ FLYDSL_RUNTIME_ENABLE_CACHE=0 python my_kernel.py</div>
 <!-- AMD-SPECIFIC NOTES -->
 <!-- ====================================================== -->
 <section id="amd-notes">
-<h2><span class="num">§ A · Where this lands for AMD work</span>AMD-specific notes</h2>
+<h2 lang="en"><span class="num">§ A · Where this lands for AMD work</span>AMD-specific notes</h2>
+<h2 lang="zh"><span class="num">§ A · 这件事对 AMD 工作意味着什么</span>AMD 相关说明</h2>
 
-<p>FlyDSL is, in 2026, the cleanest abstraction layer for writing high-performance kernels on AMD CDNA. Triton-ROCm exists and produces correct kernels, but its scheduling model is opaque — you cannot pin "two MFMAs then one ds_read then two MFMAs" the way <code>fx.rocdl.sched_*</code> lets you. Composable Kernel (CK) gives you that control but in C++ templates that take 30 minutes to compile. FlyDSL is the middle: Python ergonomics, MLIR backbone, AMD-specific scheduling primitives.</p>
+<p lang="en">FlyDSL is, in 2026, the cleanest abstraction layer for writing high-performance kernels on AMD CDNA. Triton-ROCm exists and produces correct kernels, but its scheduling model is opaque — you cannot pin "two MFMAs then one ds_read then two MFMAs" the way <code>fx.rocdl.sched_*</code> lets you. Composable Kernel (CK) gives you that control but in C++ templates that take 30 minutes to compile. FlyDSL is the middle: Python ergonomics, MLIR backbone, AMD-specific scheduling primitives.</p>
+<p lang="zh">2026 年, 在 AMD CDNA 上写高性能 kernel, FlyDSL 是最干净的抽象层。 Triton-ROCm 也存在, 也能产出正确 kernel, 但它的调度模型不透明 —— 你没法像 <code>fx.rocdl.sched_*</code> 那样钉死"两条 MFMA 然后一条 ds_read 再两条 MFMA"。 Composable Kernel (CK) 给你这个控制权, 但写在编译 30 分钟的 C++ 模板里。 FlyDSL 处在中间: Python 人体工学、 MLIR 骨架、 AMD 专属调度 primitive。</p>
 
-<p>Three observations worth carrying:</p>
+<p lang="en">Three observations worth carrying:</p>
+<p lang="zh">值得带走的三条观察:</p>
 
-<ol>
+<ol lang="en">
   <li><strong>The layout API is the AMD-specific contribution.</strong> CuTe gave the world layout algebra; FlyDSL gives it a typed MLIR home with passes that lower it. The fact that <code>!fly.layout</code> is a first-class type means an MLIR-aware tool (a verifier, an autotuner, an optimization pass) can <em>reason about layouts</em> in the IR, not just consume strings.</li>
   <li><strong>Preshuffle is a recurring idea, not a one-off.</strong> The <code>shuffle_weight</code> trick in example 04 — reshape on the host so the kernel needs no transpose — appears across the production kernels for <em>every</em> weight tensor whose layout is more constrained than its compute pattern. MoE GEMM, blockscale GEMM, INT4 GEMM all use it. If you're writing a new AMD GEMM and not preshuffling, ask yourself why.</li>
   <li><strong>Scheduling is where peak FLOPs hide.</strong> A FlyDSL kernel without <code>sched_*</code> hints will hit 60–70% of peak. With a tuned scheduler it can hit 90%+. The gap is purely instruction-mix-in-the-hot-loop, and it cannot be recovered after the fact by tweaking LLVM flags. Production kernels in this repo treat <code>hot_loop_scheduler</code> as a separate <em>artifact</em> of the kernel, tuned with ATT traces from <code>capture-kernel-trace</code> and reviewed independently of the algorithmic body.</li>
 </ol>
+<ol lang="zh">
+  <li><strong>layout API 是 AMD 这边特有的贡献。</strong> CuTe 把 layout 代数带给世界; FlyDSL 给它一个 typed MLIR 之家, 加一整套 lower 它的 pass。 <code>!fly.layout</code> 是一等公民类型这件事意味着, 任何 MLIR-aware 工具 (verifier、 autotuner、 优化 pass) 都可以在 IR 里<em>对 layout 进行推理</em>, 而不是只能消费字符串。</li>
+  <li><strong>Preshuffle 是反复出现的思路, 不是一次性技巧。</strong> 例 04 的 <code>shuffle_weight</code> —— host 端 reshape, kernel 就不需要转置 —— 在 production kernel 里, 对<em>每一个</em> layout 比计算 pattern 更受限的权重 tensor 都出现。 MoE GEMM、 blockscale GEMM、 INT4 GEMM 都用它。 写新 AMD GEMM 又不 preshuffle 的话, 问问自己为什么。</li>
+  <li><strong>调度才是 peak FLOPs 藏的地方。</strong> 没有 <code>sched_*</code> 提示的 FlyDSL kernel 大概能跑到 60–70% peak; 有调好的 scheduler 能跑到 90%+。 这段差距纯粹是 hot loop 内的指令编排, 事后调 LLVM flag 救不回来。 这个 repo 里 production kernel 把 <code>hot_loop_scheduler</code> 当作 kernel 的一件独立 <em>artifact</em>, 用 <code>capture-kernel-trace</code> 出来的 ATT trace 调, 独立于算法主体 review。</li>
+</ol>
 
 <div class="callout jade">
-  <span class="ctag">A practical workflow</span>
-  <p>For a new kernel on CDNA3/CDNA4: (1) start from an example, (2) get correctness first, (3) profile with <code>capture-kernel-trace</code> + <code>kernel-trace-analysis</code>, (4) identify the top stall — usually <code>lgkmcnt</code> waits on <code>ds_read</code>, or <code>vmcnt</code> waits on <code>buffer_load</code> — (5) add the appropriate optimization (LDS swizzle for the former, prefetch + scheduler for the latter), (6) re-profile, repeat. The Skills in this repo (<code>gemm-optimization</code>, <code>lds-optimization</code>, <code>prefetch-data-load</code>) are tuned shortcuts for each of these steps.</p>
+  <span class="ctag" lang="en">A practical workflow</span>
+  <span class="ctag" lang="zh">一套可操作的工作流</span>
+  <p lang="en">For a new kernel on CDNA3/CDNA4: (1) start from an example, (2) get correctness first, (3) profile with <code>capture-kernel-trace</code> + <code>kernel-trace-analysis</code>, (4) identify the top stall — usually <code>lgkmcnt</code> waits on <code>ds_read</code>, or <code>vmcnt</code> waits on <code>buffer_load</code> — (5) add the appropriate optimization (LDS swizzle for the former, prefetch + scheduler for the latter), (6) re-profile, repeat. The Skills in this repo (<code>gemm-optimization</code>, <code>lds-optimization</code>, <code>prefetch-data-load</code>) are tuned shortcuts for each of these steps.</p>
+  <p lang="zh">写一个新的 CDNA3 / CDNA4 kernel: (1) 从一个 example 起步, (2) 先做正确, (3) 用 <code>capture-kernel-trace</code> + <code>kernel-trace-analysis</code> profile, (4) 找到 top stall —— 通常是 <code>ds_read</code> 上的 <code>lgkmcnt</code> 等待, 或 <code>buffer_load</code> 上的 <code>vmcnt</code> 等待 —— (5) 加对应优化 (前者上 LDS swizzle, 后者上 prefetch + scheduler), (6) 重新 profile, 重复。 这个 repo 里的 Skills (<code>gemm-optimization</code>、 <code>lds-optimization</code>、 <code>prefetch-data-load</code>) 是这些步骤各自的捷径。</p>
 </div>
 </section>
 
@@ -1946,47 +2243,60 @@ $ FLYDSL_RUNTIME_ENABLE_CACHE=0 python my_kernel.py</div>
 <!-- EPILOGUE -->
 <!-- ====================================================== -->
 <section id="epilogue">
-<h2><span class="num">§ ∞ · What four examples teach</span>Epilogue</h2>
+<h2 lang="en"><span class="num">§ ∞ · What four examples teach</span>Epilogue</h2>
+<h2 lang="zh"><span class="num">§ ∞ · 四个例子教了什么</span>尾声</h2>
 
-<p>The shape of the four examples is the shape of every FlyDSL kernel. Construct a layout. Slice it to the current block. Partition the slice to the current thread. Allocate a register fragment. Issue a copy. Maybe move through LDS. Issue a compute. Maybe overlap with prefetch. Write back. The vocabulary that walks through this scales from a 16-line vector add to a 1500-line production paged-attention kernel without ever changing form.</p>
+<p lang="en">The shape of the four examples is the shape of every FlyDSL kernel. Construct a layout. Slice it to the current block. Partition the slice to the current thread. Allocate a register fragment. Issue a copy. Maybe move through LDS. Issue a compute. Maybe overlap with prefetch. Write back. The vocabulary that walks through this scales from a 16-line vector add to a 1500-line production paged-attention kernel without ever changing form.</p>
+<p lang="zh">这四个例子的形状就是每个 FlyDSL kernel 的形状。 构造 layout。 切到当前 block。 把切片再分给当前 thread。 分配 register fragment。 发 copy。 可能过一层 LDS。 发 compute。 可能与 prefetch 重叠。 写回。 这套词汇从一个 16 行的向量加到 1500 行的 production paged attention kernel, 形状从不变。</p>
 
-<p>What is genuinely surprising — and what kept me reading the repo after the four examples — is how much of "GPU kernel optimization" turns out to be the same optimization repeated against different layouts. Preshuffle B for an MFMA-friendly load. Swizzle A in LDS for bank-free <code>ds_read</code>. Double-buffer everything so memory and compute overlap. Pin the instruction schedule so the matrix core doesn't idle. Every kernel I read in <code>kernels/</code> applied some subset of these. The variations were in the geometry — tile sizes, MFMA shapes, atom permutations — but the optimization vocabulary was constant.</p>
+<p lang="en">What is genuinely surprising — and what kept me reading the repo after the four examples — is how much of "GPU kernel optimization" turns out to be the same optimization repeated against different layouts. Preshuffle B for an MFMA-friendly load. Swizzle A in LDS for bank-free <code>ds_read</code>. Double-buffer everything so memory and compute overlap. Pin the instruction schedule so the matrix core doesn't idle. Every kernel I read in <code>kernels/</code> applied some subset of these. The variations were in the geometry — tile sizes, MFMA shapes, atom permutations — but the optimization vocabulary was constant.</p>
+<p lang="zh">真正让我惊讶的事 —— 也是看完四个例子之后我继续读这个 repo 的原因 —— 是"GPU kernel 优化"绝大部分其实是同一套优化在不同 layout 上重复。 Preshuffle B 让 MFMA 友好加载。 LDS 上 swizzle A 拿到无 bank conflict 的 <code>ds_read</code>。 给所有东西做双缓冲, 让 memory 和 compute 重叠。 钉死指令调度, 让 matrix core 不空转。 我在 <code>kernels/</code> 里读过的每个 kernel 都用了这套的某个子集。 变化在几何上 —— tile 大小、 MFMA 形状、 atom permutation —— 但优化的词汇是不变的。</p>
 
-<p>That constancy is what FlyDSL captures. By making layout algebra a typed primitive and copy/MMA atoms a composable algebra, it turns "GPU kernel optimization" from a list of tricks into a calculus that can be reasoned about, transformed, and verified. Whether that calculus is the right abstraction for the next generation of AMD silicon (CDNA5, the unified RDNA/CDNA path) is an open question — but for what runs on MI300/MI350/MI450 today, it's the cleanest tool I've used.</p>
+<p lang="en">That constancy is what FlyDSL captures. By making layout algebra a typed primitive and copy/MMA atoms a composable algebra, it turns "GPU kernel optimization" from a list of tricks into a calculus that can be reasoned about, transformed, and verified. Whether that calculus is the right abstraction for the next generation of AMD silicon (CDNA5, the unified RDNA/CDNA path) is an open question — but for what runs on MI300/MI350/MI450 today, it's the cleanest tool I've used.</p>
+<p lang="zh">FlyDSL 抓住的就是这种不变性。 把 layout 代数做成 typed primitive、 把 copy / MMA atom 做成可组合代数, 它把"GPU kernel 优化"从一份技巧清单变成一套可推理、 可变换、 可验证的演算。 这套演算是不是下一代 AMD 硅 (CDNA5、 统一 RDNA / CDNA 路线) 的正确抽象, 这是个开放问题 —— 但对今天跑在 MI300 / MI350 / MI450 上的东西, 这是我用过最干净的工具。</p>
 
-<p>The next entry in this series is likely <a href="https://github.com/ROCm/aiter">aiter</a> — the production kernel library that the FlyDSL kernels target, and the test scaffolding that this repo borrows. Reading FlyDSL alone gives you the language; reading aiter shows you the dictionary.</p>
+<p lang="en">The next entry in this series is likely <a href="https://github.com/ROCm/aiter">aiter</a> — the production kernel library that the FlyDSL kernels target, and the test scaffolding that this repo borrows. Reading FlyDSL alone gives you the language; reading aiter shows you the dictionary.</p>
+<p lang="zh">系列下一篇大概率写 <a href="https://github.com/ROCm/aiter">aiter</a> —— FlyDSL kernel 瞄准的那个 production kernel 库, 也是 repo 这边借用的测试基础设施。 只读 FlyDSL 你拿到的是语言, 读 aiter 才看到字典。</p>
 </section>
 
 <!-- ====================================================== -->
 <!-- REFERENCES -->
 <!-- ====================================================== -->
 <section id="references">
-<h2><span class="num">§ References · the docs to read alongside</span>References</h2>
+<h2 lang="en"><span class="num">§ References · the docs to read alongside</span>References</h2>
+<h2 lang="zh"><span class="num">§ 参考资料 · 与这篇并读</span>参考资料</h2>
 
 <ol class="tile-list">
   <li>
     <div class="ttl"><em>FlyDSL</em> · <a href="https://github.com/ROCm/FlyDSL">github.com/ROCm/FlyDSL</a></div>
-    <div class="desc">The source. <code>docs/layout_system_guide.md</code> has the complete Quick Reference for layout algebra; <code>docs/kernel_authoring_guide.md</code> has the practical patterns; <code>kernels/</code> has the production reference implementations.</div>
+    <div class="desc" lang="en">The source. <code>docs/layout_system_guide.md</code> has the complete Quick Reference for layout algebra; <code>docs/kernel_authoring_guide.md</code> has the practical patterns; <code>kernels/</code> has the production reference implementations.</div>
+    <div class="desc" lang="zh">源代码。 <code>docs/layout_system_guide.md</code> 有 layout 代数完整 Quick Reference; <code>docs/kernel_authoring_guide.md</code> 是实战 pattern; <code>kernels/</code> 是 production 参考实现。</div>
   </li>
   <li>
     <div class="ttl"><em>CuTe</em> · <a href="https://github.com/NVIDIA/cutlass/tree/main/include/cute">NVIDIA CUTLASS · cute/</a></div>
-    <div class="desc">The intellectual parent. The layout algebra, the copy/MMA atom design, and the <code>partition_S/D</code> idiom are all CuTe ideas. Reading the CuTe docs alongside FlyDSL clarifies which choices are universal and which are AMD-specific.</div>
+    <div class="desc" lang="en">The intellectual parent. The layout algebra, the copy/MMA atom design, and the <code>partition_S/D</code> idiom are all CuTe ideas. Reading the CuTe docs alongside FlyDSL clarifies which choices are universal and which are AMD-specific.</div>
+    <div class="desc" lang="zh">思想上的母本。 layout 代数、 copy / MMA atom 设计、 <code>partition_S/D</code> idiom 都是 CuTe 的概念。 CuTe 文档和 FlyDSL 对照着读, 可以看清哪些选择是通用的、 哪些是 AMD 特有的。</div>
   </li>
   <li>
     <div class="ttl"><em>Categorical Foundations for CuTe Layouts</em> · <a href="https://arxiv.org/abs/2601.05972">arxiv 2601.05972</a></div>
-    <div class="desc">Colfax Research's formal treatment of layout algebra as a category. Sufficient to derive every algebraic identity FlyDSL relies on, and the right reading if you want to extend the algebra (e.g., custom <code>product</code> variants).</div>
+    <div class="desc" lang="en">Colfax Research's formal treatment of layout algebra as a category. Sufficient to derive every algebraic identity FlyDSL relies on, and the right reading if you want to extend the algebra (e.g., custom <code>product</code> variants).</div>
+    <div class="desc" lang="zh">Colfax Research 把 layout 代数当作一个 category 来形式化。 足够推出 FlyDSL 依赖的所有代数恒等式; 想扩展代数 (比如自定义 <code>product</code> 变体) 该读这本。</div>
   </li>
   <li>
     <div class="ttl"><em>AMD CDNA3 ISA Reference</em> · <a href="https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instruction-set-architectures/amd-instinct-mi300-cdna3-instruction-set-architecture.pdf">amd.com · CDNA3 ISA</a></div>
-    <div class="desc">Authoritative on every instruction FlyDSL's lowering pipeline emits. § 8 (MUBUF) for <code>buffer_load</code>, § 10 (MFMA) for the matrix core, § 6 (<code>s_waitcnt</code>) for the vmcnt/lgkmcnt that scheduling controls.</div>
+    <div class="desc" lang="en">Authoritative on every instruction FlyDSL's lowering pipeline emits. § 8 (MUBUF) for <code>buffer_load</code>, § 10 (MFMA) for the matrix core, § 6 (<code>s_waitcnt</code>) for the vmcnt/lgkmcnt that scheduling controls.</div>
+    <div class="desc" lang="zh">FlyDSL lowering 流水线发出的每条指令的权威手册。 § 8 (MUBUF) 对应 <code>buffer_load</code>, § 10 (MFMA) 对应 matrix core, § 6 (<code>s_waitcnt</code>) 对应 scheduling 控制的 vmcnt / lgkmcnt。</div>
   </li>
   <li>
     <div class="ttl"><em>MLIR documentation</em> · <a href="https://mlir.llvm.org/">mlir.llvm.org</a></div>
-    <div class="desc">For reading <code>FLYDSL_DUMP_IR</code> output and understanding the <code>gpu</code>, <code>arith</code>, <code>scf</code>, <code>memref</code>, <code>vector</code>, and <code>rocdl</code> dialects that FlyDSL composes with.</div>
+    <div class="desc" lang="en">For reading <code>FLYDSL_DUMP_IR</code> output and understanding the <code>gpu</code>, <code>arith</code>, <code>scf</code>, <code>memref</code>, <code>vector</code>, and <code>rocdl</code> dialects that FlyDSL composes with.</div>
+    <div class="desc" lang="zh">读 <code>FLYDSL_DUMP_IR</code> 输出和理解 FlyDSL 组合用的 <code>gpu</code>、 <code>arith</code>、 <code>scf</code>、 <code>memref</code>、 <code>vector</code>、 <code>rocdl</code> dialect 时用。</div>
   </li>
   <li>
-    <div class="ttl"><em>FlyDSL Tile Programming</em> · the in-repo skill</div>
-    <div class="desc">If working in this repo with Claude Code, the <code>flydsl-tile-programming</code> and <code>flydsl-kernel-authoring</code> skills are tuned references for kernel construction patterns. Use them before re-deriving idioms from scratch.</div>
+    <div class="ttl" lang="en"><em>FlyDSL Tile Programming</em> · the in-repo skill</div>
+    <div class="ttl" lang="zh"><em>FlyDSL Tile Programming</em> · repo 内 skill</div>
+    <div class="desc" lang="en">If working in this repo with Claude Code, the <code>flydsl-tile-programming</code> and <code>flydsl-kernel-authoring</code> skills are tuned references for kernel construction patterns. Use them before re-deriving idioms from scratch.</div>
+    <div class="desc" lang="zh">如果在这个 repo 里用 Claude Code 工作, <code>flydsl-tile-programming</code> 和 <code>flydsl-kernel-authoring</code> 这两个 skill 是 kernel 构造 pattern 的精调参考。 从头推 idiom 之前先用它们。</div>
   </li>
 </ol>
 </section>
@@ -2000,17 +2310,22 @@ $ FLYDSL_RUNTIME_ENABLE_CACHE=0 python my_kernel.py</div>
 <footer class="colophon">
   <div class="grid">
     <div class="field">
-      <div class="lbl">Source</div>
+      <div class="lbl" lang="en">Source</div>
+      <div class="lbl" lang="zh">源</div>
       <div class="val"><a href="https://github.com/ROCm/FlyDSL">github.com/ROCm/FlyDSL</a></div>
-      <div class="val">read @ 2026.05 · examples/ × 4</div>
+      <div class="val" lang="en">read @ 2026.05 · examples/ × 4</div>
+      <div class="val" lang="zh">阅读时间 2026.05 · examples/ × 4</div>
     </div>
     <div class="field">
-      <div class="lbl">Typography</div>
+      <div class="lbl" lang="en">Typography</div>
+      <div class="lbl" lang="zh">字体</div>
       <div class="val">EB Garamond · IBM Plex Sans · JetBrains Mono</div>
-      <div class="val">grid 32 px · content width 720 px</div>
+      <div class="val" lang="en">grid 32 px · content width 720 px</div>
+      <div class="val" lang="zh">网格 32 px · 正文宽 720 px</div>
     </div>
     <div class="field">
-      <div class="lbl">Palette · cyanotype</div>
+      <div class="lbl" lang="en">Palette · cyanotype</div>
+      <div class="lbl" lang="zh">配色 · cyanotype 蓝图</div>
       <div class="val">
         <span class="swatch" style="background:#0a2840"></span>bath
         <span class="swatch" style="background:#0f344f"></span>paper
@@ -2024,12 +2339,39 @@ $ FLYDSL_RUNTIME_ENABLE_CACHE=0 python my_kernel.py</div>
       </div>
     </div>
     <div class="field">
-      <div class="lbl">Compiled for</div>
-      <div class="val">readers on gfx942 / gfx950 / gfx1250</div>
-      <div class="val">reading time ≈ 4 h · written 2026.05.26</div>
+      <div class="lbl" lang="en">Compiled for</div>
+      <div class="lbl" lang="zh">阅读对象</div>
+      <div class="val" lang="en">readers on gfx942 / gfx950 / gfx1250</div>
+      <div class="val" lang="zh">在 gfx942 / gfx950 / gfx1250 上工作的读者</div>
+      <div class="val" lang="en">reading time ≈ 4 h · written 2026.05.26</div>
+      <div class="val" lang="zh">阅读约 4 小时 · 写于 2026.05.26</div>
     </div>
   </div>
 </footer>
+
+<script>
+(function() {
+  var KEY = 'flydsl-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    // Default to browser preference if zh, else en
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  var buttons = document.querySelectorAll('.lang-toggle button[data-set]');
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
