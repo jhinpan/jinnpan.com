@@ -15,7 +15,7 @@ The § M1 section of the source reading collapsed layout into five words: shape,
 
 **(a) Shape and stride are two independent degrees of freedom.** Shape decides the domain; stride decides "how far one step along each mode moves in memory." The same `shape = (4, 8)` can be paired with `(1, 4)` (column-major), `(8, 1)` (row-major), `(0, 1)` (row broadcast), or `(1E0, 1E1)` — that last one is BasisAttr territory.
 
-**(b) Layout is not data — it is an address-generating function.** You never write `A[i, j]` in a FlyDSL kernel. You see `logical_divide` / `partition_S` / `slice`. That is because layout is a first-class MLIR type — `!fly.layout<(8,16):(1,8)>` is real, and stage 3 of the pass pipeline (`fly-layout-lowering`) is what folds a symbolic layout into concrete `i*1 + j*8` address math.
+**(b) Layout is not data — it is an address-generating function.** You never write `A[i, j]` in a FlyDSL kernel. You see `logical_divide` / `partition_S` / `slice`. That is because layout is a first-class MLIR type — `!fly.layout<(8,16):(1,8)>` is real, and the `fly-layout-lowering` pass is what folds a symbolic layout into concrete `i*1 + j*8` address math.
 
 **(c) The layout algebra is a function-composition algebra.** `composition(A, B)(x) = A(B(x))`; `logical_divide(A, tiler)` decomposes A into "intra-tile layout × inter-tile grid layout"; `make_layout_tv(thr, val)` constructs a `(thread_id, value_id) → tile coord` mapping. Every operation reshapes the function itself; nothing moves data.
 

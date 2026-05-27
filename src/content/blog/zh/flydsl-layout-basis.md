@@ -15,7 +15,7 @@ lang: "zh"
 
 **(a) Shape 和 stride 是两个独立的自由度。** Shape 决定定义域； stride 决定"每一维移动一格在内存里跨多远"。 同一个 `shape = (4, 8)`， 配上 `(1, 4)` 是列主、 配上 `(8, 1)` 是行主、 配上 `(0, 1)` 是行广播、 配上 `(1E0, 1E1)` —— 这最后一个就是 BasisAttr 的世界。
 
-**(b) Layout 不是数据， 是一段"地址生成函数"。** FlyDSL kernel 里你不会写 `A[i, j]`， 你看到的是 `logical_divide` / `partition_S` / `slice`。 这是因为 layout 在 MLIR 里是一等公民 —— `!fly.layout<(8,16):(1,8)>` 是一个真实的类型。 pass 管线第 3 阶段 `fly-layout-lowering` 才把符号 layout 折叠成 `i*1 + j*8` 这样的地址算术。
+**(b) Layout 不是数据， 是一段"地址生成函数"。** FlyDSL kernel 里你不会写 `A[i, j]`， 你看到的是 `logical_divide` / `partition_S` / `slice`。 这是因为 layout 在 MLIR 里是一等公民 —— `!fly.layout<(8,16):(1,8)>` 是一个真实的类型。 `fly-layout-lowering` pass 才把符号 layout 折叠成 `i*1 + j*8` 这样的地址算术。
 
 **(c) Layout 代数是函数复合的代数。** `composition(A, B)(x) = A(B(x))`； `logical_divide(A, tiler)` 是把 A 拆成 "tile-内 layout × tile-间 grid layout"； `make_layout_tv(thr, val)` 是构造一个 `(thread_id, value_id) → tile coord` 的映射。 每个操作都在改造这个映射函数本身， 不是在搬数据。
 

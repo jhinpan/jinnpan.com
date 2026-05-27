@@ -2085,19 +2085,23 @@ Result correct: True</div>
   <li><strong>Python <code>for</code> 遍历一个列表会展开。</strong> 完全展开的编译期循环用 <code>fx.range_constexpr(n)</code>; 带循环携带值的 <code>scf.for</code> 用 <code>range(start, stop, step, init=[acc])</code>。</li>
 </ul>
 
-<h3 lang="en">The pass pipeline · what each stage does</h3>
-<h3 lang="zh">Pass 流水线 · 每个阶段在做什么</h3>
+<h3 lang="en">The pass pipeline · three stages, one fatbin</h3>
+<h3 lang="zh">Pass 流水线 · 三段式, 一份 fatbin</h3>
+
+<p lang="en">The pipeline is built by <code>RocmBackend._pipeline_parts()</code> in <code>python/flydsl/compiler/backends/rocm.py</code> and split into three named stages. The split point matters: with <code>FLYDSL_COMPILE_LLVM_DIR</code>, FlyDSL can stop after Stage A, dump the IR, and hand it off to an external <code>mlir-opt</code> + <code>llc</code> toolchain.</p>
+<p lang="zh">Pass pipeline 在 <code>python/flydsl/compiler/backends/rocm.py</code> 里的 <code>RocmBackend._pipeline_parts()</code> 构建, 切成三段。 切点是有意义的: 配 <code>FLYDSL_COMPILE_LLVM_DIR</code> 时, FlyDSL 可以只跑到 Stage A, dump 出 IR, 交给外部 <code>mlir-opt</code> + <code>llc</code> 工具链接着跑。</p>
 
 <table class="tbl">
   <thead>
-    <tr lang="en"><th>Stage</th><th>Pass</th><th>What it turns into what</th></tr>
-    <tr lang="zh"><th>阶段</th><th>Pass</th><th>把什么变成什么</th></tr>
+    <tr lang="en"><th>#</th><th>Pass</th><th>What it turns into what</th></tr>
+    <tr lang="zh"><th>#</th><th>Pass</th><th>把什么变成什么</th></tr>
   </thead>
   <tbody>
+    <tr><td colspan="3"><strong lang="en">Stage A · <code>pre_binary_fragments</code> — Fly → ROCDL</strong><strong lang="zh">Stage A · <code>pre_binary_fragments</code> —— Fly → ROCDL</strong></td></tr>
     <tr>
-      <td class="num">1</td><td><code>gpu-kernel-outlining</code></td>
-      <td lang="en">splits device code into a <code>gpu.module</code> separate from the host launcher</td>
-      <td lang="zh">把 device 代码从 host launcher 里拆出来, 独立成 <code>gpu.module</code></td>
+      <td class="num">1</td><td><code>fly-rewrite-func-signature</code></td>
+      <td lang="en">lower DSL types (<code>IntTuple</code>, <code>Layout</code>, <code>ComposedLayout</code>, <code>CoordTensor</code>, <code>MemRef</code>) at function / SCF boundaries to packed LLVM structs</td>
+      <td lang="zh">把 DSL 类型 (<code>IntTuple</code>、 <code>Layout</code>、 <code>ComposedLayout</code>、 <code>CoordTensor</code>、 <code>MemRef</code>) 在函数和 SCF 边界处 lower 成打包好的 LLVM struct</td>
     </tr>
     <tr>
       <td class="num">2</td><td><code>fly-canonicalize</code></td>
@@ -2110,40 +2114,80 @@ Result correct: True</div>
       <td lang="zh">把 <code>fly.crd2idx</code>、 partition、 divide 变成具体的 <code>arith</code> + <code>vector</code> op</td>
     </tr>
     <tr>
-      <td class="num">4</td><td><code>convert-fly-to-rocdl</code></td>
-      <td lang="en">copy atoms become <code>rocdl.buffer_load</code>; MMA atoms become <code>rocdl.mfma.*</code></td>
-      <td lang="zh">copy atom 变成 <code>rocdl.buffer_load</code>; MMA atom 变成 <code>rocdl.mfma.*</code></td>
+      <td class="num">4</td><td><code>fly-int-swizzle-simplify</code></td>
+      <td lang="en">algebraically simplifies the swizzle-shaped arith sequences emitted by <code>applySwizzle</code></td>
+      <td lang="zh">代数地化简 <code>applySwizzle</code> 发出的 swizzle 形态的 arith 序列</td>
     </tr>
     <tr>
-      <td class="num">5</td><td><code>canonicalize + cse</code></td>
-      <td lang="en">arith folding, common subexpression elimination</td>
-      <td lang="zh">arith 折叠、 公共子表达式消除</td>
+      <td class="num">5</td><td><code>canonicalize</code></td>
+      <td lang="en">standard MLIR canonicalization (constant folding, etc.)</td>
+      <td lang="zh">标准 MLIR canonicalization (常量折叠等)</td>
     </tr>
     <tr>
-      <td class="num">6</td><td><code>gpu.module(convert-gpu-to-rocdl)</code></td>
-      <td lang="en">thread/block indices, barriers, dyn_shared → ROCDL intrinsics</td>
-      <td lang="zh">thread / block 索引、 barrier、 dyn_shared → ROCDL intrinsic</td>
+      <td class="num">6</td><td><code>fly-convert-atom-call-to-ssa-form</code></td>
+      <td lang="en">lifts <code>copy_atom_call</code> / <code>mma_atom_call</code> into their SSA counterparts; register tensors become vector SSA values</td>
+      <td lang="zh">把 <code>copy_atom_call</code> / <code>mma_atom_call</code> 提升成对应的 SSA 形式; 寄存器 tensor 变成 vector SSA 值</td>
     </tr>
     <tr>
-      <td class="num">7</td><td><code>rocdl-attach-target {chip=gfxNNN}</code></td>
-      <td lang="en">tags the module with the target chip for later codegen</td>
-      <td lang="zh">给 module 打上目标芯片标签, 给后续 codegen 用</td>
+      <td class="num">7</td><td><code>fly-promote-regmem-to-vectorssa</code></td>
+      <td lang="en">promotes <code>fly.make_ptr(register)</code> memory semantics to vector SSA (depends on pass 6)</td>
+      <td lang="zh">把 <code>fly.make_ptr(register)</code> 的 memory 语义升级成 vector SSA (依赖 pass 6)</td>
     </tr>
     <tr>
-      <td class="num">8</td><td><code>gpu-to-llvm + arith/func-to-llvm</code></td>
-      <td lang="en">final lower into LLVM IR</td>
-      <td lang="zh">最终 lower 到 LLVM IR</td>
+      <td class="num">8</td><td><code>convert-fly-to-rocdl</code></td>
+      <td lang="en">copy atoms become <code>rocdl.buffer_load/store</code>; MMA atoms become <code>rocdl.mfma.*</code></td>
+      <td lang="zh">copy atom 变成 <code>rocdl.buffer_load / store</code>; MMA atom 变成 <code>rocdl.mfma.*</code></td>
     </tr>
     <tr>
-      <td class="num">9</td><td><code>gpu-module-to-binary {format=fatbin}</code></td>
+      <td class="num">9</td><td><code>canonicalize</code></td>
+      <td lang="en">second canonicalization round after ROCDL lowering</td>
+      <td lang="zh">ROCDL lower 之后的第二轮 canonicalize</td>
+    </tr>
+    <tr>
+      <td class="num">10</td><td><code>gpu.module(convert-scf-to-cf, cse, convert-gpu-to-rocdl{chipset=gfxNNN ...}, fly-rocdl-cluster-attr)</code></td>
+      <td lang="en">inside <code>gpu.module</code>: SCF→CF, CSE, GPU intrinsics → ROCDL, then inject <code>amdgpu-cluster-dims</code> into the <code>llvm.func</code> passthrough</td>
+      <td lang="zh">在 <code>gpu.module</code> 里面: SCF → CF、 CSE、 GPU intrinsic → ROCDL, 然后把 <code>amdgpu-cluster-dims</code> 注入到 <code>llvm.func</code> 的 passthrough</td>
+    </tr>
+    <tr><td colspan="3"><strong lang="en">Stage B · <code>binary_prep_fragments</code> — → LLVM</strong><strong lang="zh">Stage B · <code>binary_prep_fragments</code> —— → LLVM</strong></td></tr>
+    <tr>
+      <td class="num">11</td><td><code>rocdl-attach-target {chip=gfxNNN ...}</code></td>
+      <td lang="en">tags the module with the target chip plus <code>fast</code> / <code>unsafe-math</code> / <code>wave64</code> options</td>
+      <td lang="zh">给 module 打上目标芯片标签, 外加 <code>fast</code> / <code>unsafe-math</code> / <code>wave64</code> 等选项</td>
+    </tr>
+    <tr>
+      <td class="num">12-13</td><td><code>convert-scf-to-cf</code> → <code>convert-cf-to-llvm</code></td>
+      <td lang="en">host-side SCF → CF → LLVM</td>
+      <td lang="zh">host 侧 SCF → CF → LLVM</td>
+    </tr>
+    <tr>
+      <td class="num">14</td><td><code>gpu-to-llvm{use-bare-pointers-...=true}</code></td>
+      <td lang="en">GPU types and host launcher → LLVM dialect</td>
+      <td lang="zh">GPU 类型和 host launcher → LLVM dialect</td>
+    </tr>
+    <tr>
+      <td class="num">15-17</td><td><code>convert-vector/arith/func-to-llvm</code></td>
+      <td lang="en">final lower of the remaining vector / arith / func ops to LLVM IR</td>
+      <td lang="zh">把剩下的 vector / arith / func op 终极 lower 到 LLVM IR</td>
+    </tr>
+    <tr>
+      <td class="num">18</td><td><code>reconcile-unrealized-casts</code> <span class="muted">(+ optional <code>ensure-debug-info-scope-on-llvm-func</code>)</span></td>
+      <td lang="en">final cast cleanup; debug-info scope inserted when <code>FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1</code></td>
+      <td lang="zh">最后一轮 cast 清理; <code>FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1</code> 时顺手插入 debug info scope</td>
+    </tr>
+    <tr><td colspan="3"><strong lang="en">Stage C · <code>binary_fragment</code></strong><strong lang="zh">Stage C · <code>binary_fragment</code></strong></td></tr>
+    <tr>
+      <td class="num">19</td><td><code>gpu-module-to-binary {format=fatbin opts="..."}</code></td>
       <td lang="en">invokes LLVM AMDGPU backend → HSA fatbin</td>
       <td lang="zh">调 LLVM AMDGPU backend → HSA fatbin</td>
     </tr>
   </tbody>
 </table>
 
-<p lang="en">Pass 3 is where most kernel-level bugs surface. If your <code>partition_S</code> produces a fragment of unexpected shape, it's because the layout algebra simplifies to something other than what you intended. Dump the IR after this pass to see what FlyDSL actually believes the indexing is. <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> dumps after every pass; <code>FLYDSL_DUMP_DIR=./ir</code> sends them to a directory you can grep through.</p>
-<p lang="zh">Pass 3 是大部分 kernel 级 bug 浮出水面的地方。 如果 <code>partition_S</code> 产出的 fragment 形状不对, 是因为 layout 代数简化成了你预期之外的东西。 dump 这个 pass 之后的 IR, 看 FlyDSL 实际认为索引是什么。 <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> 每个 pass 后都 dump; <code>FLYDSL_DUMP_DIR=./ir</code> 把它们写到一个目录, 方便 grep。</p>
+<p lang="en"><code>fly-layout-lowering</code> is where most kernel-level bugs surface. If your <code>partition_S</code> produces a fragment of unexpected shape, it's because the layout algebra simplifies to something other than what you intended. Dump the IR after that pass to see what FlyDSL actually believes the indexing is. <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> dumps after every pass; <code>FLYDSL_DUMP_DIR=./ir</code> sends them to a directory you can grep through.</p>
+<p lang="zh"><code>fly-layout-lowering</code> 是大部分 kernel 级 bug 浮出水面的地方。 如果 <code>partition_S</code> 产出的 fragment 形状不对, 是因为 layout 代数简化成了你预期之外的东西。 dump 这个 pass 之后的 IR, 看 FlyDSL 实际认为索引是什么。 <code>FLYDSL_DEBUG_PRINT_AFTER_ALL=1</code> 每个 pass 后都 dump; <code>FLYDSL_DUMP_DIR=./ir</code> 把它们写到一个目录, 方便 grep。</p>
+
+<p lang="en">An aside on what's <em>not</em> in the pipeline: <code>gpu-kernel-outlining</code> is gone. Outlining happens during Python tracing — <code>@flyc.kernel</code> emits <code>gpu.func</code> directly into a <code>gpu.container_module</code>, so by the time <code>MlirCompiler.compile()</code> takes the module, the kernel is already outlined.</p>
+<p lang="zh">顺带说一下流水线里<em>没有</em>的东西: <code>gpu-kernel-outlining</code> 不在了。 outlining 现在发生在 Python tracing 阶段 —— <code>@flyc.kernel</code> 直接把 <code>gpu.func</code> 发到 <code>gpu.container_module</code> 里, 所以等 <code>MlirCompiler.compile()</code> 拿到 module 时, kernel 已经 outline 过了。</p>
 
 <h3 lang="en">The JIT cache</h3>
 <h3 lang="zh">JIT 缓存</h3>
