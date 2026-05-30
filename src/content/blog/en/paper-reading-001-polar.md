@@ -7,7 +7,7 @@ category: "Technical"
 lang: "en"
 ---
 
-This kicks off a "Paper Reading" series alongside the existing Source Reading one — same format, different object. Instead of six hours inside a codebase, it's a close read of one paper, with the same hand-coded SVG diagrams and the same insistence on getting every number right. First up: **Polar: Agentic RL on Any Harness at Scale** (arXiv 2605.24220), out of NVIDIA. Full HTML deep dive at [/papers/polar.html](/papers/polar.html).
+This kicks off a "Paper Reading" series alongside the existing Source Reading one — same format, different object. Instead of six hours inside a codebase, it's a close read of one paper, with the same hand-coded SVG diagrams and the same insistence on getting every number right. First up: **Polar: Agentic RL on Any Harness at Scale** (arXiv 2605.24220), out of NVIDIA. Full HTML deep dive at [/sources/polar.html](/sources/polar.html).
 
 ## Why this paper, why now
 
@@ -47,7 +47,7 @@ Seven hand-coded SVG plates:
 
 Plus a section on what it means for our AMD / kimi-cli work, the full GRPO recipe, and a BibTeX citation.
 
-**→ Full deep dive at [/papers/polar.html](/papers/polar.html)** — rendered in a light "polar survey" aesthetic (glacier whites, polar-blue and aurora-teal, a single signal-orange accent; Bricolage Grotesque / Source Serif 4 / Spline Sans Mono), all diagrams inline hand-coded SVG.
+**→ Full deep dive at [/sources/polar.html](/sources/polar.html)** — rendered in a light "polar survey" aesthetic (glacier whites, polar-blue and aurora-teal, a single signal-orange accent; Bricolage Grotesque / Source Serif 4 / Spline Sans Mono), all diagrams inline hand-coded SVG, with a built-in EN/ZH language toggle in the top-right.
 
 ---
 

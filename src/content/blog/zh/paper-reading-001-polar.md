@@ -7,7 +7,7 @@ category: "Technical"
 lang: "zh"
 ---
 
-这是"论文精读"系列的第一篇， 跟已有的"源码精读"系列并列 —— 同样的形式， 不同的对象。 不再是花六小时钻一个 codebase， 而是细读一篇论文， 配同样手写的 SVG 图， 同样较真每一个数字。 第一篇： **Polar： Agentic RL on Any Harness at Scale**（arXiv 2605.24220）， 出自 NVIDIA。 完整 HTML 深读在 [/papers/polar.html](/papers/polar.html)。
+这是"论文精读"系列的第一篇， 跟已有的"源码精读"系列并列 —— 同样的形式， 不同的对象。 不再是花六小时钻一个 codebase， 而是细读一篇论文， 配同样手写的 SVG 图， 同样较真每一个数字。 第一篇： **Polar： Agentic RL on Any Harness at Scale**（arXiv 2605.24220）， 出自 NVIDIA。 完整 HTML 深读在 [/sources/polar.html](/sources/polar.html)。
 
 ## 为什么读这篇， 为什么是现在
 
@@ -47,7 +47,7 @@ Polar 回答了一个我反复撞上的问题： 当 agent 是一个你没写过
 
 外加一节"这对我们 AMD / kimi-cli 的工作意味着什么"、 完整的 GRPO 配方、 以及一段 BibTeX 引用。
 
-**→ 完整深读在 [/papers/polar.html](/papers/polar.html)** —— 整体用淡色的"极地勘测"美学（冰川白底、 极地蓝与极光青、 一抹信号橙做强调； Bricolage Grotesque / Source Serif 4 / Spline Sans Mono 字体）， 所有图都是 inline 手写 SVG。
+**→ 完整深读在 [/sources/polar.html](/sources/polar.html)** —— 整体用淡色的"极地勘测"美学（冰川白底、 极地蓝与极光青、 一抹信号橙做强调； Bricolage Grotesque / Source Serif 4 / Noto Serif SC / Spline Sans Mono 字体）， 所有图都是 inline 手写 SVG， 右上角带一个 EN / ZH 语言切换。
 
 ---
 
