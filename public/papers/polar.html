@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polar — Agentic RL on Any Harness · Paper Reading No.001</title>
+<meta name="description" content="A close reading of Polar (arXiv 2605.24220): training language agents with RL by proxying their LLM API calls instead of rewriting the harness. Architecture, the four-step proxy, asynchronous staging, token-faithful prefix merging, and the SWE-Bench results — with hand-coded SVG diagrams.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..48,300..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..600&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* polar survey palette — light */
+  --ice:      #eaeff3;
+  --frost:    #f7fafb;
+  --snow:     #ffffff;
+  --glacier:  #e1e9ee;
+  --rime:     #d2dde4;
+  --hairline: #c2d0d9;
+
+  --ink:      #0f1c26;
+  --ink-dim:  #34464f;
+  --ink-soft: #5d6e77;
+  --ink-mute: #8a99a2;
+  --ink-faint:#aab7be;
+
+  --polar:      #0d6aa8;
+  --polar-deep: #0a4d7c;
+  --aurora:     #0c8f86;
+  --aurora-deep:#076b64;
+  --signal:     #d4541f;
+  --signal-deep:#a23c12;
+  --iris:       #4a57c9;
+
+  --display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --serif:   'Source Serif 4', Georgia, serif;
+  --mono:    'Spline Sans Mono', ui-monospace, 'JetBrains Mono', monospace;
+
+  --max-content: 720px;
+  --rail-w: 196px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--ice);
+  color: var(--ink-dim);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.66;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* faint surveyor's grid wash */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(13, 106, 168, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 106, 168, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.5;
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 64px 48px 64px;
+  border-bottom: 1px solid var(--hairline);
+  max-width: 1280px;
+  margin: 0 auto;
+  background: var(--frost);
+  z-index: 1;
+}
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 34px;
+}
+.masthead .kicker::before {
+  content: '';
+  width: 30px;
+  height: 2px;
+  background: var(--signal);
+}
+.masthead .kicker .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--polar);
+  animation: pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+.masthead .kicker .sub { color: var(--ink-mute); }
+
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(58px, 10vw, 138px);
+  line-height: 0.92;
+  margin: 0;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+.masthead h1 em {
+  font-style: normal;
+  color: var(--polar);
+}
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(18px, 2.1vw, 25px);
+  line-height: 1.4;
+  color: var(--ink-dim);
+  margin: 30px 0 0;
+  max-width: 760px;
+  letter-spacing: -0.003em;
+}
+.masthead .byline {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 22px;
+  line-height: 1.6;
+}
+.masthead .byline a { color: var(--polar); text-decoration: none; border-bottom: 1px solid var(--rime); }
+
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+  margin-top: 52px;
+  padding-top: 30px;
+  border-top: 1px dashed var(--hairline);
+  max-width: 940px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 9px;
+}
+.masthead .meta .item .value {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 23px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.18;
+}
+.masthead .meta .item .value .unit {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-left: 5px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+.masthead .meta .item .value .accent { color: var(--signal); }
+
+/* ============ LAYOUT ============ */
+.shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  background: var(--frost);
+  z-index: 1;
+}
+.article {
+  position: relative;
+  max-width: var(--max-content);
+  margin: 84px auto;
+  padding: 0;
+}
+
+/* ============ NAV RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 46px 22px;
+  border-right: 1px solid var(--hairline);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  background: var(--frost);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--rime); }
+.rail .brand {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.rail .brand em { font-style: normal; color: var(--polar); }
+.rail .ref {
+  color: var(--ink-mute);
+  margin-bottom: 26px;
+  font-size: 9.5px;
+}
+.rail .ref .pin { color: var(--signal); }
+.rail ol { list-style: none; padding: 0; margin: 0; counter-reset: nav; }
+.rail ol li {
+  margin-bottom: 11px;
+  counter-increment: nav;
+  position: relative;
+  padding-left: 28px;
+}
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute;
+  left: 0; top: 1px;
+  color: var(--ink-faint);
+  font-size: 9.5px;
+}
+.rail ol li a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 0.16s;
+  display: block;
+  line-height: 1.3;
+}
+.rail ol li a:hover { color: var(--polar); }
+.rail .divider { height: 1px; background: var(--hairline); margin: 16px 0; }
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+  .shell, .masthead, .colophon { padding-left: 24px; padding-right: 24px; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(34px, 4.6vw, 54px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 100px 0 22px;
+  color: var(--ink);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  color: var(--signal);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.article h2 em { font-style: normal; color: var(--polar); }
+
+.article h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.22;
+  margin: 54px 0 12px;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+}
+.article h3 em { font-style: italic; color: var(--aurora); font-family: var(--serif); }
+
+.article h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--polar);
+  margin: 34px 0 10px;
+}
+
+.article p { margin: 0 0 18px; color: var(--ink-dim); }
+.article p strong { color: var(--ink); font-weight: 600; }
+.article p em { color: var(--aurora-deep); font-style: italic; }
+.article p code, .article li code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--glacier);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--polar-deep);
+  border: 1px solid var(--rime);
+}
+.article a {
+  color: var(--polar);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+  transition: border-color 0.16s;
+}
+.article a:hover { border-bottom-color: var(--polar); }
+
+.article ul, .article ol { color: var(--ink-dim); padding-left: 22px; }
+.article li { margin-bottom: 9px; }
+
+/* drop cap */
+.dropcap::first-letter {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 70px;
+  line-height: 0.8;
+  float: left;
+  margin: 8px 12px -4px 0;
+  color: var(--signal);
+}
+
+/* lede */
+.lede {
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink);
+  font-style: italic;
+}
+
+/* ============ CODE BLOCKS ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  background: var(--snow);
+  border: 1px solid var(--rime);
+  border-left: 3px solid var(--polar);
+  padding: 18px 22px;
+  margin: 22px 0;
+  overflow-x: auto;
+  color: var(--ink-dim);
+  white-space: pre;
+  border-radius: 2px;
+}
+.code .c-key { color: var(--polar); }
+.code .c-str { color: var(--aurora-deep); }
+.code .c-num { color: var(--signal-deep); }
+.code .c-com { color: var(--ink-mute); font-style: italic; }
+.code .c-fn  { color: var(--iris); }
+.code .c-fname {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 28px 0;
+  padding: 18px 22px;
+  background: var(--snow);
+  border: 1px solid var(--rime);
+  border-left: 3px solid var(--signal);
+  border-radius: 2px;
+}
+.callout.polar  { border-left-color: var(--polar); }
+.callout.aurora { border-left-color: var(--aurora); }
+.callout.iris   { border-left-color: var(--iris); }
+.callout .ctag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--signal);
+  margin-bottom: 8px;
+  display: block;
+}
+.callout.polar .ctag  { color: var(--polar); }
+.callout.aurora .ctag { color: var(--aurora-deep); }
+.callout.iris .ctag   { color: var(--iris); }
+.callout p { margin: 0 0 8px; color: var(--ink); font-size: 14.5px; }
+.callout p:last-child { margin-bottom: 0; }
+
+/* big pull quote */
+.pull {
+  margin: 36px 0;
+  padding: 6px 0 6px 26px;
+  border-left: 3px solid var(--aurora);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* ============ TABLES ============ */
+.tbl { width: 100%; border-collapse: collapse; margin: 22px 0; font-size: 13.5px; }
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 9px 12px 9px 0;
+  border-bottom: 1px solid var(--rime);
+  vertical-align: top;
+}
+.tbl th {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  border-bottom-color: var(--hairline);
+}
+.tbl td { color: var(--ink-dim); }
+.tbl td.k { color: var(--ink); font-family: var(--mono); font-size: 12px; }
+.tbl td code { font-family: var(--mono); font-size: 12px; color: var(--polar-deep); background: var(--glacier); padding: 1px 5px; border-radius: 3px; }
+.tbl td.num { font-family: var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.tbl td.gain { font-family: var(--mono); color: var(--signal); font-weight: 600; }
+
+/* ============ PLATES (SVG) ============ */
+.plate { margin: 56px 0; padding: 0; }
+.plate.wide {
+  max-width: 1040px;
+  margin-left: calc(-1 * (1040px - var(--max-content)) / 2);
+}
+@media (max-width: 1100px) { .plate.wide { max-width: 100%; margin-left: 0; } }
+
+.plate-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 13px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--hairline);
+}
+.plate-meta .pnum {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--signal);
+  white-space: nowrap;
+}
+.plate-meta .pname {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 17px;
+  color: var(--ink);
+  text-align: center;
+  flex: 1;
+}
+.plate-meta .pscale {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+.plate-body {
+  background: var(--snow);
+  border: 1px solid var(--rime);
+  padding: 22px;
+  border-radius: 2px;
+}
+.plate-body svg { display: block; width: 100%; height: auto; }
+.plate .caption {
+  margin-top: 12px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.plate .caption code { font-style: normal; font-family: var(--mono); font-size: 12px; color: var(--polar-deep); }
+
+/* SVG shared classes */
+.diag-text { font-family: var(--display); font-size: 12px; fill: var(--ink); font-weight: 500; }
+.diag-text.mono { font-family: var(--mono); font-size: 10.5px; font-weight: 400; }
+.diag-text.small { font-size: 10px; fill: var(--ink-soft); font-weight: 400; }
+.diag-text.tiny { font-family: var(--mono); font-size: 8.5px; fill: var(--ink-mute); font-weight: 400; }
+.diag-text.label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; fill: var(--ink-mute); text-transform: uppercase; font-weight: 500; }
+.diag-text.pol { fill: var(--polar); }
+.diag-text.aur { fill: var(--aurora-deep); }
+.diag-text.sig { fill: var(--signal); }
+.diag-text.iri { fill: var(--iris); }
+.diag-text.dim { fill: var(--ink-soft); }
+.diag-text.inv { fill: var(--snow); }
+
+.zone { fill: var(--frost); stroke: var(--hairline); stroke-width: 1; }
+.zone.pol { stroke: var(--polar); }
+.zone.aur { stroke: var(--aurora); }
+.zone.sig { stroke: var(--signal); }
+.zone.iri { stroke: var(--iris); }
+.zone.fill-pol { fill: #e3eff7; stroke: var(--polar); }
+.zone.fill-aur { fill: #ddefed; stroke: var(--aurora); }
+.zone.fill-sig { fill: #f9e6dc; stroke: var(--signal); }
+.zone.fill-gray{ fill: var(--glacier); stroke: var(--hairline); }
+
+.edge { stroke: var(--ink-mute); stroke-width: 1.4; fill: none; }
+.edge.pol { stroke: var(--polar); }
+.edge.aur { stroke: var(--aurora); }
+.edge.sig { stroke: var(--signal); }
+.edge.dash { stroke-dasharray: 4 4; }
+.edge.thin { stroke-width: 1; }
+
+.bar-base { fill: var(--ink-faint); }
+.bar-rl   { fill: var(--polar); }
+.bar-grid { stroke: var(--rime); stroke-width: 1; }
+
+/* ============ FOOTER ============ */
+.colophon {
+  max-width: 1280px;
+  margin: 110px auto 0;
+  padding: 46px 48px 64px;
+  border-top: 1px solid var(--hairline);
+  background: var(--frost);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+.colophon .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px; }
+@media (max-width: 760px) { .colophon .grid { grid-template-columns: 1fr 1fr; } }
+.colophon .field .lbl {
+  font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-mute); margin-bottom: 9px;
+}
+.colophon .field .val { color: var(--ink-dim); }
+.colophon .field .val a { color: var(--polar); text-decoration: none; }
+.colophon .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 4px; vertical-align: middle; border: 1px solid var(--hairline); }
+
+/* citation block */
+.cite {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--snow);
+  border: 1px solid var(--rime);
+  border-left: 3px solid var(--aurora);
+  padding: 18px 22px;
+  margin: 22px 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink-dim);
+  border-radius: 2px;
+}
+
+.refs { list-style: none; padding: 0; margin: 22px 0; counter-reset: ref; }
+.refs li {
+  counter-increment: ref;
+  position: relative;
+  padding: 12px 0 12px 34px;
+  border-bottom: 1px dashed var(--rime);
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+.refs li::before {
+  content: '[' counter(ref) ']';
+  position: absolute; left: 0; top: 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--signal);
+}
+.refs li .t { color: var(--ink); font-weight: 600; }
+
+section { scroll-margin-top: 28px; }
+hr.rule { border: none; border-top: 1px dashed var(--hairline); margin: 60px 0; }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <div class="brand"><em>Polar</em></div>
+  <div class="ref">PAPER № <span class="pin">001</span> · 2026.05.30</div>
+  <ol>
+    <li><a href="#prologue">Prologue</a></li>
+    <li><a href="#problem">The target is the system</a></li>
+    <li><a href="#architecture">Two components</a></li>
+    <li><a href="#proxy">The proxy · four steps</a></li>
+    <li><a href="#staging">Asynchronous staging</a></li>
+    <li><a href="#trajectory">Token-faithful merging</a></li>
+    <li><a href="#reward">Evaluation &amp; reward</a></li>
+    <li><a href="#experiments">Experiments</a></li>
+    <div class="divider"></div>
+    <li><a href="#takeaways">What it means for us</a></li>
+    <li><a href="#epilogue">Epilogue</a></li>
+    <li><a href="#references">References &amp; citation</a></li>
+  </ol>
+</nav>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="kicker">
+    <span>PAPER READING № 001</span>
+    <span class="dot"></span>
+    <span>2026.05.30</span>
+    <span class="sub">·</span>
+    <span class="sub">arXiv 2605.24220 · cs.DC</span>
+  </div>
+  <h1><em>Polar</em></h1>
+  <p class="subtitle">
+    Agentic RL on any harness, by refusing to open the box. Instead of
+    rewriting Codex or Claude Code into a framework's environment API,
+    Polar listens at the one seam every LLM agent shares — the model API
+    call — and turns the captured tokens into trainable trajectories.
+  </p>
+  <div class="byline">
+    Binfeng Xu, Hao Zhang, Shaokun Zhang, Songyang Han, Mingjie Liu, Jian Hu,<br>
+    Shizhe Diao, Zhenghui Jin, Yunheng Zou, Michael Demoret, Jan Kautz, Yi Dong
+    &nbsp;·&nbsp; <a href="https://arxiv.org/abs/2605.24220">arxiv.org/abs/2605.24220</a>
+  </div>
+
+  <div class="meta">
+    <div class="item">
+      <div class="label">Integration point</div>
+      <div class="value">LLM API<span class="unit">not the harness</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Base model</div>
+      <div class="value">Qwen3.5<span class="unit">-4B</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Codex on SWE-Bench V.</div>
+      <div class="value"><span class="accent">+22.6</span><span class="unit">pts, GRPO</span></div>
+    </div>
+    <div class="item">
+      <div class="label">Prefix merging</div>
+      <div class="value"><span class="accent">5.39&times;</span><span class="unit">wall-clock</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ARTICLE ============ -->
+<div class="shell">
+<main class="article">
+
+<!-- ====================================================== -->
+<!-- PROLOGUE -->
+<!-- ====================================================== -->
+<section id="prologue">
+<h2><span class="num">§ 00 · Why this paper, why now</span>Prologue</h2>
+
+<p class="dropcap lede">There is a quiet contradiction at the center of agentic RL. We want to train models to be good <em>agents</em> — to fix real bugs, drive a terminal, orchestrate sub-agents over tens of thousands of tokens. But the things that make an agent good live inside a harness: Codex, Claude Code, Qwen Code, a homegrown CLI. And the way we usually train means tearing that harness apart and rebuilding it inside the RL framework's environment API.</p>
+
+<p>Polar's argument is that you should not have to. The paper opens with one sentence that is really the whole thesis: <em>"Can we train agents with RL without opening the box?"</em> Its answer is a systems answer, not an algorithm one. Every LLM-based agent, no matter how baroque its internals, has to talk to a model. That model API call is a common interface that sits <strong>outside</strong> the agent. Put a provider-compatible proxy there, capture the tokens flowing through, and the harness becomes trainable while it runs completely unmodified.</p>
+
+<p>I am reading this for a specific reason. Our own setup at AMD points open-source harnesses — kimi-cli and others — at locally-hosted models through SGLang's OpenAI-compatible endpoint. That endpoint <em>is</em> the seam Polar exploits. So this paper is not abstract for us: it is a blueprint for how a rollout-to-training loop could wrap the exact harnesses we already run, without us reimplementing any of them. The diagrams below are hand-drawn from the paper; every number is cross-checked against the text.</p>
+
+<div class="callout polar">
+  <span class="ctag">The one-line version</span>
+  <p>Move the RL integration boundary from the <strong>harness</strong> to the <strong>model endpoint</strong>. The agent stays a black box; a proxy at the API boundary records prompt tokens, sampled tokens, and log-probabilities, and a reconstruction step turns those captured calls into token-faithful training trajectories. Rollout then scales as a service, decoupled from the GPU trainer.</p>
+</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- PROBLEM -->
+<!-- ====================================================== -->
+<section id="problem">
+<h2><span class="num">§ 01 · The integration burden</span>The target <em>is</em> the system</h2>
+
+<p>In classical RL the environment hides behind a tiny, standardized interface — <code>reset()</code>, <code>step(action)</code>, a reward. The whole point of agentic RL is that this no longer holds. The training target is now "a complex software system with heterogeneous environments, various external tools, long-running workflows, possibly different languages, or even a closed-source binary." The interface stopped being simple, and that is the systems problem the paper is actually about.</p>
+
+<p>Prior work splits into two camps, and Polar positions itself against both:</p>
+
+<ul>
+  <li><strong>Bake the agent into the pipeline.</strong> <a href="https://arxiv.org/abs/2510.19256">SkyRL-Agent</a> and PRIME-RL integrate agent execution directly into the RL loop. You adapt your agent to the infrastructure, not the other way round. Every new harness needs a framework-specific integration.</li>
+  <li><strong>Standardize a tracing interface.</strong> <a href="https://arxiv.org/abs/2508.03680">Agent Lightning</a> and rLLM lower the cost with tracked clients, decorators, and workflow abstractions — but the agent still has to <em>conform</em> to a prescribed SDK shape. That breaks down exactly when harnesses get complex or ship as a binary you can't instrument.</li>
+</ul>
+
+<p>Polar's move is to choose the <strong>minimum integration point</strong>: not an SDK callback graph, but the provider API endpoint the harness already calls. The proxy that sits there becomes the observation device. It accepts Anthropic, OpenAI Chat, OpenAI Responses, and Google-style requests; translates them to the local backend; and records the token-level fields a trainer needs. As the paper puts it, this is "narrower than general observability instrumentation, but it is robust to harnesses implemented as command-line programs, package-managed tools, or binaries."</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate I</span>
+    <span class="pname">Two places to wire an agent into RL</span>
+    <span class="pscale">left: prior art · right: Polar</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a99a2"/></marker>
+    <marker id="ah-pol" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0d6aa8"/></marker>
+    <marker id="ah-sig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d4541f"/></marker>
+    <marker id="ah-aur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0c8f86"/></marker>
+  </defs>
+
+  <!-- divider -->
+  <line x1="490" y1="30" x2="490" y2="350" stroke="#c2d0d9" stroke-width="1" stroke-dasharray="3 4"/>
+
+  <!-- LEFT: prior art -->
+  <text class="diag-text label" x="30" y="26">PRIOR ART · HARNESS BECOMES THE ENVIRONMENT</text>
+
+  <rect class="zone fill-sig" x="30" y="50" width="180" height="78" rx="3"/>
+  <text class="diag-text sig" x="120" y="78" text-anchor="middle">Harness, rewritten</text>
+  <text class="diag-text small" x="120" y="96" text-anchor="middle">forced into the</text>
+  <text class="diag-text small" x="120" y="110" text-anchor="middle">framework's shape</text>
+
+  <rect class="zone sig" x="30" y="166" width="180" height="62" rx="3"/>
+  <text class="diag-text" x="120" y="190" text-anchor="middle">Environment API</text>
+  <text class="diag-text mono small" x="120" y="208" text-anchor="middle">reset() · step() · reward</text>
+
+  <rect class="zone fill-gray" x="30" y="266" width="180" height="58" rx="3"/>
+  <text class="diag-text" x="120" y="292" text-anchor="middle">RL trainer</text>
+  <text class="diag-text small" x="120" y="308" text-anchor="middle">tightly coupled</text>
+
+  <path class="edge sig" d="M120,128 L120,162" marker-end="url(#ah-sig)"/>
+  <path class="edge sig" d="M120,228 L120,262" marker-end="url(#ah-sig)"/>
+
+  <rect x="250" y="120" width="200" height="120" rx="4" fill="none" stroke="#d4541f" stroke-width="1" stroke-dasharray="4 4"/>
+  <text class="diag-text sig small" x="350" y="150" text-anchor="middle">friction</text>
+  <text class="diag-text small" x="350" y="172" text-anchor="middle">every new harness</text>
+  <text class="diag-text small" x="350" y="188" text-anchor="middle">= a new</text>
+  <text class="diag-text small" x="350" y="204" text-anchor="middle">framework-specific</text>
+  <text class="diag-text small" x="350" y="220" text-anchor="middle">integration</text>
+
+  <!-- RIGHT: Polar -->
+  <text class="diag-text label" x="520" y="26">POLAR · PROXY AT THE MODEL BOUNDARY</text>
+
+  <rect class="zone fill-gray" x="520" y="50" width="180" height="78" rx="3"/>
+  <text class="diag-text" x="610" y="76" text-anchor="middle">Harness, unchanged</text>
+  <text class="diag-text small" x="610" y="94" text-anchor="middle">a black box</text>
+  <text class="diag-text mono tiny" x="610" y="112" text-anchor="middle">codex · claude_code · pi · …</text>
+
+  <!-- the boundary -->
+  <rect class="zone fill-pol" x="520" y="166" width="180" height="62" rx="3"/>
+  <text class="diag-text pol" x="610" y="190" text-anchor="middle">Gateway proxy</text>
+  <text class="diag-text mono small" x="610" y="208" text-anchor="middle">the LLM API call</text>
+
+  <rect class="zone aur" x="760" y="166" width="180" height="62" rx="3"/>
+  <text class="diag-text aur" x="850" y="190" text-anchor="middle">Local inference</text>
+  <text class="diag-text mono small" x="850" y="208" text-anchor="middle">returns logprobs</text>
+
+  <rect class="zone fill-gray" x="520" y="266" width="180" height="58" rx="3"/>
+  <text class="diag-text" x="610" y="292" text-anchor="middle">RL trainer</text>
+  <text class="diag-text small" x="610" y="308" text-anchor="middle">independent, async</text>
+
+  <!-- model call down-and-back -->
+  <path class="edge pol" d="M610,128 L610,162" marker-end="url(#ah-pol)"/>
+  <path class="edge aur" d="M700,190 L756,190" marker-end="url(#ah-aur)"/>
+  <path class="edge aur dash" d="M756,210 L702,210" marker-end="url(#ah-aur)"/>
+  <!-- tap into trainer -->
+  <path class="edge pol dash" d="M610,228 L610,262" marker-end="url(#ah-pol)"/>
+  <text class="diag-text pol tiny" x="624" y="250">captured tokens</text>
+
+  <text class="diag-text aur small" x="850" y="250" text-anchor="middle">harness never knows</text>
+  <text class="diag-text aur small" x="850" y="264" text-anchor="middle">the model swapped</text>
+</svg>
+  </div>
+  <div class="caption">Left, the conventional contract: the harness is dismantled and re-expressed as <code>reset/step/reward</code>, so it couples tightly to the trainer and every new agent is a fresh port. Right, Polar's contract: the harness runs as shipped, points its model base URL at the gateway, and the proxy at that single seam captures everything the trainer needs while the local inference server quietly serves the policy being trained.</div>
+</div>
+
+<p>The name is a small tell about lineage. Polar rewrites the group's earlier <strong>ProRL Agent</strong> server, and the authors describe it as connecting the two "poles" of an agent's life — the <em>training</em> environment and the <em>product</em> harness — through one interface. It is also registered as a NeMo Gym environment.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- ARCHITECTURE -->
+<!-- ====================================================== -->
+<section id="architecture">
+<h2><span class="num">§ 02 · Rollout server + gateway node</span>Two components, one boundary</h2>
+
+<p>Polar is deliberately small in its parts. There are exactly two: a <strong>rollout server</strong> and <strong>gateway nodes</strong>. The split "keeps durable task management separate from per-session execution and capture."</p>
+
+<p>The <strong>rollout server</strong> is the coordinator. It accepts a <code>TaskRequest</code> and expands it into <code>num_samples</code> independent <em>sessions</em> — the scheduling unit. A session carries a session ID, a task ID, a timeout budget, a runtime specification, an agent specification, a trajectory builder, an evaluator, and a callback URL. The server dispatches sessions to gateways, persists compact terminal results, exposes task status by polling, and accepts gateway callbacks when sessions finish.</p>
+
+<p>A <strong>gateway node</strong> owns the full lifecycle of a session: it starts the runtime, prepares the harness, runs the harness commands, builds trajectories from captured completions, evaluates the output, tears everything down, and returns the result. Crucially, the same gateway also <em>hosts the proxy endpoint</em> that the harness calls for its model traffic. Co-locating the proxy with the session keeps capture tied to the session registry and avoids standing up a separate trace-collection service.</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate II</span>
+    <span class="pname">System architecture — rollout-as-a-service</span>
+    <span class="pscale">one TaskRequest &rarr; num_samples sessions</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a2-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a99a2"/></marker>
+    <marker id="a2-pol" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0d6aa8"/></marker>
+    <marker id="a2-aur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0c8f86"/></marker>
+    <marker id="a2-sig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d4541f"/></marker>
+  </defs>
+
+  <!-- ROLLOUT SERVER zone -->
+  <rect x="30" y="40" width="430" height="92" rx="4" fill="#e3eff7" stroke="#0d6aa8" stroke-width="1.2"/>
+  <text class="diag-text label pol" x="44" y="60">ROLLOUT SERVER · COORDINATOR</text>
+  <text class="diag-text mono small" x="44" y="82">TaskRequest &rarr; expand into num_samples sessions</text>
+  <text class="diag-text mono small" x="44" y="100">dispatch · persist results · status polling</text>
+  <text class="diag-text mono small" x="44" y="118">accept gateway callbacks on finish</text>
+
+  <!-- TRAINER zone -->
+  <rect x="510" y="40" width="440" height="92" rx="4" fill="#f9e6dc" stroke="#d4541f" stroke-width="1.2"/>
+  <text class="diag-text label sig" x="524" y="60">INDEPENDENT TRAINER (e.g. Slime GRPO)</text>
+  <text class="diag-text mono small" x="524" y="82">consumes trajectories as a service</text>
+  <text class="diag-text mono small" x="524" y="100">trainer-agnostic · async at scale</text>
+  <text class="diag-text mono small" x="524" y="118">pushes updated weights &rarr; inference</text>
+
+  <!-- GATEWAY NODES zone -->
+  <text class="diag-text label" x="30" y="170">GATEWAY NODES · OWN THE SESSION LIFECYCLE + HOST THE PROXY</text>
+
+  <!-- gateway A (detailed) -->
+  <rect x="30" y="182" width="500" height="200" rx="4" fill="#f7fafb" stroke="#c2d0d9" stroke-width="1"/>
+  <text class="diag-text mono tiny dim" x="42" y="200">gateway node #0</text>
+
+  <rect class="zone fill-gray" x="44" y="210" width="150" height="56" rx="3"/>
+  <text class="diag-text" x="119" y="232" text-anchor="middle">Runtime</text>
+  <text class="diag-text mono tiny" x="119" y="250" text-anchor="middle">Docker / Apptainer</text>
+
+  <rect class="zone fill-gray" x="44" y="210" width="150" height="56" rx="3" fill="none"/>
+  <rect class="zone" x="58" y="276" width="122" height="42" rx="3"/>
+  <text class="diag-text small" x="119" y="300" text-anchor="middle">native harness</text>
+
+  <!-- proxy inside gateway -->
+  <rect class="zone fill-pol" x="214" y="210" width="140" height="56" rx="3"/>
+  <text class="diag-text pol" x="284" y="232" text-anchor="middle">Model proxy</text>
+  <text class="diag-text mono tiny" x="284" y="250" text-anchor="middle">capture token-level</text>
+
+  <!-- builder + evaluator -->
+  <rect class="zone aur" x="374" y="210" width="140" height="26" rx="3"/>
+  <text class="diag-text aur small" x="444" y="227" text-anchor="middle">trajectory builder</text>
+  <rect class="zone aur" x="374" y="240" width="140" height="26" rx="3"/>
+  <text class="diag-text aur small" x="444" y="257" text-anchor="middle">evaluator</text>
+
+  <!-- harness -> proxy -->
+  <path class="edge pol" d="M119,276 L119,268 Q119,250 160,250 L210,250" marker-end="url(#a2-pol)"/>
+  <text class="diag-text pol tiny" x="150" y="244">model call</text>
+  <!-- proxy -> builder -->
+  <path class="edge aur dash" d="M354,232 L370,227" marker-end="url(#a2-aur)"/>
+
+  <!-- gateway B, C (stacked, abbreviated) -->
+  <rect x="30" y="392" width="500" height="22" rx="3" fill="#eef2f5" stroke="#d2dde4" stroke-width="1"/>
+  <text class="diag-text mono tiny dim" x="42" y="407">gateway node #1 · … · #N   (same lifecycle, in parallel)</text>
+
+  <!-- INFERENCE zone (right, spanning) -->
+  <rect x="560" y="182" width="390" height="200" rx="4" fill="#ddefed" stroke="#0c8f86" stroke-width="1.2"/>
+  <text class="diag-text label aur" x="574" y="202">LOCAL INFERENCE SERVERS</text>
+  <text class="diag-text mono small" x="574" y="226">serve the policy being trained</text>
+  <text class="diag-text mono small" x="574" y="244">return sampled tokens + logprobs</text>
+  <rect class="zone" x="574" y="262" width="160" height="34" rx="3"/>
+  <text class="diag-text small" x="654" y="283" text-anchor="middle">SGLang / vLLM</text>
+  <text class="diag-text mono tiny dim" x="574" y="320">OpenAI Chat Completions, logprobs=true</text>
+
+  <!-- server -> gateway dispatch -->
+  <path class="edge pol" d="M150,132 L150,178" marker-end="url(#a2-pol)"/>
+  <text class="diag-text pol tiny" x="158" y="158">dispatch sessions</text>
+  <!-- gateway -> server callback -->
+  <path class="edge gray dash" d="M360,178 L360,134" marker-end="url(#a2-gray)" stroke="#8a99a2" stroke-dasharray="4 4"/>
+  <text class="diag-text tiny dim" x="368" y="158">callback / result</text>
+
+  <!-- proxy -> inference -->
+  <path class="edge aur" d="M354,238 L420,238 Q500,238 500,250 L500,280 L570,280" marker-end="url(#a2-aur)"/>
+  <text class="diag-text aur tiny" x="455" y="234">normalized request</text>
+
+  <!-- trainer <- server (consume) -->
+  <path class="edge sig dash" d="M540,86 L508,86" marker-end="url(#a2-sig)"/>
+  <!-- trainer -> inference weights -->
+  <path class="edge sig" d="M730,132 L730,178" marker-end="url(#a2-sig)"/>
+  <text class="diag-text sig tiny" x="738" y="158">weight sync</text>
+</svg>
+  </div>
+  <div class="caption">The rollout server fans one <code>TaskRequest</code> into <code>num_samples</code> sessions and hands them to gateway nodes. Each gateway runs the harness inside an isolated runtime, intercepts its model calls through a co-located proxy, forwards normalized requests to the local inference servers, and builds + evaluates the trajectory. The trainer is a separate process: it consumes finished trajectories as a service and syncs fresh weights back to inference. Nothing in the trainer knows which harness produced the tokens.</div>
+</div>
+
+<div class="callout aurora">
+  <span class="ctag">Why the decoupling is the point</span>
+  <p>Because the trainer only ever sees trajectories — not harness code — Polar is "agnostic to agent harnesses, training infrastructure, and RL algorithms." Swap GRPO for something else, swap Codex for Pi, swap Docker for Apptainer: none of those choices reach across the service boundary. That is what lets slow, long-tailed agent rollouts scale independently from the GPU trainer.</p>
+</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- PROXY -->
+<!-- ====================================================== -->
+<section id="proxy">
+<h2><span class="num">§ 03 · Harness &amp; proxy capture</span>The proxy, in four steps</h2>
+
+<p>The proxy is where the cleverness concentrates, and it is intentionally dumb about agents. It "does not need to understand how the harness plans, manages tools, or decides when to stop. It only needs to preserve API compatibility and record enough information to reconstruct training samples." For each incoming model request it runs four steps.</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate III</span>
+    <span class="pname">Proxy request lifecycle</span>
+    <span class="pscale">per model call · provider-in, provider-out</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a3-pol" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0d6aa8"/></marker>
+    <marker id="a3-aur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0c8f86"/></marker>
+  </defs>
+
+  <!-- harness in -->
+  <rect class="zone fill-gray" x="20" y="120" width="120" height="74" rx="3"/>
+  <text class="diag-text" x="80" y="148" text-anchor="middle">Harness</text>
+  <text class="diag-text mono tiny" x="80" y="166" text-anchor="middle">Anthropic /</text>
+  <text class="diag-text mono tiny" x="80" y="178" text-anchor="middle">OpenAI / Google</text>
+
+  <!-- step boxes -->
+  <rect class="zone pol" x="172" y="60" width="160" height="74" rx="3"/>
+  <text class="diag-text pol mono tiny" x="182" y="78">STEP 1</text>
+  <text class="diag-text" x="252" y="98" text-anchor="middle">Detect provider</text>
+  <text class="diag-text small" x="252" y="116" text-anchor="middle">by path + headers</text>
+
+  <rect class="zone pol" x="356" y="60" width="170" height="74" rx="3"/>
+  <text class="diag-text pol mono tiny" x="366" y="78">STEP 2</text>
+  <text class="diag-text" x="441" y="98" text-anchor="middle">Normalize request</text>
+  <text class="diag-text small" x="441" y="116" text-anchor="middle">&rarr; OpenAI Chat, +logprobs</text>
+
+  <!-- inference -->
+  <rect class="zone aur" x="396" y="178" width="170" height="56" rx="3"/>
+  <text class="diag-text aur" x="481" y="200" text-anchor="middle">Local inference</text>
+  <text class="diag-text mono tiny" x="481" y="218" text-anchor="middle">policy being trained</text>
+
+  <rect class="zone pol" x="588" y="60" width="180" height="74" rx="3"/>
+  <text class="diag-text pol mono tiny" x="598" y="78">STEP 3</text>
+  <text class="diag-text" x="678" y="98" text-anchor="middle">Capture tokens</text>
+  <text class="diag-text small" x="678" y="116" text-anchor="middle">store completion record</text>
+
+  <rect class="zone pol" x="792" y="120" width="160" height="74" rx="3"/>
+  <text class="diag-text pol mono tiny" x="802" y="138">STEP 4</text>
+  <text class="diag-text" x="872" y="158" text-anchor="middle">Return provider</text>
+  <text class="diag-text small" x="872" y="176" text-anchor="middle">shape (synth. stream)</text>
+
+  <!-- flow arrows -->
+  <path class="edge pol" d="M140,150 Q156,150 170,110 L172,100" marker-end="url(#a3-pol)"/>
+  <path class="edge pol" d="M332,97 L354,97" marker-end="url(#a3-pol)"/>
+  <path class="edge aur" d="M460,134 L470,176" marker-end="url(#a3-aur)"/>
+  <path class="edge aur" d="M510,176 Q540,150 560,120 L588,100" marker-end="url(#a3-aur)"/>
+  <path class="edge pol" d="M768,108 Q800,108 820,118" marker-end="url(#a3-pol)"/>
+  <path class="edge pol" d="M850,194 Q850,252 120,252 L100,252 L100,196" marker-end="url(#a3-pol)"/>
+  <text class="diag-text pol tiny" x="430" y="246" text-anchor="middle">response transformed back to the harness's own schema — it never sees the swap</text>
+
+  <!-- completion record card -->
+  <rect class="zone fill-gray" x="290" y="290" width="400" height="74" rx="3"/>
+  <text class="diag-text mono tiny dim" x="306" y="312">completion_record = &#123;</text>
+  <text class="diag-text mono tiny" x="320" y="330">prompt_ids · sampled_response_ids · finish_reason · logprobs</text>
+  <text class="diag-text mono tiny dim" x="306" y="348">&#125;</text>
+  <text class="diag-text small sig" x="710" y="330">&larr; the raw material for</text>
+  <text class="diag-text small sig" x="710" y="346">trajectory reconstruction</text>
+</svg>
+  </div>
+  <div class="caption">A request enters in any of four provider dialects. Step 1 detects which, from path and headers. Step 2 normalizes it to the OpenAI Chat Completions shape the local server speaks — and quietly sets <code>logprobs=true</code>, the field training needs. Step 3 stores a completion record: prompt token IDs, sampled response token IDs, finish reason, and log-probabilities. Step 4 transforms the answer back into the provider shape the harness expects; for streaming clients it fakes a server-sent-event stream from a non-streaming upstream response, which keeps token capture exact.</p></div>
+</div>
+
+<h3>The four provider dialects</h3>
+<p>Step 1 distinguishes <strong>Anthropic Messages</strong>, <strong>OpenAI Chat Completions</strong>, <strong>OpenAI Responses</strong>, and <strong>Google <code>generateContent</code></strong>-style calls. Step 2's provider transformer converts roles, content parts, tool definitions, tool choices, stop controls, and generation parameters into one canonical shape. This is the unglamorous, load-bearing engineering: an agent built for Claude and an agent built for GPT both end up as the same normalized request hitting the same local model.</p>
+
+<h4>Harness adapter — small on purpose</h4>
+<p>To onboard a harness you write a <em>harness adapter</em>, which the paper stresses "is small by design." It may install configuration, register MCP servers or skills, write provider settings, and return the shell commands that launch the agent. There are built-in shortcuts for the obvious suspects:</p>
+
+<div class="code"><span class="c-fname">built-in harness shortcuts</span><span class="c-key">claude_code</span>   <span class="c-com"># Anthropic Messages dialect</span>
+<span class="c-key">codex</span>         <span class="c-com"># OpenAI Responses dialect</span>
+<span class="c-key">gemini_cli</span>    <span class="c-com"># Google generateContent dialect</span>
+<span class="c-key">qwen_code</span>     <span class="c-com"># OpenAI Chat dialect</span>
+<span class="c-key">opencode</span>
+<span class="c-key">pi</span>            <span class="c-com"># + a generic shell-command harness for anything else</span></div>
+
+<h4>Runtime interface — swap the box without friction</h4>
+<p>Runtimes implement a common interface: <code>start</code>, <code>stop</code>, <code>exec</code>, <code>upload</code>, <code>download</code>, and cancellation. The first release supports <strong>Docker</strong> and <strong>rootless Apptainer</strong> (the latter for HPC clusters where you can't run a Docker daemon). Because the gateway only depends on this interface, a task can change isolation backend without touching anything else — a detail that matters a lot for those of us living on shared GPU clusters.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- STAGING -->
+<!-- ====================================================== -->
+<section id="staging">
+<h2><span class="num">§ 04 · Asynchronous rollout staging</span>Keeping the GPU fed</h2>
+
+<p>A single SWE-style rollout is a pile of costs with wildly different shapes: runtime startup, dependency preparation, harness execution, evaluator setup, test execution, patch application, teardown. Some are CPU-and-IO heavy (spinning up a container, installing a repo's deps); the expensive one — actually running the agent — is GPU-bound. If you run these serially per session, the GPU sits idle while a container boots.</p>
+
+<p>Polar's answer is <strong>stage-isolated execution</strong> inside each gateway. Three isolated worker pools — <code>INIT</code>, <code>RUNNING</code>, <code>POSTRUN</code> — plus a bounded <code>READY</code> buffer between INIT and RUNNING. The buffer is the trick: CPU-heavy runtime preparation runs ahead in the background and parks finished runtimes in READY, so when a run slot frees, a warm runtime is already waiting. The GPU never waits on <code>apt install</code>.</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate IV</span>
+    <span class="pname">Stage-isolated execution &amp; evaluator prewarm</span>
+    <span class="pscale">per-gateway · 3 pools + 1 buffer</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a4-pol" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0d6aa8"/></marker>
+    <marker id="a4-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a99a2"/></marker>
+  </defs>
+
+  <!-- top: pool pipeline -->
+  <text class="diag-text label" x="20" y="24">STAGE PIPELINE</text>
+
+  <rect class="zone pol" x="20" y="36" width="160" height="64" rx="3"/>
+  <text class="diag-text pol" x="100" y="60" text-anchor="middle">INIT pool</text>
+  <text class="diag-text small" x="100" y="78" text-anchor="middle">start runtime,</text>
+  <text class="diag-text small" x="100" y="92" text-anchor="middle">prepare actions</text>
+
+  <rect class="zone fill-sig" x="232" y="36" width="150" height="64" rx="3"/>
+  <text class="diag-text sig" x="307" y="60" text-anchor="middle">READY buffer</text>
+  <text class="diag-text small" x="307" y="78" text-anchor="middle">bounded · holds warm</text>
+  <text class="diag-text small" x="307" y="92" text-anchor="middle">runtimes till a slot frees</text>
+
+  <rect class="zone aur" x="434" y="36" width="160" height="64" rx="3"/>
+  <text class="diag-text aur" x="514" y="60" text-anchor="middle">RUNNING pool</text>
+  <text class="diag-text small" x="514" y="78" text-anchor="middle">executes the harness</text>
+  <text class="diag-text small" x="514" y="92" text-anchor="middle">(GPU-bound)</text>
+
+  <rect class="zone pol" x="646" y="36" width="170" height="64" rx="3"/>
+  <text class="diag-text pol" x="731" y="56" text-anchor="middle">POSTRUN pool</text>
+  <text class="diag-text small" x="731" y="74" text-anchor="middle">build trajectory, evaluate,</text>
+  <text class="diag-text small" x="731" y="88" text-anchor="middle">callback, teardown</text>
+
+  <path class="edge pol" d="M180,68 L230,68" marker-end="url(#a4-pol)"/>
+  <path class="edge pol" d="M382,68 L432,68" marker-end="url(#a4-pol)"/>
+  <path class="edge pol" d="M594,68 L644,68" marker-end="url(#a4-pol)"/>
+
+  <text class="diag-text sig small" x="307" y="120" text-anchor="middle">CPU-heavy prep runs ahead &mdash; the GPU never waits on a container boot</text>
+
+  <!-- bottom: timeline / gantt -->
+  <text class="diag-text label" x="20" y="172">WALL-CLOCK · WHAT OVERLAPS</text>
+  <line x1="120" y1="186" x2="900" y2="186" class="bar-grid"/>
+  <line x1="120" y1="186" x2="120" y2="372" class="bar-grid"/>
+  <text class="diag-text tiny dim" x="900" y="186" text-anchor="end">time &rarr;</text>
+
+  <!-- session A lane -->
+  <text class="diag-text mono tiny" x="20" y="214">session A</text>
+  <rect class="zone pol" x="120" y="200" width="90" height="22" rx="2"/>
+  <text class="diag-text inv tiny" x="165" y="215" text-anchor="middle" fill="#0a4d7c">INIT</text>
+  <rect class="zone aur" x="214" y="200" width="380" height="22" rx="2" fill="#ddefed"/>
+  <text class="diag-text aur tiny" x="404" y="215" text-anchor="middle">RUNNING  (agent on GPU)</text>
+  <rect class="zone pol" x="598" y="200" width="120" height="22" rx="2"/>
+  <text class="diag-text pol tiny" x="658" y="215" text-anchor="middle">POSTRUN</text>
+
+  <!-- prewarm lane (during A's RUNNING) -->
+  <text class="diag-text mono tiny" x="20" y="252">evaluator</text>
+  <rect class="zone sig" x="360" y="238" width="234" height="20" rx="2" fill="#f9e6dc"/>
+  <text class="diag-text sig tiny" x="477" y="252" text-anchor="middle">prewarm clean runtime  (overlaps A's run)</text>
+  <path class="edge gray dash" d="M477,238 L477,224" marker-end="url(#a4-gray)"/>
+
+  <!-- session B lane: INIT in background -->
+  <text class="diag-text mono tiny" x="20" y="292">session B</text>
+  <rect class="zone pol" x="250" y="278" width="90" height="22" rx="2"/>
+  <text class="diag-text pol tiny" x="295" y="293" text-anchor="middle">INIT (bg)</text>
+  <rect class="zone fill-sig" x="344" y="278" width="250" height="22" rx="2" stroke-dasharray="3 3"/>
+  <text class="diag-text sig tiny" x="469" y="293" text-anchor="middle">parked in READY, warm</text>
+  <rect class="zone aur" x="598" y="278" width="200" height="22" rx="2" fill="#ddefed"/>
+  <text class="diag-text aur tiny" x="698" y="293" text-anchor="middle">RUNNING (slot freed)</text>
+  <path class="edge gray dash" d="M594,289 L598,289"/>
+
+  <!-- timeout lane -->
+  <text class="diag-text mono tiny" x="20" y="338">deadline</text>
+  <line x1="730" y1="320" x2="730" y2="362" stroke="#d4541f" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <text class="diag-text sig tiny" x="736" y="334">one shared deadline / session</text>
+  <text class="diag-text small" x="120" y="338">on timeout &rarr; still enter POSTRUN,</text>
+  <text class="diag-text small" x="120" y="354">recover partial traces, mark terminal-timeout</text>
+</svg>
+  </div>
+  <div class="caption">Top: the three worker pools and the bounded READY buffer that decouples CPU-bound preparation from GPU-bound execution. Bottom: how it cashes out on the wall clock. While session A's agent runs on the GPU, the evaluator's clean runtime is <em>prewarmed</em> in parallel, and session B's runtime is already initialized and parked in READY — so it starts the instant A's slot frees. Each session has one shared deadline; if a harness times out after some model calls were captured, the gateway still enters POSTRUN to recover the partial trace with a terminal-timeout status.</div>
+</div>
+
+<p>Two details I want to flag because they show real operational scar tissue. First, <strong>evaluator prewarm</strong>: when an evaluator needs a clean runtime (think: a fresh repo checkout to apply and test a patch against), the gateway starts preparing it <em>during</em> the agent run, not after — overlapping setup with the thing it will eventually grade. Second, <strong>timeout handling</strong>: a single shared deadline per session, and on timeout it does not just throw the work away. If model calls were already captured, the gateway still enters POSTRUN so the partial trajectory survives, tagged with a terminal-timeout status. For sparse-reward, long-tail SWE tasks, throwing away partial rollouts would be expensive; keeping them is the difference between usable and wasteful.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- TRAJECTORY -->
+<!-- ====================================================== -->
+<section id="trajectory">
+<h2><span class="num">§ 05 · Trajectory reconstruction</span>Token-faithful prefix merging</h2>
+
+<p>This is the part of the paper I find most elegant, because it is where "treat the harness as a black box" could have quietly broken the math — and the authors noticed. The trajectory builder turns an ordered list of captured <code>CompletionSession</code> objects into a <code>Trajectory</code> made of one or more <code>Trace</code> objects, each holding prompt/response token IDs, loss masks, messages, log-probabilities, rewards, and metadata. There are two ways to do it.</p>
+
+<h3>Per-request: correct but fragmented</h3>
+<p>The conservative option (§3.4.1): every captured completion becomes its own trace. It is lossless per call — but it shatters a coherent multi-turn session into dozens of short, disconnected samples. For an agent that took 51 turns to fix a bug, that is 51 tiny training examples that have lost the thread of the episode, and a much heavier stream for the trainer to chew through.</p>
+
+<h3>Prefix merging: stitch the episode back together</h3>
+<p>The better option (§3.4.2) reconstructs longer traces by exploiting a structural fact about most harnesses: their conversation grows <em>append-only</em>. Turn N+1's prompt is usually just turn N's prompt with more appended. So if you process completions <code>C₁…C_T</code> in order, you can greedily partition them into <strong>chains</strong>, where a completion joins a chain only if two conditions hold:</p>
+<ul>
+  <li><strong>A normalized message-level grouping key</strong> marks it as a candidate continuation (a cheap bucketing filter on conversation context), and</li>
+  <li><strong>a strict token-prefix relation</strong> holds against the chain's last prompt: the first <code>|p_m|</code> tokens of the next prompt must equal the entire previous prompt — <code>p_{m+1}[1:|p_m|] = p_m</code>.</li>
+</ul>
+<p>When the prefix breaks — a context compaction rewrites history, or a sub-agent spawns with a fresh prompt — a new chain simply starts. Each chain becomes one long trace.</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate V</span>
+    <span class="pname">Prefix merging &amp; the loss mask</span>
+    <span class="pscale">append-only chains &rarr; one faithful trace</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 440" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a5-pol" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0d6aa8"/></marker>
+    <marker id="a5-sig" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d4541f"/></marker>
+  </defs>
+
+  <!-- TOP: completions with growing prompts -->
+  <text class="diag-text label" x="20" y="22">CAPTURED COMPLETIONS · PROMPTS GROW APPEND-ONLY</text>
+
+  <!-- C1 -->
+  <text class="diag-text mono tiny dim" x="20" y="56">C&#8321;</text>
+  <rect class="zone fill-pol" x="48" y="42" width="120" height="20" rx="2"/>
+  <text class="diag-text pol tiny" x="108" y="56" text-anchor="middle">p&#8321;</text>
+  <rect class="zone fill-sig" x="170" y="42" width="70" height="20" rx="2"/>
+  <text class="diag-text sig tiny" x="205" y="56" text-anchor="middle">a&#8321;</text>
+
+  <!-- C2: p1 + a1 + u1 as new prompt -->
+  <text class="diag-text mono tiny dim" x="20" y="92">C&#8322;</text>
+  <rect class="zone fill-pol" x="48" y="78" width="120" height="20" rx="2"/>
+  <rect class="zone fill-sig" x="170" y="78" width="70" height="20" rx="2"/>
+  <rect class="zone fill-gray" x="242" y="78" width="56" height="20" rx="2"/>
+  <text class="diag-text tiny dim" x="270" y="92" text-anchor="middle">u&#8321;</text>
+  <rect class="zone fill-sig" x="300" y="78" width="70" height="20" rx="2"/>
+  <text class="diag-text sig tiny" x="335" y="92" text-anchor="middle">a&#8322;</text>
+  <text class="diag-text mono tiny pol" x="386" y="92">p&#8322;[1:|p&#8321;|] = p&#8321;  &#10003; prefix holds</text>
+
+  <!-- C3 -->
+  <text class="diag-text mono tiny dim" x="20" y="128">C&#8323;</text>
+  <rect class="zone fill-pol" x="48" y="114" width="120" height="20" rx="2"/>
+  <rect class="zone fill-sig" x="170" y="114" width="70" height="20" rx="2"/>
+  <rect class="zone fill-gray" x="242" y="114" width="56" height="20" rx="2"/>
+  <rect class="zone fill-sig" x="300" y="114" width="70" height="20" rx="2"/>
+  <rect class="zone fill-gray" x="372" y="114" width="56" height="20" rx="2"/>
+  <text class="diag-text tiny dim" x="400" y="128" text-anchor="middle">u&#8322;</text>
+  <rect class="zone fill-sig" x="430" y="114" width="70" height="20" rx="2"/>
+  <text class="diag-text sig tiny" x="465" y="128" text-anchor="middle">a&#8323;</text>
+  <text class="diag-text mono tiny pol" x="516" y="128">&#10003; same chain</text>
+
+  <!-- C4: prefix breaks -->
+  <text class="diag-text mono tiny dim" x="20" y="164">C&#8324;</text>
+  <rect class="zone fill-gray" x="48" y="150" width="150" height="20" rx="2" stroke="#d4541f" stroke-dasharray="3 2"/>
+  <text class="diag-text sig tiny" x="123" y="164" text-anchor="middle">compacted / sub-agent prompt</text>
+  <rect class="zone fill-sig" x="200" y="150" width="70" height="20" rx="2"/>
+  <text class="diag-text sig tiny" x="290" y="164">prefix breaks &#10007;</text>
+  <text class="diag-text mono tiny sig" x="386" y="164">&rarr; starts a NEW chain</text>
+
+  <line x1="20" y1="184" x2="900" y2="184" class="bar-grid"/>
+
+  <!-- MIDDLE: merged sequence -->
+  <text class="diag-text label" x="20" y="216">CHAIN 1 &rarr; ONE MERGED TRACE</text>
+  <text class="diag-text mono small pol" x="430" y="216" text-anchor="middle">z = p&#8321; &#8741; a&#8321; &#8741; u&#8321; &#8741; a&#8322; &#8741; u&#8322; &#8741; a&#8323;</text>
+
+  <!-- merged token row -->
+  <g>
+    <rect class="zone fill-pol" x="20" y="230" width="150" height="30" rx="2"/>
+    <text class="diag-text pol" x="95" y="250" text-anchor="middle">p&#8321;</text>
+    <rect class="zone fill-sig" x="172" y="230" width="90" height="30" rx="2"/>
+    <text class="diag-text sig" x="217" y="250" text-anchor="middle">a&#8321;</text>
+    <rect class="zone fill-gray" x="264" y="230" width="70" height="30" rx="2"/>
+    <text class="diag-text dim" x="299" y="250" text-anchor="middle">u&#8321;</text>
+    <rect class="zone fill-sig" x="336" y="230" width="90" height="30" rx="2"/>
+    <text class="diag-text sig" x="381" y="250" text-anchor="middle">a&#8322;</text>
+    <rect class="zone fill-gray" x="428" y="230" width="70" height="30" rx="2"/>
+    <text class="diag-text dim" x="463" y="250" text-anchor="middle">u&#8322;</text>
+    <rect class="zone fill-sig" x="500" y="230" width="90" height="30" rx="2"/>
+    <text class="diag-text sig" x="545" y="250" text-anchor="middle">a&#8323;</text>
+  </g>
+
+  <!-- loss mask row -->
+  <text class="diag-text label" x="20" y="290">loss_mask</text>
+  <rect class="zone fill-gray" x="20" y="298" width="150" height="24" rx="2"/>
+  <text class="diag-text mono small dim" x="95" y="314" text-anchor="middle">0</text>
+  <rect class="zone fill-sig" x="172" y="298" width="90" height="24" rx="2"/>
+  <text class="diag-text mono small sig" x="217" y="314" text-anchor="middle">1</text>
+  <rect class="zone fill-gray" x="264" y="298" width="70" height="24" rx="2"/>
+  <text class="diag-text mono small dim" x="299" y="314" text-anchor="middle">0</text>
+  <rect class="zone fill-sig" x="336" y="298" width="90" height="24" rx="2"/>
+  <text class="diag-text mono small sig" x="381" y="314" text-anchor="middle">1</text>
+  <rect class="zone fill-gray" x="428" y="298" width="70" height="24" rx="2"/>
+  <text class="diag-text mono small dim" x="463" y="314" text-anchor="middle">0</text>
+  <rect class="zone fill-sig" x="500" y="298" width="90" height="24" rx="2"/>
+  <text class="diag-text mono small sig" x="545" y="314" text-anchor="middle">1</text>
+
+  <!-- logprob row -->
+  <text class="diag-text label" x="20" y="350">logprobs</text>
+  <rect class="zone" x="20" y="358" width="150" height="24" rx="2"/>
+  <text class="diag-text tiny dim" x="95" y="374" text-anchor="middle">synthetic (align)</text>
+  <rect class="zone sig" x="172" y="358" width="90" height="24" rx="2"/>
+  <text class="diag-text tiny sig" x="217" y="374" text-anchor="middle">real (behavior)</text>
+  <rect class="zone" x="264" y="358" width="70" height="24" rx="2"/>
+  <text class="diag-text tiny dim" x="299" y="374" text-anchor="middle">synth</text>
+  <rect class="zone sig" x="336" y="358" width="90" height="24" rx="2"/>
+  <text class="diag-text tiny sig" x="381" y="374" text-anchor="middle">real</text>
+  <rect class="zone" x="428" y="358" width="70" height="24" rx="2"/>
+  <text class="diag-text tiny dim" x="463" y="374" text-anchor="middle">synth</text>
+  <rect class="zone sig" x="500" y="358" width="90" height="24" rx="2"/>
+  <text class="diag-text tiny sig" x="545" y="374" text-anchor="middle">real</text>
+
+  <!-- legend -->
+  <rect class="zone fill-pol" x="640" y="232" width="16" height="16" rx="2"/>
+  <text class="diag-text small" x="664" y="245">p&#8321; — initial prompt tokens</text>
+  <rect class="zone fill-sig" x="640" y="258" width="16" height="16" rx="2"/>
+  <text class="diag-text small" x="664" y="271">a&#8098; — sampled assistant tokens (trainable)</text>
+  <rect class="zone fill-gray" x="640" y="284" width="16" height="16" rx="2"/>
+  <text class="diag-text small" x="664" y="297">u&#8098; — canonical interstitial tokens (masked)</text>
+
+  <text class="diag-text small sig" x="640" y="332">Invariant:</text>
+  <text class="diag-text small" x="640" y="350">every trainable token (mask=1) matches the</text>
+  <text class="diag-text small" x="640" y="366">behavior policy; non-generated tokens are</text>
+  <text class="diag-text small" x="640" y="382">masked out, so the gradient stays on-policy.</text>
+</svg>
+  </div>
+  <div class="caption">The merged sequence interleaves sampled assistant spans <code>a&#8098;</code> (orange, trainable) with the canonical interstitial tokens <code>u&#8098;</code> the harness inserted between turns (gray, masked). The loss mask is 1 only on tokens the model actually generated. Their log-probabilities are the genuine behavior-policy values from rollout; the masked slots get synthetic logprob entries purely to keep <code>response_logprobs</code> aligned with <code>response_ids</code>. The result reads as one coherent multi-turn episode while remaining mathematically honest about which tokens are on-policy.</div>
+</div>
+
+<h3>Why the masking matters: retokenization drift</h3>
+<p>The subtlety the paper calls out (§2.4) is <em>retokenization drift</em>: if you reconstruct a trajectory by decoding the transcript back to text and re-encoding it, the token IDs you get can differ from the ones the model actually sampled. Train on those and you are training on tokens the behavior policy never emitted. Polar avoids this by construction: <strong>generated assistant tokens are copied verbatim from the inference responses</strong>, the non-generated interstitial tokens come from canonical prompt tokenization, and only the behavior-policy tokens are marked trainable. No round-trip, no drift.</p>
+
+<div class="pull">"Every trainable token matches the behavior policy during rollout, and any non-generated tokens are masked out." — the one invariant the whole reconstruction exists to preserve.</div>
+</section>
+
+<!-- ====================================================== -->
+<!-- REWARD -->
+<!-- ====================================================== -->
+<section id="reward">
+<h2><span class="num">§ 06 · Evaluation &amp; reward propagation</span>Grading the episode</h2>
+
+<p>Evaluators are registry-backed and receive the trajectory, the session's artifacts, and optionally a freshly prepared runtime context (this is what the prewarm in §04 was for). Three are built in:</p>
+<ul>
+  <li>a <strong>session-completion reward</strong> (did the agent finish cleanly?),</li>
+  <li>a configurable <strong>test-on-output evaluator</strong>, and</li>
+  <li>a <strong>SWE-Bench / SWE-Gym harness evaluator</strong> that applies the patch and runs the repo's tests.</li>
+</ul>
+
+<p>On propagation, the paper draws a clean line: an <strong>outcome reward</strong> — one scalar for the whole episode, like "did the tests pass" — is broadcast to every trace in the session. Tasks with <strong>process rewards</strong> (per-step signal) instead need per-trace assignment. The registry is the extension point: custom rule-based verifiers, agent-as-judge scoring, and task-specific reward shaping all plug in here. (One thing the paper does <em>not</em> pin down is the within-trace token placement of the reward — whether it lands on the final token or spreads across the trace. Worth noting rather than guessing.)</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- EXPERIMENTS -->
+<!-- ====================================================== -->
+<section id="experiments">
+<h2><span class="num">§ 07 · Experiments</span>Does it actually train?</h2>
+
+<p>The headline experiment (§4.1) is deliberately unflashy on the algorithm side: plain <strong>GRPO</strong>, run asynchronously through <a href="https://github.com/THUDM/slime">Slime</a>, training the <em>same</em> <code>Qwen3.5-4B</code> base checkpoint four separate times — once inside each of four real coding harnesses — and scoring pass@1 on the full SWE-Bench Verified benchmark. The point isn't a fancy objective; it's that you can point RL at four genuinely different harnesses without reimplementing any of them.</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VI</span>
+    <span class="pname">SWE-Bench Verified · base vs. Polar-RL, per harness</span>
+    <span class="pscale">same Qwen3.5-4B base · pass@1</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+  <!-- axes -->
+  <line x1="90" y1="40" x2="90" y2="300" class="bar-grid"/>
+  <line x1="90" y1="300" x2="930" y2="300" class="bar-grid"/>
+  <!-- y gridlines at 0,10,20,30,40 (scale: 5px per pct, 40% = 200px => y from 300 up) -->
+  <g class="diag-text tiny dim" text-anchor="end">
+    <line x1="90" y1="300" x2="930" y2="300" class="bar-grid"/>
+    <line x1="90" y1="250" x2="930" y2="250" stroke="#e1e9ee" stroke-width="1"/>
+    <line x1="90" y1="200" x2="930" y2="200" stroke="#e1e9ee" stroke-width="1"/>
+    <line x1="90" y1="150" x2="930" y2="150" stroke="#e1e9ee" stroke-width="1"/>
+    <line x1="90" y1="100" x2="930" y2="100" stroke="#e1e9ee" stroke-width="1"/>
+    <text x="82" y="304">0</text>
+    <text x="82" y="254">10</text>
+    <text x="82" y="204">20</text>
+    <text x="82" y="154">30</text>
+    <text x="82" y="104">40</text>
+    <text x="60" y="180" transform="rotate(-90 60 180)" text-anchor="middle" class="diag-text label">SWE-BENCH VERIFIED %</text>
+  </g>
+
+  <!-- group helper: base gray bar + rl blue bar. y = 300 - pct*5 -->
+  <!-- Codex: base 3.8 (h=19, y=281), rl 26.4 (h=132, y=168) -->
+  <g>
+    <rect class="bar-base" x="150" y="281" width="48" height="19"/>
+    <rect class="bar-rl" x="202" y="168" width="48" height="132"/>
+    <text class="diag-text tiny dim" x="174" y="276" text-anchor="middle">3.8</text>
+    <text class="diag-text mono small" x="226" y="160" text-anchor="middle" fill="#0d6aa8">26.4</text>
+    <text class="diag-text small" x="200" y="320" text-anchor="middle">Codex</text>
+    <text class="diag-text mono small sig" x="200" y="338" text-anchor="middle">+22.6</text>
+  </g>
+  <!-- Claude Code: base 29.8 (h=149,y=151), rl 34.6 (h=173,y=127) -->
+  <g>
+    <rect class="bar-base" x="350" y="151" width="48" height="149"/>
+    <rect class="bar-rl" x="402" y="127" width="48" height="173"/>
+    <text class="diag-text tiny dim" x="374" y="146" text-anchor="middle">29.8</text>
+    <text class="diag-text mono small" x="426" y="119" text-anchor="middle" fill="#0d6aa8">34.6</text>
+    <text class="diag-text small" x="400" y="320" text-anchor="middle">Claude Code</text>
+    <text class="diag-text mono small sig" x="400" y="338" text-anchor="middle">+4.8</text>
+  </g>
+  <!-- Qwen Code: base 34.6 (h=173,y=127), rl 35.2 (h=176,y=124) -->
+  <g>
+    <rect class="bar-base" x="550" y="127" width="48" height="173"/>
+    <rect class="bar-rl" x="602" y="124" width="48" height="176"/>
+    <text class="diag-text tiny dim" x="574" y="122" text-anchor="middle">34.6</text>
+    <text class="diag-text mono small" x="626" y="116" text-anchor="middle" fill="#0d6aa8">35.2</text>
+    <text class="diag-text small" x="600" y="320" text-anchor="middle">Qwen Code</text>
+    <text class="diag-text mono small sig" x="600" y="338" text-anchor="middle">+0.6</text>
+  </g>
+  <!-- Pi: base 34.2 (h=171,y=129), rl 40.4 (h=202,y=98) -->
+  <g>
+    <rect class="bar-base" x="750" y="129" width="48" height="171"/>
+    <rect class="bar-rl" x="802" y="98" width="48" height="202"/>
+    <text class="diag-text tiny dim" x="774" y="124" text-anchor="middle">34.2</text>
+    <text class="diag-text mono small" x="826" y="90" text-anchor="middle" fill="#0d6aa8">40.4</text>
+    <text class="diag-text small" x="800" y="320" text-anchor="middle">Pi</text>
+    <text class="diag-text mono small sig" x="800" y="338" text-anchor="middle">+6.2</text>
+  </g>
+
+  <!-- legend -->
+  <rect class="bar-base" x="720" y="44" width="16" height="14"/>
+  <text class="diag-text small" x="742" y="56">base Qwen3.5-4B</text>
+  <rect class="bar-rl" x="720" y="64" width="16" height="14"/>
+  <text class="diag-text small" x="742" y="76">after Polar RL</text>
+</svg>
+  </div>
+  <div class="caption">Every bar pair starts from the identical base model and is trained inside the named harness. The jump is largest for <strong>Codex</strong> (3.8 &rarr; 26.4, +22.6), which the paper attributes to the base model being unfamiliar with Codex's tool schemas — RL teaches it the harness's idiom. Where the base is already strong (Qwen Code, 34.6), the headroom is small (+0.6). The pattern is itself a finding: how much RL helps depends heavily on how alien the harness is to the starting model.</div>
+</div>
+
+<h3>The ablation that justifies prefix merging</h3>
+<p>The second experiment is the one that earned the masthead number. Holding everything else fixed and running the same three training steps, the team compares the <code>prefix_merging</code> trajectory builder against <code>per_request</code>:</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VII</span>
+    <span class="pname">prefix_merging vs per_request — three metrics, same 3 steps</span>
+    <span class="pscale">ablation · §4.1</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg">
+  <!-- panel 1: wall clock -->
+  <text class="diag-text label" x="40" y="28">WALL-CLOCK TRAINING TIME</text>
+  <text class="diag-text tiny dim" x="40" y="44">minutes, lower is better</text>
+  <!-- scale: 189.5 -> 200px. 1px ~ 0.9475 min; use h = min*0.95 -->
+  <rect class="bar-base" x="60" y="70" width="60" height="180"/>
+  <text class="diag-text mono small" x="90" y="64" text-anchor="middle">189.5</text>
+  <text class="diag-text tiny dim" x="90" y="266" text-anchor="middle">per_request</text>
+  <rect class="bar-rl" x="150" y="217" width="60" height="33"/>
+  <text class="diag-text mono small" x="180" y="210" text-anchor="middle" fill="#0d6aa8">35.2</text>
+  <text class="diag-text tiny pol" x="180" y="266" text-anchor="middle">prefix_merging</text>
+  <text class="diag-text sig" x="135" y="150" text-anchor="middle" font-size="20" font-weight="700" transform="rotate(0)">5.39&times;</text>
+  <text class="diag-text tiny sig" x="135" y="166" text-anchor="middle">faster</text>
+
+  <line x1="300" y1="40" x2="300" y2="250" stroke="#e1e9ee" stroke-width="1"/>
+
+  <!-- panel 2: trainer stream -->
+  <text class="diag-text label" x="330" y="28">TRAINER-STREAM UPDATES</text>
+  <text class="diag-text tiny dim" x="330" y="44">count, lower is leaner</text>
+  <!-- scale 1185 -> 180px -->
+  <rect class="bar-base" x="350" y="70" width="60" height="180"/>
+  <text class="diag-text mono small" x="380" y="64" text-anchor="middle">1,185</text>
+  <text class="diag-text tiny dim" x="380" y="266" text-anchor="middle">per_request</text>
+  <rect class="bar-rl" x="440" y="217" width="60" height="33"/>
+  <text class="diag-text mono small" x="470" y="210" text-anchor="middle" fill="#0d6aa8">218</text>
+  <text class="diag-text tiny pol" x="470" y="266" text-anchor="middle">prefix_merging</text>
+  <text class="diag-text small dim" x="425" y="150" text-anchor="middle">request-level</text>
+  <text class="diag-text small dim" x="425" y="164" text-anchor="middle">&rarr; merged-trace</text>
+
+  <line x1="600" y1="40" x2="600" y2="250" stroke="#e1e9ee" stroke-width="1"/>
+
+  <!-- panel 3: GPU util -->
+  <text class="diag-text label" x="630" y="28">ROLLOUT GPU UTILIZATION</text>
+  <text class="diag-text tiny dim" x="630" y="44">avg %, higher is better</text>
+  <!-- scale 100% -> 180px -->
+  <rect class="bar-base" x="650" y="213" width="60" height="37"/>
+  <text class="diag-text mono small" x="680" y="206" text-anchor="middle">20.4%</text>
+  <text class="diag-text tiny dim" x="680" y="266" text-anchor="middle">per_request</text>
+  <rect class="bar-rl" x="740" y="92" width="60" height="158"/>
+  <text class="diag-text mono small" x="770" y="86" text-anchor="middle" fill="#0d6aa8">87.7%</text>
+  <text class="diag-text tiny pol" x="770" y="266" text-anchor="middle">prefix_merging</text>
+  <text class="diag-text sig" x="850" y="150" text-anchor="middle" font-size="18" font-weight="700">~4.3&times;</text>
+  <text class="diag-text tiny sig" x="850" y="166" text-anchor="middle">more active</text>
+</svg>
+  </div>
+  <div class="caption">Three distinct measurements, easy to conflate. Prefix merging collapses <strong>1,185</strong> request-level updates into <strong>218</strong> merged traces, which cuts wall-clock training time from <strong>189.5 to 35.2 minutes — a 5.39&times; speedup</strong>. Separately, it keeps the rollout GPUs busy at <strong>87.7%</strong> average utilization vs <strong>20.4%</strong> for per-request (~4.3&times;). The 5.39&times; is a <em>time</em> number, not the utilization number — they measure different things.</div>
+</div>
+
+<h3>Offline data generation</h3>
+<p>Polar isn't only for online RL. Section 4.2 uses it as an offline SFT-data factory with a bigger model, <code>Qwen3.5-122B-A10B</code> (TP=8, <code>max_model_len</code>=32,768), generating trajectories over <strong>1,638</strong> instances drawn from seven SWE-Gym repositories, each in its own Apptainer container with a fresh checkout. After filtering, <strong>504 trajectories were accepted (30.8%)</strong> at roughly <strong>64 GPU-hours</strong>, averaging 104 messages and 51 assistant turns per accepted session. Acceptance varied widely by repo — highest on <code>getmoto/moto</code> (~54%), lowest on <code>dask/dask</code> (~18%) — a reminder that "how hard is this repo to make tests pass on" is itself most of the signal.</p>
+
+<h4>The training recipe, for the record</h4>
+<table class="tbl">
+  <thead><tr><th>Hyperparameter</th><th>Value</th><th>Hyperparameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Algorithm</td><td>GRPO (async, Slime)</td><td class="k">Samples / prompt</td><td class="num">16</td></tr>
+    <tr><td class="k">Epochs</td><td class="num">1</td><td class="k">Learning rate</td><td class="num">1&times;10⁻⁶</td></tr>
+    <tr><td class="k">Rollout batch size</td><td class="num">4</td><td class="k">Weight decay</td><td class="num">0.1</td></tr>
+    <tr><td class="k">Training data</td><td colspan="3"><code>NovaSky-AI/SkyRL-v0-293-data</code> · 293 tasks · TIS enabled</td></tr>
+  </tbody>
+</table>
+
+<h4>Where Polar sits vs the field</h4>
+<p>Appendix A.1 lines Polar up against ProRL Agent, SkyRL-Agent, PRIME-RL, Agent Lightning, rLLM, and OpenClaw-RL on four axes — async RL support, async rollout staging, rollout-as-a-service, and native-harness agnosticism. Polar is the row that checks all four; the differentiator is that last column, native-harness agnosticism, which is the whole reason the proxy lives at the model boundary.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- TAKEAWAYS -->
+<!-- ====================================================== -->
+<section id="takeaways">
+<h2><span class="num">§ 08 · For our work</span>What this means for AMD &amp; kimi-cli</h2>
+
+<p>I read papers through one lens these days: does it move our two goals — porting the open-source GPU ecosystem to AMD, and building a multi-agent system that writes fast AMD kernels. Polar lands squarely on the second, and here is why I think it matters.</p>
+
+<div class="callout polar">
+  <span class="ctag">Takeaway 1 · the seam we already have</span>
+  <p>Our harnesses (kimi-cli and friends) already point at locally-hosted models through SGLang's OpenAI-compatible endpoint. Polar's whole architecture assumes exactly that endpoint exists and puts the RL observation point there. We would not be retrofitting our stack to fit a trainer — the trainer would attach to the seam we already run. A gateway proxy in front of our SGLang endpoint is a small, well-scoped thing to build.</p>
+</div>
+
+<div class="callout aurora">
+  <span class="ctag">Takeaway 2 · this is the kernel-agent loop, generalized</span>
+  <p>Our kernel work is a long-horizon, sparse-reward, expensive-to-evaluate loop: generate a kernel variant, compile, benchmark, profile, iterate. That is structurally the same shape as a SWE-Bench rollout — slow runtime setup, long tails, patch-level rewards. Polar's staging (READY buffer, evaluator prewarm, partial-trace recovery on timeout) is a direct answer to "the GPU sits idle while a container builds," which is precisely our iteration-speed bottleneck. Swap "apply patch + run tests" for "compile + run rocprof against roofline" and the machinery transfers.</p>
+</div>
+
+<div class="callout iris">
+  <span class="ctag">Takeaway 3 · token fidelity is non-negotiable for RL on kernels</span>
+  <p>If we ever train a kernel agent with RL, retokenization drift is a landmine — kernel code is full of tokens (hex constants, intrinsics like <code>__builtin_amdgcn_*</code>, register names) that re-encode unpredictably. Polar's copy-the-sampled-tokens-verbatim discipline, with interstitials masked, is the correct default and worth stealing wholesale.</p>
+</div>
+
+<p>The honest caveat: Polar's results are on coding/SWE tasks with a relatively small model and plain GRPO. Kernel optimization has a harder reward surface (correctness <em>and</em> performance against a roofline, not just "tests pass") and a much smaller pool of training tasks. The systems contribution transfers cleanly; the RL-converges-and-helps part we would have to earn ourselves. But "wrap the harness you already run, don't rewrite it" is exactly the kind of leverage we want.</p>
+</section>
+
+<!-- ====================================================== -->
+<!-- EPILOGUE -->
+<!-- ====================================================== -->
+<section id="epilogue">
+<h2><span class="num">§ 09 · Epilogue</span>The boundary is the idea</h2>
+
+<p>If you strip Polar down to one sentence, it is this: the hardest part of agentic RL is not the algorithm, it is the integration, and the cheapest place to integrate is the one interface every agent already exposes. The model API call. Everything else in the paper — the two-component split, the four-step proxy, the staging pools, prefix merging — is engineering in service of that single relocation of the boundary.</p>
+
+<p>What I appreciate is the restraint. There is no new objective, no exotic credit assignment. Plain GRPO, a 4B model, and a careful systems design that lets the same training loop wrap Codex, Claude Code, Qwen Code, and Pi without caring which is which. For a team like ours that wants agents pointed at our own models and our own hardware, "don't open the box" is not a limitation — it is the feature.</p>
+
+<hr class="rule">
+</section>
+
+<!-- ====================================================== -->
+<!-- REFERENCES -->
+<!-- ====================================================== -->
+<section id="references">
+<h2><span class="num">§ 10 · Sources</span>References &amp; citation</h2>
+
+<p>This reading is based entirely on the paper text. If you cite this writeup, cite the paper:</p>
+
+<div class="cite">@misc{xu2026polar,
+  title         = {Polar: Agentic RL on Any Harness at Scale},
+  author        = {Xu, Binfeng and Zhang, Hao and Zhang, Shaokun and Han, Songyang
+                   and Liu, Mingjie and Hu, Jian and Diao, Shizhe and Jin, Zhenghui
+                   and Zou, Yunheng and Demoret, Michael and Kautz, Jan and Dong, Yi},
+  year          = {2026},
+  eprint        = {2605.24220},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.DC},
+  url           = {https://arxiv.org/abs/2605.24220}
+}</div>
+
+<ol class="refs">
+  <li><span class="t">Polar: Agentic RL on Any Harness at Scale.</span> Xu, Zhang, Zhang, Han, Liu, Hu, Diao, Jin, Zou, Demoret, Kautz, Dong. arXiv:2605.24220 [cs.DC], 22 May 2026. <a href="https://arxiv.org/abs/2605.24220">arxiv.org/abs/2605.24220</a> — the paper this entry reads.</li>
+  <li><span class="t">SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</span> Jimenez et al. The benchmark Polar trains and evaluates on (SWE-Bench Verified is the human-validated subset). <a href="https://arxiv.org/abs/2310.06770">arxiv.org/abs/2310.06770</a></li>
+  <li><span class="t">SWE-Gym: Training Environments for Software Engineering Agents.</span> The training-environment extension of SWE-bench that supplies Polar's tasks, verifiers, and trajectories. <a href="https://arxiv.org/abs/2412.21139">arxiv.org/abs/2412.21139</a></li>
+  <li><span class="t">DeepSeekMath / GRPO.</span> Group Relative Policy Optimization — the (deliberately plain) RL algorithm Polar uses. <a href="https://arxiv.org/abs/2402.03300">arxiv.org/abs/2402.03300</a></li>
+  <li><span class="t">Slime.</span> The SGLang-native async rollout + Megatron training framework Polar runs GRPO through. <a href="https://github.com/THUDM/slime">github.com/THUDM/slime</a></li>
+  <li><span class="t">Agent Lightning.</span> Training-agent disaggregation + a unified tracing interface — the low-intrusion approach Polar contrasts itself against. <a href="https://arxiv.org/abs/2508.03680">arxiv.org/abs/2508.03680</a></li>
+  <li><span class="t">SkyRL-Agent.</span> Full-stack RL training/eval for long-horizon agents (with SkyRL-Gym), representing the "bake the agent into the pipeline" camp. <a href="https://github.com/NovaSky-AI/SkyRL">github.com/NovaSky-AI/SkyRL</a></li>
+</ol>
+</section>
+
+</main>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl">Series</div>
+      <div class="val">Paper Reading № 001<br>jinnpan.com</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Source</div>
+      <div class="val"><a href="https://arxiv.org/abs/2605.24220">arXiv 2605.24220</a><br>Polar · cs.DC · 2026</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Typography</div>
+      <div class="val">Bricolage Grotesque<br>Source Serif 4 · Spline Sans Mono</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Palette · polar survey</div>
+      <div class="val">
+        <span class="swatch" style="background:#0d6aa8"></span>polar
+        <span class="swatch" style="background:#0c8f86"></span>aurora
+        <span class="swatch" style="background:#d4541f"></span>signal
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
