@@ -1,0 +1,866 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Source Reading 007 · AITER MoE Tuner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111316;
+      --panel: #181b20;
+      --panel-2: #20242a;
+      --ink: #f2eadc;
+      --muted: #a99f91;
+      --dim: #706a61;
+      --line: #39342d;
+      --amber: #f4a63a;
+      --cyan: #5ec8d8;
+      --red: #e26455;
+      --green: #83b66b;
+      --violet: #b893ff;
+      --mono: "IBM Plex Mono", monospace;
+      --display: "Bricolage Grotesque", sans-serif;
+      --serif: "Newsreader", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.68;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(242, 234, 220, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(242, 234, 220, 0.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.45;
+    }
+
+    a { color: var(--cyan); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    code { font-family: var(--mono); color: #ffe2a8; font-size: 0.88em; }
+
+    .lang-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 50;
+      display: flex;
+      gap: 2px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      background: rgba(17, 19, 22, 0.92);
+    }
+
+    .lang-toggle button {
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 6px 9px;
+      cursor: pointer;
+    }
+
+    body[data-lang="en"] .lang-toggle button[data-set="en"],
+    body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+      background: var(--amber);
+      color: #1b1309;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(168px, 220px) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 22px;
+      border-right: 1px solid var(--line);
+      background: #14161a;
+      overflow: auto;
+    }
+
+    .rail .mark {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 20px;
+      line-height: 1.05;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    .rail a {
+      display: block;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-decoration: none;
+      padding: 9px 0;
+      border-top: 1px solid rgba(242, 234, 220, 0.08);
+    }
+
+    .rail b { color: var(--amber); font-weight: 600; margin-right: 6px; }
+
+    .page {
+      min-width: 0;
+    }
+
+    .masthead {
+      padding: 82px clamp(24px, 6vw, 88px) 34px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .kicker {
+      font-family: var(--mono);
+      color: var(--amber);
+      font-size: 12px;
+      margin: 0 0 18px;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--display);
+      line-height: 1.02;
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      font-size: clamp(46px, 8vw, 104px);
+      color: var(--ink);
+    }
+
+    .subtitle {
+      max-width: 820px;
+      margin: 28px 0 0;
+      font-size: 22px;
+      color: #ddd0bd;
+    }
+
+    .spec {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 1px;
+      max-width: 980px;
+      margin-top: 36px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .spec div {
+      background: #111316;
+      padding: 14px;
+      min-height: 74px;
+    }
+
+    .spec .lbl {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--dim);
+      margin-bottom: 7px;
+    }
+
+    .spec .val {
+      display: block;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.35;
+    }
+
+    .article {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 52px 24px 90px;
+    }
+
+    section { margin: 64px 0; }
+
+    h2 {
+      font-size: clamp(32px, 4vw, 50px);
+      margin-bottom: 22px;
+      color: var(--ink);
+    }
+
+    h3 {
+      font-size: 24px;
+      margin: 34px 0 12px;
+      color: #ffe2a8;
+    }
+
+    p { margin: 0 0 18px; }
+
+    .lead {
+      font-size: 22px;
+      line-height: 1.55;
+      color: #e5dac9;
+    }
+
+    .note {
+      border-left: 4px solid var(--amber);
+      background: rgba(244, 166, 58, 0.08);
+      padding: 16px 18px;
+      margin: 26px 0;
+    }
+
+    .note .tag {
+      display: block;
+      font-family: var(--mono);
+      color: var(--amber);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .box {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px;
+    }
+
+    .box h3 { margin-top: 0; font-size: 20px; }
+
+    .tbl {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .tbl th, .tbl td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+    }
+
+    .tbl th {
+      color: var(--amber);
+      background: #181b20;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .tbl td { color: #d8cabb; }
+
+    .code {
+      margin: 22px 0;
+      border: 1px solid var(--line);
+      background: #0d0f12;
+      padding: 18px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.55;
+      color: #eadfce;
+    }
+
+    .wide {
+      width: min(1120px, calc(100vw - 280px));
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .plate {
+      border: 1px solid var(--line);
+      background: #15181d;
+      margin-top: 34px;
+      margin-bottom: 34px;
+    }
+
+    .plate-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .plate svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #101216;
+    }
+
+    .caption {
+      padding: 12px 14px 14px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      font-style: italic;
+    }
+
+    .d-node { fill: #1d2229; stroke: #64533b; stroke-width: 1.2; }
+    .d-node.cyan { stroke: var(--cyan); }
+    .d-node.amber { stroke: var(--amber); }
+    .d-node.red { stroke: var(--red); }
+    .d-node.green { stroke: var(--green); }
+    .d-line { stroke: #756a5c; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .d-line.cyan { stroke: var(--cyan); }
+    .d-line.amber { stroke: var(--amber); }
+    .d-line.red { stroke: var(--red); }
+    .d-text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+    .d-text.small { font-size: 10px; fill: var(--muted); }
+    .d-text.title { font-family: var(--display); font-size: 16px; fill: #ffe2a8; }
+    .d-fill-amber { fill: rgba(244, 166, 58, 0.16); }
+    .d-fill-cyan { fill: rgba(94, 200, 216, 0.14); }
+    .d-fill-red { fill: rgba(226, 100, 85, 0.14); }
+    .d-fill-green { fill: rgba(131, 182, 107, 0.14); }
+
+    .foot {
+      border-top: 1px solid var(--line);
+      padding: 28px clamp(24px, 6vw, 88px);
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: 12px;
+      background: #14161a;
+    }
+
+    body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+    body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+    @media (max-width: 900px) {
+      .shell { display: block; }
+      .rail { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .spec { grid-template-columns: 1fr 1fr; }
+      .wide { width: 100%; margin-left: 0; transform: none; }
+      .grid-two { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 16px; }
+      .masthead { padding-top: 76px; }
+      .spec { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 Z" fill="#f4a63a"></path>
+      </marker>
+    </defs>
+  </svg>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-set="en" aria-label="English">EN</button>
+    <button type="button" data-set="zh" aria-label="中文">中文</button>
+  </div>
+  <div class="shell">
+    <nav class="rail">
+      <div class="mark">AITER<br />MOE<br />TUNER</div>
+      <a href="#prologue"><b>00</b><span lang="en">Prologue</span><span lang="zh">开场</span></a>
+      <a href="#map"><b>01</b><span lang="en">File Map</span><span lang="zh">文件地图</span></a>
+      <a href="#entry"><b>02</b><span lang="en">Entry Points</span><span lang="zh">入口</span></a>
+      <a href="#data"><b>03</b><span lang="en">Data Factory</span><span lang="zh">数据工厂</span></a>
+      <a href="#tasks"><b>04</b><span lang="en">Task Grammar</span><span lang="zh">任务语法</span></a>
+      <a href="#backends"><b>05</b><span lang="en">Backends</span><span lang="zh">候选后端</span></a>
+      <a href="#selection"><b>06</b><span lang="en">Selection</span><span lang="zh">选型</span></a>
+      <a href="#runconfig"><b>07</b><span lang="en">Run Config</span><span lang="zh">配置回放</span></a>
+      <a href="#hazards"><b>08</b><span lang="en">Hazards</span><span lang="zh">风险</span></a>
+    </nav>
+    <div class="page">
+      <header class="masthead">
+        <p class="kicker" lang="en">Source Reading 007 · ROCm / AITER / MoE</p>
+        <p class="kicker" lang="zh">源码精读 007 · ROCm / AITER / MoE</p>
+        <h1 lang="en">The MoE tuning script is a dispatch board, not a benchmark loop.</h1>
+        <h1 lang="zh">这个 MoE tuner 不是一个 benchmark 循环， 而是一张 dispatch board。</h1>
+        <p class="subtitle" lang="en">A reading of <code>csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py</code>: how AITER generates candidate kernels, validates them against references, picks stage pairs, and writes production configs.</p>
+        <p class="subtitle" lang="zh">这是一篇对 <code>csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py</code> 的解读： AITER 如何生成候选 kernel， 如何和 reference 对齐， 如何拼出 stage1 / stage2 的最优组合， 最后如何写入 production config。</p>
+        <div class="spec">
+          <div>
+            <span class="lbl" lang="en">repo</span><span class="lbl" lang="zh">仓库</span>
+            <span class="val">jhinpan/aiter-fork<br />ROCm/aiter upstream</span>
+          </div>
+          <div>
+            <span class="lbl" lang="en">commit read</span><span class="lbl" lang="zh">阅读提交</span>
+            <span class="val">11bcea68<br />2026-06-03</span>
+          </div>
+          <div>
+            <span class="lbl" lang="en">main file</span><span class="lbl" lang="zh">主文件</span>
+            <span class="val">gemm_moe_tune.py<br />4259 lines</span>
+          </div>
+          <div>
+            <span class="lbl" lang="en">mental model</span><span class="lbl" lang="zh">心智模型</span>
+            <span class="val">shape -> tasks -> timing<br />-> config row</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="article">
+        <section id="prologue">
+          <p class="lead" lang="en">A tuning script looks boring until you ask what it protects. This one protects production MoE inference from a dangerous assumption: that a fast kernel in isolation is the same thing as a valid fused MoE configuration.</p>
+          <p class="lead" lang="zh">调参脚本看起来很无聊， 直到你追问它到底在保护什么。 这个脚本保护的是 production MoE 推理里一个很危险的假设： 单个 kernel 跑得快， 并不等于它能组成一个正确又快的 fused MoE 配置。</p>
+          <p lang="en">The target file is not a small benchmark harness. It is a 4,259-line tuner that reads MoE shapes from CSV, generates candidates across ASM, CK, CK-Tile, and FlyDSL paths, benchmarks each candidate through a common multiprocessing executor, validates output against torch or operator references, then post-processes the results into a row that <code>fused_moe</code> can consume in production.</p>
+          <p lang="zh">目标文件不是一个小型 benchmark harness。 它是一个 4259 行的 tuner： 从 CSV 读 MoE shape， 在 ASM、 CK、 CK-Tile、 FlyDSL 多条路径里生成候选， 用统一的多进程 executor 跑计时和正确性验证， 然后把结果整理成 <code>fused_moe</code> 在 production 路径里能读取的一行配置。</p>
+          <div class="note">
+            <span class="tag" lang="en">Core claim</span>
+            <span class="tag" lang="zh">核心判断</span>
+            <p lang="en">The script's load-bearing abstraction is the task tuple. Once every backend can be expressed as "generate data, run candidate, run reference, compare, record time," the rest of the tuner becomes a table-building and ranking problem.</p>
+            <p lang="zh">这个脚本最关键的抽象是 task tuple。 只要每个 backend 都能表达成“生成数据、 跑候选、 跑 reference、 比较、 记录时间”， 剩下的问题就变成建表和排序。</p>
+          </div>
+        </section>
+
+        <section id="map">
+          <h2 lang="en">01 · The file map</h2>
+          <h2 lang="zh">01 · 文件地图</h2>
+          <p lang="en">The script lives under <code>csrc/ck_gemm_moe_2stages_codegen/</code>, next to the CK two-stage codegen helpers and common C++ headers. Its Python neighbors matter: <code>gemm_moe_ck2stages_common.py</code> exposes generated CK kernel manifests, while <code>aiter/utility/base_tuner.py</code> and <code>aiter/utility/mp_tuner.py</code> supply the generic CLI, batching, multiprocessing, timeout, and comparison machinery.</p>
+          <p lang="zh">这个脚本位于 <code>csrc/ck_gemm_moe_2stages_codegen/</code>， 旁边是 CK 两阶段 codegen 的 helper 和公共 C++ 头文件。 它依赖的 Python 邻居同样重要： <code>gemm_moe_ck2stages_common.py</code> 提供生成出来的 CK kernel manifest， <code>aiter/utility/base_tuner.py</code> 和 <code>aiter/utility/mp_tuner.py</code> 则提供通用 CLI、 batch、 多进程、 timeout 和比较逻辑。</p>
+          <table class="tbl">
+            <thead>
+              <tr lang="en"><th>File</th><th>Role in the tuner</th></tr>
+              <tr lang="zh"><th>文件</th><th>在 tuner 里的角色</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>gemm_moe_tune.py</code></td>
+                <td lang="en">MoE-specific task generation, reference selection, post-processing, config writeback.</td>
+                <td lang="zh">MoE 专用的 task 生成、 reference 选择、 结果后处理、 config 写回。</td>
+              </tr>
+              <tr>
+                <td><code>base_tuner.py</code></td>
+                <td lang="en">CLI defaults, <code>--run_config</code>, <code>--compare</code>, batching, CSV merge and update rules.</td>
+                <td lang="zh">CLI 默认值、 <code>--run_config</code>、 <code>--compare</code>、 batching、 CSV merge 和更新规则。</td>
+              </tr>
+              <tr>
+                <td><code>mp_tuner.py</code></td>
+                <td lang="en">Process-per-task isolation, GPU assignment, timing, correctness comparison, timeout handling.</td>
+                <td lang="zh">每个 task 独立进程、 GPU 分配、 计时、 正确性比较、 timeout 处理。</td>
+              </tr>
+              <tr>
+                <td><code>gemm_moe_ck2stages_common.py</code></td>
+                <td lang="en">CK stage1/stage2 kernel lists consumed by the candidate generator.</td>
+                <td lang="zh">提供候选生成器要消费的 CK stage1 / stage2 kernel 列表。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <figure class="plate wide">
+            <div class="plate-head"><span>Plate I</span><span>repository slice</span></div>
+            <svg viewBox="0 0 1040 420" role="img" aria-label="AITER tuner file map">
+              <rect x="40" y="55" width="270" height="92" class="d-node amber"></rect>
+              <text x="58" y="88" class="d-text title">gemm_moe_tune.py</text>
+              <text x="58" y="116" class="d-text small">MoE-specific logic</text>
+              <rect x="410" y="45" width="230" height="82" class="d-node cyan"></rect>
+              <text x="430" y="78" class="d-text title">base_tuner.py</text>
+              <text x="430" y="106" class="d-text small">CLI · batching · CSV</text>
+              <rect x="410" y="165" width="230" height="82" class="d-node green"></rect>
+              <text x="430" y="198" class="d-text title">mp_tuner.py</text>
+              <text x="430" y="226" class="d-text small">GPU workers · compare</text>
+              <rect x="735" y="88" width="245" height="82" class="d-node red"></rect>
+              <text x="755" y="121" class="d-text title">CK manifests</text>
+              <text x="755" y="149" class="d-text small">stage1 / stage2 lists</text>
+              <rect x="735" y="230" width="245" height="82" class="d-node cyan"></rect>
+              <text x="755" y="263" class="d-text title">AITER operators</text>
+              <text x="755" y="291" class="d-text small">ck_moe · fused_moe · FlyDSL</text>
+              <path d="M310 100 C350 88, 370 84, 410 84" class="d-line amber"></path>
+              <path d="M310 118 C350 158, 370 190, 410 206" class="d-line cyan"></path>
+              <path d="M640 86 C690 92, 702 108, 735 124" class="d-line amber"></path>
+              <path d="M640 207 C690 222, 705 248, 735 270" class="d-line cyan"></path>
+              <path d="M165 147 C190 250, 300 330, 520 342 C680 350, 790 330, 858 312" class="d-line red"></path>
+              <text x="80" y="358" class="d-text small">One script orchestrates several independent kernel families without pretending they share an implementation.</text>
+            </svg>
+            <p class="caption" lang="en">The tuner is MoE-specific, but the execution skeleton is shared with the rest of AITER's tuning infrastructure.</p>
+            <p class="caption" lang="zh">tuner 的业务逻辑是 MoE 专用的， 但执行骨架来自 AITER 通用调参基础设施。</p>
+          </figure>
+        </section>
+
+        <section id="entry">
+          <h2 lang="en">02 · The entrance is small; the inherited run loop is large</h2>
+          <h2 lang="zh">02 · 入口很小， 继承来的 run loop 很大</h2>
+          <p lang="en">The file's own entry point is tiny: define the key columns, define result columns, instantiate <code>FmoeTuner</code>, parse args, run. The real control flow is inherited from <code>TunerCommon.run()</code>. That generic run loop first calls <code>pre_process()</code>, then either exits through <code>run_config()</code> or enters the tune/post-process/write loop.</p>
+          <p lang="zh">这个文件自己的入口很小： 定义 key columns， 定义 result columns， 实例化 <code>FmoeTuner</code>， parse args， run。 真正的控制流来自继承的 <code>TunerCommon.run()</code>。 这个通用 run loop 先调用 <code>pre_process()</code>， 然后要么走 <code>run_config()</code> 直接退出， 要么进入 tune / post-process / write 的调参循环。</p>
+          <pre class="code"># csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py:4223
+key = ["cu_num", "token", "model_dim", "inter_dim", "expert", "topk", ...]
+resultList = ["block_m", "ksplit", "us1", "kernelName1", "err1", ...]
+tuner = FmoeTuner("fmoeTuner", key, resultList, "fmoe tuner")
+args = tuner.parse_args()
+tuner.run(args, False)</pre>
+          <p lang="en">The split is important. <code>gemm_moe_tune.py</code> owns MoE semantics; <code>base_tuner.py</code> owns orchestration. This keeps the shape filtering, compare mode, and CSV merging consistent across tuners, while letting MoE define its own candidate grammar.</p>
+          <p lang="zh">这个分工很重要。 <code>gemm_moe_tune.py</code> 负责 MoE 语义， <code>base_tuner.py</code> 负责 orchestration。 这样 shape 过滤、 compare 模式、 CSV merge 可以在所有 tuner 之间保持一致， 同时 MoE 可以定义自己的候选语法。</p>
+
+          <figure class="plate">
+            <div class="plate-head"><span>Plate II</span><span>run-loop state machine</span></div>
+            <svg viewBox="0 0 760 430" role="img" aria-label="Tuner control flow">
+              <rect x="56" y="48" width="150" height="56" class="d-node amber"></rect>
+              <text x="78" y="82" class="d-text">parse_args</text>
+              <rect x="286" y="48" width="160" height="56" class="d-node cyan"></rect>
+              <text x="311" y="82" class="d-text">pre_process</text>
+              <rect x="530" y="40" width="160" height="74" class="d-node green"></rect>
+              <text x="558" y="73" class="d-text">run_config</text>
+              <text x="555" y="94" class="d-text small">benchmark only</text>
+              <rect x="70" y="205" width="150" height="58" class="d-node amber"></rect>
+              <text x="101" y="240" class="d-text">tune()</text>
+              <rect x="300" y="205" width="170" height="58" class="d-node cyan"></rect>
+              <text x="323" y="240" class="d-text">post_process</text>
+              <rect x="560" y="205" width="150" height="58" class="d-node red"></rect>
+              <text x="585" y="240" class="d-text">CSV write</text>
+              <rect x="298" y="326" width="190" height="58" class="d-node green"></rect>
+              <text x="328" y="361" class="d-text">compare mode</text>
+              <path d="M206 76 L286 76" class="d-line amber"></path>
+              <path d="M446 76 L530 76" class="d-line green"></path>
+              <path d="M366 104 C330 165, 215 180, 145 205" class="d-line amber"></path>
+              <path d="M220 234 L300 234" class="d-line cyan"></path>
+              <path d="M470 234 L560 234" class="d-line red"></path>
+              <path d="M385 263 L390 326" class="d-line green"></path>
+              <text x="530" y="135" class="d-text small">--run_config exits here</text>
+              <text x="60" y="300" class="d-text small">normal tuning path</text>
+            </svg>
+            <p class="caption" lang="en">The top branch benchmarks an existing config; the lower branch generates new candidates and writes a tuned config.</p>
+            <p class="caption" lang="zh">上方分支 benchmark 已有 config； 下方分支生成新候选并写出 tuned config。</p>
+          </figure>
+        </section>
+
+        <section id="data">
+          <h2 lang="en">03 · The data factory normalizes a messy MoE world</h2>
+          <h2 lang="zh">03 · 数据工厂把复杂的 MoE 世界标准化</h2>
+          <p lang="en">The function <code>generate_data()</code> is the atom underneath every candidate. It builds random hidden states, expert weights, top-k routing, quantized weights, shuffled weights, sorted token IDs, sorted expert IDs, sorted weights, and a reusable MoE output buffer. Later helpers specialize that base dictionary for ASM stage1, CK two-stage, CK-Tile A8W4, FlyDSL FP4, and FlyDSL int4.</p>
+          <p lang="zh"><code>generate_data()</code> 是所有候选下面的原子。 它构造随机 hidden state、 expert weights、 top-k routing、 quantized weights、 shuffled weights、 sorted token IDs、 sorted expert IDs、 sorted weights 和可复用的 MoE output buffer。 后续 helper 再把这个基础字典专门化给 ASM stage1、 CK 两阶段、 CK-Tile A8W4、 FlyDSL FP4 和 FlyDSL int4。</p>
+          <p lang="en">The core reason this factory is so large is quantization. The script has to support no-quant, per-token fp8, per-1x128 blockscale, per-1x32 MXFP4, and int4 variants. Each variant changes not just dtype, but scale layout, inter-stage activation format, weight shuffling, and sometimes the reference path.</p>
+          <p lang="zh">这个数据工厂之所以很大， 核心原因是 quantization。 脚本要支持 no-quant、 per-token fp8、 per-1x128 blockscale、 per-1x32 MXFP4 和 int4 变体。 每个变体改变的不只是 dtype， 还包括 scale layout、 stage 之间的 activation 格式、 weight shuffling， 有时连 reference 路径都会变。</p>
+          <pre class="code"># gemm_moe_tune.py:734
+input -> fused_topk -> moe_sorting
+w1/w2 -> weight_quant -> shuffle_weight / shuffle_weight_a16w4
+q_type decides: a1_qt, a1_scale, w1_scale, w2_scale
+return dict consumed by task arg keys</pre>
+          <div class="grid-two">
+            <div class="box">
+              <h3 lang="en">Why sorted IDs matter</h3>
+              <h3 lang="zh">为什么 sorted IDs 重要</h3>
+              <p lang="en">MoE GEMM is grouped by expert. Sorting routes token-expert pairs into blocks so each kernel invocation sees dense expert-local work.</p>
+              <p lang="zh">MoE GEMM 是按 expert 分组的。 sorting 会把 token-expert pair 排成 block， 让每次 kernel 调用看到密集的 expert-local work。</p>
+            </div>
+            <div class="box">
+              <h3 lang="en">Why blockM is everywhere</h3>
+              <h3 lang="zh">为什么 blockM 到处出现</h3>
+              <p lang="en"><code>blockM</code> is both a scheduling knob and a sorting contract. It changes padding, candidate eligibility, and fairness costs.</p>
+              <p lang="zh"><code>blockM</code> 既是调度参数， 也是 sorting contract。 它会改变 padding、 候选合法性和 fairness cost。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="tasks">
+          <h2 lang="en">04 · The task tuple is the grammar</h2>
+          <h2 lang="zh">04 · task tuple 是这个脚本的语法</h2>
+          <p lang="en">The script's repeated shape is a tuple that says: here is the tag, here is how to generate data, here is the candidate function, here are the keys to pull from the data dictionary, here is the reference function, here are tolerances and optional compare functions. <code>mp_tuner</code> then turns that tuple into real work.</p>
+          <p lang="zh">这个脚本反复出现的形态是一个 tuple： 这里是 tag， 这里是数据生成函数， 这里是候选函数， 这里是要从 data dictionary 取哪些 key， 这里是 reference 函数， 这里是 tolerance 和可选 compare function。 <code>mp_tuner</code> 再把这个 tuple 变成真正的执行。</p>
+          <table class="tbl">
+            <thead>
+              <tr lang="en"><th>Tuple slot</th><th>Meaning</th></tr>
+              <tr lang="zh"><th>tuple 位置</th><th>含义</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>tag</code></td>
+                <td lang="en"><code>(info, stage, kernelName, blockM, flat?)</code>; this survives into result rows.</td>
+                <td lang="zh"><code>(info, stage, kernelName, blockM, flat?)</code>； 最后会进入结果行。</td>
+              </tr>
+              <tr>
+                <td><code>gen_data</code></td>
+                <td lang="en">Usually <code>generate_data_2stages</code> or <code>generate_data_1stage</code>.</td>
+                <td lang="zh">通常是 <code>generate_data_2stages</code> 或 <code>generate_data_1stage</code>。</td>
+              </tr>
+              <tr>
+                <td><code>func</code></td>
+                <td lang="en">The candidate kernel wrapper: CK, ASM, CK-Tile, or FlyDSL.</td>
+                <td lang="zh">候选 kernel wrapper： CK、 ASM、 CK-Tile 或 FlyDSL。</td>
+              </tr>
+              <tr>
+                <td><code>ref_func</code></td>
+                <td lang="en">Torch or operator reference used for correctness comparison.</td>
+                <td lang="zh">用于正确性比较的 torch 或 operator reference。</td>
+              </tr>
+              <tr>
+                <td><code>compare_fn</code></td>
+                <td lang="en">Optional relaxed compare, such as cosine difference for low-precision paths.</td>
+                <td lang="zh">可选的宽松比较， 例如低精度路径里的 cosine difference。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <figure class="plate wide">
+            <div class="plate-head"><span>Plate III</span><span>task tuple anatomy</span></div>
+            <svg viewBox="0 0 1040 390" role="img" aria-label="Task tuple anatomy">
+              <rect x="48" y="70" width="150" height="70" class="d-node amber"></rect>
+              <text x="74" y="108" class="d-text title">tag</text>
+              <text x="64" y="130" class="d-text small">stage · name · bm</text>
+              <rect x="238" y="70" width="170" height="70" class="d-node cyan"></rect>
+              <text x="267" y="108" class="d-text title">gen_data</text>
+              <text x="255" y="130" class="d-text small">returns dict</text>
+              <rect x="448" y="70" width="170" height="70" class="d-node green"></rect>
+              <text x="486" y="108" class="d-text title">func</text>
+              <text x="472" y="130" class="d-text small">candidate run</text>
+              <rect x="658" y="70" width="170" height="70" class="d-node red"></rect>
+              <text x="689" y="108" class="d-text title">ref_func</text>
+              <text x="680" y="130" class="d-text small">reference run</text>
+              <rect x="868" y="70" width="120" height="70" class="d-node cyan"></rect>
+              <text x="889" y="108" class="d-text title">check</text>
+              <text x="888" y="130" class="d-text small">err · us</text>
+              <path d="M198 105 L238 105" class="d-line amber"></path>
+              <path d="M408 105 L448 105" class="d-line amber"></path>
+              <path d="M618 105 L658 105" class="d-line amber"></path>
+              <path d="M828 105 L868 105" class="d-line amber"></path>
+              <rect x="248" y="225" width="502" height="84" class="d-node"></rect>
+              <text x="274" y="260" class="d-text">mp_tuner.work_group()</text>
+              <text x="274" y="286" class="d-text small">select GPU · materialize args · run_perftest · compare · return tuple</text>
+              <path d="M324 140 C320 175, 330 205, 366 225" class="d-line cyan"></path>
+              <path d="M532 140 C524 175, 518 204, 504 225" class="d-line green"></path>
+              <path d="M742 140 C720 178, 688 205, 638 225" class="d-line red"></path>
+            </svg>
+            <p class="caption" lang="en">Every backend becomes the same language before it enters the executor.</p>
+            <p class="caption" lang="zh">每个 backend 进入 executor 之前， 都被翻译成同一种语言。</p>
+          </figure>
+        </section>
+
+        <section id="backends">
+          <h2 lang="en">05 · Four backend families compete under one scoreboard</h2>
+          <h2 lang="zh">05 · 四类 backend 在同一张 scoreboard 下竞争</h2>
+          <p lang="en">Candidate generation happens in four main families. The script first tries ASM stage1 candidates, then CK or CK-Tile two-stage candidates, then FlyDSL two-stage candidates, then a FlyDSL int4-specific path. Each path has hard eligibility rules because not every dtype/quantization/activation combination exists in every kernel family.</p>
+          <p lang="zh">候选生成主要分成四类。 脚本先生成 ASM stage1 候选， 然后生成 CK 或 CK-Tile 两阶段候选， 再生成 FlyDSL 两阶段候选， 最后有 FlyDSL int4 专用路径。 每条路径都有很硬的合法性判断， 因为不是每种 dtype / quantization / activation 组合都存在对应 kernel。</p>
+          <table class="tbl">
+            <thead>
+              <tr lang="en"><th>Generator</th><th>Candidate family</th><th>Key constraints</th></tr>
+              <tr lang="zh"><th>生成函数</th><th>候选家族</th><th>关键限制</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>gen_1stage_asm_task</code></td>
+                <td lang="en">ASM fused 1-stage MoE.</td>
+                <td lang="zh">ASM fused 1-stage MoE。</td>
+                <td lang="en">Manifest-driven; may include FLAT kernels and xbf16 blockscale variants.</td>
+                <td lang="zh">由 manifest 驱动； 可能包含 FLAT kernel 和 xbf16 blockscale 变体。</td>
+              </tr>
+              <tr>
+                <td><code>gen_2stages_task</code></td>
+                <td lang="en">CK stage1/stage2 or CK-Tile A8W4.</td>
+                <td lang="zh">CK stage1 / stage2 或 CK-Tile A8W4。</td>
+                <td lang="en">Skips unsupported int4 and some SwiGLU MXFP4 cases.</td>
+                <td lang="zh">跳过不支持的 int4 和部分 SwiGLU MXFP4 case。</td>
+              </tr>
+              <tr>
+                <td><code>gen_flydsl_2stages_task</code></td>
+                <td lang="en">FlyDSL FP4/FP8 two-stage kernels.</td>
+                <td lang="zh">FlyDSL FP4 / FP8 两阶段 kernel。</td>
+                <td lang="en">Requires <code>QuantType.per_1x32</code> and fp4 weights; blockM in 32/64/128.</td>
+                <td lang="zh">要求 <code>QuantType.per_1x32</code> 和 fp4 weight； blockM 为 32 / 64 / 128。</td>
+              </tr>
+              <tr>
+                <td><code>gen_flydsl_i4_2stages_task</code></td>
+                <td lang="en">FlyDSL int4-bf16 two-stage kernels.</td>
+                <td lang="zh">FlyDSL int4-bf16 两阶段 kernel。</td>
+                <td lang="en">Requires matching <code>block_m == tile_m</code> for both stages.</td>
+                <td lang="zh">要求两个 stage 都满足 <code>block_m == tile_m</code>。</td>
+              </tr>
+            </tbody>
+          </table>
+          <p lang="en">This is also where the script's engineering personality shows. It does not simply try everything. It encodes failed historical knowledge: mismatched int4 tile sizes break correctness; A8W4 should route to CK-Tile; split-k has model-dimension divisibility constraints; FlyDSL stage2 can try <code>tile_m == blockM</code> or one smaller tile, but no wider search.</p>
+          <p lang="zh">这里也能看出脚本的工程性格。 它不是盲目尝试所有东西， 而是在代码里记录了历史上失败过的知识： int4 tile size 不匹配会破坏正确性； A8W4 应该走 CK-Tile； split-k 有 model_dim 整除限制； FlyDSL stage2 可以尝试 <code>tile_m == blockM</code> 或小一档 tile， 但不会无限扩大搜索。</p>
+
+          <figure class="plate">
+            <div class="plate-head"><span>Plate IV</span><span>backend eligibility board</span></div>
+            <svg viewBox="0 0 760 460" role="img" aria-label="Backend eligibility board">
+              <rect x="52" y="45" width="150" height="300" class="d-node amber"></rect>
+              <text x="80" y="82" class="d-text title">shape row</text>
+              <text x="75" y="114" class="d-text small">dtype</text>
+              <text x="75" y="142" class="d-text small">q_dtype_a</text>
+              <text x="75" y="170" class="d-text small">q_dtype_w</text>
+              <text x="75" y="198" class="d-text small">q_type</text>
+              <text x="75" y="226" class="d-text small">activation</text>
+              <text x="75" y="254" class="d-text small">use_g1u1</text>
+              <rect x="300" y="35" width="180" height="72" class="d-node cyan"></rect>
+              <text x="330" y="72" class="d-text title">ASM 1-stage</text>
+              <rect x="300" y="135" width="180" height="72" class="d-node green"></rect>
+              <text x="335" y="172" class="d-text title">CK 2-stage</text>
+              <rect x="300" y="235" width="180" height="72" class="d-node red"></rect>
+              <text x="322" y="272" class="d-text title">CK-Tile A8W4</text>
+              <rect x="300" y="335" width="180" height="72" class="d-node cyan"></rect>
+              <text x="330" y="372" class="d-text title">FlyDSL</text>
+              <rect x="560" y="145" width="120" height="190" class="d-node amber"></rect>
+              <text x="587" y="188" class="d-text title">tasks</text>
+              <text x="585" y="220" class="d-text small">stage1</text>
+              <text x="585" y="248" class="d-text small">stage2</text>
+              <text x="585" y="276" class="d-text small">flat</text>
+              <text x="585" y="304" class="d-text small">xbf16</text>
+              <path d="M202 120 C250 95, 258 76, 300 70" class="d-line cyan"></path>
+              <path d="M202 170 C250 170, 258 170, 300 171" class="d-line green"></path>
+              <path d="M202 205 C250 238, 260 263, 300 270" class="d-line red"></path>
+              <path d="M202 254 C250 325, 260 365, 300 371" class="d-line cyan"></path>
+              <path d="M480 70 C540 105, 550 135, 560 170" class="d-line amber"></path>
+              <path d="M480 171 L560 210" class="d-line amber"></path>
+              <path d="M480 270 L560 256" class="d-line amber"></path>
+              <path d="M480 371 C532 360, 548 326, 560 304" class="d-line amber"></path>
+            </svg>
+            <p class="caption" lang="en">A shape row fans out into backend-specific candidates only when the dtype and quantization contract is legal.</p>
+            <p class="caption" lang="zh">一行 shape 只有在 dtype 和 quantization contract 合法时， 才会展开成对应 backend 的候选。</p>
+          </figure>
+        </section>
+
+        <section id="selection">
+          <h2 lang="en">06 · Selection is not just <code>min(us)</code></h2>
+          <h2 lang="zh">06 · 选型不只是 <code>min(us)</code></h2>
+          <p lang="en">After <code>mp_tuner</code> returns <code>(info, us, err)</code> rows, <code>post_process()</code> groups rows by shape, filters invalid candidates, deduplicates by stage and block size, renames stage1/stage2 columns, merges stage1 and stage2 on shape plus <code>block_m</code>, and appends 1-stage rows as alternatives. Only then can it choose the minimum total time.</p>
+          <p lang="zh"><code>mp_tuner</code> 返回 <code>(info, us, err)</code> 之后， <code>post_process()</code> 会按 shape 分组， 过滤非法候选， 按 stage 和 block size 去重， 重命名 stage1 / stage2 columns， 在 shape 和 <code>block_m</code> 上 merge stage1 / stage2， 再把 1-stage 结果作为备选加入。 到这里才可以选总耗时最小的一行。</p>
+          <p lang="en">The tricky part is fairness. Some candidates fuse quantization or sorting internally; others require a separate quant/sort or activation-cast step. The post-processor benchmarks those missing costs and adds them to the appropriate rows. FLAT kernels get even more care: because FLAT handles sorting differently, the script can run a head-to-head e2e comparison before accepting the additive fairness result.</p>
+          <p lang="zh">最麻烦的是 fairness。 有些候选在内部 fused 了 quantization 或 sorting， 另一些则需要额外的 quant / sort 或 activation cast。 post-processor 会单独 benchmark 这些缺失成本， 再加到对应行上。 FLAT kernel 更特殊： 因为 FLAT 对 sorting 的处理不同， 脚本甚至会做一次 head-to-head e2e 对比， 再决定是否接受 additive fairness 的结果。</p>
+
+          <figure class="plate wide">
+            <div class="plate-head"><span>Plate V</span><span>post-process ledger</span></div>
+            <svg viewBox="0 0 1040 430" role="img" aria-label="Post process selection">
+              <rect x="55" y="50" width="180" height="78" class="d-node amber"></rect>
+              <text x="82" y="88" class="d-text title">raw results</text>
+              <text x="78" y="112" class="d-text small">info · us · err</text>
+              <rect x="310" y="50" width="180" height="78" class="d-node cyan"></rect>
+              <text x="342" y="88" class="d-text title">filter</text>
+              <text x="334" y="112" class="d-text small">valid time · errRatio</text>
+              <rect x="565" y="50" width="180" height="78" class="d-node green"></rect>
+              <text x="600" y="88" class="d-text title">merge</text>
+              <text x="590" y="112" class="d-text small">stage1 + stage2</text>
+              <rect x="820" y="50" width="150" height="78" class="d-node red"></rect>
+              <text x="848" y="88" class="d-text title">best row</text>
+              <text x="846" y="112" class="d-text small">tuned_fmoe.csv</text>
+              <path d="M235 89 L310 89" class="d-line amber"></path>
+              <path d="M490 89 L565 89" class="d-line cyan"></path>
+              <path d="M745 89 L820 89" class="d-line green"></path>
+              <rect x="175" y="230" width="190" height="72" class="d-node cyan"></rect>
+              <text x="205" y="266" class="d-text title">quant cost</text>
+              <text x="202" y="290" class="d-text small">MXFP4 sort · fp8 cast</text>
+              <rect x="430" y="230" width="190" height="72" class="d-node amber"></rect>
+              <text x="462" y="266" class="d-text title">sort cost</text>
+              <text x="456" y="290" class="d-text small">non-FLAT adjustment</text>
+              <rect x="685" y="230" width="190" height="72" class="d-node red"></rect>
+              <text x="715" y="266" class="d-text title">head-to-head</text>
+              <text x="710" y="290" class="d-text small">FLAT vs non-FLAT</text>
+              <path d="M270 230 C300 170, 360 132, 400 128" class="d-line cyan"></path>
+              <path d="M525 230 C560 170, 610 132, 652 128" class="d-line amber"></path>
+              <path d="M780 230 C805 170, 865 132, 895 128" class="d-line red"></path>
+              <text x="198" y="360" class="d-text small">The selected row is a production contract, not just a microbenchmark winner.</text>
+            </svg>
+            <p class="caption" lang="en">Fairness costs are added before the final row is chosen, because different candidates hide different pieces of the end-to-end path.</p>
+            <p class="caption" lang="zh">最终选型之前会补上 fairness cost， 因为不同候选隐藏了端到端路径里的不同步骤。</p>
+          </figure>
+        </section>
+
+        <section id="runconfig">
+          <h2 lang="en">07 · <code>--run_config</code> is the production sanity check</h2>
+          <h2 lang="zh">07 · <code>--run_config</code> 是 production sanity check</h2>
+          <p lang="en">The tuner has a second mode that does not generate candidates. <code>--run_config</code> reads shapes from a tuned CSV or an input CSV, points <code>AITER_CONFIG_FMOE</code> at the selected config when needed, clears operator caches, rebuilds JIT modules, then calls production <code>fused_moe</code>. This is the mode you use when you want to know whether the selected config actually works through the public operator path.</p>
+          <p lang="zh">这个 tuner 还有第二种模式， 它不生成候选。 <code>--run_config</code> 会从 tuned CSV 或 input CSV 读 shape， 在需要时把 <code>AITER_CONFIG_FMOE</code> 指向选中的 config， 清理 operator cache， 重建 JIT module， 然后调用 production <code>fused_moe</code>。 如果你想知道选出来的配置在公开 operator 路径里是否真的可用， 应该跑这个模式。</p>
+          <pre class="code">python3 csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py \
+  --run_config aiter/configs/tuned_fmoe.csv
+
+python3 csrc/ck_gemm_moe_2stages_codegen/gemm_moe_tune.py \
+  -i aiter/configs/untuned_fmoe.csv --run_config</pre>
+          <p lang="en"><code>--compare</code> builds on this idea: run production before tuning, tune into a candidate CSV, run production after tuning, then update the final config only if <code>--update_improved</code> is set and the improvement threshold is met. That separation is conservative and correct.</p>
+          <p lang="zh"><code>--compare</code> 是这个思想的扩展： 调参前跑一次 production， 调参结果写进 candidate CSV， 调参后再跑一次 production， 只有设置了 <code>--update_improved</code> 并达到提升阈值时， 才更新最终 config。 这种分离是保守的， 也是正确的。</p>
+        </section>
+
+        <section id="hazards">
+          <h2 lang="en">08 · Hazards worth fixing or remembering</h2>
+          <h2 lang="zh">08 · 值得修或至少记住的风险点</h2>
+          <p lang="en">The script is practical, but it is not small, and several details are easy to misread. The most concrete issue I found is in <code>calculate()</code>: it unpacks <code>stage</code>, then resets it to an empty string before the stage-specific FLOP/BW branches. That means stage1 and stage2 reporting always falls through to the combined estimate. It does not change the winning kernel because selection is by <code>us</code>, but it does make per-stage TFLOPS/BW misleading.</p>
+          <p lang="zh">这个脚本非常实用， 但它并不小， 很多细节容易读错。 我看到最具体的问题在 <code>calculate()</code>： 它先解包 <code>stage</code>， 随后又把 <code>stage</code> 重置成空字符串， 导致 stage1 和 stage2 专用的 FLOP / BW 分支永远不会走。 这不会改变 winner， 因为选型靠的是 <code>us</code>， 但会让 per-stage TFLOPS / BW 报告误导人。</p>
+          <pre class="code"># gemm_moe_tune.py:1712
+key, stage, kernelName, block_m, us, err = results
+...
+stage = ""          # suspicious: stage1/stage2 branches below never run
+if stage == "stage1":
+    ...
+elif stage == "stage2":
+    ...</pre>
+          <div class="note">
+            <span class="tag" lang="en">Reading rule</span>
+            <span class="tag" lang="zh">阅读规则</span>
+            <p lang="en">When using this tuner, trust <code>us</code>, correctness status, and final config fields first. Treat TFLOPS/BW as derived metadata unless the <code>calculate()</code> stage reset is fixed.</p>
+            <p lang="zh">使用这个 tuner 时， 先相信 <code>us</code>、 correctness status 和最终 config 字段。 在 <code>calculate()</code> 的 stage reset 被修掉之前， TFLOPS / BW 应该当作派生 metadata， 不要当成硬证据。</p>
+          </div>
+          <p lang="en">There is also a broader engineering lesson. The tuner encodes many case-specific constraints: FLAT sorting, xbf16 internal quantization, a16wi4 tile matching, split-k divisibility, FlyDSL stage2 sort block size, and relaxed cosine comparison for low precision. If a new kernel family is added, copying the tuple shape is not enough. The new family must also declare which parts of the end-to-end path it fuses and which fairness costs still need to be charged.</p>
+          <p lang="zh">还有一个更大的工程教训。 这个 tuner 里编码了大量 case-specific constraint： FLAT sorting、 xbf16 internal quantization、 a16wi4 tile matching、 split-k divisibility、 FlyDSL stage2 sort block size、 低精度路径里的 cosine compare。 如果要加一个新的 kernel family， 只复制 task tuple 形状是不够的。 新 family 还必须说明它 fused 了端到端路径里的哪些部分， 哪些 fairness cost 仍然需要补上。</p>
+
+          <figure class="plate">
+            <div class="plate-head"><span>Plate VI</span><span>what the final row means</span></div>
+            <svg viewBox="0 0 760 360" role="img" aria-label="Final tuned row meaning">
+              <rect x="60" y="64" width="150" height="70" class="d-node amber"></rect>
+              <text x="88" y="102" class="d-text title">shape key</text>
+              <rect x="285" y="64" width="170" height="70" class="d-node cyan"></rect>
+              <text x="311" y="102" class="d-text title">kernel pair</text>
+              <rect x="530" y="64" width="150" height="70" class="d-node green"></rect>
+              <text x="558" y="102" class="d-text title">mode bits</text>
+              <rect x="180" y="220" width="380" height="76" class="d-node red"></rect>
+              <text x="235" y="256" class="d-text title">production fused_moe dispatch</text>
+              <text x="238" y="280" class="d-text small">not just a benchmark artifact</text>
+              <path d="M135 134 C150 175, 210 210, 250 220" class="d-line amber"></path>
+              <path d="M370 134 L370 220" class="d-line cyan"></path>
+              <path d="M605 134 C590 175, 520 210, 488 220" class="d-line green"></path>
+            </svg>
+            <p class="caption" lang="en">The output row is a dispatch contract consumed by production operators, so tuning and validation cannot be separated.</p>
+            <p class="caption" lang="zh">输出行是 production operator 会消费的 dispatch contract， 所以 tuning 和 validation 不能分开看。</p>
+          </figure>
+        </section>
+
+        <section>
+          <h2 lang="en">The shortest useful mental model</h2>
+          <h2 lang="zh">最短的有效心智模型</h2>
+          <p lang="en">Read the script as a compiler for tuning experiments. The input language is <code>untuned_fmoe.csv</code>. The intermediate representation is a list of task tuples. The runtime is <code>mp_tuner</code>. The optimizer is <code>post_process()</code>. The output artifact is <code>tuned_fmoe.csv</code>, which production <code>fused_moe</code> later reads as a dispatch table.</p>
+          <p lang="zh">可以把这个脚本读成一个“调参实验编译器”。 输入语言是 <code>untuned_fmoe.csv</code>。 中间表示是一组 task tuple。 runtime 是 <code>mp_tuner</code>。 optimizer 是 <code>post_process()</code>。 输出 artifact 是 <code>tuned_fmoe.csv</code>， 后续 production <code>fused_moe</code> 会把它当 dispatch table 读取。</p>
+          <p lang="en">Once this model is in place, the long file becomes navigable. You no longer read 4,259 lines as one script. You read five contracts: shape contract, quantization contract, task contract, fairness contract, production dispatch contract.</p>
+          <p lang="zh">一旦有了这个模型， 这个 4259 行的长文件就能导航了。 你不再把它当一个脚本顺着读， 而是读五个 contract： shape contract、 quantization contract、 task contract、 fairness contract、 production dispatch contract。</p>
+        </section>
+      </main>
+
+      <footer class="foot">
+        <span lang="en">Compiled from local checkout <code>/sgl-workspace/aiter-fork</code> at <code>11bcea68</code>. Main references: <code>gemm_moe_tune.py</code>, <code>base_tuner.py</code>, <code>mp_tuner.py</code>.</span>
+        <span lang="zh">基于本地 checkout <code>/sgl-workspace/aiter-fork</code> 的 <code>11bcea68</code> 编写。 主要参考： <code>gemm_moe_tune.py</code>、 <code>base_tuner.py</code>、 <code>mp_tuner.py</code>。</span>
+      </footer>
+    </div>
+  </div>
+  <script>
+  (function() {
+    var KEY = 'aiter-source-lang';
+    var body = document.body;
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) {}
+    if (stored === 'en' || stored === 'zh') {
+      body.setAttribute('data-lang', stored);
+    } else {
+      var nav = (navigator.language || 'en').toLowerCase();
+      body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+    }
+    document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var v = btn.getAttribute('data-set');
+        body.setAttribute('data-lang', v);
+        try { localStorage.setItem(KEY, v); } catch (e) {}
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
