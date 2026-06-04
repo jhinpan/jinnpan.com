@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reading the Trace · rocprof-compute-viewer & rocprofv3</title>
+<meta name="description" content="A field guide to AMD's instruction-level GPU profiler: how rocprofv3 captures Advanced Thread Trace and how to read every panel of rocprof-compute-viewer." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;1,400&family=Red+Hat+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e0f;
+    --bg2: #0e1416;
+    --panel: #111a1c;
+    --line: #1d2a2d;
+    --line2: #27393d;
+    --fg: #d9e3df;
+    --muted: #748781;
+    --dim: #4f615c;
+    --grn: #5cf2a4;   /* phosphor green — execution */
+    --amb: #ffb454;   /* amber — latency / waiting */
+    --cyn: #4fd0e6;   /* cyan — memory / scalar */
+    --mag: #f274cf;   /* magenta — counters / control */
+    --red: #ff5f5f;   /* stall red */
+    --font-display: 'Saira Condensed', 'Noto Sans SC', sans-serif;
+    --font-sans: 'Hanken Grotesk', 'Noto Sans SC', sans-serif;
+    --font-mono: 'Red Hat Mono', 'Noto Sans SC', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font-sans); font-size: 17px; line-height: 1.66;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px, 64px 64px;
+    background-position: -1px -1px;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(120% 80% at 80% -10%, rgba(92,242,164,0.05), transparent 60%);
+  }
+  .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 232px minmax(0,1fr); gap: 0; max-width: 1180px; margin: 0 auto; }
+  /* rail */
+  .rail { position: sticky; top: 0; align-self: start; height: 100vh; padding: 30px 18px 30px 24px; border-right: 1px solid var(--line2); font-family: var(--font-mono); font-size: 12.5px; overflow-y: auto; }
+  .rail .badge { font-family: var(--font-display); font-weight: 700; letter-spacing: .14em; font-size: 12px; color: var(--grn); text-transform: uppercase; }
+  .rail ol { list-style: none; margin: 22px 0 0; padding: 0; }
+  .rail li { margin: 0 0 2px; }
+  .rail a { color: var(--muted); text-decoration: none; display: flex; gap: 9px; padding: 4px 6px; border-radius: 3px; }
+  .rail a:hover { color: var(--fg); background: var(--bg2); }
+  .rail a .n { color: var(--dim); min-width: 20px; }
+  .rail .meta { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--dim); font-size: 11px; line-height: 1.8; }
+  /* article */
+  .article { padding: 0 0 120px; min-width: 0; }
+  .masthead { padding: 72px 40px 40px; border-bottom: 1px solid var(--line2); }
+  .kicker { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--amb); margin: 0 0 18px; }
+  .masthead h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 6vw, 68px); line-height: .98; letter-spacing: -.01em; margin: 0; color: #fff; }
+  .masthead h1 .glow { color: var(--grn); }
+  .masthead .sub { font-size: 19px; color: var(--muted); margin: 20px 0 0; max-width: 640px; }
+  .spec { margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; }
+  .spec div { background: var(--bg); padding: 11px 14px; }
+  .spec .k { color: var(--dim); text-transform: uppercase; letter-spacing: .08em; font-size: 10.5px; }
+  .spec .v { color: var(--fg); margin-top: 3px; }
+  section { padding: 54px 40px 0; max-width: 800px; }
+  section > h2 { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--grn); margin: 0 0 4px; display: flex; align-items: baseline; gap: 12px; }
+  section > h2 .num { color: var(--dim); }
+  section .lede { font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 3.4vw, 33px); line-height: 1.12; letter-spacing: -.01em; color: #fff; margin: 6px 0 22px; }
+  p { margin: 0 0 18px; }
+  h3 { font-family: var(--font-display); font-weight: 600; font-size: 22px; color: #fff; margin: 34px 0 10px; letter-spacing: -.005em; }
+  h4 { font-family: var(--font-mono); font-weight: 600; font-size: 14px; color: var(--cyn); margin: 26px 0 8px; letter-spacing: .02em; }
+  a.link { color: var(--cyn); text-decoration: none; border-bottom: 1px solid var(--line2); }
+  a.link:hover { border-color: var(--cyn); }
+  code { font-family: var(--font-mono); font-size: .9em; color: var(--amb); background: rgba(255,180,84,0.07); padding: 1px 5px; border-radius: 3px; }
+  strong { color: #fff; font-weight: 600; }
+  em { color: var(--muted); }
+  .code { font-family: var(--font-mono); font-size: 13px; line-height: 1.7; background: var(--bg2); border: 1px solid var(--line2); border-left: 2px solid var(--grn); border-radius: 4px; padding: 16px 18px; overflow-x: auto; margin: 0 0 20px; color: #c7d4cf; white-space: pre; }
+  .code .c { color: var(--dim); }
+  .code .o { color: var(--amb); }
+  .code .g { color: var(--grn); }
+  .callout { border: 1px solid var(--line2); border-radius: 4px; background: linear-gradient(180deg, rgba(92,242,164,0.04), transparent); padding: 16px 18px; margin: 0 0 22px; }
+  .callout .ctag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--grn); display: block; margin-bottom: 6px; }
+  .callout.warn { background: linear-gradient(180deg, rgba(255,95,95,0.05), transparent); }
+  .callout.warn .ctag { color: var(--red); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 22px; }
+  .tbl th, .tbl td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl th { font-family: var(--font-mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line2); }
+  .tbl td code { white-space: nowrap; }
+  .tbl tr:hover td { background: var(--bg2); }
+  ul.tight { margin: 0 0 20px; padding-left: 20px; }
+  ul.tight li { margin: 0 0 7px; }
+  /* plates */
+  .plate { margin: 36px 0 30px; }
+  .plate.wide { max-width: 980px; margin-left: calc(360px - 50vw); margin-right: calc(360px - 50vw); padding: 0 40px; }
+  @media (max-width: 1180px) { .plate.wide { margin: 36px 0 30px; max-width: 100%; padding: 0; } }
+  .plate-meta { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; display: flex; gap: 12px; align-items: baseline; }
+  .plate-meta .pn { color: var(--amb); font-weight: 600; }
+  .plate-meta .pname { color: var(--fg); font-style: italic; text-transform: none; letter-spacing: 0; font-family: var(--font-sans); }
+  .plate svg { width: 100%; height: auto; display: block; background: var(--bg2); border: 1px solid var(--line2); border-radius: 5px; }
+  .caption { font-size: 13.5px; color: var(--muted); font-style: italic; margin: 10px 2px 0; }
+  /* svg shared */
+  .s-edge { stroke: var(--line2); stroke-width: 1.4; fill: none; }
+  .s-node { fill: var(--panel); stroke: var(--line2); stroke-width: 1.2; }
+  .s-lbl { font-family: var(--font-mono); font-size: 12px; fill: var(--fg); }
+  .s-sub { font-family: var(--font-mono); font-size: 10px; fill: var(--muted); }
+  .s-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; fill: var(--dim); text-transform: uppercase; }
+  .colophon { margin: 80px 40px 0; padding: 28px 0 0; border-top: 1px solid var(--line2); max-width: 800px; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .colophon .row { display: flex; gap: 14px; padding: 5px 0; }
+  .colophon .lbl { color: var(--dim); min-width: 120px; text-transform: uppercase; letter-spacing: .07em; font-size: 11px; }
+  /* lang toggle */
+  .lang-toggle { position: fixed; top: 16px; right: 18px; z-index: 50; display: flex; gap: 0; border: 1px solid var(--line2); border-radius: 999px; overflow: hidden; background: rgba(10,14,15,0.85); backdrop-filter: blur(6px); font-family: var(--font-mono); }
+  .lang-toggle button { background: transparent; border: 0; color: var(--muted); padding: 7px 13px; font-size: 12px; cursor: pointer; font-family: inherit; letter-spacing: .04em; }
+  .lang-toggle button:hover { color: var(--fg); }
+  body[data-lang="en"] .lang-toggle [data-set="en"],
+  body[data-lang="zh"] .lang-toggle [data-set="zh"] { background: var(--grn); color: #04130b; font-weight: 600; }
+  body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+  body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .masthead, section, .colophon { padding-left: 22px; padding-right: 22px; }
+  }
+</style>
+</head>
+<body data-lang="en">
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="wrap">
+  <nav class="rail">
+    <div class="badge">Source Reading 008</div>
+    <ol>
+      <li><a href="#prologue"><span class="n">00</span><span lang="en">Prologue</span><span lang="zh">序章</span></a></li>
+      <li><a href="#pipeline"><span class="n">01</span><span lang="en">The pipeline</span><span lang="zh">数据管线</span></a></li>
+      <li><a href="#rocprofv3"><span class="n">02</span><span lang="en">rocprofv3</span><span lang="zh">rocprofv3</span></a></li>
+      <li><a href="#att-capture"><span class="n">03</span><span lang="en">ATT capture</span><span lang="zh">ATT 采集</span></a></li>
+      <li><a href="#ui-output"><span class="n">04</span><span lang="en">ui_output</span><span lang="zh">ui_output</span></a></li>
+      <li><a href="#panels"><span class="n">05</span><span lang="en">The window</span><span lang="zh">主窗口</span></a></li>
+      <li><a href="#timeline"><span class="n">06</span><span lang="en">Timeline views</span><span lang="zh">时间线视图</span></a></li>
+      <li><a href="#isa"><span class="n">07</span><span lang="en">ISA view</span><span lang="zh">ISA 视图</span></a></li>
+      <li><a href="#counters"><span class="n">08</span><span lang="en">Counters & plots</span><span lang="zh">计数器与曲线</span></a></li>
+      <li><a href="#workflow"><span class="n">09</span><span lang="en">A reading loop</span><span lang="zh">阅读流程</span></a></li>
+      <li><a href="#source"><span class="n">10</span><span lang="en">The source</span><span lang="zh">源码</span></a></li>
+      <li><a href="#reefs"><span class="n">11</span><span lang="en">Reefs</span><span lang="zh">暗礁</span></a></li>
+      <li><a href="#epilogue"><span class="n">12</span><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    </ol>
+    <div class="meta">
+      <div lang="en">MI350X · gfx950</div>
+      <div lang="zh">MI350X · gfx950</div>
+      <div>ROCm 7.2 · RCV 0.1.x</div>
+      <div>jinnpan.com</div>
+    </div>
+  </nav>
+
+  <main class="article">
+    <header class="masthead">
+      <p class="kicker"><span lang="en">Source Reading 008 · GPU Profiling Internals</span><span lang="zh">源码阅读 008 · GPU Profiling 内核</span></p>
+      <h1><span lang="en">Reading the <span class="glow">Trace</span></span><span lang="zh">读懂这条 <span class="glow">Trace</span></span></h1>
+      <p class="sub"><span lang="en">A field guide to AMD's instruction-level profiler: how <code>rocprofv3</code> captures Advanced Thread Trace, and how to read every panel of <code>rocprof-compute-viewer</code>.</span><span lang="zh">一份 AMD 指令级 profiler 的实战指南:<code>rocprofv3</code> 如何采集 Advanced Thread Trace,以及 <code>rocprof-compute-viewer</code> 的每一块面板到底怎么看。</span></p>
+      <div class="spec">
+        <div><div class="k">Viewer</div><div class="v">ROCm/rocprof-compute-viewer</div></div>
+        <div><div class="k">Tracer</div><div class="v">rocprofv3 · rocprofiler-sdk</div></div>
+        <div><div class="k">Stack</div><div class="v">Qt 6.8 · CMake · LLVM-C</div></div>
+        <div><div class="k">Trace</div><div class="v">SQTT / ATT</div></div>
+        <div><div class="k">Plates</div><div class="v">6 hand-coded SVG</div></div>
+      </div>
+    </header>
+
+    <!-- 00 PROLOGUE -->
+    <section id="prologue">
+      <h2><span class="num">00</span><span lang="en">Prologue</span><span lang="zh">序章</span></h2>
+      <p class="lede"><span lang="en">A counter tells you a kernel is slow. A trace tells you which instruction is waiting, and for what.</span><span lang="zh">计数器告诉你 kernel 慢了。 Trace 告诉你是哪条指令在等,以及在等什么。</span></p>
+      <p><span lang="en">Most GPU profiling stops at aggregates: occupancy, achieved bandwidth, a flat list of the top kernels. Useful, but it answers <em>how much</em>, never <em>where</em>. To optimize a hand-written kernel you need the other axis — the instruction stream of a single wave on a single SIMD, with a cycle cost stamped on every line. On AMD that axis is <strong>Advanced Thread Trace (ATT)</strong>, a hardware feature of the SQ (sequencer) that records what each wave issued and how long it stalled.</span><span lang="zh">大多数 GPU profiling 止步于聚合量:occupancy、 实测带宽、 一张 top kernel 排行榜。 有用,但它只回答 <em>多少</em>,从不回答 <em>在哪</em>。 要优化一个手写 kernel,你需要另一条轴 —— 单个 SIMD 上单个 wave 的指令流,每一行都盖着 cycle 开销的时间戳。 在 AMD 上,这条轴就是 <strong>Advanced Thread Trace(ATT)</strong>:SQ(sequencer)的一项硬件能力,记录每个 wave 发射了什么、 stall 了多久。</span></p>
+      <p><span lang="en">Two tools own that axis. <code>rocprofv3</code> — the CLI inside rocprofiler-sdk — arms the hardware, runs your app, and decodes the raw token stream. <strong>rocprof-compute-viewer</strong> (RCV) — a Qt desktop app — turns the decode into a navigable picture: waterfall timelines per SIMD, an annotated ISA listing, a hotspot histogram, hardware-counter overlays. This reading is a guided tour of both, grounded in their source and in real traces captured on this box's MI350X.</span><span lang="zh">两个工具掌管这条轴。<code>rocprofv3</code> —— rocprofiler-sdk 里的 CLI —— 负责武装硬件、 跑你的程序、 再解码原始 token 流。<strong>rocprof-compute-viewer</strong>(RCV)—— 一个 Qt 桌面程序 —— 把解码结果变成可导航的图景:每个 SIMD 的瀑布时间线、 带注释的 ISA 列表、 hotspot 直方图、 硬件计数器叠加。 这篇阅读就是带你走一遍这两个工具,落在它们的源码和这台机器 MI350X 上真实抓到的 trace 上。</span></p>
+    </section>
+
+    <!-- 01 PIPELINE -->
+    <section id="pipeline">
+      <h2><span class="num">01</span><span lang="en">The pipeline</span><span lang="zh">数据管线</span></h2>
+      <p class="lede"><span lang="en">Five stages turn a running kernel into a panel you can click.</span><span lang="zh">五个阶段,把一个正在运行的 kernel 变成你能点击的面板。</span></p>
+      <p><span lang="en">The two tools are not one program — they are the front and back of a pipeline that hands a directory of JSON between them. Understanding the stages tells you exactly which knob lives where: capture parameters belong to <code>rocprofv3</code>, decode quality to the trace-decoder, everything visual to RCV.</span><span lang="zh">这两个工具不是一个程序 —— 它们是一条管线的前后两端,中间靠一个 JSON 目录交接。 看清这几个阶段,你就知道每个旋钮归谁管:采集参数属于 <code>rocprofv3</code>,解码质量属于 trace-decoder,所有可视化都归 RCV。</span></p>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate I</span><span class="pname"><span lang="en">The capture-to-view pipeline</span><span lang="zh">从采集到查看的管线</span></span></div>
+        <svg viewBox="0 0 960 250" role="img" aria-label="pipeline diagram">
+          <defs>
+            <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4f615c"/></marker>
+          </defs>
+          <!-- stages -->
+          <g>
+            <rect class="s-node" x="20" y="86" width="150" height="78" rx="4"/>
+            <text class="s-lbl" x="95" y="118" text-anchor="middle">your app</text>
+            <text class="s-sub" x="95" y="136" text-anchor="middle">HIP / kernel</text>
+            <text class="s-tag" x="95" y="74" text-anchor="middle">runtime</text>
+          </g>
+          <g>
+            <rect class="s-node" x="210" y="74" width="170" height="102" rx="4" stroke="#5cf2a4"/>
+            <text class="s-lbl" x="295" y="106" text-anchor="middle" fill="#5cf2a4">rocprofv3 --att</text>
+            <text class="s-sub" x="295" y="124" text-anchor="middle">arms SQ thread-trace</text>
+            <text class="s-sub" x="295" y="140" text-anchor="middle">writes raw .att (SQTT)</text>
+            <text class="s-tag" x="295" y="64" text-anchor="middle">capture</text>
+          </g>
+          <g>
+            <rect class="s-node" x="420" y="74" width="170" height="102" rx="4" stroke="#ffb454"/>
+            <text class="s-lbl" x="505" y="106" text-anchor="middle" fill="#ffb454">trace-decoder</text>
+            <text class="s-sub" x="505" y="124" text-anchor="middle">tokens → events</text>
+            <text class="s-sub" x="505" y="140" text-anchor="middle">+ ISA via LLVM-C</text>
+            <text class="s-tag" x="505" y="64" text-anchor="middle">decode (auto)</text>
+          </g>
+          <g>
+            <rect class="s-node" x="630" y="74" width="150" height="102" rx="4" stroke="#4fd0e6"/>
+            <text class="s-lbl" x="705" y="100" text-anchor="middle" fill="#4fd0e6">ui_output_</text>
+            <text class="s-lbl" x="705" y="116" text-anchor="middle" fill="#4fd0e6">agent_*/</text>
+            <text class="s-sub" x="705" y="134" text-anchor="middle">per-wave JSON</text>
+            <text class="s-tag" x="705" y="64" text-anchor="middle">artifact</text>
+          </g>
+          <g>
+            <rect class="s-node" x="820" y="74" width="120" height="102" rx="4" stroke="#f274cf"/>
+            <text class="s-lbl" x="880" y="118" text-anchor="middle" fill="#f274cf">RCV</text>
+            <text class="s-sub" x="880" y="136" text-anchor="middle">Qt viewer</text>
+            <text class="s-tag" x="880" y="64" text-anchor="middle">view</text>
+          </g>
+          <!-- arrows -->
+          <path class="s-edge" d="M170,125 L208,125" marker-end="url(#ah)"/>
+          <path class="s-edge" d="M380,125 L418,125" marker-end="url(#ah)"/>
+          <path class="s-edge" d="M590,125 L628,125" marker-end="url(#ah)"/>
+          <path class="s-edge" d="M780,125 L818,125" marker-end="url(#ah)"/>
+          <!-- side outputs -->
+          <path class="s-edge" d="M505,176 L505,210" marker-end="url(#ah)"/>
+          <text class="s-sub" x="515" y="214" fill="#748781">stats_*.csv — per-kernel latency summary</text>
+        </svg>
+        <p class="caption"><span lang="en">App → <code>rocprofv3 --att</code> (capture) → ROCprof Trace Decoder (runs automatically) → a <code>ui_output_agent_*</code> directory of per-wave JSON → opened by RCV. A <code>stats_*.csv</code> falls out on the side.</span><span lang="zh">应用 → <code>rocprofv3 --att</code>(采集)→ ROCprof Trace Decoder(自动运行)→ 一个 <code>ui_output_agent_*</code> 的 per-wave JSON 目录 → 由 RCV 打开。 旁路还会落一份 <code>stats_*.csv</code>。</span></p>
+      </div>
+      <div class="callout"><span class="ctag"><span lang="en">Insight</span><span lang="zh">关键</span></span><span lang="en">The decode step runs <em>automatically</em> right after capture, so day to day you only touch the two ends — the <code>rocprofv3</code> command and the RCV window. The middle only resurfaces when you build RCV from source and choose a decoder backend.</span><span lang="zh">解码这一步在采集后会 <em>自动</em> 运行,所以日常你只碰两端 —— <code>rocprofv3</code> 命令和 RCV 窗口。 中间那段只有在你从源码构建 RCV、 选择 decoder 后端时才会重新冒出来。</span></div>
+    </section>
+
+    <!-- 02 ROCPROFV3 -->
+    <section id="rocprofv3">
+      <h2><span class="num">02</span><span lang="en">rocprofv3 — the front end</span><span lang="zh">rocprofv3 —— 前端</span></h2>
+      <p class="lede"><span lang="en">One CLI, four jobs: trace APIs, dispatch timing, hardware counters, and the thread trace.</span><span lang="zh">一个 CLI,四件活:trace API、 dispatch 计时、 硬件计数器,以及 thread trace。</span></p>
+      <p><span lang="en"><code>rocprofv3</code> is the command-line front of <strong>rocprofiler-sdk</strong> — the rewrite of the old <code>rocprof</code>. It profiles an unmodified binary: you prefix your run with it and pick what to collect. Four collection families matter, and they answer different questions.</span><span lang="zh"><code>rocprofv3</code> 是 <strong>rocprofiler-sdk</strong> 的命令行前端 —— 老 <code>rocprof</code> 的重写版。 它对未修改的二进制做 profiling:你在运行命令前加上它,再选要收集什么。 有四类收集方式值得记,它们回答的是不同的问题。</span></p>
+
+      <h4>1 · <span lang="en">API & dispatch tracing</span><span lang="zh">API 与 dispatch 追踪</span></h4>
+      <p><span lang="en"><code>--sys-trace</code> is the firehose: HIP API, HSA API, kernel dispatches, memory ops, and ROCTx markers. <code>--runtime-trace</code> drops the low-level HSA/compiler layers; <code>--kernel-trace</code>, <code>--memory-copy-trace</code>, <code>--marker-trace</code> are the surgical single-purpose flags. These build the classic timeline — overlap, gaps, copy/compute serialization.</span><span lang="zh"><code>--sys-trace</code> 是消防水管:HIP API、 HSA API、 kernel dispatch、 memory 操作、 ROCTx marker 全要。<code>--runtime-trace</code> 去掉底层 HSA / compiler;<code>--kernel-trace</code>、<code>--memory-copy-trace</code>、<code>--marker-trace</code> 则是精准的单一用途开关。 这些构成经典时间线 —— 重叠、 空隙、 copy / compute 串行化。</span></p>
+
+      <h4>2 · <span lang="en">Performance counters (PMC)</span><span lang="zh">性能计数器(PMC)</span></h4>
+      <p><span lang="en"><code>--pmc</code> collects hardware counters (cache hit rates, HBM traffic, VALU busy). The catch the docs are blunt about: if the requested set <em>cannot be collected in one pass</em>, the job fails rather than silently multiplexing — you split the set across runs yourself.</span><span lang="zh"><code>--pmc</code> 收集硬件计数器(cache 命中率、 HBM 流量、 VALU busy)。 文档直白点出的坑:如果请求的这组计数器 <em>没法在一遍里同时采</em>,任务会直接失败,而不是悄悄做多路复用 —— 得你自己把这组拆到多次运行里。</span></p>
+
+      <h4>3 · <span lang="en">PC sampling (beta)</span><span lang="zh">PC sampling(beta)</span></h4>
+      <p><span lang="en">A statistical middle ground: <code>--pc-sampling-beta-enabled</code> periodically snapshots the program counter. Currently only <code>--pc-sampling-method host_trap</code> and <code>--pc-sampling-unit time</code> are supported. Cheaper than ATT, coarser than ATT — a histogram of where the PC tends to sit, not a full trace.</span><span lang="zh">一个统计意义上的折中:<code>--pc-sampling-beta-enabled</code> 周期性地对 program counter 拍快照。 目前只支持 <code>--pc-sampling-method host_trap</code> 与 <code>--pc-sampling-unit time</code>。 比 ATT 便宜、 比 ATT 粗 —— 它是「PC 倾向停在哪」的直方图,不是完整 trace。</span></p>
+
+      <h4>4 · <span lang="en">Advanced Thread Trace (ATT)</span><span lang="zh">Advanced Thread Trace(ATT)</span></h4>
+      <p><span lang="en"><code>--att</code> is the reason we are here, and the only mode that feeds RCV. It records the full issued-instruction stream for selected waves. It is the most invasive and the most precise — covered next.</span><span lang="zh"><code>--att</code> 是我们来这儿的理由,也是唯一喂给 RCV 的模式。 它记录所选 wave 完整的指令发射流。 最具侵入性,也最精确 —— 下一节细讲。</span></p>
+
+      <h4><span lang="en">Output formats</span><span lang="zh">输出格式</span></h4>
+      <p><span lang="en"><code>-f</code> picks the container, and the choice is about <em>who reads it next</em>:</span><span lang="zh"><code>-f</code> 选容器格式,选择的核心是 <em>下一个谁来读</em>:</span></p>
+      <table class="tbl">
+        <thead>
+          <tr lang="en"><th>Format</th><th>What it is</th><th>Read by</th></tr>
+          <tr lang="zh"><th>格式</th><th>是什么</th><th>谁来读</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>rocpd</code></td><td lang="en">SQLite3 DB · the default; convert to the rest</td><td lang="zh">SQLite3 数据库 · 默认;可转成其它</td><td><span lang="en">SQL / rocpd tooling</span><span lang="zh">SQL / rocpd 工具</span></td></tr>
+          <tr><td><code>csv</code></td><td lang="en">human-readable tables</td><td lang="zh">人类可读的表</td><td><span lang="en">eyeballs, pandas</span><span lang="zh">肉眼、 pandas</span></td></tr>
+          <tr><td><code>json</code></td><td lang="en">structured, programmatic</td><td lang="zh">结构化、 便于程序处理</td><td><span lang="en">scripts</span><span lang="zh">脚本</span></td></tr>
+          <tr><td><code>pftrace</code></td><td lang="en">Perfetto trace</td><td lang="zh">Perfetto trace</td><td><span lang="en">ui.perfetto.dev</span><span lang="zh">ui.perfetto.dev</span></td></tr>
+          <tr><td><code>otf2</code></td><td lang="en">Open Trace Format 2</td><td lang="zh">Open Trace Format 2</td><td><span lang="en">Vampir / Scalasca</span><span lang="zh">Vampir / Scalasca</span></td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><span class="ctag"><span lang="en">Note</span><span lang="zh">注意</span></span><span lang="en">ATT does not use <code>-f</code> — it always emits the decoder's <code>ui_output</code> JSON, which RCV reads directly. The format flags are for the trace/counter modes.</span><span lang="zh">ATT 不走 <code>-f</code> —— 它永远输出 decoder 的 <code>ui_output</code> JSON,RCV 直接读这个。 格式开关是给 trace / counter 模式用的。</span></div>
+    </section>
+
+    <!-- 03 ATT CAPTURE -->
+    <section id="att-capture">
+      <h2><span class="num">03</span><span lang="en">ATT capture · arming the SQ</span><span lang="zh">ATT 采集 · 武装 SQ</span></h2>
+      <p class="lede"><span lang="en">ATT cannot watch the whole GPU. You pick a small window — one CU, some SIMDs, one shader engine — and the SQ records only that.</span><span lang="zh">ATT 看不了整块 GPU。 你得圈一个小窗口 —— 一个 CU、 几个 SIMD、 一个 shader engine —— SQ 只记这一块。</span></p>
+      <p><span lang="en">The token buffer is finite and the hardware that emits tokens is per-block, so every ATT run is a deliberate narrowing. The parameters below (as configured in a <code>input.yaml</code>, the form Jhin's <code>capture-kernel-trace</code> skill uses) are the window:</span><span lang="zh">token buffer 是有限的,发 token 的硬件又是按 block 分布的,所以每一次 ATT 采集都是一次刻意的收窄。 下面这些参数(写在 <code>input.yaml</code> 里,也就是 Jhin 的 <code>capture-kernel-trace</code> skill 用的形式)就是这个窗口:</span></p>
+
+      <table class="tbl">
+        <thead>
+          <tr lang="en"><th>Parameter</th><th>Typical</th><th>What it controls</th></tr>
+          <tr lang="zh"><th>参数</th><th>典型值</th><th>控制什么</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>kernel_include_regex</code></td><td>—</td><td><span lang="en">which kernel(s) to trace — match by name</span><span lang="zh">追踪哪些 kernel —— 按名字匹配</span></td></tr>
+          <tr><td><code>att_target_cu</code></td><td><code>1</code></td><td><span lang="en">the CU (WGP on Navi) that emits detail tokens; one CU keeps output sane</span><span lang="zh">发 detail token 的那个 CU(Navi 上是 WGP);只取一个 CU 让输出可控</span></td></tr>
+          <tr><td><code>att_shader_engine_mask</code></td><td><code>0xf</code></td><td><span lang="en">bitmask of Shader Engines to trace</span><span lang="zh">要追踪的 Shader Engine 位掩码</span></td></tr>
+          <tr><td><code>att_simd_select</code></td><td><code>0xf</code></td><td><span lang="en">which of the 4 SIMDs per CU to record</span><span lang="zh">每个 CU 的 4 个 SIMD 里记哪几个</span></td></tr>
+          <tr><td><code>att_buffer_size</code></td><td><code>0x6000000</code></td><td><span lang="en">trace buffer per SE (96&nbsp;MB); raise to <code>0xC000000</code> if truncated</span><span lang="zh">每个 SE 的 trace buffer(96&nbsp;MB);被截断就加到 <code>0xC000000</code></span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate II</span><span class="pname"><span lang="en">What the window selects, in silicon</span><span lang="zh">这个窗口在硅片上选中的东西</span></span></div>
+        <svg viewBox="0 0 960 270" role="img" aria-label="shader engine / cu / simd selection">
+          <defs><marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4f615c"/></marker></defs>
+          <text class="s-tag" x="20" y="28">GPU (gfx950)</text>
+          <!-- 4 shader engines -->
+          <g>
+            <rect class="s-node" x="20" y="40" width="210" height="210" rx="4" stroke="#5cf2a4"/>
+            <text class="s-sub" x="30" y="60" fill="#5cf2a4">SE0  (mask bit 0)</text>
+            <!-- CUs -->
+            <rect class="s-node" x="34" y="72" width="182" height="40" rx="3"/>
+            <text class="s-sub" x="44" y="96">CU0 …</text>
+            <rect class="s-node" x="34" y="118" width="182" height="58" rx="3" stroke="#ffb454"/>
+            <text class="s-sub" x="44" y="138" fill="#ffb454">att_target_cu = 1</text>
+            <!-- 4 simds in target CU -->
+            <rect x="44" y="146" width="38" height="22" rx="2" fill="#11321f" stroke="#5cf2a4"/>
+            <rect x="86" y="146" width="38" height="22" rx="2" fill="#11321f" stroke="#5cf2a4"/>
+            <rect x="128" y="146" width="38" height="22" rx="2" fill="#11321f" stroke="#5cf2a4"/>
+            <rect x="170" y="146" width="38" height="22" rx="2" fill="#11321f" stroke="#5cf2a4"/>
+            <text class="s-sub" x="63" y="161" text-anchor="middle" fill="#9fe9c2">s0</text>
+            <text class="s-sub" x="105" y="161" text-anchor="middle" fill="#9fe9c2">s1</text>
+            <text class="s-sub" x="147" y="161" text-anchor="middle" fill="#9fe9c2">s2</text>
+            <text class="s-sub" x="189" y="161" text-anchor="middle" fill="#9fe9c2">s3</text>
+            <text class="s-sub" x="34" y="196">simd_select=0xf → all 4</text>
+            <rect class="s-node" x="34" y="206" width="182" height="34" rx="3"/>
+            <text class="s-sub" x="44" y="227">… more CUs</text>
+          </g>
+          <g opacity="0.55">
+            <rect class="s-node" x="248" y="40" width="150" height="210" rx="4"/><text class="s-sub" x="258" y="60">SE1</text>
+            <rect class="s-node" x="414" y="40" width="150" height="210" rx="4"/><text class="s-sub" x="424" y="60">SE2</text>
+            <rect class="s-node" x="580" y="40" width="150" height="210" rx="4"/><text class="s-sub" x="590" y="60">SE3</text>
+          </g>
+          <!-- buffer -->
+          <g>
+            <rect class="s-node" x="770" y="92" width="170" height="106" rx="4" stroke="#4fd0e6"/>
+            <text class="s-lbl" x="855" y="124" text-anchor="middle" fill="#4fd0e6">SQTT buffer</text>
+            <text class="s-sub" x="855" y="144" text-anchor="middle">att_buffer_size</text>
+            <text class="s-sub" x="855" y="160" text-anchor="middle">96 MB / SE</text>
+            <text class="s-sub" x="855" y="180" text-anchor="middle" fill="#ff5f5f">overflow → truncate</text>
+          </g>
+          <path class="s-edge" d="M230,145 L768,145" marker-end="url(#ah2)"/>
+          <text class="s-sub" x="430" y="138" fill="#748781">issued-instruction tokens</text>
+        </svg>
+        <p class="caption"><span lang="en">The mask/select parameters carve a slice of the chip; the SQ streams that slice's tokens into a fixed per-SE buffer. Too wide a window or too small a buffer and the tail is silently dropped.</span><span lang="zh">mask / select 参数从芯片上切出一片;SQ 把这片的 token 流进每个 SE 固定大小的 buffer。 窗口太宽或 buffer 太小,尾部就会被悄悄丢掉。</span></p>
+      </div>
+
+      <h4><span lang="en">The command</span><span lang="zh">命令</span></h4>
+      <div class="code"><span class="c"># minimal — let rocprofv3 pick defaults</span>
+rocprofv3 <span class="o">--att</span> <span class="o">-d</span> ./trace <span class="o">--</span> ./my_app
+
+<span class="c"># Instinct, with gfx9 perf-counter shorthand</span>
+rocprofv3 <span class="o">--att</span> <span class="o">--att-activity</span> 8 <span class="o">--</span> ./my_app
+
+<span class="c"># Jhin's flow: pinned config + debug info for source mapping</span>
+FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml <span class="o">--</span> python3 test.py</div>
+      <div class="callout"><span class="ctag"><span lang="en">From the bench</span><span lang="zh">实战</span></span><span lang="en">Set <code>FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1</code> (or compile with line info) before capture. Without debug symbols the ISA view still shows hitcount and latency, but every instruction loses its source-line link — you get the <em>what</em> without the <em>where</em>.</span><span lang="zh">采集前设上 <code>FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1</code>(或带行号信息编译)。 没有 debug 符号,ISA 视图照样有 hitcount 和 latency,但每条指令都丢了到源码行的链接 —— 你拿到了 <em>什么</em>,却没了 <em>哪里</em>。</span></div>
+    </section>
+
+    <!-- 04 UI OUTPUT -->
+    <section id="ui-output">
+      <h2><span class="num">04</span><span lang="en">ui_output · the artifact</span><span lang="zh">ui_output · 落地产物</span></h2>
+      <p class="lede"><span lang="en">The decoded trace is a directory of per-wave JSON, and the filenames are the hardware address.</span><span lang="zh">解码后的 trace 是一个 per-wave JSON 目录,而文件名本身就是硬件地址。</span></p>
+      <p><span lang="en">After decode you get one folder per <strong>dispatch</strong> (one kernel launch), named <code>ui_output_agent_&lt;pid&gt;_dispatch_&lt;N&gt;</code>. Inside, one JSON per traced wave. Here is a real one from the <code>topk_gating_softmax</code> example in <code>flydsl-kernel-profiling</code>:</span><span lang="zh">解码后,每个 <strong>dispatch</strong>(一次 kernel launch)得到一个文件夹,名字是 <code>ui_output_agent_&lt;pid&gt;_dispatch_&lt;N&gt;</code>。 里面每个被追踪的 wave 一份 JSON。 下面是 <code>flydsl-kernel-profiling</code> 里 <code>topk_gating_softmax</code> 例子的真实输出:</span></p>
+      <div class="code">ui_output_agent_23939_dispatch_37/
+  se0_sm2_sl0_wv0.json   <span class="c">← SE0, SIMD2, slot0, wave0</span>
+  se0_sm3_sl0_wv0.json
+  se1_sm0_sl0_wv0.json
+  se2_sm1_sl1_wv0.json
+  …                       <span class="c">se{SE}_sm{SIMD}_sl{slot}_wv{wave}</span></div>
+
+      <div class="plate">
+        <div class="plate-meta"><span class="pn">Plate III</span><span class="pname"><span lang="en">Filename → hardware coordinate</span><span lang="zh">文件名 → 硬件坐标</span></span></div>
+        <svg viewBox="0 0 760 170" role="img" aria-label="filename decode">
+          <text x="40" y="70" font-family="var(--font-mono)" font-size="26" fill="#d9e3df">se<tspan fill="#5cf2a4">0</tspan>_sm<tspan fill="#ffb454">2</tspan>_sl<tspan fill="#4fd0e6">0</tspan>_wv<tspan fill="#f274cf">0</tspan>.json</text>
+          <g font-family="var(--font-mono)" font-size="11">
+            <path class="s-edge" d="M60,82 L60,118"/><text x="60" y="134" text-anchor="middle" fill="#5cf2a4">Shader Engine</text>
+            <path class="s-edge" d="M160,82 L160,140"/><text x="160" y="156" text-anchor="middle" fill="#ffb454">SIMD (0-3)</text>
+            <path class="s-edge" d="M250,82 L250,118"/><text x="250" y="134" text-anchor="middle" fill="#4fd0e6">slot</text>
+            <path class="s-edge" d="M345,82 L345,140"/><text x="345" y="156" text-anchor="middle" fill="#f274cf">wave id</text>
+          </g>
+          <text class="s-sub" x="500" y="60">RCV's left panel selects</text>
+          <text class="s-sub" x="500" y="78">exactly these four fields:</text>
+          <text class="s-sub" x="500" y="100" fill="#9fe9c2">Shader / SIMD / Slot / WID</text>
+        </svg>
+        <p class="caption"><span lang="en">Every wave file is addressed by <code>SE · SIMD · slot · wave</code> — the same four fields the viewer's selector exposes. Reading the trace is, literally, choosing a coordinate.</span><span lang="zh">每个 wave 文件都用 <code>SE · SIMD · slot · wave</code> 寻址 —— 正是 viewer 选择器暴露的那四个字段。 读 trace,字面意义上就是在选一个坐标。</span></p>
+      </div>
+      <p><span lang="en">RCV opens this folder directly. It auto-detects three input shapes: a <strong>JSON directory</strong> (the common case, with a <code>filenames.json</code> manifest), raw <strong><code>.att</code>/<code>.out</code></strong> files (needs the trace-decoder built in, plus optional <code>code.json</code> for ISA and <code>snapshots.json</code> for source), or a single <strong><code>.rocpd</code></strong> archive.</span><span lang="zh">RCV 直接打开这个文件夹。 它会自动识别三种输入形态:<strong>JSON 目录</strong>(常见情形,带一个 <code>filenames.json</code> 清单)、 原始 <strong><code>.att</code>/<code>.out</code></strong> 文件(需要内置 trace-decoder,外加可选的 <code>code.json</code> 提供 ISA、<code>snapshots.json</code> 提供源码),或单个 <strong><code>.rocpd</code></strong> 归档。</span></p>
+    </section>
+
+    <!-- 05 PANELS -->
+    <section id="panels">
+      <h2><span class="num">05</span><span lang="en">The window · what each block is</span><span lang="zh">主窗口 · 每一块是什么</span></h2>
+      <p class="lede"><span lang="en">RCV is one window divided into a navigator, a timeline, an instruction listing, and a control rail. Learn the four zones and the rest is detail.</span><span lang="zh">RCV 是一个窗口,分成导航器、 时间线、 指令列表和控制栏。 先认这四个区,剩下都是细节。</span></p>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate IV</span><span class="pname"><span lang="en">The RCV window, annotated</span><span lang="zh">RCV 窗口标注图</span></span></div>
+        <svg viewBox="0 0 960 360" role="img" aria-label="rcv window layout">
+          <rect x="14" y="14" width="932" height="332" rx="5" fill="#0e1416" stroke="#27393d"/>
+          <!-- explorer left -->
+          <rect x="24" y="24" width="180" height="312" rx="3" fill="#111a1c" stroke="#27393d"/>
+          <text class="s-tag" x="34" y="44" fill="#5cf2a4">Explorer</text>
+          <g font-family="var(--font-mono)" font-size="10" fill="#748781">
+            <rect x="34" y="56" width="120" height="9" fill="#1d2a2d"/><rect x="34" y="56" width="96" height="9" fill="#ff5f5f" opacity="0.7"/>
+            <text x="34" y="82">softmax.cu</text>
+            <rect x="34" y="90" width="120" height="9" fill="#1d2a2d"/><rect x="34" y="90" width="40" height="9" fill="#ffb454" opacity="0.7"/>
+            <text x="34" y="116">topk.cu</text>
+            <rect x="34" y="124" width="120" height="9" fill="#1d2a2d"/><rect x="34" y="124" width="18" height="9" fill="#5cf2a4" opacity="0.7"/>
+            <text x="34" y="150">util.h</text>
+          </g>
+          <text class="s-sub" x="34" y="320" fill="#4f615c">bar = file hotspot</text>
+          <!-- timeline center top -->
+          <rect x="214" y="24" width="540" height="170" rx="3" fill="#111a1c" stroke="#27393d"/>
+          <text class="s-tag" x="224" y="44" fill="#4fd0e6">Timeline · CU / Utilization / Global</text>
+          <!-- lanes -->
+          <g>
+            <rect x="224" y="56" width="430" height="16" fill="#0a0e0f"/>
+            <rect x="224" y="56" width="120" height="16" fill="#5cf2a4" opacity="0.7"/><rect x="350" y="56" width="60" height="16" fill="#ffb454" opacity="0.6"/><rect x="420" y="56" width="150" height="16" fill="#4fd0e6" opacity="0.6"/>
+            <rect x="224" y="78" width="430" height="16" fill="#0a0e0f"/>
+            <rect x="224" y="78" width="80" height="16" fill="#5cf2a4" opacity="0.7"/><rect x="320" y="78" width="180" height="16" fill="#ffb454" opacity="0.6"/>
+            <rect x="224" y="100" width="430" height="16" fill="#0a0e0f"/>
+            <rect x="224" y="100" width="200" height="16" fill="#4fd0e6" opacity="0.6"/><rect x="450" y="100" width="90" height="16" fill="#5cf2a4" opacity="0.7"/>
+          </g>
+          <text class="s-sub" x="664" y="68">wave 0</text><text class="s-sub" x="664" y="90">wave 1</text><text class="s-sub" x="664" y="112">wave 2</text>
+          <text class="s-sub" x="224" y="135" fill="#748781">x-axis = clock cycles →</text>
+          <text class="s-sub" x="224" y="160" fill="#5cf2a4">■ VALU</text><text class="s-sub" x="290" y="160" fill="#ffb454">■ wait</text><text class="s-sub" x="350" y="160" fill="#4fd0e6">■ VMEM</text>
+          <!-- hotspot small -->
+          <rect x="214" y="200" width="540" height="136" rx="3" fill="#111a1c" stroke="#27393d"/>
+          <text class="s-tag" x="224" y="220" fill="#ffb454">Instructions (ISA)  ·  Hitcount | Latency | code</text>
+          <g font-family="var(--font-mono)" font-size="10">
+            <text x="224" y="244" fill="#748781">  12   480cy  s_waitcnt vmcnt(0)</text>
+            <text x="224" y="262" fill="#ff5f5f">   8  1920cy  s_waitcnt lgkmcnt(0)  ◀ stall</text>
+            <text x="224" y="280" fill="#748781">  64    64cy  v_mfma_f32...</text>
+            <text x="224" y="298" fill="#748781">  12   120cy  global_load_b128</text>
+            <text x="224" y="320" fill="#4f615c">↳ rows link to Explorer source line</text>
+          </g>
+          <!-- side rail right -->
+          <rect x="764" y="24" width="182" height="312" rx="3" fill="#111a1c" stroke="#27393d"/>
+          <text class="s-tag" x="774" y="44" fill="#f274cf">Side panel</text>
+          <g font-family="var(--font-mono)" font-size="10" fill="#748781">
+            <text x="774" y="66">Shader  [0]</text><text x="774" y="84">SIMD    [2]</text><text x="774" y="102">Slot    [0]</text><text x="774" y="120">WID     [0]</text>
+            <rect x="774" y="134" width="160" height="1" fill="#27393d"/>
+            <text x="774" y="156">clock range</text><text x="774" y="174">zoom / loop iter</text><text x="774" y="192">search</text><text x="774" y="210">selection history</text>
+          </g>
+        </svg>
+        <p class="caption"><span lang="en">Left: the <strong>Explorer</strong>, a file tree where each bar is that file's total latency. Center-top: the <strong>timeline</strong> (CU / Utilization / Global). Center-bottom: the <strong>ISA</strong> listing with Hitcount and Latency. Right: the <strong>side panel</strong> that selects the wave coordinate and clock range.</span><span lang="zh">左侧:<strong>Explorer</strong> 文件树,每条 bar 是该文件的总 latency。 中上:<strong>时间线</strong>(CU / Utilization / Global)。 中下:带 Hitcount 和 Latency 的 <strong>ISA</strong> 列表。 右侧:选 wave 坐标和时钟区间的 <strong>side panel</strong>。</span></p>
+      </div>
+
+      <h3><span lang="en">Explorer View — start here</span><span lang="zh">Explorer View —— 从这里开始</span></h3>
+      <p><span lang="en">The hierarchical file browser on the left. Every source file carries a <strong>colored bar = total accumulated latency (the hotspot) for that file</strong>. It is the triage panel: the longest bar is where your cycles went, before you have looked at a single instruction.</span><span lang="zh">左边的分层文件浏览器。 每个源文件带一条 <strong>彩色 bar = 该文件的累计 latency 总量(也就是 hotspot)</strong>。 这是分诊面板:在你看任何一条指令之前,最长的那条 bar 就是 cycle 花到哪里去了。</span></p>
+    </section>
+
+    <!-- 06 TIMELINE -->
+    <section id="timeline">
+      <h2><span class="num">06</span><span lang="en">Timeline views · three ways to slice waves</span><span lang="zh">时间线视图 · 三种切 wave 的方式</span></h2>
+      <p class="lede"><span lang="en">The same trace, drawn three ways — by hardware slot, by instruction class, or all at once.</span><span lang="zh">同一份 trace,画三遍 —— 按硬件 slot、 按指令类别,或者全都画上。</span></p>
+
+      <h3><span lang="en">Global View</span><span lang="zh">Global View</span></h3>
+      <p><span lang="en">The widest lens: <strong>every wave across all enabled Shader Engines, each color-coded by kernel</strong>. Use it to see how waves pack in time — long tails, stragglers, a kernel that never overlaps with its neighbor.</span><span lang="zh">最广的镜头:<strong>所有启用的 Shader Engine 上的每个 wave,按 kernel 着色</strong>。 用它看 wave 在时间上怎么排布 —— 长尾、 掉队者、 某个永远不和邻居重叠的 kernel。</span></p>
+
+      <h3><span lang="en">Compute Unit View</span><span lang="zh">Compute Unit View</span></h3>
+      <p><span lang="en">The trace <strong>separated per SIMD-slot</strong> (the docs note ranges like 2–6), tracking individual wave execution. This is where you watch a single wave's life: when it was scheduled, when it ran, when it parked. A vertical slice of this tab is the <em>Wave States</em> plot.</span><span lang="zh">把 trace <strong>按 SIMD-slot 拆开</strong>(文档里提到 2–6 这样的范围),追踪单个 wave 的执行。 这里你看一个 wave 的一生:何时被调度、 何时在跑、 何时停泊。 这个 tab 的一条竖切片,就是 <em>Wave States</em> 曲线。</span></p>
+
+      <h3><span lang="en">Utilization View</span><span lang="zh">Utilization View</span></h3>
+      <p><span lang="en">The trace drawn <strong>per instruction class — VALU, VMEM, SCALAR, OTHER</strong> — with immediate instructions and stall gaps hidden. This is the fastest read on what kind of work dominates: a wall of cyan (VMEM) says memory-bound; a wall of green (VALU) says compute-bound; mostly gaps says you are stalled and the ISA view will tell you on what.</span><span lang="zh">把 trace <strong>按指令类别画 —— VALU、 VMEM、 SCALAR、 OTHER</strong> —— 隐藏掉立即数指令和 stall 空隙。 这是判断「什么活占主导」最快的一眼:一墙 cyan(VMEM)说明 memory-bound;一墙绿(VALU)说明 compute-bound;大片空隙说明你在 stall,而 ISA 视图会告诉你卡在什么上。</span></p>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate V</span><span class="pname"><span lang="en">Utilization lanes — same wave, four classes</span><span lang="zh">Utilization 泳道 —— 同一 wave,四个类别</span></span></div>
+        <svg viewBox="0 0 960 220" role="img" aria-label="utilization lanes">
+          <g font-family="var(--font-mono)" font-size="11" fill="#748781">
+            <text x="20" y="42">VALU</text><text x="20" y="82">VMEM</text><text x="20" y="122">SCALAR</text><text x="20" y="162">OTHER</text>
+          </g>
+          <line x1="100" y1="20" x2="100" y2="180" stroke="#27393d"/>
+          <!-- VALU green -->
+          <g fill="#5cf2a4" opacity="0.8"><rect x="100" y="28" width="70" height="20"/><rect x="260" y="28" width="120" height="20"/><rect x="640" y="28" width="90" height="20"/></g>
+          <!-- VMEM cyan -->
+          <g fill="#4fd0e6" opacity="0.8"><rect x="170" y="68" width="60" height="20"/><rect x="500" y="68" width="120" height="20"/></g>
+          <!-- SCALAR magenta -->
+          <g fill="#f274cf" opacity="0.7"><rect x="100" y="108" width="40" height="20"/><rect x="400" y="108" width="40" height="20"/></g>
+          <!-- OTHER dim -->
+          <g fill="#748781" opacity="0.6"><rect x="380" y="148" width="20" height="20"/><rect x="730" y="148" width="20" height="20"/></g>
+          <!-- stall gap callout -->
+          <rect x="230" y="20" width="30" height="160" fill="#ff5f5f" opacity="0.10"/>
+          <rect x="380" y="20" width="120" height="160" fill="#ff5f5f" opacity="0.10"/>
+          <line x1="100" y1="190" x2="900" y2="190" stroke="#27393d" marker-end="url(#ah)"/>
+          <text class="s-sub" x="100" y="208">cycles →</text>
+          <text class="s-sub" x="420" y="208" fill="#ff5f5f">shaded = nothing issued (stall) — go to ISA view</text>
+        </svg>
+        <p class="caption"><span lang="en">When the lanes go quiet (shaded), no instruction issued — the wave is waiting. The Utilization view shows the <em>shape</em> of the stall; the ISA view names its <em>cause</em>.</span><span lang="zh">当泳道安静下来(阴影处),没有指令发射 —— wave 在等。 Utilization 视图给你 stall 的 <em>形状</em>;ISA 视图给你它的 <em>成因</em>。</span></p>
+      </div>
+    </section>
+
+    <!-- 07 ISA -->
+    <section id="isa">
+      <h2><span class="num">07</span><span lang="en">ISA view · where cycles are spent</span><span lang="zh">ISA 视图 · cycle 花在哪</span></h2>
+      <p class="lede"><span lang="en">The instruction listing is the heart of RCV. Two numbers per line — Hitcount and Latency — and a set of arrows that explain the waits.</span><span lang="zh">指令列表是 RCV 的心脏。 每行两个数 —— Hitcount 和 Latency —— 再加一组解释「等待」的箭头。</span></p>
+      <p><span lang="en">The Instructions View lists the kernel's machine instructions with, per line:</span><span lang="zh">Instructions View 列出 kernel 的机器指令,每行带:</span></p>
+      <table class="tbl">
+        <thead>
+          <tr lang="en"><th>Column</th><th>Meaning · how to read it</th></tr>
+          <tr lang="zh"><th>列</th><th>含义 · 怎么看</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Hitcount</code></td><td><span lang="en">how many times the instruction was issued — loop bodies and hot paths light up</span><span lang="zh">这条指令被发射了多少次 —— loop 体和热点路径会亮起来</span></td></tr>
+          <tr><td><code>Latency</code></td><td><span lang="en">accumulated cycles attributed to the line — a high-latency, low-hitcount line is a single expensive wait</span><span lang="zh">归到这一行的累计 cycle —— 高 latency、 低 hitcount 的行,是一次昂贵的等待</span></td></tr>
+          <tr><td><span lang="en">source</span><span lang="zh">源码</span></td><td><span lang="en">the correlated source line, when debug symbols are present</span><span lang="zh">关联的源码行(有 debug 符号时)</span></td></tr>
+        </tbody>
+      </table>
+      <p><span lang="en">The detail that separates RCV from a flat disassembly: <strong>memory-to-waitcnt dependency arrows</strong>, drawn per-wave, linking a memory operation to the <code>s_waitcnt</code> that later blocks on it. On AMD the cost of a load is rarely on the load — it is on the <code>s_waitcnt vmcnt</code>/<code>lgkmcnt</code> that stalls until the data lands. The arrow makes that causal pair visible: a fat latency bar on a <code>s_waitcnt</code> with an arrow reaching back to a <code>global_load</code> is the textbook memory-latency stall.</span><span lang="zh">把 RCV 和一份扁平反汇编区分开的细节:<strong>memory 到 waitcnt 的依赖箭头</strong>,按 wave 画出,把一次 memory 操作连到后面 block 在它上面的那条 <code>s_waitcnt</code>。 在 AMD 上,一次 load 的开销很少落在 load 本身 —— 它落在那条 stall 到数据返回为止的 <code>s_waitcnt vmcnt</code>/<code>lgkmcnt</code> 上。 这个箭头把这对因果关系画了出来:一条 <code>s_waitcnt</code> 上挂着粗 latency bar,又有箭头指回某条 <code>global_load</code> —— 这就是教科书式的 memory-latency stall。</span></p>
+
+      <h3><span lang="en">Hotspot Tab</span><span lang="zh">Hotspot Tab</span></h3>
+      <p><span lang="en">A histogram of <strong>total accumulated latency cycles per bin, based on the bin's center value</strong>, computed across all waves in the selected clock range. Where the ISA view is per-line, the Hotspot tab is the distribution — it tells you whether the cost is one fat outlier or smeared across many lines.</span><span lang="zh">一张直方图:<strong>每个 bin 的累计 latency cycle 总量(按 bin 中心值统计)</strong>,在所选时钟区间内对所有 wave 计算。 ISA 视图是逐行的,Hotspot tab 则是分布 —— 它告诉你开销是一个肥尾的离群点,还是摊在很多行上。</span></p>
+      <div class="callout"><span class="ctag"><span lang="en">Reading order</span><span lang="zh">阅读顺序</span></span><span lang="en">Latency column first (find the fat line), then follow its waitcnt arrow back to the load, then click through to the source line. Hitcount tells you if it is per-iteration or one-shot.</span><span lang="zh">先看 Latency 列(找肥行),再顺着它的 waitcnt 箭头回到 load,然后点进源码行。 Hitcount 告诉你这是每次迭代发生,还是一次性的。</span></div>
+    </section>
+
+    <!-- 08 COUNTERS -->
+    <section id="counters">
+      <h2><span class="num">08</span><span lang="en">Counters, plots & summary</span><span lang="zh">计数器、 曲线与汇总</span></h2>
+      <p class="lede"><span lang="en">The trace is one wave deep; the counter and occupancy plots give you the breadth around it.</span><span lang="zh">trace 只有一个 wave 的深度;计数器和 occupancy 曲线给你它周围的广度。</span></p>
+
+      <h3><span lang="en">Counters Tab</span><span lang="zh">Counters Tab</span></h3>
+      <p><span lang="en">Plots hardware performance counters — <strong>up to 8 SQ counters</strong> — alongside the trace, with support for <strong>user-defined derived counters</strong> you can edit in place. This is how cache-hit or issue-rate context lands on the same x-axis as the instruction stream.</span><span lang="zh">把硬件性能计数器 —— <strong>最多 8 个 SQ 计数器</strong> —— 和 trace 画在一起,并支持你就地编辑的 <strong>自定义派生计数器</strong>。 cache 命中率或发射率这类上下文,就是这样落到和指令流同一条 x 轴上的。</span></p>
+
+      <h3><span lang="en">Wave States · Occupancy · Dispatches</span><span lang="zh">Wave States · Occupancy · Dispatches</span></h3>
+      <ul class="tight">
+        <li><span lang="en"><strong>Wave States</strong> — a vertical slice of the Compute Unit tab: what state each wave is in at a given instant.</span><span lang="zh"><strong>Wave States</strong> —— Compute Unit tab 的一条竖切片:某一时刻每个 wave 处于什么状态。</span></li>
+        <li><span lang="en"><strong>Occupancy</strong> — occupancy per Shader Engine, in number of waves. The classic "are we filling the machine" plot.</span><span lang="zh"><strong>Occupancy</strong> —— 每个 Shader Engine 的 occupancy,以 wave 数计。 经典的「机器填满了吗」曲线。</span></li>
+        <li><span lang="en"><strong>Dispatches</strong> — occupancy per kernel, so you can attribute the fill to a specific launch.</span><span lang="zh"><strong>Dispatches</strong> —— 每个 kernel 的 occupancy,这样你能把「填充」归到某次具体的 launch。</span></li>
+      </ul>
+
+      <h3><span lang="en">Summary View</span><span lang="zh">Summary View</span></h3>
+      <p><span lang="en">On MI2xx / MI3xx parts, a rolled-up panel: <strong>average instruction cost, hardware utilization by type, per-compute utilization</strong>. It is the bridge back to the aggregate world — the number you would quote in a report, derived from the same trace you just walked instruction by instruction.</span><span lang="zh">在 MI2xx / MI3xx 上,一个汇总面板:<strong>平均指令开销、 按类型的硬件利用率、 per-compute 利用率</strong>。 它是回到聚合世界的桥 —— 你写进报告里的那个数,正是从你刚刚逐条走过的那份 trace 里算出来的。</span></p>
+    </section>
+
+    <!-- 09 WORKFLOW -->
+    <section id="workflow">
+      <h2><span class="num">09</span><span lang="en">A reading loop</span><span lang="zh">一套阅读流程</span></h2>
+      <p class="lede"><span lang="en">"This kernel is slow" → a source line, in five clicks.</span><span lang="zh">「这个 kernel 慢」→ 一行源码,五次点击搞定。</span></p>
+      <ol class="tight" style="padding-left:22px">
+        <li><span lang="en"><strong>Explorer</strong> — sort by the latency bar; open the file with the longest one.</span><span lang="zh"><strong>Explorer</strong> —— 按 latency bar 排序;打开最长的那个文件。</span></li>
+        <li><span lang="en"><strong>Utilization</strong> — is the dominant color VMEM (memory-bound), VALU (compute-bound), or mostly gaps (stalled)?</span><span lang="zh"><strong>Utilization</strong> —— 主色是 VMEM(memory-bound)、 VALU(compute-bound),还是大片空隙(stall)?</span></li>
+        <li><span lang="en"><strong>Compute Unit</strong> — pick one representative wave; scope its clock range in the side panel.</span><span lang="zh"><strong>Compute Unit</strong> —— 挑一个有代表性的 wave;在 side panel 里圈定它的时钟区间。</span></li>
+        <li><span lang="en"><strong>ISA</strong> — sort by Latency; the fat line is the cost. Follow its waitcnt arrow to the load it waits on.</span><span lang="zh"><strong>ISA</strong> —— 按 Latency 排;肥行就是开销。 顺着它的 waitcnt 箭头找到它在等的那次 load。</span></li>
+        <li><span lang="en"><strong>Source</strong> — click the line; fix the access pattern, the tiling, or the dependency. Re-capture and diff the latency.</span><span lang="zh"><strong>Source</strong> —— 点开那行;改访存模式、 tiling 或依赖。 重新采集,diff latency。</span></li>
+      </ol>
+      <div class="callout"><span class="ctag"><span lang="en">For LDS / bank conflicts</span><span lang="zh">LDS / bank 冲突</span></span><span lang="en">A fat <code>s_waitcnt lgkmcnt(0)</code> with the arrow reaching a <code>ds_read</code>/<code>ds_write</code> is the LDS-latency signature — the same one the project's <code>lds-optimization</code> skill chases with swizzle/padding.</span><span lang="zh">一条肥 <code>s_waitcnt lgkmcnt(0)</code>,箭头指向 <code>ds_read</code>/<code>ds_write</code>,就是 LDS-latency 的签名 —— 也正是项目里 <code>lds-optimization</code> skill 用 swizzle / padding 去追的那个。</span></div>
+    </section>
+
+    <!-- 10 SOURCE -->
+    <section id="source">
+      <h2><span class="num">10</span><span lang="en">The source · how RCV is built</span><span lang="zh">源码 · RCV 怎么搭起来的</span></h2>
+      <p class="lede"><span lang="en">A Qt desktop app with a pluggable decode-and-disassemble back end.</span><span lang="zh">一个 Qt 桌面程序,后端是可插拔的「解码 + 反汇编」。</span></p>
+      <p><span lang="en">RCV (<a class="link" href="https://github.com/ROCm/rocprof-compute-viewer">ROCm/rocprof-compute-viewer</a>, branch <code>amd-mainline</code>) is built with <strong>CMake</strong> on <strong>Qt 5 or 6</strong> (default Qt 6.8), and ships for Linux, macOS, and Windows. The decode/disassembly back end is what changes with build flags:</span><span lang="zh">RCV(<a class="link" href="https://github.com/ROCm/rocprof-compute-viewer">ROCm/rocprof-compute-viewer</a>,分支 <code>amd-mainline</code>)用 <strong>CMake</strong> 构建,基于 <strong>Qt 5 或 6</strong>(默认 Qt 6.8),发布到 Linux、 macOS、 Windows。 随构建开关变化的,是解码 / 反汇编后端:</span></p>
+      <ul class="tight">
+        <li><span lang="en"><strong>JSON-only build</strong> — just Qt base + standard tooling; opens decoded <code>ui_output</code> directories. The lightest path.</span><span lang="zh"><strong>仅 JSON 构建</strong> —— 只要 Qt base + 标准工具链;打开已解码的 <code>ui_output</code> 目录。 最轻量的路径。</span></li>
+        <li><span lang="en"><strong>ATT / ROCPD support</strong> — links <code>rocprof-trace-decoder</code> (V2 API, SOVERSION 0.2) to decode raw <code>.att</code> in-app, plus <strong>LLVM-C</strong> as the default disassembly backend (<code>amd_comgr</code> is the legacy alternative).</span><span lang="zh"><strong>ATT / ROCPD 支持</strong> —— 链接 <code>rocprof-trace-decoder</code>(V2 API,SOVERSION 0.2)在程序内解码原始 <code>.att</code>,外加 <strong>LLVM-C</strong> 作默认反汇编后端(<code>amd_comgr</code> 是旧的备选)。</span></li>
+      </ul>
+      <p><span lang="en">So the dependency you most often hit is the decoder: a JSON-only viewer reads what <code>rocprofv3</code> already decoded, while the full build can chew raw SQTT itself. <code>rocprofv3</code> in turn is part of <a class="link" href="https://github.com/ROCm/rocprofiler-sdk">rocprofiler-sdk</a> — and both repos are open, which is the whole reason this reading can be precise rather than hand-wavy.</span><span lang="zh">所以你最常撞上的依赖就是这个 decoder:仅 JSON 的 viewer 读 <code>rocprofv3</code> 已经解码好的东西,而完整构建能自己啃原始 SQTT。<code>rocprofv3</code> 这边则属于 <a class="link" href="https://github.com/ROCm/rocprofiler-sdk">rocprofiler-sdk</a> —— 两个仓库都开源,这正是这篇阅读能精确、 而不是空谈的全部原因。</span></p>
+    </section>
+
+    <!-- 11 REEFS -->
+    <section id="reefs">
+      <h2><span class="num">11</span><span lang="en">Reefs</span><span lang="zh">暗礁</span></h2>
+      <p class="lede"><span lang="en">Where ATT readings go quietly wrong.</span><span lang="zh">ATT 会悄悄读错的地方。</span></p>
+      <div class="callout warn"><span class="ctag"><span lang="en">ATT and PMC are separate runs</span><span lang="zh">ATT 与 PMC 是两次运行</span></span><span lang="en">ATT gives per-instruction stall timing but no cache/HBM counters; PMC gives counters but no instruction stream. They cannot be collected together — capture twice and correlate by kernel.</span><span lang="zh">ATT 给逐指令的 stall 计时,但没有 cache / HBM 计数器;PMC 给计数器,但没有指令流。 两者不能一起采 —— 采两遍,按 kernel 对应起来。</span></div>
+      <div class="callout warn"><span class="ctag"><span lang="en">Silent truncation</span><span lang="zh">静默截断</span></span><span lang="en">A too-small <code>att_buffer_size</code> drops the tail of the trace with no error. If a wave's timeline ends abruptly, raise the buffer (<code>0x6000000</code> → <code>0xC000000</code>) before trusting the picture.</span><span lang="zh"><code>att_buffer_size</code> 太小会把 trace 尾部丢掉,且不报错。 如果某个 wave 的时间线戛然而止,先把 buffer 加大(<code>0x6000000</code> → <code>0xC000000</code>)再相信这张图。</span></div>
+      <div class="callout warn"><span class="ctag"><span lang="en">You are sampling a slice</span><span lang="zh">你采的是一个切片</span></span><span lang="en">With <code>att_target_cu = 1</code> you trace one CU's waves. If work is unbalanced across CUs, that slice may not be representative — widen <code>simd_select</code>/<code>shader_engine_mask</code> deliberately when in doubt.</span><span lang="zh">设了 <code>att_target_cu = 1</code>,你追踪的是一个 CU 的 wave。 如果各 CU 之间负载不均,这个切片可能不具代表性 —— 拿不准时,有意识地放宽 <code>simd_select</code>/<code>shader_engine_mask</code>。</span></div>
+      <div class="callout warn"><span class="ctag"><span lang="en">PC sampling ≠ ATT</span><span lang="zh">PC sampling ≠ ATT</span></span><span lang="en">PC sampling is statistical and currently <code>host_trap</code>/<code>time</code> only. It estimates where the PC sits; it does not give you the waitcnt arrows. Reach for ATT when you need causality, PC sampling when you need cheap coverage.</span><span lang="zh">PC sampling 是统计性的,目前只有 <code>host_trap</code>/<code>time</code>。 它估计 PC 停在哪;给不了 waitcnt 箭头。 需要因果关系时用 ATT,需要便宜的覆盖面时用 PC sampling。</span></div>
+    </section>
+
+    <!-- 12 EPILOGUE -->
+    <section id="epilogue">
+      <h2><span class="num">12</span><span lang="en">Epilogue</span><span lang="zh">尾声</span></h2>
+      <p><span lang="en">The reason ATT is worth the ceremony — the narrow window, the separate runs, the buffer math — is that it closes the loop between a number and a line of code. A roofline tells you a kernel is memory-bound; the ISA view shows you the exact <code>s_waitcnt</code> that ate the cycles and the <code>global_load</code> it waited on. One is a verdict, the other is an address. Optimization happens at the address.</span><span lang="zh">ATT 值得这套仪式 —— 窄窗口、 分开运行、 buffer 的算术 —— 的理由,是它把一个数字和一行代码之间的环闭上了。 roofline 告诉你某个 kernel 是 memory-bound;ISA 视图给你那条吃掉 cycle 的 <code>s_waitcnt</code>,以及它在等的那次 <code>global_load</code>。 前者是判决,后者是地址。 优化发生在地址上。</span></p>
+      <p><span lang="en">On this MI350X, every FlyDSL kernel in <code>flydsl-kernel-profiling</code> already carries an <code>att_viewer/</code> directory of exactly these traces. The tools are open; the traces are on disk; the only missing step is learning to read the panel — which, now, you can.</span><span lang="zh">在这台 MI350X 上,<code>flydsl-kernel-profiling</code> 里每个 FlyDSL kernel 都已经带了一个装着这种 trace 的 <code>att_viewer/</code> 目录。 工具是开源的,trace 在磁盘上,唯一缺的一步是学会读这个面板 —— 而现在,你会了。</span></p>
+    </section>
+
+    <footer class="colophon">
+      <div class="row"><span class="lbl">Source</span><span><span lang="en">ROCm/rocprof-compute-viewer · ROCm/rocprofiler-sdk (rocprofv3)</span><span lang="zh">ROCm/rocprof-compute-viewer · ROCm/rocprofiler-sdk(rocprofv3)</span></span></div>
+      <div class="row"><span class="lbl">Traces</span><span><span lang="en">real ATT capture on MI350X · gfx950 · ROCm 7.2</span><span lang="zh">MI350X 上真实 ATT 采集 · gfx950 · ROCm 7.2</span></span></div>
+      <div class="row"><span class="lbl">Typeface</span><span>Saira Condensed · Hanken Grotesk · Red Hat Mono</span></div>
+      <div class="row"><span class="lbl">Palette</span><span><span lang="en">logic-analyzer · phosphor green / amber / cyan / magenta on near-black</span><span lang="zh">逻辑分析仪 · 近黑底上的 phosphor 绿 / 琥珀 / 青 / 品红</span></span></div>
+      <div class="row"><span class="lbl">Compiled for</span><span><span lang="en">kernel engineers who already met the roofline and want the address</span><span lang="zh">已经见过 roofline、 现在想要地址的 kernel 工程师</span></span></div>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function() {
+  var KEY = 'rocprof-viewer-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
