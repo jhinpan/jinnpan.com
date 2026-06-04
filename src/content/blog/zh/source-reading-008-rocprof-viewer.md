@@ -33,7 +33,9 @@ lang: "zh"
 
 ## 完整深读里有什么
 
-五张手画 SVG： 从采集到查看的管线； mask/select 参数在硅片上切出的东西； `se_sm_sl_wv` 文件名解成硬件坐标； 标注好的 RCV 窗口（Explorer · 时间线 · ISA · side panel）； 以及展示 wave 何时安静下来的 Utilization 泳道。 外加完整的 `rocprofv3` 模式分类（trace / PMC / PC-sampling / ATT， 加五种输出格式）、 RCV 逐面板指南（含 Counters、 Wave States、 Occupancy、 Dispatches、 Summary）、 一套从「这个 kernel 慢」到一行源码的五次点击流程、 Qt/CMake/LLVM-C 构建与它的 decoder 依赖、 以及那些会让 ATT 读错的暗礁。
+七张手画 SVG， 外加 **viewer 自己面板的十一张真实截图**（ISA、 Global / Compute Unit / Utilization、 Hotspot、 Counters、 Wave States、 Occupancy、 Dispatches、 Summary、 侧边面板）—— 每段「怎么看」都挨着真实 UI。 SVG 覆盖了从采集到查看的管线、 mask/select 参数在硅片上切出的东西、 `se_sm_sl_wv` 文件名解成硬件坐标、 标注好的 RCV 窗口、 Utilization 泳道、 以及 **一个真实实测的 wave**（这台 MI350X 上 `topk_gating_softmax` dispatch 37 —— 8480 cycle、 1162 条指令、 46 个 waitcnt 事件）。 外加完整的 `rocprofv3` 模式分类、 RCV 逐面板指南、 一套五次点击的阅读流程、 以及那些会让 ATT 读错的暗礁。
+
+结尾是一个案例, 也是一次自白:**为什么我自己的 FlyDSL PR（#593, 手动 `source_loc` 钉位）被关掉, 让位给了 #586 的 `WrapLocations` pass。** 对 `flash_attn_func`, 91.9% 的 ISA 指令塌缩到了 `@flyc.kernel` 装饰器那一行;真正奏效的修法, 是把 location 归属压进编译器的 pass 管线、 而不是抬到 API 上。 viewer 的源码列, 只能和喂给它的 IR 一样诚实。
 
 它落在真实 trace 上： 这台 MI350X 上 `flydsl-kernel-profiling` 里每个 FlyDSL kernel 都已经带了一个装着这种采集结果的 `att_viewer/` 目录。
 
