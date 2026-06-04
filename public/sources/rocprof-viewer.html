@@ -100,6 +100,13 @@
   .plate-meta .pname { color: var(--fg); font-style: italic; text-transform: none; letter-spacing: 0; font-family: var(--font-sans); }
   .plate svg { width: 100%; height: auto; display: block; background: var(--bg2); border: 1px solid var(--line2); border-radius: 5px; }
   .caption { font-size: 13.5px; color: var(--muted); font-style: italic; margin: 10px 2px 0; }
+  .shot { margin: 28px 0; }
+  .shot img { width: 100%; height: auto; display: block; border: 1px solid var(--line2); border-radius: 5px; background: #000; }
+  .shot figcaption { font-size: 13px; color: var(--muted); font-style: italic; margin-top: 9px; line-height: 1.5; }
+  .shot .cred { font-family: var(--font-mono); font-style: normal; font-size: 10.5px; color: var(--dim); letter-spacing: .03em; }
+  .shotgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 28px 0; }
+  .shotgrid .shot { margin: 0; }
+  @media (max-width: 640px) { .shotgrid { grid-template-columns: 1fr; } }
   /* svg shared */
   .s-edge { stroke: var(--line2); stroke-width: 1.4; fill: none; }
   .s-node { fill: var(--panel); stroke: var(--line2); stroke-width: 1.2; }
@@ -145,8 +152,9 @@
       <li><a href="#counters"><span class="n">08</span><span lang="en">Counters & plots</span><span lang="zh">计数器与曲线</span></a></li>
       <li><a href="#workflow"><span class="n">09</span><span lang="en">A reading loop</span><span lang="zh">阅读流程</span></a></li>
       <li><a href="#source"><span class="n">10</span><span lang="en">The source</span><span lang="zh">源码</span></a></li>
-      <li><a href="#reefs"><span class="n">11</span><span lang="en">Reefs</span><span lang="zh">暗礁</span></a></li>
-      <li><a href="#epilogue"><span class="n">12</span><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+      <li><a href="#source-map"><span class="n">11</span><span lang="en">IR → Python</span><span lang="zh">IR → Python</span></a></li>
+      <li><a href="#reefs"><span class="n">12</span><span lang="en">Reefs</span><span lang="zh">暗礁</span></a></li>
+      <li><a href="#epilogue"><span class="n">13</span><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
     </ol>
     <div class="meta">
       <div lang="en">MI350X · gfx950</div>
@@ -443,6 +451,10 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
 
       <h3><span lang="en">Explorer View — start here</span><span lang="zh">Explorer View —— 从这里开始</span></h3>
       <p><span lang="en">The hierarchical file browser on the left. Every source file carries a <strong>colored bar = total accumulated latency (the hotspot) for that file</strong>. It is the triage panel: the longest bar is where your cycles went, before you have looked at a single instruction.</span><span lang="zh">左边的分层文件浏览器。 每个源文件带一条 <strong>彩色 bar = 该文件的累计 latency 总量(也就是 hotspot)</strong>。 这是分诊面板:在你看任何一条指令之前,最长的那条 bar 就是 cycle 花到哪里去了。</span></p>
+      <figure class="shot">
+        <img src="/sources/rcv/left.png" loading="lazy" alt="RCV left side panel" />
+        <figcaption><span lang="en">The real left control panel: target Shader / SIMD / Slot / WID, the WaveView clock range, zoom, loop-iteration navigation, search, and selection history — the knobs that pick exactly one <code>se_sm_sl_wv</code> coordinate.</span><span lang="zh">真实的左侧控制面板:目标 Shader / SIMD / Slot / WID、 WaveView 时钟区间、 缩放、 loop 迭代导航、 搜索、 选择历史 —— 这些旋钮精确地选出一个 <code>se_sm_sl_wv</code> 坐标。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/left.png</span></figcaption>
+      </figure>
     </section>
 
     <!-- 06 TIMELINE -->
@@ -452,12 +464,24 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
 
       <h3><span lang="en">Global View</span><span lang="zh">Global View</span></h3>
       <p><span lang="en">The widest lens: <strong>every wave across all enabled Shader Engines, each color-coded by kernel</strong>. Use it to see how waves pack in time — long tails, stragglers, a kernel that never overlaps with its neighbor.</span><span lang="zh">最广的镜头:<strong>所有启用的 Shader Engine 上的每个 wave,按 kernel 着色</strong>。 用它看 wave 在时间上怎么排布 —— 长尾、 掉队者、 某个永远不和邻居重叠的 kernel。</span></p>
+      <figure class="shot">
+        <img src="/sources/rcv/globalv.png" loading="lazy" alt="RCV Global View" />
+        <figcaption><span lang="en">Global View — waves across the Shader Engines, each colored by kernel; the x-axis is clock cycles.</span><span lang="zh">Global View —— 各 Shader Engine 上的 wave, 按 kernel 着色;x 轴是时钟 cycle。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/globalv.png</span></figcaption>
+      </figure>
 
       <h3><span lang="en">Compute Unit View</span><span lang="zh">Compute Unit View</span></h3>
       <p><span lang="en">The trace <strong>separated per SIMD-slot</strong> (the docs note ranges like 2–6), tracking individual wave execution. This is where you watch a single wave's life: when it was scheduled, when it ran, when it parked. A vertical slice of this tab is the <em>Wave States</em> plot.</span><span lang="zh">把 trace <strong>按 SIMD-slot 拆开</strong>(文档里提到 2–6 这样的范围),追踪单个 wave 的执行。 这里你看一个 wave 的一生:何时被调度、 何时在跑、 何时停泊。 这个 tab 的一条竖切片,就是 <em>Wave States</em> 曲线。</span></p>
+      <figure class="shot">
+        <img src="/sources/rcv/cu.png" loading="lazy" alt="RCV Compute Unit View" />
+        <figcaption><span lang="en">Compute Unit View — the trace split per SIMD-slot; each row is one wave's life on that slot.</span><span lang="zh">Compute Unit View —— trace 按 SIMD-slot 拆开;每一行是该 slot 上一个 wave 的一生。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/cu.png</span></figcaption>
+      </figure>
 
       <h3><span lang="en">Utilization View</span><span lang="zh">Utilization View</span></h3>
       <p><span lang="en">The trace drawn <strong>per instruction class — VALU, VMEM, SCALAR, OTHER</strong> — with immediate instructions and stall gaps hidden. This is the fastest read on what kind of work dominates: a wall of cyan (VMEM) says memory-bound; a wall of green (VALU) says compute-bound; mostly gaps says you are stalled and the ISA view will tell you on what.</span><span lang="zh">把 trace <strong>按指令类别画 —— VALU、 VMEM、 SCALAR、 OTHER</strong> —— 隐藏掉立即数指令和 stall 空隙。 这是判断「什么活占主导」最快的一眼:一墙 cyan(VMEM)说明 memory-bound;一墙绿(VALU)说明 compute-bound;大片空隙说明你在 stall,而 ISA 视图会告诉你卡在什么上。</span></p>
+      <figure class="shot">
+        <img src="/sources/rcv/util.png" loading="lazy" alt="RCV Utilization View" />
+        <figcaption><span lang="en">Utilization View — the same trace by instruction class, immediates and stalls hidden; the color that dominates is your bound.</span><span lang="zh">Utilization View —— 同一份 trace 按指令类别画, 隐去立即数与 stall;占主导的颜色就是你的瓶颈。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/util.png</span></figcaption>
+      </figure>
 
       <div class="plate wide">
         <div class="plate-meta"><span class="pn">Plate V</span><span class="pname"><span lang="en">Utilization lanes — same wave, four classes</span><span lang="zh">Utilization 泳道 —— 同一 wave,四个类别</span></span></div>
@@ -483,6 +507,30 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
         </svg>
         <p class="caption"><span lang="en">When the lanes go quiet (shaded), no instruction issued — the wave is waiting. The Utilization view shows the <em>shape</em> of the stall; the ISA view names its <em>cause</em>.</span><span lang="zh">当泳道安静下来(阴影处),没有指令发射 —— wave 在等。 Utilization 视图给你 stall 的 <em>形状</em>;ISA 视图给你它的 <em>成因</em>。</span></p>
       </div>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate VI</span><span class="pname"><span lang="en">A real wave we measured · topk_gating_softmax, dispatch 37</span><span lang="zh">我们实测的一个 wave · topk_gating_softmax, dispatch 37</span></span></div>
+        <svg viewBox="0 0 980 158" role="img" aria-label="measured wave-state share">
+          <text x="40" y="28" class="s-lbl">se0_sm2_sl0_wv0</text>
+          <text x="210" y="28" class="s-sub">CU1 · SIMD2 · 8480 cycles · 1162 instructions · 46 waitcnt events</text>
+          <!-- real cycle-share bar: states 2/3/4/1 = 54.2/42.9/2.5/0.3% -->
+          <rect x="40" y="48" width="488" height="36" fill="#4fd0e6" opacity="0.85"/>
+          <rect x="528" y="48" width="386" height="36" fill="#5cf2a4" opacity="0.85"/>
+          <rect x="914" y="48" width="22" height="36" fill="#ffb454" opacity="0.85"/>
+          <rect x="936" y="48" width="3" height="36" fill="#ff5f5f"/>
+          <text x="52" y="71" class="s-lbl" fill="#04130b">state 2 · 54.2%</text>
+          <text x="540" y="71" class="s-lbl" fill="#04130b">state 3 · 42.9%</text>
+          <line x1="40" y1="96" x2="939" y2="96" stroke="#27393d" marker-end="url(#ah)"/>
+          <text x="40" y="112" class="s-sub">cycle share (aggregated from 483 real state-segments) →</text>
+          <g class="s-sub">
+            <rect x="40" y="126" width="11" height="11" fill="#4fd0e6"/><text x="57" y="136">state 2 (4600 cy)</text>
+            <rect x="190" y="126" width="11" height="11" fill="#5cf2a4"/><text x="207" y="136">state 3 (3640 cy)</text>
+            <rect x="330" y="126" width="11" height="11" fill="#ffb454"/><text x="347" y="136">state 4 (212 cy · 2.5%)</text>
+            <rect x="520" y="126" width="11" height="11" fill="#ff5f5f"/><text x="537" y="136">state 1 (28 cy · 0.3%)</text>
+          </g>
+        </svg>
+        <p class="caption"><span lang="en">Not a mock-up — this is one real wave from an ATT capture on this MI350X. Two of the decoder's wave-states hold <strong>97%</strong> of its 8480-cycle life; the viewer color-codes these in its Wave-States legend, and the Compute Unit view draws all 483 segments in order. This is the raw material every panel above is built from.</span><span lang="zh">不是示意图 —— 这是这台 MI350X 上一次 ATT 采集里真实的一个 wave。 decoder 的两个 wave-state 占了它 8480 个 cycle 生命的 <strong>97%</strong>;viewer 在 Wave-States 图例里给它们着色, Compute Unit 视图把全部 483 个 segment 按序画出。 这就是上面每块面板的原料。</span></p>
+      </div>
     </section>
 
     <!-- 07 ISA -->
@@ -502,9 +550,17 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
         </tbody>
       </table>
       <p><span lang="en">The detail that separates RCV from a flat disassembly: <strong>memory-to-waitcnt dependency arrows</strong>, drawn per-wave, linking a memory operation to the <code>s_waitcnt</code> that later blocks on it. On AMD the cost of a load is rarely on the load — it is on the <code>s_waitcnt vmcnt</code>/<code>lgkmcnt</code> that stalls until the data lands. The arrow makes that causal pair visible: a fat latency bar on a <code>s_waitcnt</code> with an arrow reaching back to a <code>global_load</code> is the textbook memory-latency stall.</span><span lang="zh">把 RCV 和一份扁平反汇编区分开的细节:<strong>memory 到 waitcnt 的依赖箭头</strong>,按 wave 画出,把一次 memory 操作连到后面 block 在它上面的那条 <code>s_waitcnt</code>。 在 AMD 上,一次 load 的开销很少落在 load 本身 —— 它落在那条 stall 到数据返回为止的 <code>s_waitcnt vmcnt</code>/<code>lgkmcnt</code> 上。 这个箭头把这对因果关系画了出来:一条 <code>s_waitcnt</code> 上挂着粗 latency bar,又有箭头指回某条 <code>global_load</code> —— 这就是教科书式的 memory-latency stall。</span></p>
+      <figure class="shot">
+        <img src="/sources/rcv/isaview.png" loading="lazy" alt="RCV ISA Instructions View" />
+        <figcaption><span lang="en">The real ISA view: a Hitcount and Latency column per instruction, the disassembly, the correlated source, and the per-wave memory-to-<code>s_waitcnt</code> dependency arrows on the left gutter. The fat-latency line with an arrow back to its load is the stall you are hunting.</span><span lang="zh">真实的 ISA 视图:每条指令一列 Hitcount 与 Latency、 反汇编、 关联的源码, 以及左侧栏里 per-wave 的 memory 到 <code>s_waitcnt</code> 依赖箭头。 那条粗 latency、 又有箭头指回它 load 的行,就是你在找的 stall。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/isaview.png</span></figcaption>
+      </figure>
 
       <h3><span lang="en">Hotspot Tab</span><span lang="zh">Hotspot Tab</span></h3>
       <p><span lang="en">A histogram of <strong>total accumulated latency cycles per bin, based on the bin's center value</strong>, computed across all waves in the selected clock range. Where the ISA view is per-line, the Hotspot tab is the distribution — it tells you whether the cost is one fat outlier or smeared across many lines.</span><span lang="zh">一张直方图:<strong>每个 bin 的累计 latency cycle 总量(按 bin 中心值统计)</strong>,在所选时钟区间内对所有 wave 计算。 ISA 视图是逐行的,Hotspot tab 则是分布 —— 它告诉你开销是一个肥尾的离群点,还是摊在很多行上。</span></p>
+      <figure class="shot">
+        <img src="/sources/rcv/hotspot.png" loading="lazy" alt="RCV Hotspot histogram" />
+        <figcaption><span lang="en">Hotspot tab — accumulated latency cycles per bin across the selected clock range; one tall bar means a single dominant cost, a smear means it is spread out.</span><span lang="zh">Hotspot tab —— 所选时钟区间内每个 bin 的累计 latency cycle;一根高 bar 说明有单一主导开销, 摊开则说明分散。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/hotspot.png</span></figcaption>
+      </figure>
       <div class="callout"><span class="ctag"><span lang="en">Reading order</span><span lang="zh">阅读顺序</span></span><span lang="en">Latency column first (find the fat line), then follow its waitcnt arrow back to the load, then click through to the source line. Hitcount tells you if it is per-iteration or one-shot.</span><span lang="zh">先看 Latency 列(找肥行),再顺着它的 waitcnt 箭头回到 load,然后点进源码行。 Hitcount 告诉你这是每次迭代发生,还是一次性的。</span></div>
     </section>
 
@@ -525,6 +581,16 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
 
       <h3><span lang="en">Summary View</span><span lang="zh">Summary View</span></h3>
       <p><span lang="en">On MI2xx / MI3xx parts, a rolled-up panel: <strong>average instruction cost, hardware utilization by type, per-compute utilization</strong>. It is the bridge back to the aggregate world — the number you would quote in a report, derived from the same trace you just walked instruction by instruction.</span><span lang="zh">在 MI2xx / MI3xx 上,一个汇总面板:<strong>平均指令开销、 按类型的硬件利用率、 per-compute 利用率</strong>。 它是回到聚合世界的桥 —— 你写进报告里的那个数,正是从你刚刚逐条走过的那份 trace 里算出来的。</span></p>
+      <div class="shotgrid">
+        <figure class="shot"><img src="/sources/rcv/counter_close.png" loading="lazy" alt="Counters tab" /><figcaption><span lang="en">Counters — up to 8 SQ counters (+ derived) on the trace's x-axis.</span><span lang="zh">Counters —— 最多 8 个 SQ 计数器(+ 派生)叠在 trace 的 x 轴上。</span> <span class="cred">docs/data/counter_close.png</span></figcaption></figure>
+        <figure class="shot"><img src="/sources/rcv/wavestate.png" loading="lazy" alt="Wave States plot" /><figcaption><span lang="en">Wave States — which state each wave occupies over time.</span><span lang="zh">Wave States —— 每个 wave 随时间处于哪个状态。</span> <span class="cred">docs/data/wavestate.png</span></figcaption></figure>
+        <figure class="shot"><img src="/sources/rcv/occupancy.png" loading="lazy" alt="Occupancy plot" /><figcaption><span lang="en">Occupancy — waves in flight per Shader Engine.</span><span lang="zh">Occupancy —— 每个 Shader Engine 在飞的 wave 数。</span> <span class="cred">docs/data/occupancy.png</span></figcaption></figure>
+        <figure class="shot"><img src="/sources/rcv/dispatch.png" loading="lazy" alt="Dispatches plot" /><figcaption><span lang="en">Dispatches — occupancy attributed per kernel.</span><span lang="zh">Dispatches —— occupancy 归到每个 kernel。</span> <span class="cred">docs/data/dispatch.png</span></figcaption></figure>
+      </div>
+      <figure class="shot">
+        <img src="/sources/rcv/summary.png" loading="lazy" alt="RCV Summary View" />
+        <figcaption><span lang="en">Summary View (MI2xx / MI3xx) — average instruction cost and hardware utilization by type, rolled up from the same trace. The bridge from the address back to the aggregate.</span><span lang="zh">Summary View(MI2xx / MI3xx)—— 平均指令开销与按类型的硬件利用率, 从同一份 trace 汇总而来。 从地址回到聚合的桥。</span> <span class="cred">ROCm/rocprof-compute-viewer · docs/data/summary.png</span></figcaption>
+      </figure>
     </section>
 
     <!-- 09 WORKFLOW -->
@@ -553,9 +619,56 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
       <p><span lang="en">So the dependency you most often hit is the decoder: a JSON-only viewer reads what <code>rocprofv3</code> already decoded, while the full build can chew raw SQTT itself. <code>rocprofv3</code> in turn is part of <a class="link" href="https://github.com/ROCm/rocprofiler-sdk">rocprofiler-sdk</a> — and both repos are open, which is the whole reason this reading can be precise rather than hand-wavy.</span><span lang="zh">所以你最常撞上的依赖就是这个 decoder:仅 JSON 的 viewer 读 <code>rocprofv3</code> 已经解码好的东西,而完整构建能自己啃原始 SQTT。<code>rocprofv3</code> 这边则属于 <a class="link" href="https://github.com/ROCm/rocprofiler-sdk">rocprofiler-sdk</a> —— 两个仓库都开源,这正是这篇阅读能精确、 而不是空谈的全部原因。</span></p>
     </section>
 
-    <!-- 11 REEFS -->
+    <!-- 11 IR -> PYTHON -->
+    <section id="source-map">
+      <h2><span class="num">11</span><span lang="en">IR → Python · whose line is it?</span><span lang="zh">IR → Python · 这是谁的行?</span></h2>
+      <p class="lede"><span lang="en">The ISA view's source column is only as good as the Location every IR op carries. FlyDSL learned this the hard way — and so did I, with a PR that got closed.</span><span lang="zh">ISA 视图的源码列, 好不好全看每个 IR op 带着的那个 Location。 FlyDSL 是吃了苦头才懂的 —— 我也是, 一个被关掉的 PR。</span></p>
+      <p><span lang="en">Everything in §07 assumes one thing: that each machine instruction can be traced back to a source line. That only works if every MLIR op in the kernel carries a debug <strong>Location</strong> (hence <code>FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1</code> at capture). The viewer is a passive reader here — it shows whatever Location the IR baked in. So if the mapping is useless, the fix is not in the viewer; it is upstream, in how the compiler stamps locations.</span><span lang="zh">§07 里的一切都假设了一件事:每条机器指令都能回溯到一行源码。 这只有在 kernel 里每个 MLIR op 都带着 debug <strong>Location</strong> 时才成立(所以采集时要 <code>FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1</code>)。 viewer 在这里是被动读者 —— IR 里烤进了什么 Location, 它就显示什么。 所以如果映射没用, 修的地方不在 viewer, 而在上游 —— 在编译器怎么盖 location 戳。</span></p>
+      <p><span lang="en">FlyDSL is a Python → MLIR → ISA compiler, and it broke exactly here. For <code>flash_attn_func</code> debug info was present and 2069/2070 ISA rows mapped to Python — but <strong>91.9% of instructions collapsed onto <code>flash_attn_func.py:257</code></strong>, the <code>@flyc.kernel</code> decorator line, and 6.3% onto <code>:283</code>, a one-line <code>_mfma</code> helper. The trace mapped, but to a line you cannot act on. Root cause: the schedule emits its DMA / MFMA / wait / barrier ops from <strong>nested helper closures</strong>, so the tracer's <code>_caller_location(depth=1)</code> lands on the helper body, and untraced sync ops fall through to the kernel-default line.</span><span lang="zh">FlyDSL 是一个 Python → MLIR → ISA 的编译器, 它恰恰就在这里坏了。 对 <code>flash_attn_func</code>, debug info 是有的, 2069/2070 行 ISA 都映射到了 Python —— 但 <strong>91.9% 的指令塌缩到了 <code>flash_attn_func.py:257</code></strong>, 也就是 <code>@flyc.kernel</code> 装饰器那一行, 另有 6.3% 落到 <code>:283</code>, 一个一行的 <code>_mfma</code> helper。 trace 映射上了, 但映射到了一行你没法据此动手的代码。 根因:schedule 的 DMA / MFMA / wait / barrier 是从<strong>嵌套 helper 闭包</strong>里发出来的, 于是 tracer 的 <code>_caller_location(depth=1)</code> 落在 helper 体上, 而未被 trace 的同步 op 则掉到 kernel 的默认行。</span></p>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate VII</span><span class="pname"><span lang="en">Source attribution — before vs after</span><span lang="zh">源码归属 —— 修复前后</span></span></div>
+        <svg viewBox="0 0 960 240" role="img" aria-label="source attribution before after">
+          <!-- BEFORE -->
+          <text x="40" y="26" class="s-tag" fill="#ff5f5f">before — collapsed onto the decorator</text>
+          <line x1="40" y1="180" x2="440" y2="180" stroke="#27393d"/>
+          <rect x="70" y="40" width="60" height="140" fill="#ff5f5f" opacity="0.8"/>
+          <text x="100" y="34" text-anchor="middle" class="s-sub" fill="#ff5f5f">91.9%</text>
+          <text x="100" y="196" text-anchor="middle" class="s-sub">:257</text>
+          <rect x="160" y="170" width="60" height="10" fill="#ffb454" opacity="0.8"/>
+          <text x="190" y="196" text-anchor="middle" class="s-sub">:283</text>
+          <rect x="250" y="176" width="60" height="4" fill="#748781"/>
+          <text x="280" y="196" text-anchor="middle" class="s-sub">rest</text>
+          <text x="40" y="220" class="s-sub" fill="#748781">6 distinct flash_attn_func.py lines</text>
+          <!-- AFTER -->
+          <text x="520" y="26" class="s-tag" fill="#5cf2a4">after #586 — wrapped per statement</text>
+          <line x1="520" y1="180" x2="920" y2="180" stroke="#27393d"/>
+          <g fill="#5cf2a4" opacity="0.8">
+            <rect x="534" y="120" width="20" height="60"/><rect x="560" y="96" width="20" height="84"/><rect x="586" y="140" width="20" height="40"/>
+            <rect x="612" y="84" width="20" height="96"/><rect x="638" y="128" width="20" height="52"/><rect x="664" y="108" width="20" height="72"/>
+            <rect x="690" y="148" width="20" height="32"/><rect x="716" y="100" width="20" height="80"/><rect x="742" y="132" width="20" height="48"/>
+            <rect x="768" y="116" width="20" height="64"/><rect x="794" y="152" width="20" height="28"/><rect x="820" y="104" width="20" height="76"/>
+            <rect x="846" y="136" width="20" height="44"/><rect x="872" y="124" width="20" height="56"/>
+          </g>
+          <text x="520" y="220" class="s-sub" fill="#748781">29 distinct lines — DMA / MFMA / wait / barrier each get their own</text>
+        </svg>
+        <p class="caption"><span lang="en">Real numbers from the PR. Before: latency piled on the <code>@flyc.kernel</code> line; 6 distinct source lines. After the right fix: spread across the helper statements; 29 distinct lines. Same trace, same viewer — only the Locations in the IR changed.</span><span lang="zh">来自 PR 的真实数字。 修复前:latency 全堆在 <code>@flyc.kernel</code> 那一行;只有 6 个不同源码行。 用对的修法之后:摊到各 helper 语句上;29 个不同行。 同一份 trace、 同一个 viewer —— 变的只是 IR 里的 Location。</span></p>
+      </div>
+
+      <h4><span lang="en">The wrong fix — my PR #593</span><span lang="zh">错的修法 —— 我的 PR #593</span></h4>
+      <p><span lang="en">My first instinct (<a class="link" href="https://github.com/ROCm/FlyDSL/pull/593">PR #593</a>, fixes <a class="link" href="https://github.com/ROCm/FlyDSL/issues/587">#587</a>) was a <code>source_loc</code> context manager: pin the user call-site Location in a thread-local, and have the tracer consult it first — <code>loc = kwargs.pop("loc", None) or _pinned_loc() or _caller_location(depth=1)</code>. It worked, partially: distinct lines went 6 → 29. But ~54% still sat on the function line, and worse, it was a <strong>manual annotation</strong> you had to wrap around every schedule helper, kernel by kernel.</span><span lang="zh">我的第一反应(<a class="link" href="https://github.com/ROCm/FlyDSL/pull/593">PR #593</a>, 修 <a class="link" href="https://github.com/ROCm/FlyDSL/issues/587">#587</a>)是一个 <code>source_loc</code> context manager:把用户 call-site 的 Location 钉在 thread-local 里, 让 tracer 先查它 —— <code>loc = kwargs.pop("loc", None) or _pinned_loc() or _caller_location(depth=1)</code>。 它部分有效:不同行数从 6 涨到 29。 但仍有约 54% 留在函数那一行, 更糟的是, 它是一个你得 kernel 一个个、 把每个 schedule helper 包起来的<strong>手动标注</strong>。</span></p>
+
+      <h4><span lang="en">The right fix — #586's WrapLocations</span><span lang="zh">对的修法 —— #586 的 WrapLocations</span></h4>
+      <p><span lang="en"><a class="link" href="https://github.com/ROCm/FlyDSL/pull/586">PR #586</a> (merged) added a <code>WrapLocations</code> pass in <code>compiler/ast_rewriter.py</code> that wraps <em>every statement inside</em> the nested schedule helpers. Each DMA / MFMA / wait / barrier op then gets its own helper line automatically — for <strong>all kernels, with no annotation</strong>. It is a compiler-side transform, not a user contract. That is the difference: location attribution is a property the IR pipeline should produce, not something the kernel author should have to declare.</span><span lang="zh"><a class="link" href="https://github.com/ROCm/FlyDSL/pull/586">PR #586</a>(已合并)在 <code>compiler/ast_rewriter.py</code> 里加了一个 <code>WrapLocations</code> pass, 把嵌套 schedule helper <em>里面的每一条语句</em>都包起来。 于是每个 DMA / MFMA / wait / barrier op 自动拿到自己的 helper 行 —— 对<strong>所有 kernel、 零标注</strong>。 它是编译器侧的变换, 不是一份用户契约。 这就是分水岭:location 归属应该是 IR 管线产出的属性, 而不是 kernel 作者要去声明的东西。</span></p>
+
+      <div class="callout warn"><span class="ctag"><span lang="en">Why my PR was closed</span><span lang="zh">我的 PR 为什么被关</span></span><span lang="en">The maintainer (<a class="link" href="https://github.com/coderfeli">@coderfeli</a>) nudged: "#586 will help this?" It did — and it made #593 not just redundant but <em>harmful</em>: #586 already wraps every statement, so the sync wrappers were duplicated, and the <code>source_loc</code> re-pin actively <strong>fought</strong> #586 (mixed attribution — untraced ops to the helper line, traced ops to the call site). I closed #593 in favor of #586. The better PR was the one that pushed the fix down into the pass pipeline instead of up into the API.</span><span lang="zh">maintainer(<a class="link" href="https://github.com/coderfeli">@coderfeli</a>)点了一句:「#586 会帮上吗?」 帮上了 —— 而且它让 #593 不只是多余, 还<em>有害</em>:#586 已经把每条语句都包了, 所以那些同步 wrapper 是重复的, 而 <code>source_loc</code> 的重新钉位还在主动<strong>跟 #586 打架</strong>(归属错乱 —— 未 trace 的 op 去 helper 行, trace 的 op 去 call site)。 我把 #593 关掉, 让位给 #586。 更好的那个 PR, 是把修复压到 pass 管线里、 而不是抬到 API 上的那个。</span></div>
+
+      <p><span lang="en">The takeaway loops back to the viewer: RCV's source column is downstream of all this. When your FlyDSL ATT trace finally points at the right line, thank a compiler pass — not the profiler.</span><span lang="zh">这个教训绕回到 viewer:RCV 的源码列是这一切的下游。 当你的 FlyDSL ATT trace 终于指对了行, 该谢的是一个编译器 pass —— 不是 profiler。</span></p>
+    </section>
+
+    <!-- 12 REEFS -->
     <section id="reefs">
-      <h2><span class="num">11</span><span lang="en">Reefs</span><span lang="zh">暗礁</span></h2>
+      <h2><span class="num">12</span><span lang="en">Reefs</span><span lang="zh">暗礁</span></h2>
       <p class="lede"><span lang="en">Where ATT readings go quietly wrong.</span><span lang="zh">ATT 会悄悄读错的地方。</span></p>
       <div class="callout warn"><span class="ctag"><span lang="en">ATT and PMC are separate runs</span><span lang="zh">ATT 与 PMC 是两次运行</span></span><span lang="en">ATT gives per-instruction stall timing but no cache/HBM counters; PMC gives counters but no instruction stream. They cannot be collected together — capture twice and correlate by kernel.</span><span lang="zh">ATT 给逐指令的 stall 计时,但没有 cache / HBM 计数器;PMC 给计数器,但没有指令流。 两者不能一起采 —— 采两遍,按 kernel 对应起来。</span></div>
       <div class="callout warn"><span class="ctag"><span lang="en">Silent truncation</span><span lang="zh">静默截断</span></span><span lang="en">A too-small <code>att_buffer_size</code> drops the tail of the trace with no error. If a wave's timeline ends abruptly, raise the buffer (<code>0x6000000</code> → <code>0xC000000</code>) before trusting the picture.</span><span lang="zh"><code>att_buffer_size</code> 太小会把 trace 尾部丢掉,且不报错。 如果某个 wave 的时间线戛然而止,先把 buffer 加大(<code>0x6000000</code> → <code>0xC000000</code>)再相信这张图。</span></div>
@@ -563,9 +676,9 @@ FLYDSL_DEBUG_ENABLE_DEBUG_INFO=1 rocprofv3 <span class="o">-i</span> input.yaml 
       <div class="callout warn"><span class="ctag"><span lang="en">PC sampling ≠ ATT</span><span lang="zh">PC sampling ≠ ATT</span></span><span lang="en">PC sampling is statistical and currently <code>host_trap</code>/<code>time</code> only. It estimates where the PC sits; it does not give you the waitcnt arrows. Reach for ATT when you need causality, PC sampling when you need cheap coverage.</span><span lang="zh">PC sampling 是统计性的,目前只有 <code>host_trap</code>/<code>time</code>。 它估计 PC 停在哪;给不了 waitcnt 箭头。 需要因果关系时用 ATT,需要便宜的覆盖面时用 PC sampling。</span></div>
     </section>
 
-    <!-- 12 EPILOGUE -->
+    <!-- 13 EPILOGUE -->
     <section id="epilogue">
-      <h2><span class="num">12</span><span lang="en">Epilogue</span><span lang="zh">尾声</span></h2>
+      <h2><span class="num">13</span><span lang="en">Epilogue</span><span lang="zh">尾声</span></h2>
       <p><span lang="en">The reason ATT is worth the ceremony — the narrow window, the separate runs, the buffer math — is that it closes the loop between a number and a line of code. A roofline tells you a kernel is memory-bound; the ISA view shows you the exact <code>s_waitcnt</code> that ate the cycles and the <code>global_load</code> it waited on. One is a verdict, the other is an address. Optimization happens at the address.</span><span lang="zh">ATT 值得这套仪式 —— 窄窗口、 分开运行、 buffer 的算术 —— 的理由,是它把一个数字和一行代码之间的环闭上了。 roofline 告诉你某个 kernel 是 memory-bound;ISA 视图给你那条吃掉 cycle 的 <code>s_waitcnt</code>,以及它在等的那次 <code>global_load</code>。 前者是判决,后者是地址。 优化发生在地址上。</span></p>
       <p><span lang="en">On this MI350X, every FlyDSL kernel in <code>flydsl-kernel-profiling</code> already carries an <code>att_viewer/</code> directory of exactly these traces. The tools are open; the traces are on disk; the only missing step is learning to read the panel — which, now, you can.</span><span lang="zh">在这台 MI350X 上,<code>flydsl-kernel-profiling</code> 里每个 FlyDSL kernel 都已经带了一个装着这种 trace 的 <code>att_viewer/</code> 目录。 工具是开源的,trace 在磁盘上,唯一缺的一步是学会读这个面板 —— 而现在,你会了。</span></p>
     </section>
