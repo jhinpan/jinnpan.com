@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linear Layouts — Robust Tensor Layout Code Generation over F₂ · Paper Reading No.003</title>
+<meta name="description" content="A close reading of 'Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2'. One binary matrix over GF(2) unifies every Triton tensor layout — Blocked, MMA, swizzled, sliced. Layout conversion becomes B⁻¹A, broadcast becomes a zero column, bank-conflict-free swizzling becomes a subspace search. Hand-coded SVG plates, bilingual EN/ZH.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Bitter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Red+Hat+Mono:ital,wght@0,400;0,500;1,400&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* phosphor oscilloscope — near-black with CRT glow */
+  --void:    #070b09;
+  --panel:   #0d1411;
+  --panel2:  #111a15;
+  --grid:    #16241c;
+  --grid-hi: #1e3328;
+  --edge:    #24382c;
+
+  --bone:    #d6e4dc;
+  --bone-dim:#a9bcb2;
+  --bone-soft:#7b9085;
+  --bone-mute:#566860;
+  --bone-faint:#384942;
+
+  --lime:      #5ef2a0;   /* primary phosphor */
+  --lime-deep: #2a9a63;
+  --cyan:      #4fd6e0;
+  --cyan-deep: #2a8a92;
+  --magenta:   #ff5cc8;   /* XOR / swizzle mixing */
+  --magenta-deep:#a3357d;
+  --amber:     #ffc24b;   /* warnings, F2 highlight */
+  --amber-deep:#b3851f;
+
+  --display: 'Chakra Petch', 'Arial Narrow', sans-serif;
+  --serif:   'Bitter', Georgia, serif;
+  --serif-sc:'Noto Sans SC', sans-serif;
+  --mono:    'Red Hat Mono', ui-monospace, 'JetBrains Mono', monospace;
+
+  --max-content: 720px;
+  --rail-w: 200px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--void);
+  color: var(--bone-dim);
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.66;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+body[data-lang="zh"] { font-family: var(--serif-sc); line-height: 1.88; }
+
+/* CRT glow + faint scanline grid */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(ellipse 64% 46% at 50% -4%, rgba(94,242,160,0.06), transparent 62%),
+    linear-gradient(rgba(94,242,160,0.020) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94,242,160,0.020) 1px, transparent 1px);
+  background-size: 100% 100%, 34px 34px, 34px 34px;
+}
+
+/* ============ LANGUAGE TOGGLE ============ */
+.lang-toggle {
+  position: fixed; top: 16px; right: 18px; z-index: 300;
+  display: inline-flex; border: 1px solid var(--edge); border-radius: 2px;
+  overflow: hidden; background: var(--panel);
+  box-shadow: 0 2px 14px rgba(0,0,0,0.5);
+}
+.lang-toggle button {
+  appearance: none; border: 0; background: transparent;
+  padding: 6px 14px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.08em; color: var(--bone-soft); cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] { background: var(--lime); color: var(--void); }
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative; padding: 60px 48px 56px;
+  border-bottom: 1px solid var(--edge); max-width: 1280px; margin: 0 auto; z-index: 1;
+}
+.masthead .kicker {
+  display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.24em;
+  text-transform: uppercase; color: var(--bone-soft); margin-bottom: 30px;
+}
+.masthead .kicker::before { content: ''; width: 30px; height: 2px; background: var(--lime); }
+.masthead .kicker .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 10px rgba(94,242,160,0.9); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.22; } }
+.masthead .kicker .sub { color: var(--bone-mute); }
+
+.masthead h1 {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(46px, 7.6vw, 104px); line-height: 0.94; margin: 0;
+  letter-spacing: 0.004em; color: var(--bone); text-transform: uppercase;
+}
+.masthead h1 em { font-style: normal; color: var(--lime); }
+.masthead h1 .f2 { color: var(--magenta); }
+.masthead .subtitle {
+  font-family: var(--serif); font-style: italic; font-weight: 400;
+  font-size: clamp(18px, 2.1vw, 23px); line-height: 1.44; color: var(--bone-dim);
+  margin: 26px 0 0; max-width: 780px;
+}
+body[data-lang="zh"] .masthead .subtitle { font-family: var(--serif-sc); font-style: normal; }
+.masthead .byline { font-family: var(--mono); font-size: 12px; color: var(--bone-soft); margin-top: 20px; line-height: 1.6; }
+.masthead .byline a { color: var(--lime); text-decoration: none; border-bottom: 1px solid var(--edge); }
+
+.masthead .meta {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+  margin-top: 46px; padding-top: 28px; border-top: 1px dashed var(--edge); max-width: 980px;
+}
+.masthead .meta .item .label { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bone-mute); margin-bottom: 9px; }
+.masthead .meta .item .value { font-family: var(--display); font-weight: 600; font-size: 24px; color: var(--bone); letter-spacing: 0.01em; line-height: 1.1; }
+.masthead .meta .item .value .unit { font-family: var(--mono); font-size: 10px; color: var(--bone-soft); margin-left: 5px; font-weight: 400; letter-spacing: 0.02em; }
+.masthead .meta .item .value .accent { color: var(--lime); }
+
+/* ============ LAYOUT ============ */
+.shell { position: relative; max-width: 1280px; margin: 0 auto; padding: 0 48px; z-index: 1; }
+.article { position: relative; max-width: var(--max-content); margin: 78px auto; }
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed; top: 0; left: 0; width: var(--rail-w); height: 100vh;
+  padding: 44px 22px; border-right: 1px solid var(--edge);
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em;
+  background: linear-gradient(180deg, var(--panel), var(--void)); z-index: 50; overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--edge); }
+.rail .brand { font-family: var(--display); font-size: 21px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--bone); margin-bottom: 3px; }
+.rail .brand em { font-style: normal; color: var(--lime); }
+.rail .brand .f2 { color: var(--magenta); }
+.rail .ref { color: var(--bone-mute); margin-bottom: 24px; font-size: 9.5px; }
+.rail .ref .pin { color: var(--lime); }
+.rail ol { list-style: none; padding: 0; margin: 0; counter-reset: nav; }
+.rail ol li { margin-bottom: 11px; counter-increment: nav; position: relative; padding-left: 28px; }
+.rail ol li::before { content: counter(nav, decimal-leading-zero); position: absolute; left: 0; top: 1px; color: var(--bone-faint); font-size: 9.5px; }
+.rail ol li a { color: var(--bone-soft); text-decoration: none; transition: color 0.16s; display: block; line-height: 1.3; }
+.rail ol li a:hover { color: var(--lime); }
+.rail .divider { height: 1px; background: var(--edge); margin: 16px 0; }
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+  .shell, .masthead, .colophon { padding-left: 24px; padding-right: 24px; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--display); font-weight: 700; font-size: clamp(32px, 4.6vw, 52px);
+  line-height: 1.0; letter-spacing: 0.005em; text-transform: uppercase;
+  margin: 94px 0 22px; color: var(--bone); position: relative;
+}
+body[data-lang="zh"] .article h2 { font-family: var(--serif-sc); font-weight: 700; text-transform: none; letter-spacing: 0; line-height: 1.25; }
+.article h2 .num { display: block; font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.24em; color: var(--lime); margin-bottom: 14px; text-transform: uppercase; }
+.article h2 em { font-style: normal; color: var(--lime); }
+.article h3 { font-family: var(--display); font-weight: 600; font-size: 25px; line-height: 1.16; margin: 50px 0 12px; color: var(--bone); text-transform: uppercase; letter-spacing: 0.01em; }
+body[data-lang="zh"] .article h3 { font-family: var(--serif-sc); text-transform: none; letter-spacing: 0; }
+.article h3 em { font-style: italic; color: var(--cyan); font-family: var(--serif); text-transform: none; }
+.article h4 { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin: 32px 0 10px; }
+
+.article p { margin: 0 0 18px; color: var(--bone-dim); }
+.article p strong { color: var(--bone); font-weight: 600; }
+.article p em { color: var(--cyan); font-style: italic; }
+.article p code, .article li code, .article td code { font-family: var(--mono); font-size: 13px; background: var(--panel); padding: 1px 6px; border-radius: 2px; color: var(--lime); border: 1px solid var(--edge); }
+.article a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid var(--cyan-deep); transition: color 0.16s; }
+.article a:hover { color: var(--lime); border-bottom-color: var(--lime-deep); }
+.article ul, .article ol { color: var(--bone-dim); padding-left: 22px; }
+.article li { margin-bottom: 9px; }
+
+.dropcap::first-letter { font-family: var(--display); font-weight: 700; font-size: 74px; line-height: 0.74; float: left; margin: 8px 14px -6px 0; color: var(--lime); }
+body[data-lang="zh"] .dropcap::first-letter { font-family: var(--serif-sc); font-size: 30px; float: none; margin: 0; color: inherit; }
+.lede { font-size: 19px; line-height: 1.56; color: var(--bone); font-style: italic; }
+body[data-lang="zh"] .lede { font-style: normal; line-height: 1.86; }
+
+/* ============ CODE ============ */
+.code { font-family: var(--mono); font-size: 12.5px; line-height: 1.62; background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--lime); padding: 18px 22px; margin: 22px 0; overflow-x: auto; color: var(--bone-dim); white-space: pre; border-radius: 2px; }
+.code .c-key { color: var(--lime); }
+.code .c-str { color: var(--cyan); }
+.code .c-num { color: var(--magenta); }
+.code .c-com { color: var(--bone-mute); font-style: italic; }
+.code .c-fname { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: var(--bone-mute); text-transform: uppercase; display: block; margin-bottom: 10px; }
+
+/* ============ CALLOUTS ============ */
+.callout { margin: 28px 0; padding: 18px 22px; background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--lime); border-radius: 2px; }
+.callout.cyan { border-left-color: var(--cyan); }
+.callout.magenta { border-left-color: var(--magenta); }
+.callout.amber { border-left-color: var(--amber); }
+.callout .ctag { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--lime); margin-bottom: 8px; display: block; }
+.callout.cyan .ctag { color: var(--cyan); }
+.callout.magenta .ctag { color: var(--magenta); }
+.callout.amber .ctag { color: var(--amber); }
+.callout p { margin: 0 0 8px; color: var(--bone); font-size: 14.5px; }
+.callout p:last-child { margin-bottom: 0; }
+
+.pull { margin: 36px 0; padding: 6px 0 6px 26px; border-left: 3px solid var(--cyan); font-family: var(--serif); font-style: italic; font-size: 21px; line-height: 1.44; color: var(--bone); }
+body[data-lang="zh"] .pull { font-family: var(--serif-sc); font-style: normal; }
+
+/* ============ TABLES ============ */
+.tbl { width: 100%; border-collapse: collapse; margin: 22px 0; font-size: 13.5px; }
+.tbl th, .tbl td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--edge); vertical-align: top; }
+.tbl th { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--bone-soft); font-weight: 500; border-bottom-color: var(--edge); }
+.tbl td { color: var(--bone-dim); }
+.tbl td.k { color: var(--bone); font-family: var(--mono); font-size: 12px; }
+.tbl td code { font-family: var(--mono); font-size: 12px; color: var(--lime); background: var(--panel); padding: 1px 5px; border-radius: 2px; }
+.tbl td.num { font-family: var(--mono); color: var(--bone); font-variant-numeric: tabular-nums; }
+.tbl td.win { font-family: var(--mono); color: var(--lime); font-weight: 500; }
+.tbl td.loss { font-family: var(--mono); color: var(--bone-mute); }
+
+/* ============ PLATES ============ */
+.plate { margin: 54px 0; }
+.plate.wide { max-width: 1040px; margin-left: calc(-1 * (1040px - var(--max-content)) / 2); }
+@media (max-width: 1100px) { .plate.wide { max-width: 100%; margin-left: 0; } }
+.plate-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 13px; padding-bottom: 8px; border-bottom: 1px dashed var(--edge); }
+.plate-meta .pnum { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--lime); white-space: nowrap; }
+.plate-meta .pname { font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--bone); text-align: center; flex: 1; text-transform: uppercase; letter-spacing: 0.01em; }
+body[data-lang="zh"] .plate-meta .pname { font-family: var(--serif-sc); text-transform: none; }
+.plate-meta .pscale { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--bone-mute); white-space: nowrap; }
+.plate-body { background: #0a110d; border: 1px solid var(--edge); padding: 22px; border-radius: 2px; }
+.plate-body svg { display: block; width: 100%; height: auto; }
+.plate .caption { margin-top: 12px; font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--bone-soft); line-height: 1.5; }
+body[data-lang="zh"] .plate .caption { font-family: var(--serif-sc); font-style: normal; line-height: 1.7; }
+.plate .caption code { font-style: normal; font-family: var(--mono); font-size: 12px; color: var(--lime); }
+
+/* SVG shared */
+.diag-text { font-family: var(--display); font-size: 13px; fill: var(--bone); font-weight: 600; }
+.diag-text.mono { font-family: var(--mono); font-size: 10.5px; font-weight: 400; }
+.diag-text.small { font-family: var(--serif); font-size: 11px; fill: var(--bone-dim); font-weight: 400; }
+.diag-text.tiny { font-family: var(--mono); font-size: 8.5px; fill: var(--bone-mute); font-weight: 400; }
+.diag-text.label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; fill: var(--bone-mute); text-transform: uppercase; font-weight: 500; }
+.diag-text.lim { fill: var(--lime); }
+.diag-text.cyn { fill: var(--cyan); }
+.diag-text.mag { fill: var(--magenta); }
+.diag-text.amb { fill: var(--amber); }
+.diag-text.dim { fill: var(--bone-soft); }
+.diag-text.bn  { fill: var(--bone); }
+
+.zone { fill: var(--panel); stroke: var(--edge); stroke-width: 1; }
+.zone.lim { stroke: var(--lime); }
+.zone.cyn { stroke: var(--cyan); }
+.zone.mag { stroke: var(--magenta); }
+.zone.amb { stroke: var(--amber); }
+.zone.fill-lim { fill: #0f2418; stroke: var(--lime); }
+.zone.fill-cyn { fill: #0c2429; stroke: var(--cyan); }
+.zone.fill-mag { fill: #281023; stroke: var(--magenta); }
+.zone.fill-amb { fill: #2a2110; stroke: var(--amber); }
+
+.edge { stroke: var(--bone-mute); stroke-width: 1.4; fill: none; }
+.edge.lim { stroke: var(--lime); }
+.edge.cyn { stroke: var(--cyan); }
+.edge.mag { stroke: var(--magenta); }
+.edge.amb { stroke: var(--amber); }
+.edge.dash { stroke-dasharray: 4 4; }
+
+.bit1 { fill: #0f2418; stroke: var(--lime); }
+.bit0 { fill: var(--panel); stroke: var(--edge); }
+.bitx { fill: #281023; stroke: var(--magenta); }
+.grid-l { stroke: var(--grid-hi); stroke-width: 1; }
+
+/* ============ FOOTER ============ */
+.colophon { max-width: 1280px; margin: 100px auto 0; padding: 44px 48px 64px; border-top: 1px solid var(--edge); font-family: var(--mono); font-size: 11px; color: var(--bone-soft); line-height: 1.7; }
+.colophon .grid-c { display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px; }
+@media (max-width: 760px) { .colophon .grid-c { grid-template-columns: 1fr 1fr; } }
+.colophon .field .lbl { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bone-mute); margin-bottom: 9px; }
+.colophon .field .val { color: var(--bone-dim); }
+.colophon .field .val a { color: var(--lime); text-decoration: none; }
+.colophon .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 4px; vertical-align: middle; border: 1px solid var(--edge); }
+
+.cite { font-family: var(--mono); font-size: 12px; line-height: 1.6; background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--cyan); padding: 18px 22px; margin: 22px 0; overflow-x: auto; white-space: pre; color: var(--bone-dim); border-radius: 2px; }
+
+.refs { list-style: none; padding: 0; margin: 22px 0; counter-reset: ref; }
+.refs li { counter-increment: ref; position: relative; padding: 12px 0 12px 34px; border-bottom: 1px dashed var(--edge); font-size: 14px; color: var(--bone-dim); }
+.refs li::before { content: '[' counter(ref) ']'; position: absolute; left: 0; top: 12px; font-family: var(--mono); font-size: 11px; color: var(--lime); }
+.refs li .t { color: var(--bone); font-weight: 600; }
+
+section { scroll-margin-top: 28px; }
+hr.rule { border: none; border-top: 1px dashed var(--edge); margin: 56px 0; }
+
+/* ============ LANGUAGE VISIBILITY ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<!-- ============ RAIL ============ -->
+<nav class="rail">
+  <div class="brand"><em>LINEAR</em> <span class="f2">F₂</span></div>
+  <div class="ref"><span lang="en">PAPER № <span class="pin">003</span> · 2026.06.05</span><span lang="zh">论文 № <span class="pin">003</span> · 2026.06.05</span></div>
+  <ol>
+    <li><a href="#prologue"><span lang="en">Prologue</span><span lang="zh">序章</span></a></li>
+    <li><a href="#algebra"><span lang="en">Group, Ring, Field</span><span lang="zh">群、 环、 域</span></a></li>
+    <li><a href="#core"><span lang="en">A layout is a matrix</span><span lang="zh">布局就是一个矩阵</span></a></li>
+    <li><a href="#example"><span lang="en">The 16×16 example</span><span lang="zh">16×16 的例子</span></a></li>
+    <li><a href="#toolbox"><span lang="en">The four operators</span><span lang="zh">四个算子</span></a></li>
+    <li><a href="#completeness"><span lang="en">Every layout is linear</span><span lang="zh">所有布局都是线性的</span></a></li>
+    <li><a href="#swizzle"><span lang="en">Optimal swizzling</span><span lang="zh">最优 swizzling</span></a></li>
+    <li><a href="#results"><span lang="en">Results &amp; bug fixes</span><span lang="zh">结果与修 bug</span></a></li>
+    <div class="divider"></div>
+    <li><a href="#for-amd"><span lang="en">For our AMD work</span><span lang="zh">对我们 AMD 的意义</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    <li><a href="#references"><span lang="en">References &amp; citation</span><span lang="zh">参考与引用</span></a></li>
+  </ol>
+</nav>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="kicker">
+    <span lang="en">PAPER READING № 003</span><span lang="zh">论文精读 № 003</span>
+    <span class="dot"></span>
+    <span>2026.06.05</span>
+    <span class="sub">·</span>
+    <span class="sub">Triton · GF(2) · Tensor Layouts</span>
+  </div>
+  <h1>Linear <em>Layouts</em> <span class="f2">/F₂</span></h1>
+  <p class="subtitle" lang="en">Every messy tensor layout in a GPU compiler — Blocked, MMA, swizzled, sliced — is one binary matrix over GF(2). Layout conversion collapses to B⁻¹A. Broadcast becomes a zero column. Bank-conflict-free swizzling becomes a subspace search. One piece of linear algebra retires a decade of hand-written, bug-prone layout code.</p>
+  <p class="subtitle" lang="zh">GPU 编译器里所有杂乱的张量布局 —— Blocked、 MMA、 swizzled、 sliced —— 本质都是 GF(2) 上的一个二元矩阵。 布局转换坍缩成 B⁻¹A， 广播变成一个零列， 无 bank 冲突的 swizzling 变成一次子空间搜索。 一套线性代数， 退役掉了十年手写、 易错的布局代码。</p>
+  <div class="byline">
+    Tillet et al. (OpenAI / Triton) · <span lang="en">Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2</span><span lang="zh">Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2</span>
+    &nbsp;·&nbsp; <a href="https://arxiv.org/abs/2505.23819">arXiv:2505.23819</a>
+  </div>
+
+  <div class="meta">
+    <div class="item">
+      <div class="label" lang="en">Algebra</div><div class="label" lang="zh">代数</div>
+      <div class="value">GF(2)<span class="unit">XOR · AND</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Integrated in</div><div class="label" lang="zh">集成于</div>
+      <div class="value">Triton<span class="unit">GPU backend</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Real speedup</div><div class="label" lang="zh">真实加速</div>
+      <div class="value"><span class="accent">1.40&times;</span><span class="unit">max · 1.07× avg</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Layout bugs</div><div class="label" lang="zh">布局 bug</div>
+      <div class="value">12%<span class="unit">of Triton issues</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+<main class="article">
+
+<!-- ====================================================== PROLOGUE -->
+<section id="prologue">
+<h2 lang="en"><span class="num">§ 00 · Why this paper, why now</span>Prologue</h2>
+<h2 lang="zh"><span class="num">§ 00 · 为什么读这篇， 为什么是现在</span>序章</h2>
+
+<p class="dropcap lede" lang="en">A tensor layout is the map from a logical tensor element — say <code>A[row, col]</code> — to the physical resource that holds it: which register, in which thread, in which warp, or which byte of shared memory. Get it wrong and the Tensor Core reads garbage; get it suboptimal and you pay for data movement you never needed. This paper makes one bet: that every layout a GPU compiler will ever need is a <em>linear function over the two-element field</em> — and that this single fact dissolves most of the layout problem.</p>
+<p class="dropcap lede" lang="zh">张量布局， 就是从一个逻辑张量元素 —— 比如 <code>A[row, col]</code> —— 到承载它的物理资源的映射： 哪个寄存器、 在哪个线程、 哪个 warp， 或者共享内存的哪个字节。 搞错了， Tensor Core 读到的就是垃圾； 搞得不够优， 你就要为本不必要的数据搬运买单。 这篇论文押了一个赌注： GPU 编译器需要的每一种布局， 都是 <em>二元域上的一个线性函数</em> —— 而这一个事实， 几乎溶解掉了整个布局问题。</p>
+
+<p lang="en">Why now, and why I'm reading it for AMD. Our second goal is a multi-agent system that writes fast AMD kernels, and the broad goal is porting CUDA-only repos to ROCm. Both run straight into layouts: a kernel ported from NVIDIA to AMD is not "translated" until its data is re-tiled for the MI300X's 64-wide wavefront and its LDS banks. The paper proves AMD's <code>mfma</code> layouts are linear too, and its two flagship algorithms — optimal swizzling and warp-shuffle generation — are hardware-agnostic. That makes this not a Triton curiosity but a blueprint for the layout layer of any kernel agent we build.</p>
+<p lang="zh">为什么是现在， 以及我为什么从 AMD 的角度读它。 我们的第二个目标是一个会写高性能 AMD kernel 的多 agent 系统， 而宽目标是把 CUDA-only 的仓库移植到 ROCm。 两者都会一头撞进布局问题： 一个从 NVIDIA 移植到 AMD 的 kernel， 在它的数据被重新 tile 成 MI300X 的 64 宽 wavefront、 重新对齐到 LDS bank 之前， 根本算不上"翻译完成"。 这篇论文证明了 AMD 的 <code>mfma</code> 布局同样是线性的， 而它的两个旗舰算法 —— 最优 swizzling 和 warp-shuffle 生成 —— 都是硬件无关的。 这让它不只是一个 Triton 的趣闻， 而是我们要造的任何 kernel agent 中， 布局那一层的蓝图。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">The one-line version</span><span class="ctag" lang="zh">一句话版本</span>
+  <p lang="en">Stop writing per-layout interface methods and per-pair conversion code. Model each layout as a binary matrix <code>M</code> whose columns are hardware-index bits and whose rows are logical-tensor-coordinate bits, with all arithmetic over GF(2) (add = XOR, multiply = AND). Then converting layout A to B is <code>B⁻¹A</code>; broadcast is a zero column; a contiguous vectorizable run is an identity block; bank-conflict-free swizzling is a subspace you can solve for. The matrix is the abstraction.</p>
+  <p lang="zh">别再为每种布局写一套接口方法、 为每一对布局写一段转换代码。 把每个布局建模成一个二元矩阵 <code>M</code> —— 列是硬件索引的位， 行是逻辑张量坐标的位， 所有运算都在 GF(2) 上（加法 = XOR， 乘法 = AND）。 于是布局 A 转到 B 就是 <code>B⁻¹A</code>； 广播是一个零列； 一段可向量化的连续元素是一个单位块； 无 bank 冲突的 swizzling 是一个可以解出来的子空间。 矩阵就是那个抽象。</p>
+</div>
+</section>
+
+<!-- ====================================================== ALGEBRA -->
+<section id="algebra">
+<h2 lang="en"><span class="num">§ 01 · The ground floor</span>Group, Ring, Field</h2>
+<h2 lang="zh"><span class="num">§ 01 · 地基</span>群、 环、 域</h2>
+
+<p lang="en">The hard part of layout algebra, for most of us with a CS background, is the algebra. So before the layouts, the floor under them. Think of it as toys (a set of elements) plus ways to play with them (operations). The more "harmonious" the playset, the more you can do — and the ladder from group to ring to field is exactly that, three rungs of increasing structure.</p>
+<p lang="zh">对我们大多数 CS 背景的人来说， 布局代数难的不是布局， 是代数。 所以在讲布局之前， 先把它脚下的地基铺好。 把它想成一堆玩具（元素的集合）加上几种玩法（运算）。 玩具组越"和谐"， 能做的事就越多 —— 而从群到环到域这道阶梯， 正是如此： 结构一级比一级强的三个台阶。</p>
+
+<div class="plate">
+  <div class="plate-meta">
+    <span class="pnum">Plate I</span>
+    <span class="pname" lang="en">The algebra ladder, ending at F₂</span><span class="pname" lang="zh">代数阶梯， 终点是 F₂</span>
+    <span class="pscale">group → ring → field</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 940 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="l1-lim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5ef2a0"/></marker>
+  </defs>
+  <!-- three rungs -->
+  <rect class="zone" x="24" y="60" width="250" height="230" rx="3"/>
+  <text class="diag-text label" x="40" y="84">RUNG 1 · BRONZE</text>
+  <text class="diag-text lim" x="40" y="112" style="font-size:20px">Group</text>
+  <text class="diag-text small" x="40" y="138">one reversible operation</text>
+  <text class="diag-text small" x="40" y="160">"+" : closed · associative</text>
+  <text class="diag-text small" x="40" y="178">identity (0) · inverse (−a)</text>
+  <text class="diag-text mono tiny" x="40" y="206">e.g.  integers under +</text>
+  <text class="diag-text dim small" x="40" y="240">gives you</text>
+  <text class="diag-text cyn small" x="40" y="260">addition + subtraction</text>
+
+  <rect class="zone cyn" x="298" y="44" width="250" height="262" rx="3"/>
+  <text class="diag-text label" x="314" y="68">RUNG 2 · SILVER</text>
+  <text class="diag-text cyn" x="314" y="96" style="font-size:20px">Ring</text>
+  <text class="diag-text small" x="314" y="122">group + a 2nd operation</text>
+  <text class="diag-text small" x="314" y="144">"×" : closed · associative</text>
+  <text class="diag-text small" x="314" y="162">distributes over "+"</text>
+  <text class="diag-text mono tiny" x="314" y="190">e.g.  integers under +,×</text>
+  <text class="diag-text dim small" x="314" y="224">gives you</text>
+  <text class="diag-text cyn small" x="314" y="244">multiply — but no divide</text>
+  <text class="diag-text amb small" x="314" y="280">5 / 2 ∉ ℤ</text>
+
+  <rect class="zone mag" x="572" y="28" width="344" height="294" rx="3"/>
+  <text class="diag-text label" x="588" y="52">RUNG 3 · DIAMOND</text>
+  <text class="diag-text mag" x="588" y="80" style="font-size:20px">Field</text>
+  <text class="diag-text small" x="588" y="106">ring + every nonzero element</text>
+  <text class="diag-text small" x="588" y="124">has a multiplicative inverse</text>
+  <text class="diag-text small" x="588" y="146">"+ − × ÷"  all free (÷0 aside)</text>
+  <text class="diag-text mono tiny" x="588" y="176">e.g.  ℝ, ℚ … and F₂ = {0,1}</text>
+
+  <!-- F2 highlight box inside field -->
+  <rect class="zone fill-mag" x="588" y="196" width="312" height="106" rx="3"/>
+  <text class="diag-text mag mono tiny" x="602" y="216">THE ONE WE USE · F₂ = GF(2)</text>
+  <text class="diag-text bn small" x="602" y="240">add  ≡  XOR        1+1 = 0</text>
+  <text class="diag-text bn small" x="602" y="262">mul  ≡  AND        1·1 = 1</text>
+  <text class="diag-text lim small" x="602" y="288">−a = a  →  subtract = add</text>
+
+  <path class="edge lim" d="M274,175 L296,175" marker-end="url(#l1-lim)"/>
+  <path class="edge lim" d="M548,165 L570,165" marker-end="url(#l1-lim)"/>
+</svg>
+  </div>
+  <div class="caption" lang="en">Each rung adds structure. A <em>group</em> gives addition and subtraction; a <em>ring</em> adds multiplication but not division; a <em>field</em> adds division too. F₂ = GF(2) is the smallest field — just <code>{0, 1}</code> — and its add/multiply are exactly the hardware's XOR and AND. A quirk that matters everywhere downstream: in F₂, <code>a + a = 0</code>, so every element is its own additive inverse and subtraction equals addition.</div>
+  <div class="caption" lang="zh">每一级都增加结构。 <em>群</em> 给你加法和减法； <em>环</em> 加上乘法， 但没有除法； <em>域</em> 把除法也补齐。 F₂ = GF(2) 是最小的域 —— 只有 <code>{0, 1}</code> —— 它的加法/乘法恰好就是硬件的 XOR 和 AND。 一个会贯穿后文的怪癖： 在 F₂ 里 <code>a + a = 0</code>， 所以每个元素都是自己的加法逆元， 减法等于加法。</div>
+</div>
+
+<p lang="en">Why F₂ specifically, and not the reals? Because GPU indices <em>are</em> bits. A warp has 32 or 64 threads, an <code>mma</code> tile is a power of two on each side, and Triton constrains every tensor dimension and every layout subdivision (registers per thread, threads, warps) to powers of two. The moment your coordinates are exactly <code>log₂(N)</code> bits, an XOR of bit-vectors <em>is</em> a linear combination, and a matrix over F₂ <em>is</em> the most natural description of how those bits recombine. Theory maps to the cheapest instructions the hardware has.</p>
+<p lang="zh">为什么偏偏是 F₂， 而不是实数？ 因为 GPU 的索引本来 <em>就是</em> 位。 一个 warp 有 32 或 64 个线程， 一个 <code>mma</code> tile 每条边都是 2 的幂， Triton 把每个张量维度、 每个布局细分（每线程寄存器数、 线程数、 warp 数）都限制成 2 的幂。 一旦你的坐标恰好是 <code>log₂(N)</code> 位， 位向量的 XOR <em>就是</em> 一次线性组合， 而 F₂ 上的矩阵 <em>就是</em> 描述这些位如何重组的最自然的语言。 理论直接落到硬件最便宜的那几条指令上。</p>
+
+<div class="callout amber">
+  <span class="ctag" lang="en">The non-power-of-2 worry, dismissed</span><span class="ctag" lang="zh">非 2 次幂的顾虑， 打消</span>
+  <p lang="en">A fair objection: F₂ aligns with powers of two, so what about a tensor whose shape isn't a power of two? In practice it's a non-issue — GPU hardware is built in powers of two from the ground up: 32/64-wide warps, power-of-two <code>mma</code>/<code>wgmma</code> tiles. The padding to a power of two happens at the tile boundary regardless, so the layout algebra never sees a non-power-of-two extent. The real limitation is elsewhere: a pure linear map <code>y = Mx</code> can't express an affine layout with a translation (<code>y = Mx + b</code>).</p>
+  <p lang="zh">一个合理的质疑： F₂ 天然对齐 2 的幂， 那形状不是 2 的幂的张量怎么办？ 实践中这不是问题 —— GPU 硬件从底层就是按 2 的幂搭起来的： 32/64 宽的 warp、 2 的幂的 <code>mma</code>/<code>wgmma</code> tile。 补齐到 2 的幂这件事无论如何都发生在 tile 边界上， 所以布局代数根本看不到非 2 次幂的尺寸。 真正的局限在别处： 纯线性映射 <code>y = Mx</code> 表达不了带平移的仿射布局（<code>y = Mx + b</code>）。</p>
+</div>
+</section>
+
+<!-- ====================================================== CORE -->
+<section id="core">
+<h2 lang="en"><span class="num">§ 02 · The central idea</span>A layout is a matrix</h2>
+<h2 lang="zh"><span class="num">§ 02 · 核心思想</span>布局就是一个矩阵</h2>
+
+<p lang="en">Here is the whole abstraction in one line. Take the hardware index — concatenate the bits of (register id, thread id, warp id) into one bit-vector <code>x</code>. Take the logical tensor coordinate — write <code>(i, j)</code> as a bit-vector <code>y</code>. A layout is the linear map <code>y = M·x</code> over F₂, where <code>M</code> is a 0/1 matrix. Computing <code>y</code> means: for each output row of <code>M</code>, AND it with <code>x</code> bitwise, then XOR the surviving bits. Each row of <code>M</code> decides how one output bit is built from the input bits; a 1 means "this input bit participates in the XOR," a 0 means it doesn't.</p>
+<p lang="zh">整个抽象一行就能说完。 拿硬件索引 —— 把（寄存器号、 线程号、 warp 号）的位拼接成一个位向量 <code>x</code>。 拿逻辑张量坐标 —— 把 <code>(i, j)</code> 写成位向量 <code>y</code>。 一个布局就是 F₂ 上的线性映射 <code>y = M·x</code>， 其中 <code>M</code> 是一个 0/1 矩阵。 算 <code>y</code> 的方法是： 对 <code>M</code> 的每一个输出行， 跟 <code>x</code> 按位 AND， 再把存活的位 XOR 起来。 <code>M</code> 的每一行决定一个输出位如何由输入位拼出来； 1 表示"这个输入位参与 XOR"， 0 表示不参与。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate II</span>
+    <span class="pname" lang="en">The mapping: hardware bits → tensor coordinate</span><span class="pname" lang="zh">映射： 硬件位 → 张量坐标</span>
+    <span class="pscale">y = M·x over F₂</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="l2-lim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5ef2a0"/></marker>
+    <marker id="l2-mag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff5cc8"/></marker>
+  </defs>
+
+  <!-- input bit-vector x -->
+  <text class="diag-text label" x="24" y="40">INPUT x · HARDWARE INDEX BITS</text>
+  <g>
+    <rect class="bit1" x="24"  y="52" width="30" height="30"/><text class="diag-text mono lim" x="39" y="72" text-anchor="middle">r0</text>
+    <rect class="bit1" x="56"  y="52" width="30" height="30"/><text class="diag-text mono lim" x="71" y="72" text-anchor="middle">r1</text>
+    <rect class="bit0" x="92"  y="52" width="30" height="30"/><text class="diag-text mono dim" x="107" y="72" text-anchor="middle">t0</text>
+    <rect class="bit0" x="124" y="52" width="30" height="30"/><text class="diag-text mono dim" x="139" y="72" text-anchor="middle">t1</text>
+    <rect class="bit0" x="156" y="52" width="30" height="30"/><text class="diag-text mono dim" x="171" y="72" text-anchor="middle">t2</text>
+    <rect class="bit0" x="188" y="52" width="30" height="30"/><text class="diag-text mono dim" x="203" y="72" text-anchor="middle">t3</text>
+    <rect class="bit0" x="220" y="52" width="30" height="30"/><text class="diag-text mono dim" x="235" y="72" text-anchor="middle">t4</text>
+    <rect class="bitx" x="256" y="52" width="30" height="30"/><text class="diag-text mono mag" x="271" y="72" text-anchor="middle">w0</text>
+  </g>
+  <text class="diag-text tiny" x="24" y="100">2 reg bits  ·  5 thread bits  ·  1 warp bit   (8-bit vector)</text>
+
+  <!-- matrix M -->
+  <text class="diag-text label" x="406" y="40">MATRIX M · A PERMUTATION (+ ZERO COLS)</text>
+  <rect class="zone lim" x="406" y="52" width="200" height="180" rx="3"/>
+  <text class="diag-text mono small" x="506" y="80" text-anchor="middle" fill="#a9bcb2">[ 1 0 0 0 0 0 0 0 ]</text>
+  <text class="diag-text mono small" x="506" y="100" text-anchor="middle" fill="#a9bcb2">[ 0 0 1 0 0 0 0 0 ]</text>
+  <text class="diag-text mono small" x="506" y="120" text-anchor="middle" fill="#a9bcb2">[ 0 0 0 1 0 0 0 1 ]</text>
+  <text class="diag-text mono small" x="506" y="140" text-anchor="middle" fill="#a9bcb2">[ 0 0 0 0 0 0 0 0 ]</text>
+  <text class="diag-text mono small" x="506" y="160" text-anchor="middle" fill="#a9bcb2">[ 0 1 0 0 0 0 0 0 ]</text>
+  <text class="diag-text mono small" x="506" y="180" text-anchor="middle" fill="#a9bcb2">[ 0 0 0 0 1 0 0 0 ]</text>
+  <text class="diag-text mono small" x="506" y="200" text-anchor="middle" fill="#a9bcb2">[ 0 0 0 0 0 1 0 0 ]</text>
+  <text class="diag-text mono small" x="506" y="220" text-anchor="middle" fill="#a9bcb2">[ 0 0 0 0 0 0 1 0 ]</text>
+  <text class="diag-text mag tiny" x="406" y="252">row with two 1s → output bit = XOR of two input bits (swizzle / broadcast joins)</text>
+
+  <!-- output y -->
+  <text class="diag-text label" x="720" y="40">OUTPUT y · TENSOR COORD BITS</text>
+  <g>
+    <rect class="bit1" x="720" y="52" width="34" height="30"/><text class="diag-text mono lim" x="737" y="72" text-anchor="middle">i0</text>
+    <rect class="bit0" x="756" y="52" width="34" height="30"/><text class="diag-text mono dim" x="773" y="72" text-anchor="middle">i1</text>
+    <rect class="bit0" x="792" y="52" width="34" height="30"/><text class="diag-text mono dim" x="809" y="72" text-anchor="middle">i2</text>
+    <rect class="bit0" x="828" y="52" width="34" height="30"/><text class="diag-text mono dim" x="845" y="72" text-anchor="middle">i3</text>
+  </g>
+  <g>
+    <rect class="bit0" x="720" y="92" width="34" height="30"/><text class="diag-text mono dim" x="737" y="112" text-anchor="middle">j0</text>
+    <rect class="bit1" x="756" y="92" width="34" height="30"/><text class="diag-text mono lim" x="773" y="112" text-anchor="middle">j1</text>
+    <rect class="bit0" x="792" y="92" width="34" height="30"/><text class="diag-text mono dim" x="809" y="112" text-anchor="middle">j2</text>
+    <rect class="bit0" x="828" y="92" width="34" height="30"/><text class="diag-text mono dim" x="845" y="112" text-anchor="middle">j3</text>
+  </g>
+  <text class="diag-text tiny" x="720" y="142">(i, j) = position in the 16×16 logical tile</text>
+
+  <path class="edge lim" d="M300,67 L404,140" marker-end="url(#l2-lim)"/>
+  <path class="edge lim" d="M608,120 L716,82" marker-end="url(#l2-lim)"/>
+
+  <!-- the rule, spelled out -->
+  <rect class="zone" x="24" y="260" width="932" height="56" rx="3"/>
+  <text class="diag-text label" x="40" y="282">PER OUTPUT BIT</text>
+  <text class="diag-text small" x="40" y="302">yₖ = XOR over all p of ( M[k,p] AND xₚ ).  A row of all zeros → that output bit is always 0.  A zero <tspan class="mag" style="font-family:var(--mono)">column</tspan> → that input bit (a thread/warp) changes nothing → broadcast.</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">The hardware index <code>x</code> (here 8 bits: 2 register, 5 thread, 1 warp) is multiplied by the 0/1 matrix <code>M</code> over F₂ to produce the tensor coordinate <code>y = (i, j)</code>. Multiply is AND, sum is XOR. A row with a single 1 just copies an input bit; a row with two 1s XORs two inputs (the seed of swizzling). A whole <em>column</em> of zeros means that hardware bit never affects the coordinate — which is exactly broadcasting.</div>
+  <div class="caption" lang="zh">硬件索引 <code>x</code>（这里 8 位： 2 位寄存器、 5 位线程、 1 位 warp）在 F₂ 上乘以 0/1 矩阵 <code>M</code>， 得到张量坐标 <code>y = (i, j)</code>。 乘法是 AND， 求和是 XOR。 只有一个 1 的行只是拷贝一个输入位； 有两个 1 的行把两个输入 XOR 起来（这正是 swizzling 的种子）。 而整整一 <em>列</em> 全是 0， 意味着那个硬件位永远不影响坐标 —— 这恰好就是广播。</div>
+</div>
+
+<p lang="en">That single picture is the entire reframing. Layout conversion stops being a wall of <code>if/else</code> and bit-twiddling and becomes a matrix product. A layout property — is it broadcasting? is it contiguous? — becomes a matrix property: does it have a zero column? does it contain an identity block? An optimization — minimize bank conflicts — becomes a search for an optimal subspace. The authors carry this through the entire Triton GPU backend without special-casing a single layout.</p>
+<p lang="zh">这一张图就是整个重构。 布局转换不再是一堵 <code>if/else</code> 加位操作的墙， 而变成一次矩阵乘法。 一个布局的性质 —— 它在广播吗？ 它连续吗？ —— 变成矩阵的性质： 它有零列吗？ 它含一个单位块吗？ 一个优化 —— 最小化 bank 冲突 —— 变成寻找一个最优子空间。 作者把这一条线贯穿整个 Triton GPU 后端， 没有为任何单一布局开特例。</p>
+</section>
+
+<!-- ====================================================== EXAMPLE -->
+<section id="example">
+<h2 lang="en"><span class="num">§ 03 · Making it concrete</span>The 16×16 example</h2>
+<h2 lang="zh"><span class="num">§ 03 · 把它落地</span>16×16 的例子</h2>
+
+<p lang="en">The paper's motivating example (§4.1) is worth working by hand, because once you've traced one element through the matrix the abstraction stops feeling abstract. Tile a 16×16 tensor with <strong>2×2 registers per thread</strong>, <strong>4×8 threads</strong> (one 32-thread warp), and <strong>2×1 warps</strong>. Each thread owns a contiguous 2×2 block. Since every count is a power of two, you can read the layout straight off the binary coordinates.</p>
+<p lang="zh">论文的引子例子（§4.1）值得手算一遍， 因为一旦你把一个元素穿过矩阵走一遍， 抽象就不再抽象了。 用 <strong>每线程 2×2 个寄存器</strong>、 <strong>4×8 个线程</strong>（一个 32 线程的 warp）、 <strong>2×1 个 warp</strong> 来切一个 16×16 的张量。 每个线程拥有一个连续的 2×2 块。 因为每个数量都是 2 的幂， 你可以直接从二进制坐标把布局读出来。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate III</span>
+    <span class="pname" lang="en">Where thread t9's register r1 lands</span><span class="pname" lang="zh">线程 t9 的寄存器 r1 落在哪</span>
+    <span class="pscale">reg ⊕ thr ⊕ wrp</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="l3-lim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5ef2a0"/></marker>
+  </defs>
+  <!-- the three local coordinates -->
+  <text class="diag-text label" x="24" y="34">DECOMPOSE THE ADDRESS · LOCAL COORD AT EACH LEVEL</text>
+
+  <rect class="zone fill-lim" x="24" y="48" width="220" height="78" rx="3"/>
+  <text class="diag-text lim mono tiny" x="38" y="68">REGISTER MAP</text>
+  <text class="diag-text small" x="38" y="90">r1 → column 2 of the 2×2</text>
+  <text class="diag-text mono lim" x="38" y="112">δ_reg = (0, 1)</text>
+
+  <rect class="zone fill-cyn" x="262" y="48" width="220" height="78" rx="3"/>
+  <text class="diag-text cyn mono tiny" x="276" y="68">THREAD MAP</text>
+  <text class="diag-text small" x="276" y="90">t9 = (1,0,0,1)  in 4×8 grid</text>
+  <text class="diag-text mono cyn" x="276" y="112">δ_thr = (2, 2)</text>
+
+  <rect class="zone fill-mag" x="500" y="48" width="220" height="78" rx="3"/>
+  <text class="diag-text mag mono tiny" x="514" y="68">WARP MAP</text>
+  <text class="diag-text small" x="514" y="90">w0 → top-left warp block</text>
+  <text class="diag-text mono mag" x="514" y="112">δ_wrp = (0, 0)</text>
+
+  <!-- XOR combine -->
+  <rect class="zone amb" x="738" y="48" width="218" height="78" rx="3"/>
+  <text class="diag-text amb mono tiny" x="752" y="68">XOR ALL THREE</text>
+  <text class="diag-text small" x="752" y="90">(0,1) ⊕ (2,2) ⊕ (0,0)</text>
+  <text class="diag-text mono amb" x="752" y="112">= (2, 3)  → tile[2][3]</text>
+
+  <path class="edge lim" d="M244,87 L260,87" marker-end="url(#l3-lim)"/>
+  <path class="edge cyn" d="M482,87 L498,87" marker-end="url(#l3-lim)"/>
+  <path class="edge mag" d="M720,87 L736,87" marker-end="url(#l3-lim)"/>
+
+  <!-- 8x8 corner of the tile grid (showing just the relevant quadrant) -->
+  <text class="diag-text label" x="24" y="162">THE 16×16 TILE · top-left 8×8 shown · ⊕ marks t9·r1 at (row 2, col 3)</text>
+  <g transform="translate(24,176)">
+    <!-- grid 8 cols x 6 rows, cell 34 -->
+    <!-- rows -->
+    <g>
+      <!-- draw cells -->
+      <!-- We'll just outline grid and mark a few -->
+    </g>
+    <!-- column headers -->
+    <text class="diag-text tiny" x="17" y="-2" text-anchor="middle">c0</text>
+    <text class="diag-text tiny" x="51" y="-2" text-anchor="middle">c1</text>
+    <text class="diag-text tiny" x="85" y="-2" text-anchor="middle">c2</text>
+    <text class="diag-text tiny" x="119" y="-2" text-anchor="middle">c3</text>
+    <text class="diag-text tiny" x="153" y="-2" text-anchor="middle">c4</text>
+    <text class="diag-text tiny" x="187" y="-2" text-anchor="middle">c5</text>
+    <text class="diag-text tiny" x="221" y="-2" text-anchor="middle">c6</text>
+    <text class="diag-text tiny" x="255" y="-2" text-anchor="middle">c7</text>
+    <!-- grid lines -->
+    <rect x="0" y="0" width="272" height="170" fill="none" class="grid-l"/>
+    <line x1="34"  y1="0" x2="34"  y2="170" class="grid-l"/>
+    <line x1="68"  y1="0" x2="68"  y2="170" class="grid-l"/>
+    <line x1="102" y1="0" x2="102" y2="170" class="grid-l"/>
+    <line x1="136" y1="0" x2="136" y2="170" class="grid-l"/>
+    <line x1="170" y1="0" x2="170" y2="170" class="grid-l"/>
+    <line x1="204" y1="0" x2="204" y2="170" class="grid-l"/>
+    <line x1="238" y1="0" x2="238" y2="170" class="grid-l"/>
+    <line x1="0" y1="34"  x2="272" y2="34"  class="grid-l"/>
+    <line x1="0" y1="68"  x2="272" y2="68"  class="grid-l"/>
+    <line x1="0" y1="102" x2="272" y2="102" class="grid-l"/>
+    <line x1="0" y1="136" x2="272" y2="136" class="grid-l"/>
+    <!-- t9's 2x2 block occupies rows 2-3, cols 2-3 -->
+    <rect x="68" y="68" width="68" height="68" class="zone cyn" fill="#0c2429" fill-opacity="0.5"/>
+    <text class="diag-text cyn tiny" x="102" y="62" text-anchor="middle">t9 owns this 2×2</text>
+    <!-- mark r0 at (2,2), r1 at (2,3) -->
+    <text class="diag-text lim" x="85"  y="92" text-anchor="middle" style="font-size:14px">r0</text>
+    <rect x="102" y="68" width="34" height="34" class="zone lim" fill="#0f2418"/>
+    <text class="diag-text lim" x="119" y="90" text-anchor="middle" style="font-size:14px">⊕</text>
+    <text class="diag-text lim tiny" x="119" y="118" text-anchor="middle">r1</text>
+  </g>
+
+  <!-- the L8 matrix to the right -->
+  <text class="diag-text label" x="340" y="162">THE LAYOUT MATRIX  L₈  ·  y = L₈·x</text>
+  <rect class="zone" x="340" y="176" width="320" height="160" rx="3"/>
+  <text class="diag-text mono small" x="356" y="202" fill="#a9bcb2">input  = [ r0 r1 | t0 t1 t2 t3 t4 | w0 ]</text>
+  <text class="diag-text mono small" x="356" y="226" fill="#a9bcb2">i = [ 0 0 | 0 0 1 1 0 | 0 ]·x</text>
+  <text class="diag-text mono small" x="356" y="246" fill="#a9bcb2">j = [ 1 0 | 1 1 0 0 0 | 0 ]·x  (+swizzle)</text>
+  <text class="diag-text small" x="356" y="278">register bits feed the low bit of each</text>
+  <text class="diag-text small" x="356" y="296">coordinate; thread bits feed the next;</text>
+  <text class="diag-text small" x="356" y="314">warp bits feed the high bits.</text>
+
+  <!-- worked result -->
+  <rect class="zone amb" x="676" y="176" width="280" height="160" rx="3"/>
+  <text class="diag-text amb mono tiny" x="692" y="200">WORKED · t9 · r1 · w0</text>
+  <text class="diag-text mono small" x="692" y="226" fill="#a9bcb2">x: reg=(1,0) thr=(1,0,0,1) wrp=0</text>
+  <text class="diag-text mono small" x="692" y="250" fill="#a9bcb2">i = 2   (binary 0010)</text>
+  <text class="diag-text mono small" x="692" y="270" fill="#a9bcb2">j = 3   (binary 0011)</text>
+  <text class="diag-text lim small" x="692" y="300">⇒ logical position (2, 3)</text>
+  <text class="diag-text tiny" x="692" y="322">one matrix-vector product, no branches</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Each hardware level contributes a <em>local</em> coordinate, and the absolute position is their XOR. Register <code>r1</code> shifts t9 one column right inside its 2×2 block <code>(0,1)</code>; the thread index places that block at <code>(2,2)</code>; the warp adds <code>(0,0)</code>. XOR them: <code>(2,3)</code>. The same answer falls out of one matrix-vector product <code>y = L₈·x</code> — no branches, no special cases.</div>
+  <div class="caption" lang="zh">每个硬件层级贡献一个 <em>局部</em> 坐标， 绝对位置就是它们的 XOR。 寄存器 <code>r1</code> 把 t9 在它的 2×2 块内右移一列 <code>(0,1)</code>； 线程索引把这个块放到 <code>(2,2)</code>； warp 加上 <code>(0,0)</code>。 XOR 起来： <code>(2,3)</code>。 同样的答案也从一次矩阵-向量乘法 <code>y = L₈·x</code> 里掉出来 —— 没有分支， 没有特例。</div>
+</div>
+
+<p lang="en">The labels matter as much as the bits. The input lives in a <em>labeled</em> vector space <code>Reg × Thr × Wrp</code>; the output in <code>dim0 × dim1</code>. Keeping the labels attached is what lets every later operation — composition, product, division — stay physically meaningful instead of becoming anonymous matrix shuffling. When the paper says it operates "label-wise," that's the bookkeeping that keeps "a register bit" from being confused with "a warp bit."</p>
+<p lang="zh">标签和位一样重要。 输入活在一个 <em>带标签的</em> 向量空间 <code>Reg × Thr × Wrp</code> 里； 输出在 <code>dim0 × dim1</code> 里。 把标签一直挂着， 才让后面每一个操作 —— 复合、 积、 除法 —— 都保持物理意义， 而不是退化成匿名的矩阵搬运。 论文说它按"label-wise"运作时， 指的就是这套记账法， 它让"一个寄存器位"不会跟"一个 warp 位"搞混。</p>
+</section>
+
+<!-- ====================================================== TOOLBOX -->
+<section id="toolbox">
+<h2 lang="en"><span class="num">§ 04 · The toolbox</span>The four operators</h2>
+<h2 lang="zh"><span class="num">§ 04 · 工具箱</span>四个算子</h2>
+
+<p lang="en">Once layouts are matrices, the operations you need to build, combine, decompose, and invert them are just linear algebra — but each one earns its place by solving a concrete code-generation problem. Four carry most of the weight.</p>
+<p lang="zh">一旦布局是矩阵， 你用来构建、 组合、 分解、 反转它们的操作就只是线性代数 —— 但每一个都靠解决一个具体的代码生成问题来挣得自己的位置。 四个算子扛起了大部分重量。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate IV</span>
+    <span class="pname" lang="en">Composition · Product · Left-division · Right-inverse</span><span class="pname" lang="zh">复合 · 积 · 左除 · 右逆</span>
+    <span class="pscale">def 4.2 – 4.5</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- four quadrant panels -->
+  <!-- composition -->
+  <rect class="zone lim" x="20" y="20" width="220" height="120" rx="3"/>
+  <text class="diag-text lim mono tiny" x="34" y="42">COMPOSITION  P∘Q</text>
+  <text class="diag-text small" x="34" y="64">= matrix multiply over F₂</text>
+  <text class="diag-text mono small" x="34" y="88" fill="#a9bcb2">[P][Q]  →  one matrix</text>
+  <text class="diag-text cyn small" x="34" y="114">USE · convert A→B is B⁻¹∘A;</text>
+  <text class="diag-text cyn small" x="34" y="130">fuse a transpose into the load</text>
+
+  <!-- product -->
+  <rect class="zone cyn" x="256" y="20" width="220" height="120" rx="3"/>
+  <text class="diag-text cyn mono tiny" x="270" y="42">PRODUCT  P × Q</text>
+  <text class="diag-text small" x="270" y="64">= block-diagonal (direct sum)</text>
+  <text class="diag-text mono small" x="270" y="88" fill="#a9bcb2">diag(P, Q)</text>
+  <text class="diag-text lim small" x="270" y="114">USE · build big from small:</text>
+  <text class="diag-text lim small" x="270" y="130">reg ⊕ thr ⊕ warp, dim0 ⊕ dim1</text>
+
+  <!-- left division -->
+  <rect class="zone mag" x="492" y="20" width="220" height="120" rx="3"/>
+  <text class="diag-text mag mono tiny" x="506" y="42">LEFT DIVISION  P \ M</text>
+  <text class="diag-text small" x="506" y="64">peel a sub-layout off M</text>
+  <text class="diag-text mono small" x="506" y="88" fill="#a9bcb2">M = [P ; rest] ?</text>
+  <text class="diag-text cyn small" x="506" y="114">USE · does M tile cleanly into</text>
+  <text class="diag-text cyn small" x="506" y="130">ldmatrix / stmatrix units?</text>
+
+  <!-- right inverse -->
+  <rect class="zone amb" x="728" y="20" width="232" height="120" rx="3"/>
+  <text class="diag-text amb mono tiny" x="742" y="42">RIGHT INVERSE  M⁻¹</text>
+  <text class="diag-text small" x="742" y="64">from coord back to hardware</text>
+  <text class="diag-text mono small" x="742" y="88" fill="#a9bcb2">solve  M·x = y</text>
+  <text class="diag-text lim small" x="742" y="114">USE · broadcast → many x;</text>
+  <text class="diag-text lim small" x="742" y="130">pick min-Hamming-weight x</text>
+
+  <!-- the unifying strip -->
+  <rect class="zone" x="20" y="164" width="940" height="116" rx="3"/>
+  <text class="diag-text label" x="36" y="188">THE PAYOFF · ONE EQUATION REPLACES THE QUADRATIC BLOWUP</text>
+  <text class="diag-text bn" x="36" y="220" style="font-size:17px">convert(A → B)  =  B⁻¹ ∘ A</text>
+  <text class="diag-text small" x="36" y="246">Old Triton: implement a bespoke converter for every (source, target) layout pair — O(n²) hand-written paths,</text>
+  <text class="diag-text small" x="36" y="264">each a fresh chance for a bug. Linear layouts: one matrix routine handles all pairs. The n² collapses to 1.</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Composition is matrix multiply — and it is why converting layout A to B is just <code>B⁻¹∘A</code>. Product is the block-diagonal direct sum that builds a big layout from register/thread/warp pieces. Left-division asks "does this small layout sit inside the big one?" — the test for whether an <code>ldmatrix</code> can lower a transfer. Right-inverse runs the map backwards, and under broadcast picks the minimum-Hamming-weight solution so duplicated data all reads from one source.</div>
+  <div class="caption" lang="zh">复合就是矩阵乘法 —— 这也正是布局 A 转 B 等于 <code>B⁻¹∘A</code> 的原因。 积是分块对角的直和， 用寄存器/线程/warp 的碎片拼出大布局。 左除问的是"这个小布局嵌在大布局里吗？"—— 就是判断一条 <code>ldmatrix</code> 能不能降级这次传输。 右逆把映射倒着跑， 在广播下挑汉明权重最小的解， 让重复的数据都从同一个源读。</div>
+</div>
+
+<h3 lang="en">Why <em>convert = B⁻¹A</em> is the whole game</h3>
+<h3 lang="zh">为什么 <em>转换 = B⁻¹A</em> 就是整盘棋</h3>
+
+<p lang="en">Picture the old way. Triton supported a handful of layouts, and moving data from one to another meant a dedicated routine per pair: Blocked→MMA, MMA→Shared, Sliced→Blocked, each hand-written, each only covering a subset, each a place where a complex program could silently produce wrong results. The GitHub record is blunt about the cost — 12% of all bugs filed against Triton were layout-related.</p>
+<p lang="zh">想想旧的做法。 Triton 支持一小撮布局， 把数据从一种搬到另一种意味着每一对都要一个专门的例程： Blocked→MMA、 MMA→Shared、 Sliced→Blocked， 每个都手写、 每个只覆盖一个子集、 每个都是复杂程序里可能悄悄算错的地方。 GitHub 的记录把代价说得很直白 —— Triton 上提的所有 bug 里有 12% 跟布局相关。</p>
+
+<p lang="en">With linear layouts, A and B are both matrices mapping hardware indices to the same logical tensor. To send data from A's layout to B's, you map A's hardware index up to the logical coordinate, then map that coordinate back down to B's hardware index — that's <code>B⁻¹∘A</code>, computed once by a generic F₂ Gaussian-elimination routine. The quadratic family of converters collapses into a single algorithm. Better still, decomposing the conversion matrix by resource (registers, threads, warps) tells the compiler <em>where</em> the data has to move: if the warp sub-block is the identity, no inter-warp movement is needed, which is the green light to use a warp shuffle instead of a round-trip through shared memory.</p>
+<p lang="zh">有了线性布局， A 和 B 都是把硬件索引映射到同一个逻辑张量的矩阵。 要把数据从 A 的布局送到 B 的布局， 你把 A 的硬件索引向上映射到逻辑坐标， 再把那个坐标向下映射回 B 的硬件索引 —— 这就是 <code>B⁻¹∘A</code>， 由一个通用的 F₂ 高斯消元例程算一次。 那一整族二次方数量的转换器， 坍缩成单个算法。 更妙的是， 把转换矩阵按资源（寄存器、 线程、 warp）分解， 会告诉编译器数据 <em>需要</em> 往哪搬： 如果 warp 子块是单位阵， 就不需要 warp 间搬运， 这就是用 warp shuffle 取代往返共享内存的绿灯。</p>
+
+<div class="pull" lang="en">The old code asked "which of my hand-written converters fits this pair?" The new code asks "what is B⁻¹A?" — and the answer is always computable.</div>
+<div class="pull" lang="zh">旧代码问的是"我哪一个手写转换器能套这一对？" 新代码问的是"B⁻¹A 是多少？"—— 而这个答案总是算得出来的。</div>
+</section>
+
+<!-- ====================================================== COMPLETENESS -->
+<section id="completeness">
+<h2 lang="en"><span class="num">§ 05 · The completeness claim</span>Every layout is linear</h2>
+<h2 lang="zh"><span class="num">§ 05 · 完备性主张</span>所有布局都是线性的</h2>
+
+<p lang="en">A framework is only as good as its coverage, so the paper grinds through every layout family Triton has and proves each is linear. The two big families split by where the data lives: <strong>distributed layouts</strong> spread a tensor across registers/threads/warps, and <strong>memory layouts</strong> store it in a programmable memory like shared memory.</p>
+<p lang="zh">一个框架的价值取决于它的覆盖面， 所以论文把 Triton 拥有的每一个布局族都啃了一遍， 证明每一个都是线性的。 两大族按数据住在哪里划分： <strong>分布式布局</strong> 把张量铺在寄存器/线程/warp 上， <strong>内存布局</strong> 把它存进像共享内存这样的可编程内存里。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate V</span>
+    <span class="pname" lang="en">Distributed = permutation + zero cols · Memory = shear</span><span class="pname" lang="zh">分布式 = 置换 + 零列 · 内存 = 剪切</span>
+    <span class="pscale">def 4.10 vs def 4.14</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg">
+  <line x1="490" y1="20" x2="490" y2="300" stroke="#24382c" stroke-width="1" stroke-dasharray="3 4"/>
+
+  <!-- LEFT: distributed -->
+  <text class="diag-text label" x="24" y="36">DISTRIBUTED LAYOUT · DEF 4.10</text>
+  <text class="diag-text small" x="24" y="58">surjective · each column ≤ 1 nonzero bit · no two equal nonzero columns</text>
+  <text class="diag-text cyn small" x="24" y="76">⇒ a permutation matrix, possibly with inserted zero columns</text>
+
+  <!-- permutation matrix viz -->
+  <g transform="translate(40,96)">
+    <text class="diag-text tiny" x="0" y="-4">M (rows=coord bits, cols=hw bits)</text>
+    <!-- 5x6 grid, cells 26 -->
+    <rect x="0" y="0" width="156" height="130" fill="none" class="grid-l"/>
+    <!-- vertical lines every 26 -->
+    <line x1="26" y1="0" x2="26" y2="130" class="grid-l"/><line x1="52" y1="0" x2="52" y2="130" class="grid-l"/>
+    <line x1="78" y1="0" x2="78" y2="130" class="grid-l"/><line x1="104" y1="0" x2="104" y2="130" class="grid-l"/>
+    <line x1="130" y1="0" x2="130" y2="130" class="grid-l"/>
+    <line x1="0" y1="26" x2="156" y2="26" class="grid-l"/><line x1="0" y1="52" x2="156" y2="52" class="grid-l"/>
+    <line x1="0" y1="78" x2="156" y2="78" class="grid-l"/><line x1="0" y1="104" x2="156" y2="104" class="grid-l"/>
+    <!-- ones: a permutation -->
+    <rect x="1" y="1" width="24" height="24" class="bit1"/>
+    <rect x="53" y="27" width="24" height="24" class="bit1"/>
+    <rect x="27" y="53" width="24" height="24" class="bit1"/>
+    <rect x="105" y="79" width="24" height="24" class="bit1"/>
+    <rect x="79" y="105" width="24" height="24" class="bit1"/>
+    <!-- the zero column highlighted -->
+    <rect x="131" y="0" width="25" height="130" fill="#281023" fill-opacity="0.55" stroke="#ff5cc8" stroke-dasharray="3 3"/>
+  </g>
+  <text class="diag-text mag small" x="210" y="150">this column is all zeros</text>
+  <text class="diag-text mag small" x="210" y="168">→ that thread/warp bit</text>
+  <text class="diag-text mag small" x="210" y="186">changes no coordinate</text>
+  <text class="diag-text bn small" x="210" y="210">= BROADCAST</text>
+  <text class="diag-text tiny" x="40" y="252">Blocked, MMA / wgmma / mfma, and Sliced</text>
+  <text class="diag-text tiny" x="40" y="268">layouts all fit this single definition.</text>
+  <text class="diag-text tiny" x="40" y="284">A sliced layout just drops some rows.</text>
+
+  <!-- RIGHT: memory -->
+  <text class="diag-text label" x="512" y="36">MEMORY LAYOUT · DEF 4.14</text>
+  <text class="diag-text small" x="512" y="58">invertible · each column has 1 or 2 nonzero bits</text>
+  <text class="diag-text mag small" x="512" y="76">⇒ a shear: the 2-nonzero column XOR-mixes coords = swizzle</text>
+
+  <!-- shear matrix viz: I + C -->
+  <g transform="translate(528,96)">
+    <text class="diag-text tiny" x="0" y="-4">offset(i,j) = j ⊕ ( (i/per_phase) mod max_phase )·vec</text>
+    <rect x="0" y="20" width="130" height="130" fill="none" class="grid-l"/>
+    <line x1="26" y1="20" x2="26" y2="150" class="grid-l"/><line x1="52" y1="20" x2="52" y2="150" class="grid-l"/>
+    <line x1="78" y1="20" x2="78" y2="150" class="grid-l"/><line x1="104" y1="20" x2="104" y2="150" class="grid-l"/>
+    <line x1="0" y1="46" x2="130" y2="46" class="grid-l"/><line x1="0" y1="72" x2="130" y2="72" class="grid-l"/>
+    <line x1="0" y1="98" x2="130" y2="98" class="grid-l"/><line x1="0" y1="124" x2="130" y2="124" class="grid-l"/>
+    <!-- identity diagonal (i part) -->
+    <rect x="1" y="21" width="24" height="24" class="bit1"/>
+    <rect x="27" y="47" width="24" height="24" class="bit1"/>
+    <rect x="53" y="73" width="24" height="24" class="bit1"/>
+    <rect x="79" y="99" width="24" height="24" class="bit1"/>
+    <rect x="105" y="125" width="24" height="24" class="bit1"/>
+    <!-- the shear C entries: off-diagonal magenta (second 1 in a column) -->
+    <rect x="79" y="21" width="24" height="24" class="bitx"/>
+    <rect x="105" y="47" width="24" height="24" class="bitx"/>
+  </g>
+  <text class="diag-text small" x="512" y="262"><tspan class="lim" style="font-family:var(--mono)">I</tspan> on the diagonal copies the offset bits straight;</text>
+  <text class="diag-text small" x="512" y="280">the <tspan class="mag" style="font-family:var(--mono)">C</tspan> block mixes in coordinate bits — the "tilt"</text>
+  <text class="diag-text small" x="512" y="298">that scatters consecutive rows across banks.</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Two clean definitions fall out of the matrix view. A <em>distributed</em> layout (def 4.10) is a permutation matrix with optional zero columns — and a zero column is precisely broadcasting. A <em>memory</em> layout (def 4.14) is invertible with one or two ones per column; the two-ones case is a shear <code>I + C</code> where <code>C</code> mixes coordinate bits to scatter consecutive rows across banks. That shear <em>is</em> mma swizzling.</div>
+  <div class="caption" lang="zh">矩阵视角直接掉出两个干净的定义。 <em>分布式</em> 布局（def 4.10）是带可选零列的置换矩阵 —— 而零列恰好就是广播。 <em>内存</em> 布局（def 4.14）可逆， 每列有一个或两个 1； 两个 1 的情形是一个剪切 <code>I + C</code>， 其中 <code>C</code> 混入坐标位， 把连续的行打散到不同 bank 上。 那个剪切 <em>就是</em> mma swizzling。</div>
+</div>
+
+<p lang="en">The reframing pays off twice. First, broadcasting — long a source of subtle Triton bugs because finding which threads hold duplicate data in an arbitrary layout is genuinely fiddly — becomes "look for a zero column." Done. Second, swizzling, which used to be a magic incantation of <code>per_phase</code> / <code>max_phase</code> / <code>vec</code> constants, is revealed as an ordinary linear shear transformation: the diagonal <code>I</code> copies offset bits straight through, and the off-diagonal <code>C</code> tilts one coordinate by mixing in bits of another. Nothing mystical, just a matrix.</p>
+<p lang="zh">这个重构有两重回报。 第一， 广播 —— 长期是 Triton 微妙 bug 的来源， 因为在任意布局里找出哪些线程持有重复数据是真的麻烦 —— 变成了"找一个零列"。 完事。 第二， swizzling， 以前是一串 <code>per_phase</code> / <code>max_phase</code> / <code>vec</code> 常数的魔法咒语， 现在被揭示为一个普通的线性剪切变换： 对角的 <code>I</code> 把偏移位直接拷过去， 非对角的 <code>C</code> 通过混入另一个坐标的位来"倾斜"一个坐标。 不神秘， 就是个矩阵。</p>
+
+<div class="callout cyan">
+  <span class="ctag" lang="en">The mixed-precision proof point</span><span class="ctag" lang="zh">混合精度的佐证</span>
+  <p lang="en">The completeness isn't academic. On a micro-benchmark enumerating every pair of common Triton dtypes for a simple matmul — 784 cases — old Triton passed 46.6%, because it never correctly handled small, low-precision MMA tiles (it can't support any MMA layout with more than 32 bits of contiguous elements in the tile's last dimension). Linear layouts passed 100%. Same hardware, same kernels; the difference is having a definition that covers all valid distributed layouts instead of a hand-picked subset.</p>
+  <p lang="zh">这个完备性不是学术摆设。 在一个枚举 Triton 所有常见 dtype 两两组合做简单 matmul 的 micro-benchmark 上 —— 784 个 case —— 旧 Triton 只通过 46.6%， 因为它从来没正确处理过小尺寸、 低精度的 MMA tile（它支持不了任何在 tile 最后一维上有超过 32 位连续元素的 MMA 布局）。 线性布局通过 100%。 同样的硬件、 同样的 kernel； 区别在于有一个覆盖所有合法分布式布局的定义， 而不是手挑的一个子集。</p>
+</div>
+</section>
+
+<!-- ====================================================== SWIZZLE -->
+<section id="swizzle">
+<h2 lang="en"><span class="num">§ 06 · The flagship algorithm</span>Optimal swizzling</h2>
+<h2 lang="zh"><span class="num">§ 06 · 旗舰算法</span>最优 swizzling</h2>
+
+<p lang="en">Bank conflicts are the oldest tax in GPU shared memory: when two threads in a warp hit the same bank on different addresses, the access serializes. For decades the fix has been fixed swizzle patterns lifted from a hardware manual and a lot of trial and error. The paper's most important contribution turns this into an algorithm that derives the <em>optimal</em> swizzle for an arbitrary layout — provably maximizing vectorization while minimizing conflicts.</p>
+<p lang="zh">Bank 冲突是 GPU 共享内存里最古老的税： 当一个 warp 里的两个线程在不同地址上撞到同一个 bank， 访问就被串行化。 几十年来的解法是从硬件手册里抄固定的 swizzle 模式， 外加大量试错。 论文最重要的贡献， 是把这件事变成一个能为任意布局推导 <em>最优</em> swizzle 的算法 —— 可证明地最大化向量化、 同时最小化冲突。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VI</span>
+    <span class="pname" lang="en">Bank conflict as a subspace intersection</span><span class="pname" lang="zh">把 bank 冲突看成子空间交集</span>
+    <span class="pscale">after Fig. 5</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 340" xmlns="http://www.w3.org/2000/svg">
+  <!-- model the shared-mem address -->
+  <text class="diag-text label" x="24" y="34">SHARED-MEM ADDRESS = Vec × Bank × Seg</text>
+  <rect class="zone fill-lim" x="24" y="46" width="120" height="44" rx="2"/><text class="diag-text lim" x="84" y="73" text-anchor="middle">Vec</text>
+  <rect class="zone fill-cyn" x="148" y="46" width="200" height="44" rx="2"/><text class="diag-text cyn" x="248" y="73" text-anchor="middle">Bank (32 banks)</text>
+  <rect class="zone fill-mag" x="352" y="46" width="160" height="44" rx="2"/><text class="diag-text mag" x="432" y="73" text-anchor="middle">Seg (segment)</text>
+  <text class="diag-text tiny" x="24" y="108">conflict ⇔ two threads hit the same Bank in different Seg ⇔ span(Seg) ∩ span(Thr) ≠ {0}</text>
+
+  <!-- the conflict picture -->
+  <text class="diag-text label" x="560" y="34">THE FIX · CHOOSE Seg BASIS FROM Thr's COMPLEMENT</text>
+  <text class="diag-text small" x="560" y="58">A_Thr = subspace the warp's threads sweep.</text>
+  <text class="diag-text small" x="560" y="78">Pick Seg vectors from the <tspan class="lim" style="font-family:var(--mono)">complement</tspan> of A_Thr</text>
+  <text class="diag-text small" x="560" y="98">so different segments land on different banks.</text>
+  <text class="diag-text amb small" x="560" y="122">Only if the safe space runs out do we borrow</text>
+  <text class="diag-text amb small" x="560" y="140">a conflicting vector → minimal, not zero, conflict.</text>
+
+  <!-- 8-bank, two-thread, 4-transaction read viz (after Fig 5) -->
+  <text class="diag-text label" x="24" y="170">READ SPLIT INTO 4 CONFLICT-FREE TRANSACTIONS · t0 (lime) · t1 (cyan)</text>
+  <g transform="translate(24,184)">
+    <!-- 8 bank columns -->
+    <text class="diag-text tiny" x="20"  y="-2" text-anchor="middle">b0</text>
+    <text class="diag-text tiny" x="74"  y="-2" text-anchor="middle">b1</text>
+    <text class="diag-text tiny" x="128" y="-2" text-anchor="middle">b2</text>
+    <text class="diag-text tiny" x="182" y="-2" text-anchor="middle">b3</text>
+    <text class="diag-text tiny" x="236" y="-2" text-anchor="middle">b4</text>
+    <text class="diag-text tiny" x="290" y="-2" text-anchor="middle">b5</text>
+    <text class="diag-text tiny" x="344" y="-2" text-anchor="middle">b6</text>
+    <text class="diag-text tiny" x="398" y="-2" text-anchor="middle">b7</text>
+    <!-- 4 rows = 4 transactions -->
+    <!-- row labels -->
+    <text class="diag-text tiny" x="-6" y="22" text-anchor="end">T1</text>
+    <text class="diag-text tiny" x="-6" y="58" text-anchor="end">T2</text>
+    <text class="diag-text tiny" x="-6" y="94" text-anchor="end">T3</text>
+    <text class="diag-text tiny" x="-6" y="130" text-anchor="end">T4</text>
+    <!-- transaction1: t0 reads elem 0(b0) & 4(b4); t1 reads 1(b1) & 5(b5) -->
+    <rect x="2"   y="6"  width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="20"  y="23" text-anchor="middle">0</text>
+    <rect x="218" y="6"  width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="236" y="23" text-anchor="middle">4</text>
+    <rect x="56"  y="6"  width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="74"  y="23" text-anchor="middle">1</text>
+    <rect x="272" y="6"  width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="290" y="23" text-anchor="middle">5</text>
+    <!-- transaction2: t0: 2(b2) 6(b6); t1: 3(b3) 7(b7) -->
+    <rect x="110" y="42" width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="128" y="59" text-anchor="middle">2</text>
+    <rect x="326" y="42" width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="344" y="59" text-anchor="middle">6</text>
+    <rect x="164" y="42" width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="182" y="59" text-anchor="middle">3</text>
+    <rect x="380" y="42" width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="398" y="59" text-anchor="middle">7</text>
+    <!-- transaction3 -->
+    <rect x="56"  y="78" width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="74"  y="95" text-anchor="middle">8</text>
+    <rect x="272" y="78" width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="290" y="95" text-anchor="middle">12</text>
+    <rect x="2"   y="78" width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="20"  y="95" text-anchor="middle">9</text>
+    <rect x="218" y="78" width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="236" y="95" text-anchor="middle">13</text>
+    <!-- transaction4 -->
+    <rect x="164" y="114" width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="182" y="131" text-anchor="middle">10</text>
+    <rect x="380" y="114" width="36" height="26" class="bit1"/><text class="diag-text lim tiny" x="398" y="131" text-anchor="middle">14</text>
+    <rect x="110" y="114" width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="128" y="131" text-anchor="middle">11</text>
+    <rect x="326" y="114" width="36" height="26" class="zone cyn" fill="#0c2429"/><text class="diag-text cyn tiny" x="344" y="131" text-anchor="middle">15</text>
+  </g>
+  <text class="diag-text tiny" x="470" y="200">In each transaction, t0 and t1 touch</text>
+  <text class="diag-text tiny" x="470" y="216">distinct banks — no two cells share a</text>
+  <text class="diag-text tiny" x="470" y="232">column within a row. 16 elements move</text>
+  <text class="diag-text tiny" x="470" y="248">in 4 clean passes, zero serialization.</text>
+  <text class="diag-text lim small" x="470" y="280">The swizzle matrix that produces this</text>
+  <text class="diag-text lim small" x="470" y="298">is solved for, not guessed.</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Model a shared-memory address as <code>Vec × Bank × Seg</code>. A conflict is exactly when two threads land on the same bank in different segments — i.e. <code>span(Seg) ∩ span(Thr) ≠ {0}</code>. The algorithm builds the segment basis from the <em>complement</em> of the thread-access subspace, so distinct segments map to distinct banks; it only dips into the conflicting space when the safe space is exhausted, giving a provably minimal-conflict swizzle. Below: a read of 16 elements splits into four conflict-free transactions.</div>
+  <div class="caption" lang="zh">把共享内存地址建模成 <code>Vec × Bank × Seg</code>。 冲突恰好发生在两个线程在不同段上落到同一个 bank 时 —— 也就是 <code>span(Seg) ∩ span(Thr) ≠ {0}</code>。 算法从线程访问子空间的 <em>补空间</em> 里构造段的基， 让不同的段映射到不同的 bank； 只有当安全空间耗尽时才借用冲突空间里的向量， 给出一个可证明冲突最小的 swizzle。 下方： 16 个元素的读取拆成四次无冲突事务。</div>
+</div>
+
+<p lang="en">The same machinery powers warp-shuffle generation. When the conversion matrix's warp block is the identity (no inter-warp movement) and its register block can be made to vectorize, the data exchange can ride <code>shfl.sync</code> instead of bouncing through shared memory. The algorithm constructs a basis <code>G</code> from the source and target thread indices whose vectors <em>are</em> the XOR shuffle patterns the hardware wants, then tiles the exchange into a minimal number of rounds. Previously this was hand-written PTX; now it falls out of the linear-algebra crank, and the layout-conversion micro-benchmark shows up to 3.93× over shared-memory-always Triton, while gather hits 14.20×.</p>
+<p lang="zh">同一套机器也驱动 warp-shuffle 生成。 当转换矩阵的 warp 块是单位阵（没有 warp 间搬运）、 而它的寄存器块能被凑成可向量化时， 数据交换就能骑 <code>shfl.sync</code>， 而不必在共享内存里弹来弹去。 算法从源线程索引和目标线程索引构造一个基 <code>G</code>， 它的向量 <em>就是</em> 硬件想要的 XOR shuffle 模式， 然后把交换 tile 成最少的轮数。 这以前是手写 PTX； 现在它从线性代数的摇柄里掉出来， 布局转换的 micro-benchmark 显示相对"永远走共享内存"的 Triton 最高 3.93×， 而 gather 达到 14.20×。</p>
+</section>
+
+<!-- ====================================================== RESULTS -->
+<section id="results">
+<h2 lang="en"><span class="num">§ 07 · Does it pay off</span>Results &amp; bug fixes</h2>
+<h2 lang="zh"><span class="num">§ 07 · 它划算吗</span>结果与修 bug</h2>
+
+<p lang="en">The honest headline is modest and the subplots are large. Across 265 real-world cases from TritonBench on three platforms, Triton-Linear lands between 0.96× and 1.40×, averaging 1.07×. The sub-1.0 cases are mostly runtime noise on tiny inputs. The wins concentrate where efficient primitives like <code>ldmatrix</code> / <code>stmatrix</code> get used in layout conversion and shared-memory load/store: <code>int4_gemm</code>, <code>gemm</code>, <code>flex_attention</code>.</p>
+<p lang="zh">诚实的标题很朴素， 副线却很大。 在三个平台上来自 TritonBench 的 265 个真实 case 中， Triton-Linear 落在 0.96× 到 1.40× 之间， 平均 1.07×。 低于 1.0 的 case 大多是小输入上的运行时噪音。 收益集中在高效原语如 <code>ldmatrix</code> / <code>stmatrix</code> 被用于布局转换和共享内存读写的地方： <code>int4_gemm</code>、 <code>gemm</code>、 <code>flex_attention</code>。</p>
+
+<table class="tbl">
+  <thead>
+    <tr lang="en"><th>Benchmark / dimension</th><th>Old Triton</th><th>Triton-Linear</th></tr>
+    <tr lang="zh"><th>基准 / 维度</th><th>旧 Triton</th><th>Triton-Linear</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="k">mixed-precision matmul (784 cases)</td>
+      <td class="loss">46.6% pass</td>
+      <td class="win">100% pass</td>
+    </tr>
+    <tr>
+      <td class="k">LD/ST vectorization width</td>
+      <td class="loss" lang="en">misses cross-dim runs</td><td class="loss" lang="zh">漏掉跨维连续段</td>
+      <td class="win">up to 7× wider</td>
+    </tr>
+    <tr>
+      <td class="k">broadcast / reduce shared stores</td>
+      <td class="loss" lang="en">redundant stores</td><td class="loss" lang="zh">冗余 store</td>
+      <td class="win">−76% instructions</td>
+    </tr>
+    <tr>
+      <td class="k">layout conversion (warp shuffle)</td>
+      <td class="loss" lang="en">always shared mem</td><td class="loss" lang="zh">总走共享内存</td>
+      <td class="win">up to 3.93×</td>
+    </tr>
+    <tr>
+      <td class="k">tl.gather (warp shuffle)</td>
+      <td class="loss" lang="en">always shared mem</td><td class="loss" lang="zh">总走共享内存</td>
+      <td class="win">up to 14.20×</td>
+    </tr>
+    <tr>
+      <td class="k">real TritonBench (265 cases)</td>
+      <td class="loss">1.00×</td>
+      <td class="win">1.07× avg · 1.40× max</td>
+    </tr>
+  </tbody>
+</table>
+
+<p lang="en">But raw speed undersells the contribution. The bigger story is robustness: layouts accounted for 12% of all Triton bugs, and linear layouts retire a swath of them by construction — a single verified matrix routine can't disagree with itself the way a dozen hand-written converters could. Some wins are purely structural: for the <code>welford</code> operator, Triton-Linear detects that two "equivalent" layouts (a Blocked and a Sliced) are actually the same map and lowers the conversion to a no-op — something the old system literally couldn't express, because it had no way to compare layouts of different types.</p>
+<p lang="zh">但只看裸速度， 低估了这个贡献。 更大的故事是鲁棒性： 布局占了 Triton 所有 bug 的 12%， 而线性布局靠构造方式退役掉其中一大片 —— 一个经过验证的矩阵例程， 不会像十几个手写转换器那样自相矛盾。 有些收益纯粹是结构性的： 对 <code>welford</code> 算子， Triton-Linear 检测到两个"等价"布局（一个 Blocked 和一个 Sliced）其实是同一个映射， 把转换降级成 no-op —— 这是旧系统根本表达不出来的事， 因为它没办法比较不同类型的布局。</p>
+
+<div class="callout magenta">
+  <span class="ctag" lang="en">The AMD line in the results</span><span class="ctag" lang="zh">结果里的 AMD 那一行</span>
+  <p lang="en">On the AMD MI250, gains were only 1.00×–1.03× — and the reason is the interesting part. The big NVIDIA wins ride <code>ldmatrix</code> / <code>stmatrix</code>, hardware primitives AMD doesn't have. So the framework is doing its job (correctness, no regressions), but the headroom on AMD is gated by missing primitives, not by the layout algebra. That gap is exactly an opportunity: derive the AMD-native <code>ds_read</code> / <code>ds_write</code> swizzles from the same subspace search.</p>
+  <p lang="zh">在 AMD MI250 上， 收益只有 1.00×–1.03× —— 而原因才是有意思的部分。 NVIDIA 上的大头收益骑的是 <code>ldmatrix</code> / <code>stmatrix</code>， 这是 AMD 没有的硬件原语。 所以框架在做它该做的事（正确、 无回退）， 但 AMD 上的提升空间被缺失的原语卡住， 而不是被布局代数卡住。 这个缺口恰恰是机会： 用同一套子空间搜索， 推导出 AMD 原生的 <code>ds_read</code> / <code>ds_write</code> swizzle。</p>
+</div>
+</section>
+
+<!-- ====================================================== FOR AMD -->
+<section id="for-amd">
+<h2 lang="en"><span class="num">§ 08 · Carrying it home</span>For our AMD work</h2>
+<h2 lang="zh"><span class="num">§ 08 · 带回家</span>对我们 AMD 的意义</h2>
+
+<p lang="en">Reading this with our two goals in mind, three things transfer directly.</p>
+<p lang="zh">带着我们两个目标读它， 有三件事可以直接迁移。</p>
+
+<p lang="en"><strong>1 · The porting goal needs a layout layer, and this is its shape.</strong> A real NV→AMD port is not a syntax translation — a CUDA kernel only runs <em>well</em> on MI300X once its data is re-tiled for 64-wide wavefronts and re-swizzled for LDS banks. The paper proves <code>mfma</code> input/output layouts are linear, so the same matrix machinery that re-targets a Triton kernel from <code>mma</code> to <code>wgmma</code> can, in principle, re-target it to <code>mfma</code>. A porting agent that carries a layout matrix instead of pattern-matching on layout names has a far smaller surface to get wrong.</p>
+<p lang="zh"><strong>1 · 移植目标需要一个布局层， 而这就是它的形状。</strong> 真正的 NV→AMD 移植不是语法翻译 —— 一个 CUDA kernel 只有在它的数据被重新 tile 成 64 宽 wavefront、 重新 swizzle 对齐到 LDS bank 之后， 才能在 MI300X 上跑得 <em>好</em>。 论文证明了 <code>mfma</code> 的输入/输出布局是线性的， 所以那套把 Triton kernel 从 <code>mma</code> 重定向到 <code>wgmma</code> 的矩阵机器， 原则上也能把它重定向到 <code>mfma</code>。 一个携带布局矩阵、 而不是对布局名字做模式匹配的移植 agent， 出错的表面积要小得多。</p>
+
+<p lang="en"><strong>2 · The kernel-agent goal wants the optimal-swizzle algorithm as a tool.</strong> Our second goal is a multi-agent system that writes fast AMD kernels through a generate → benchmark → analyze loop. Bank-conflict tuning is one of the most tedious, error-prone steps in that loop — and the paper gives a closed-form, provably optimal swizzle solver that doesn't care whether the hardware is NVIDIA or AMD. Wiring that solver in as an agent tool means the loop spends its iteration budget on the genuinely open questions (tiling, fusion, occupancy) instead of rediscovering swizzle patterns by trial and error.</p>
+<p lang="zh"><strong>2 · kernel-agent 目标想把最优 swizzle 算法当工具。</strong> 我们的第二个目标是一个通过 生成 → benchmark → 分析 循环来写高性能 AMD kernel 的多 agent 系统。 bank 冲突调优是这个循环里最枯燥、 最易错的步骤之一 —— 而论文给了一个闭式、 可证明最优的 swizzle 求解器， 它不在乎硬件是 NVIDIA 还是 AMD。 把这个求解器接成一个 agent 工具， 意味着循环可以把迭代预算花在真正开放的问题上（tiling、 融合、 occupancy）， 而不是靠试错重新发现 swizzle 模式。</p>
+
+<p lang="en"><strong>3 · The missing-primitive gap is a concrete first kernel to win.</strong> The MI250 result says the layout algebra is ready but AMD lacks the <code>ldmatrix</code>/<code>stmatrix</code> fast paths NVIDIA exploits. Per our "win one kernel completely before generalizing" rule, that points at a sharp target: take one GEMM or attention kernel on MI300X, use the linear-layout swizzle solver to drive the <code>ds_read</code>/<code>ds_write</code> path to conflict-free, and measure against the CK hand-written baseline. A clean win there validates the whole layout-as-matrix approach on our hardware before we scale it across the porting pipeline.</p>
+<p lang="zh"><strong>3 · 缺失原语的缺口， 是一个具体的"先赢下来"的 kernel。</strong> MI250 的结果说布局代数已经就绪， 但 AMD 缺少 NVIDIA 利用的 <code>ldmatrix</code>/<code>stmatrix</code> 快路径。 按我们"先把一个 kernel 完全赢下来再泛化"的规则， 这指向一个清晰的目标： 拿 MI300X 上一个 GEMM 或 attention kernel， 用线性布局的 swizzle 求解器把 <code>ds_read</code>/<code>ds_write</code> 路径推到无冲突， 对着 CK 手写 baseline 测。 在那里干净地赢一把， 就在我们把这套方法铺到整条移植流水线之前， 先在自己的硬件上验证了"布局即矩阵"这整个思路。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">First-principles read</span><span class="ctag" lang="zh">第一性原理的读法</span>
+  <p lang="en">The AMD–NVIDIA gap here is not physics. The swizzle math is identical over F₂; what NVIDIA has and AMD lacks is a decade of primitives like <code>ldmatrix</code> that turn the optimal layout into one instruction. That's a software-maturity gap, and software-maturity gaps are exactly what systematic search closes. The paper hands us the search.</p>
+  <p lang="zh">这里的 AMD–NVIDIA 差距不是物理。 swizzle 的数学在 F₂ 上完全一样； NVIDIA 有而 AMD 没有的， 是十年积累的像 <code>ldmatrix</code> 这样、 能把最优布局变成一条指令的原语。 那是软件成熟度的差距， 而软件成熟度的差距， 恰恰是系统化搜索能补上的。 论文把搜索交到了我们手里。</p>
+</div>
+</section>
+
+<!-- ====================================================== EPILOGUE -->
+<section id="epilogue">
+<h2 lang="en"><span class="num">§ 09 · Closing</span>Epilogue</h2>
+<h2 lang="zh"><span class="num">§ 09 · 收尾</span>尾声</h2>
+
+<p lang="en">What I keep coming back to is how little the paper invents and how much it reorganizes. There's no new hardware, no exotic IR, no learned model. There's one observation — GPU indices are bits, so layouts are linear maps over F₂ — pushed relentlessly through an entire compiler backend until the quadratic mess of per-pair converters collapses into <code>B⁻¹A</code>, broadcasting becomes a zero column, and bank-conflict-free swizzling becomes a subspace you solve for. That's the kind of move worth studying: not a bigger hammer, but the right coordinate system, in which the hard problems turn out to be linear.</p>
+<p lang="zh">我反复回味的， 是这篇论文发明得多么少、 重组得多么多。 没有新硬件、 没有奇异的 IR、 没有学出来的模型。 只有一个观察 —— GPU 索引是位， 所以布局是 F₂ 上的线性映射 —— 被不依不饶地推过整个编译器后端， 直到那一堆二次方数量的逐对转换器坍缩成 <code>B⁻¹A</code>， 广播变成一个零列， 无 bank 冲突的 swizzling 变成一个你解出来的子空间。 这才是值得研究的招式： 不是更大的锤子， 而是对的坐标系 —— 在那个坐标系里， 难题原来都是线性的。</p>
+
+<p lang="en">For us, the takeaway is operational. When we build the layout layer of an NV→AMD porting agent or a kernel-optimization loop, the data structure should be a labeled F₂ matrix, and the operations should be composition, division, and the swizzle solver — not a registry of named layouts and a pile of conversion special cases. The paper already paid the cost of proving that's enough. We get to start from the abstraction.</p>
+<p lang="zh">对我们而言， 收获是可操作的。 当我们去造一个 NV→AMD 移植 agent 或一个 kernel 优化循环的布局层时， 数据结构应该是一个带标签的 F₂ 矩阵， 操作应该是复合、 除法、 和 swizzle 求解器 —— 而不是一张命名布局的注册表加一堆转换特例。 论文已经替我们付了"证明这够用"的代价。 我们可以直接从这个抽象出发。</p>
+
+<div class="pull" lang="en">Not a bigger hammer — the right coordinate system, in which the hard problems turn out to be linear.</div>
+<div class="pull" lang="zh">不是更大的锤子 —— 而是对的坐标系， 在那里难题原来都是线性的。</div>
+</section>
+
+<!-- ====================================================== REFERENCES -->
+<section id="references">
+<h2 lang="en"><span class="num">§ 10 · Sources</span>References &amp; citation</h2>
+<h2 lang="zh"><span class="num">§ 10 · 出处</span>参考与引用</h2>
+
+<ul class="refs">
+  <li><span class="t" lang="en">Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2</span><span class="t" lang="zh">Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2</span><br>
+  <span lang="en">The paper this reading is built on. </span><span lang="zh">本文所依据的论文。 </span><a href="https://arxiv.org/abs/2505.23819">arXiv:2505.23819</a></li>
+  <li><span class="t">A note on the algebra of CuTe Layouts</span><br>
+  <span lang="en">Colfax's writeup of the closest prior art — CuTe's layout algebra, the library-side analogue to this compiler-side framework. </span><span lang="zh">Colfax 对最接近的先前工作的整理 —— CuTe 的 layout 代数， 是这套编译器侧框架在库侧的对应物。 </span><a href="https://research.colfax-intl.com/wp-content/uploads/2024/01/layout_algebra.pdf">layout_algebra.pdf</a></li>
+  <li><span class="t" lang="en">Triton GPU backend (MLIR / TritonGPU dialect)</span><span class="t" lang="zh">Triton GPU 后端（MLIR / TritonGPU 方言）</span><br>
+  <span lang="en">Where linear layouts are integrated, as the GPU code-generation layer. </span><span lang="zh">线性布局被集成进去的地方， 即 GPU 代码生成层。 </span><a href="https://github.com/triton-lang/triton">github.com/triton-lang/triton</a></li>
+</ul>
+
+<div class="cite" lang="en">Reading compiled 2026-06-05 · jinnpan.com/sources/linear-layouts.html
+Source: arXiv:2505.23819 · diagrams hand-coded, all coordinates by hand
+Bilingual EN/ZH · phosphor-oscilloscope plate set</div>
+<div class="cite" lang="zh">精读整理于 2026-06-05 · jinnpan.com/sources/linear-layouts.html
+来源： arXiv:2505.23819 · 图为手写 SVG， 坐标全部手算
+双语 EN/ZH · 磷光示波器配图</div>
+</section>
+
+</main>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer class="colophon">
+  <div class="grid-c">
+    <div class="field">
+      <div class="lbl" lang="en">Source</div><div class="lbl" lang="zh">来源</div>
+      <div class="val"><a href="https://arxiv.org/abs/2505.23819">arXiv:2505.23819</a><br><span lang="en">Linear Layouts over F₂</span><span lang="zh">F₂ 上的线性布局</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Typography</div><div class="lbl" lang="zh">字体</div>
+      <div class="val">Chakra Petch · Bitter · Red Hat Mono · Noto Sans SC</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Palette</div><div class="lbl" lang="zh">配色</div>
+      <div class="val">
+        <span class="swatch" style="background:#070b09"></span><span class="swatch" style="background:#5ef2a0"></span><span class="swatch" style="background:#4fd6e0"></span><span class="swatch" style="background:#ff5cc8"></span><span class="swatch" style="background:#ffc24b"></span><br>
+        <span lang="en">phosphor oscilloscope</span><span lang="zh">磷光示波器</span>
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Compiled for</div><div class="lbl" lang="zh">写给</div>
+      <div class="val"><span lang="en">Jhin's AMD layout / kernel-agent work · Paper Reading No.003</span><span lang="zh">Jhin 的 AMD 布局 / kernel-agent 工作 · 论文精读 № 003</span></div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'linear-layouts-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
