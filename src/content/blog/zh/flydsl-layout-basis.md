@@ -7,7 +7,7 @@ category: "Technical"
 lang: "zh"
 ---
 
-[上一篇 FlyDSL 源码精读](/blog/source-reading-006-flydsl/) 写完之后， 我 mentor 让我"基于对 layout 的熟悉去完善一下 basisType"。 我才意识到自己虽然能把 layout 代数解释给别人听， 但对 layout *之下* 的那层东西其实没真懂。 这篇是补丁。
+[上一篇 FlyDSL 源码精读](/sources/flydsl.html) 写完之后， 我 mentor 让我"基于对 layout 的熟悉去完善一下 basisType"。 我才意识到自己虽然能把 layout 代数解释给别人听， 但对 layout *之下* 的那层东西其实没真懂。 这篇是补丁。
 
 ## Layout 的三层直觉， 补一下
 

@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Source Library · jinnpan.com</title>
-<meta name="description" content="An index of the source-reading, paper-reading, and deep-dive HTML pages published under jinnpan.com/sources." />
+<title>The Library · jinnpan.com</title>
+<meta name="description" content="A categorized index of everything written on jinnpan.com — code readings, paper readings, tutorials, and blog posts. Code and paper readings open as self-contained HTML deep dives under /sources; tutorials and blog posts open as bilingual blog pages." />
 <style>
   :root {
     --paper: #f6f3ea;
     --paper2: #ebe6d9;
+    --card: #fffaf0;
     --ink: #171714;
     --muted: #68675f;
     --line: #c7c0ad;
     --line2: #9f998a;
-    --teal: #126b68;
-    --blue: #315d92;
-    --red: #a24036;
-    --amber: #bb7a25;
-    --green: #4e744c;
     --dark: #22231f;
+    /* category accents */
+    --code: #126b68;   /* teal   */
+    --paper-c: #a24036;/* rust   */
+    --tut: #315d92;    /* cobalt */
+    --blog: #4e744c;   /* green  */
+    --amber: #bb7a25;
     --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
     --font-serif: Georgia, "Noto Serif SC", serif;
     --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -36,15 +38,17 @@
     color: var(--ink);
     font-family: var(--font-ui);
     line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
 
   a { color: inherit; }
   .shell {
     max-width: 1240px;
     margin: 0 auto;
-    padding: 28px clamp(18px, 3vw, 42px) 56px;
+    padding: 28px clamp(18px, 3vw, 42px) 64px;
   }
 
+  /* ---- topbar ---- */
   .topbar {
     display: flex;
     align-items: center;
@@ -73,17 +77,20 @@
     color: var(--paper);
     font-weight: 700;
   }
+  .topbar nav a { margin-left: 14px; text-decoration: none; color: var(--muted); }
+  .topbar nav a:hover { color: var(--ink); }
 
+  /* ---- hero ---- */
   .hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 330px;
     gap: clamp(24px, 5vw, 70px);
     align-items: end;
-    padding: clamp(34px, 7vw, 80px) 0 30px;
+    padding: clamp(34px, 7vw, 78px) 0 26px;
   }
   .kicker {
     margin: 0 0 12px;
-    color: var(--red);
+    color: var(--paper-c);
     font-family: var(--font-mono);
     font-size: 12px;
     letter-spacing: .12em;
@@ -93,16 +100,17 @@
     margin: 0;
     max-width: 760px;
     font-family: var(--font-serif);
-    font-size: clamp(48px, 8vw, 108px);
+    font-size: clamp(48px, 8vw, 104px);
     line-height: .95;
     letter-spacing: 0;
   }
   .lede {
-    max-width: 740px;
+    max-width: 660px;
     margin: 22px 0 0;
     color: #3b3b35;
-    font-size: clamp(18px, 2vw, 23px);
+    font-size: clamp(17px, 1.7vw, 21px);
   }
+  .lede b { font-weight: 600; }
 
   .shelf-plate {
     border: 2px solid var(--dark);
@@ -110,12 +118,9 @@
     box-shadow: 8px 8px 0 rgba(23, 23, 20, .12);
     padding: 14px;
   }
-  .shelf-plate svg {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
+  .shelf-plate svg { display: block; width: 100%; height: auto; }
 
+  /* ---- controls ---- */
   .controls {
     position: sticky;
     top: 0;
@@ -135,22 +140,14 @@
     min-height: 44px;
     border: 2px solid var(--dark);
     border-radius: 0;
-    background: #fffaf0;
+    background: var(--card);
     color: var(--ink);
     font: 15px var(--font-mono);
     padding: 0 14px;
     outline: none;
   }
-  .search:focus {
-    box-shadow: 4px 4px 0 rgba(18, 107, 104, .22);
-    border-color: var(--teal);
-  }
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: flex-end;
-  }
+  .search:focus { box-shadow: 4px 4px 0 rgba(18, 107, 104, .22); border-color: var(--code); }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .filter {
     min-height: 36px;
     border: 1px solid var(--dark);
@@ -158,126 +155,112 @@
     background: transparent;
     color: var(--dark);
     font: 12px var(--font-mono);
-    padding: 0 11px;
+    padding: 0 12px;
     cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: .04em;
   }
-  .filter[aria-pressed="true"] {
-    background: var(--dark);
-    color: var(--paper);
-  }
+  .filter:hover { background: rgba(34, 35, 31, .07); }
+  .filter[aria-pressed="true"] { background: var(--dark); color: var(--paper); }
+  .filter[data-filter="code"][aria-pressed="true"] { background: var(--code); border-color: var(--code); }
+  .filter[data-filter="paper"][aria-pressed="true"] { background: var(--paper-c); border-color: var(--paper-c); }
+  .filter[data-filter="tutorial"][aria-pressed="true"] { background: var(--tut); border-color: var(--tut); }
+  .filter[data-filter="blog"][aria-pressed="true"] { background: var(--blog); border-color: var(--blog); }
 
+  /* ---- stats ---- */
   .stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     border: 2px solid var(--dark);
-    margin: 24px 0;
+    margin: 24px 0 8px;
     background: rgba(255, 250, 240, .72);
   }
-  .stat {
-    min-width: 0;
-    padding: 14px 16px;
-    border-left: 1px solid var(--dark);
-  }
+  .stat { min-width: 0; padding: 14px 16px; border-left: 1px solid var(--dark); }
   .stat:first-child { border-left: 0; }
-  .stat .num {
-    display: block;
-    font-family: var(--font-serif);
-    font-size: 38px;
-    line-height: 1;
-  }
-  .stat .label {
-    display: block;
-    margin-top: 6px;
-    color: var(--muted);
-    font: 12px var(--font-mono);
-  }
+  .stat .num { display: block; font-family: var(--font-serif); font-size: 38px; line-height: 1; }
+  .stat .label { display: block; margin-top: 6px; color: var(--muted); font: 12px var(--font-mono); }
+  .stat[data-c="code"] .num { color: var(--code); }
+  .stat[data-c="paper"] .num { color: var(--paper-c); }
+  .stat[data-c="tutorial"] .num { color: var(--tut); }
+  .stat[data-c="blog"] .num { color: var(--blog); }
 
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+  /* ---- shelves (category sections) ---- */
+  .shelf { margin-top: 44px; scroll-margin-top: 78px; }
+  .shelf[hidden] { display: none; }
+  .shelf-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
     gap: 16px;
-    margin: 28px 0 14px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--accent, var(--dark));
   }
-  h2 {
+  .shelf-chip {
+    width: 48px; height: 48px;
+    display: grid; place-items: center;
+    background: var(--accent);
+    color: var(--card);
+    font-family: var(--font-serif);
+    font-size: 24px;
+    box-shadow: 4px 4px 0 rgba(23, 23, 20, .14);
+  }
+  .shelf-title h2 {
     margin: 0;
     font-family: var(--font-serif);
-    font-size: clamp(28px, 4vw, 48px);
+    font-size: clamp(26px, 3.4vw, 40px);
     line-height: 1;
   }
-  .visible-count {
+  .shelf-title .sub {
+    margin-top: 5px;
     color: var(--muted);
-    font: 12px var(--font-mono);
+    font: 13px var(--font-mono);
+  }
+  .shelf-title .sub .zh { color: var(--accent); }
+  .shelf-count {
+    align-self: start;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
+    margin-top: 16px;
   }
   .entry {
     display: flex;
-    min-height: 278px;
     flex-direction: column;
     border: 2px solid var(--dark);
-    background: rgba(255, 250, 240, .78);
+    background: rgba(255, 250, 240, .82);
     box-shadow: 5px 5px 0 rgba(23, 23, 20, .10);
+    transition: transform .08s ease, box-shadow .08s ease;
   }
-  .entry[data-kind="source"] { --accent: var(--teal); }
-  .entry[data-kind="paper"] { --accent: var(--red); }
-  .entry[data-kind="primer"] { --accent: var(--blue); }
-  .entry[data-kind="codex"] { --accent: var(--green); }
+  .entry:hover { transform: translate(-1px, -1px); box-shadow: 7px 7px 0 rgba(23, 23, 20, .13); }
+  .entry[data-kind="code"]     { --accent: var(--code); }
+  .entry[data-kind="paper"]    { --accent: var(--paper-c); }
+  .entry[data-kind="tutorial"] { --accent: var(--tut); }
+  .entry[data-kind="blog"]     { --accent: var(--blog); }
   .entry[hidden] { display: none; }
   .entry-top {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 14px 12px;
+    padding: 12px 14px 10px;
     border-bottom: 1px solid var(--dark);
     font-family: var(--font-mono);
     font-size: 11px;
     color: var(--muted);
   }
-  .entry-kind {
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-  }
-  .entry-body {
-    padding: 18px 16px 14px;
-    flex: 1;
-  }
-  .entry h3 {
-    margin: 0;
-    font-family: var(--font-serif);
-    font-size: 28px;
-    line-height: 1.05;
-    letter-spacing: 0;
-  }
-  .entry p {
-    margin: 12px 0 0;
-    color: #404039;
-    font-size: 15px;
-  }
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 16px;
-  }
-  .tag {
-    border: 1px solid var(--line2);
-    color: var(--muted);
-    font: 11px var(--font-mono);
-    padding: 3px 6px;
-  }
-  .links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px 14px 14px;
-    border-top: 1px solid var(--dark);
-  }
+  .entry-kind { color: var(--accent); text-transform: uppercase; letter-spacing: .08em; }
+  .entry-body { padding: 16px 16px 14px; flex: 1; }
+  .entry h3 { margin: 0; font-family: var(--font-serif); font-size: 25px; line-height: 1.07; }
+  .entry p { margin: 11px 0 0; color: #404039; font-size: 14.5px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 15px; }
+  .tag { border: 1px solid var(--line2); color: var(--muted); font: 11px var(--font-mono); padding: 3px 6px; }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px 14px; border-top: 1px solid var(--dark); }
   .link {
     display: inline-flex;
     align-items: center;
@@ -285,18 +268,11 @@
     border: 1px solid var(--dark);
     color: var(--ink);
     font: 12px var(--font-mono);
-    padding: 0 10px;
+    padding: 0 11px;
     text-decoration: none;
   }
-  .link.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
-  .link:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 2px 2px 0 rgba(23, 23, 20, .18);
-  }
+  .link.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .link:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 rgba(23, 23, 20, .18); }
 
   .empty {
     display: none;
@@ -305,14 +281,11 @@
     padding: 36px;
     text-align: center;
     font: 14px var(--font-mono);
+    margin-top: 28px;
   }
   .empty[aria-hidden="false"] { display: block; }
 
-  .note {
-    margin-top: 28px;
-    color: var(--muted);
-    font: 12px var(--font-mono);
-  }
+  .note { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font: 12px var(--font-mono); }
 
   @media (max-width: 980px) {
     .hero { grid-template-columns: 1fr; }
@@ -331,7 +304,8 @@
     .stats { grid-template-columns: 1fr; }
     .stat { border-left: 0; border-top: 1px solid var(--dark); }
     .stat:first-child { border-top: 0; }
-    .entry { min-height: auto; }
+    .shelf-head { grid-template-columns: auto 1fr; }
+    .shelf-count { grid-column: 1 / -1; }
   }
 </style>
 </head>
@@ -342,292 +316,386 @@
       <span class="home-mark">J</span>
       <span>jinnpan.com</span>
     </a>
-    <span>Static HTML deep dives under /sources</span>
+    <nav aria-label="Site">
+      <a href="/en/blog">blog</a>
+      <a href="/en/projects">projects</a>
+      <a href="/en/about">about</a>
+    </nav>
   </nav>
 
   <header class="hero">
     <div>
-      <p class="kicker">Source Library</p>
-      <h1>Deep Dive Index</h1>
-      <p class="lede">这里集中放源码精读、 论文精读和系统长文。 每一张卡片都直达完整 HTML， 有些也附带中英 blog 摘要入口。</p>
+      <p class="kicker">The Library · 文库</p>
+      <h1>The Library</h1>
+      <p class="lede">一个分门别类的索引， 收齐了我写过的东西。 <b>代码精读</b>和<b>论文精读</b>是 /sources 下自成一体的 HTML 深读； <b>教程</b>和<b>博客</b>是中英双语的 blog 长文。 四个栏目， 一张地图。</p>
     </div>
-    <figure class="shelf-plate" aria-label="A small visual map of the source library">
+    <figure class="shelf-plate" aria-label="A visual map of the four shelves in the library">
       <svg viewBox="0 0 320 240" role="img" aria-labelledby="plate-title plate-desc">
-        <title id="plate-title">Library map</title>
-        <desc id="plate-desc">A diagram showing source readings, paper readings, primers, and Codex notes as shelves connected to the index.</desc>
+        <title id="plate-title">Four shelves</title>
+        <desc id="plate-desc">A diagram of four labeled shelves — code, paper, tutorial, and blog — feeding into one index.</desc>
         <rect x="1" y="1" width="318" height="238" fill="#fffaf0" stroke="#22231f" stroke-width="2" />
-        <line x1="32" y1="184" x2="288" y2="184" stroke="#22231f" stroke-width="3" />
-        <line x1="32" y1="126" x2="288" y2="126" stroke="#22231f" stroke-width="3" />
-        <line x1="32" y1="68" x2="288" y2="68" stroke="#22231f" stroke-width="3" />
-        <g stroke="#22231f" stroke-width="1.5">
-          <rect x="44" y="82" width="18" height="42" fill="#126b68" />
-          <rect x="66" y="78" width="22" height="46" fill="#315d92" />
-          <rect x="92" y="88" width="16" height="36" fill="#4e744c" />
-          <rect x="112" y="74" width="24" height="50" fill="#bb7a25" />
-          <rect x="140" y="84" width="18" height="40" fill="#126b68" />
-          <rect x="162" y="76" width="20" height="48" fill="#a24036" />
-          <rect x="186" y="90" width="17" height="34" fill="#315d92" />
-          <rect x="207" y="80" width="22" height="44" fill="#126b68" />
-          <rect x="233" y="86" width="18" height="38" fill="#4e744c" />
-          <rect x="255" y="72" width="19" height="52" fill="#a24036" />
-          <rect x="54" y="142" width="23" height="40" fill="#126b68" />
-          <rect x="82" y="136" width="18" height="46" fill="#126b68" />
-          <rect x="105" y="148" width="25" height="34" fill="#315d92" />
-          <rect x="135" y="132" width="18" height="50" fill="#a24036" />
-          <rect x="158" y="140" width="20" height="42" fill="#bb7a25" />
-          <rect x="183" y="146" width="22" height="36" fill="#126b68" />
-          <rect x="210" y="134" width="18" height="48" fill="#4e744c" />
-          <rect x="233" y="144" width="24" height="38" fill="#315d92" />
+        <!-- index spine at top -->
+        <path d="M40 40 H280" stroke="#a24036" stroke-width="2" stroke-dasharray="5 5" />
+        <text x="40" y="30" fill="#171714" font-family="ui-monospace, monospace" font-size="13">/sources · the library</text>
+        <!-- four shelves -->
+        <g stroke="#22231f" stroke-width="1.4">
+          <!-- shelf 1 code (teal) -->
+          <line x1="30" y1="86" x2="290" y2="86" stroke="#22231f" stroke-width="3" />
+          <rect x="40" y="58" width="14" height="28" fill="#126b68" /><rect x="58" y="54" width="16" height="32" fill="#126b68" /><rect x="78" y="60" width="13" height="26" fill="#126b68" /><rect x="95" y="52" width="17" height="34" fill="#126b68" /><rect x="116" y="60" width="14" height="26" fill="#126b68" /><rect x="134" y="56" width="15" height="30" fill="#126b68" /><rect x="153" y="62" width="13" height="24" fill="#126b68" /><rect x="170" y="54" width="16" height="32" fill="#126b68" /><rect x="190" y="58" width="14" height="28" fill="#126b68" />
+          <!-- shelf 2 paper (rust) -->
+          <line x1="30" y1="134" x2="290" y2="134" stroke="#22231f" stroke-width="3" />
+          <rect x="40" y="104" width="16" height="30" fill="#a24036" /><rect x="60" y="100" width="18" height="34" fill="#a24036" /><rect x="82" y="106" width="15" height="28" fill="#a24036" />
+          <!-- shelf 3 tutorial (cobalt) -->
+          <line x1="30" y1="182" x2="290" y2="182" stroke="#22231f" stroke-width="3" />
+          <rect x="40" y="152" width="16" height="30" fill="#315d92" /><rect x="60" y="148" width="15" height="34" fill="#315d92" /><rect x="79" y="154" width="17" height="28" fill="#315d92" /><rect x="100" y="150" width="14" height="32" fill="#315d92" /><rect x="118" y="156" width="16" height="26" fill="#315d92" /><rect x="138" y="150" width="15" height="32" fill="#315d92" />
+          <!-- shelf 4 blog (green) -->
+          <line x1="30" y1="226" x2="290" y2="226" stroke="#22231f" stroke-width="3" />
+          <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" />
         </g>
-        <path d="M40 48 H280" stroke="#a24036" stroke-width="2" stroke-dasharray="5 5" />
-        <text x="42" y="35" fill="#171714" font-family="ui-monospace, monospace" font-size="15">/sources/index.html</text>
-        <text x="42" y="216" fill="#68675f" font-family="ui-monospace, monospace" font-size="11">13 pages · search · filters · direct links</text>
+        <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
+          <text x="214" y="74">CODE · 9</text>
+          <text x="214" y="122">PAPER · 3</text>
+          <text x="214" y="170">TUTORIAL · 6</text>
+          <text x="214" y="218">BLOG · 4</text>
+        </g>
       </svg>
     </figure>
   </header>
 
   <section class="controls" aria-label="Library controls">
     <input class="search" id="search" type="search" placeholder="Search title, topic, tag..." autocomplete="off" />
-    <div class="filters" role="group" aria-label="Filter by type">
+    <div class="filters" role="group" aria-label="Filter by category">
       <button class="filter" type="button" data-filter="all" aria-pressed="true">All</button>
-      <button class="filter" type="button" data-filter="source" aria-pressed="false">Source</button>
+      <button class="filter" type="button" data-filter="code" aria-pressed="false">Code</button>
       <button class="filter" type="button" data-filter="paper" aria-pressed="false">Paper</button>
-      <button class="filter" type="button" data-filter="primer" aria-pressed="false">Primer</button>
-      <button class="filter" type="button" data-filter="codex" aria-pressed="false">Codex</button>
+      <button class="filter" type="button" data-filter="tutorial" aria-pressed="false">Tutorial</button>
+      <button class="filter" type="button" data-filter="blog" aria-pressed="false">Blog</button>
     </div>
   </section>
 
   <section class="stats" aria-label="Library statistics">
-    <div class="stat"><span class="num">13</span><span class="label">HTML pages</span></div>
-    <div class="stat"><span class="num">8</span><span class="label">source readings</span></div>
-    <div class="stat"><span class="num">3</span><span class="label">paper readings</span></div>
-    <div class="stat"><span class="num">2</span><span class="label">primers / notes</span></div>
+    <div class="stat" data-c="code"><span class="num">9</span><span class="label">code readings</span></div>
+    <div class="stat" data-c="paper"><span class="num">3</span><span class="label">paper readings</span></div>
+    <div class="stat" data-c="tutorial"><span class="num">6</span><span class="label">tutorials</span></div>
+    <div class="stat" data-c="blog"><span class="num">4</span><span class="label">blog posts</span></div>
   </section>
 
-  <div class="section-head">
-    <h2>All Pages</h2>
-    <span class="visible-count" id="visible-count">13 visible</span>
-  </div>
+  <!-- ============ CODE ============ -->
+  <section class="shelf" id="code" data-section="code" style="--accent: var(--code);" aria-label="Code readings">
+    <div class="shelf-head">
+      <div class="shelf-chip">01</div>
+      <div class="shelf-title">
+        <h2>Code</h2>
+        <div class="sub"><span class="zh">代码精读</span> · source-level readings of real codebases — each a self-contained HTML deep dive</div>
+      </div>
+      <div class="shelf-count">9 deep dives</div>
+    </div>
+    <div class="grid">
+      <article class="entry" data-kind="code" data-search="source reading 001 skypilot cloud kubernetes infra optimizer managed spot provisioning orchestration">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 001</span></div>
+        <div class="entry-body">
+          <h3>SkyPilot</h3>
+          <p>Cloud orchestration as an optimization problem: resources, regions, spot instances, Kubernetes, jobs, and the control loops that make them practical.</p>
+          <div class="tags"><span class="tag">cloud</span><span class="tag">infra</span><span class="tag">scheduler</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./skypilot.html">Deep dive →</a></div>
+      </article>
 
-  <section class="grid" id="library" aria-label="Deep dive pages">
-    <article class="entry" data-kind="source" data-search="source reading 001 skypilot cloud kubernetes infra optimizer managed spot provisioning">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 001</span></div>
-      <div class="entry-body">
-        <h3>SkyPilot</h3>
-        <p>Cloud orchestration as an optimization problem: resources, regions, spot instances, Kubernetes, jobs, and the control loops that make them practical.</p>
-        <div class="tags"><span class="tag">cloud</span><span class="tag">infra</span><span class="tag">scheduler</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./skypilot.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-001-skypilot/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-001-skypilot/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 002 sglang llm serving scheduler runtime radix cache router inference">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 002</span></div>
+        <div class="entry-body">
+          <h3>SGLang</h3>
+          <p>A serving-system read focused on runtime structure, request scheduling, cache management, routing, and the boundary between Python control and fast inference paths.</p>
+          <div class="tags"><span class="tag">LLM serving</span><span class="tag">runtime</span><span class="tag">cache</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./sglang.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 002 sglang llm serving scheduler runtime radix cache router inference">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 002</span></div>
-      <div class="entry-body">
-        <h3>SGLang</h3>
-        <p>A serving-system read focused on runtime structure, request scheduling, cache management, routing, and the boundary between Python control and fast inference paths.</p>
-        <div class="tags"><span class="tag">LLM serving</span><span class="tag">runtime</span><span class="tag">cache</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./sglang.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-002-sglang/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-002-sglang/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 003 vllm pagedattention scheduler batching kv cache serving">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 003</span></div>
+        <div class="entry-body">
+          <h3>vLLM</h3>
+          <p>The wrap-up of the initial serving trilogy: scheduler pressure, PagedAttention, KV memory, batching, and how design choices compare against SGLang.</p>
+          <div class="tags"><span class="tag">PagedAttention</span><span class="tag">KV cache</span><span class="tag">scheduler</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./vllm.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 003 vllm pagedattention scheduler batching kv cache serving">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 003</span></div>
-      <div class="entry-body">
-        <h3>vLLM</h3>
-        <p>The wrap-up of the initial serving trilogy: scheduler pressure, PagedAttention, KV memory, batching, and how design choices compare against SGLang.</p>
-        <div class="tags"><span class="tag">PagedAttention</span><span class="tag">KV cache</span><span class="tag">scheduler</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./vllm.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-003-vllm/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-003-vllm/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 004 mini-sglang minimal implementation pedagogy llm serving learning teaching">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 004</span></div>
+        <div class="entry-body">
+          <h3>mini-SGLang</h3>
+          <p>A smaller codebase read as a teaching artifact: what a minimal implementation makes explicit, what it hides, and how to learn from that compression.</p>
+          <div class="tags"><span class="tag">minimal</span><span class="tag">teaching</span><span class="tag">serving</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./mini-sglang.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 004 mini-sglang minimal implementation pedagogy llm serving learning">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 004</span></div>
-      <div class="entry-body">
-        <h3>mini-SGLang</h3>
-        <p>A smaller codebase read as a teaching artifact: what a minimal implementation makes explicit, what it hides, and how to learn from that compression.</p>
-        <div class="tags"><span class="tag">minimal</span><span class="tag">teaching</span><span class="tag">serving</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./mini-sglang.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-004-mini-sglang/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-004-mini-sglang/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 005 gcnasm amd cdna3 assembly gpu kernel optimization occupancy">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 005</span></div>
+        <div class="entry-body">
+          <h3>GCNasm</h3>
+          <p>A descent into hand-written AMD GPU assembly: CDNA3 idioms, occupancy, memory movement, instruction selection, and the optimization patterns behind fast kernels.</p>
+          <div class="tags"><span class="tag">AMD</span><span class="tag">assembly</span><span class="tag">kernel</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./gcnasm.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 005 gcnasm amd cdna3 assembly gpu kernel optimization">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 005</span></div>
-      <div class="entry-body">
-        <h3>GCNasm</h3>
-        <p>A descent into hand-written AMD GPU assembly: CDNA3 idioms, occupancy, memory movement, instruction selection, and the optimization patterns behind fast kernels.</p>
-        <div class="tags"><span class="tag">AMD</span><span class="tag">assembly</span><span class="tag">kernel</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./gcnasm.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-005-gcnasm/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-005-gcnasm/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 006 flydsl python dsl mlir layout algebra copy mma gpu kernels gemm">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 006</span></div>
+        <div class="entry-body">
+          <h3>FlyDSL</h3>
+          <p>A Python DSL with typed MLIR underneath: layout algebra, copy and MMA atoms, compiler boundaries, and what it takes to express production GEMM from Python.</p>
+          <div class="tags"><span class="tag">DSL</span><span class="tag">MLIR</span><span class="tag">layout</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./flydsl.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 006 flydsl python dsl mlir layout algebra copy mma gpu kernels">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 006</span></div>
-      <div class="entry-body">
-        <h3>FlyDSL</h3>
-        <p>A Python DSL with typed MLIR underneath: layout algebra, copy and MMA atoms, compiler boundaries, and what it takes to express production GEMM from Python.</p>
-        <div class="tags"><span class="tag">DSL</span><span class="tag">MLIR</span><span class="tag">layout</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./flydsl.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-006-flydsl/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-006-flydsl/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 007 aiter moe tuner gemm autotuning amd rocm kernel">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 007</span></div>
+        <div class="entry-body">
+          <h3>AITER MoE Tuner</h3>
+          <p>A tuner-first reading of MoE GEMM search: config space, benchmarking discipline, hardware assumptions, and why tuning code is often kernel knowledge in disguise.</p>
+          <div class="tags"><span class="tag">MoE</span><span class="tag">GEMM</span><span class="tag">autotune</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./aiter.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 007 aiter moe tuner gemm autotuning amd rocm kernel">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 007</span></div>
-      <div class="entry-body">
-        <h3>AITER MoE Tuner</h3>
-        <p>A tuner-first reading of MoE GEMM search: config space, benchmarking discipline, hardware assumptions, and why tuning code is often kernel knowledge in disguise.</p>
-        <div class="tags"><span class="tag">MoE</span><span class="tag">GEMM</span><span class="tag">autotune</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./aiter.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-007-aiter/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-007-aiter/">EN</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="source reading 008 rocprof viewer rocprofv3 advanced thread trace att amd profiler gpu">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 008</span></div>
+        <div class="entry-body">
+          <h3>rocprof Viewer</h3>
+          <p>A field guide to AMD instruction-level profiling: rocprofv3 capture, Advanced Thread Trace, source mapping, and how to read the viewer panels without fooling yourself.</p>
+          <div class="tags"><span class="tag">profiling</span><span class="tag">ATT</span><span class="tag">ROCm</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./rocprof-viewer.html">Deep dive →</a></div>
+      </article>
 
-    <article class="entry" data-kind="source" data-search="source reading 008 rocprof viewer rocprofv3 advanced thread trace att amd profiler gpu">
-      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 008</span></div>
-      <div class="entry-body">
-        <h3>rocprof Viewer</h3>
-        <p>A field guide to AMD instruction-level profiling: rocprofv3 capture, Advanced Thread Trace, source mapping, and how to read the viewer panels without fooling yourself.</p>
-        <div class="tags"><span class="tag">profiling</span><span class="tag">ATT</span><span class="tag">ROCm</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./rocprof-viewer.html">Open HTML</a>
-        <a class="link" href="/zh/blog/source-reading-008-rocprof-viewer/">ZH</a>
-        <a class="link" href="/en/blog/source-reading-008-rocprof-viewer/">EN</a>
-      </div>
-    </article>
-
-    <article class="entry" data-kind="paper" data-search="paper reading 001 polar agentic rl proxy llm api harness swe-bench training">
-      <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 001</span></div>
-      <div class="entry-body">
-        <h3>Polar</h3>
-        <p>Agentic RL without rewriting the harness: proxying LLM API calls, asynchronous staging, prefix merging, and what SWE-Bench tells us about scalable agent training.</p>
-        <div class="tags"><span class="tag">agent RL</span><span class="tag">proxy</span><span class="tag">SWE-Bench</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./polar.html">Open HTML</a>
-        <a class="link" href="/zh/blog/paper-reading-001-polar/">ZH</a>
-        <a class="link" href="/en/blog/paper-reading-001-polar/">EN</a>
-      </div>
-    </article>
-
-    <article class="entry" data-kind="paper" data-search="paper reading 002 kernel design agents agentic loops gpu kernels ncu kernelwiki humanize">
-      <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 002</span></div>
-      <div class="entry-body">
-        <h3>Kernel Design Agents</h3>
-        <p>A close read of agentic GPU kernel development: plan-execute-verify loops, KernelWiki, ncu-guided debugging, autotuning, and reward-hacking failure modes.</p>
-        <div class="tags"><span class="tag">agents</span><span class="tag">GPU kernels</span><span class="tag">autotune</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./kernel-design-agents.html">Open HTML</a>
-        <a class="link" href="/zh/blog/paper-reading-002-kernel-design-agents/">ZH</a>
-        <a class="link" href="/en/blog/paper-reading-002-kernel-design-agents/">EN</a>
-      </div>
-    </article>
-
-    <article class="entry" data-kind="paper" data-search="paper reading 003 linear layouts f2 tensor layout code generation triton matrix gf2">
-      <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 003</span></div>
-      <div class="entry-body">
-        <h3>Linear Layouts</h3>
-        <p>One binary matrix over GF(2) as the organizing principle for tensor layouts: conversion, broadcast, swizzling, slicing, and robust code generation.</p>
-        <div class="tags"><span class="tag">compiler</span><span class="tag">layout</span><span class="tag">GF(2)</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./linear-layouts.html">Open HTML</a>
-        <a class="link" href="/zh/blog/paper-reading-003-linear-layouts/">ZH</a>
-        <a class="link" href="/en/blog/paper-reading-003-linear-layouts/">EN</a>
-      </div>
-    </article>
-
-    <article class="entry" data-kind="primer" data-search="primer from python to silicon gpu compiler stack python silicon rocm kernel">
-      <div class="entry-top"><span class="entry-kind">Primer</span><span>GPU stack</span></div>
-      <div class="entry-body">
-        <h3>From Python to Silicon</h3>
-        <p>A systems primer for the path from Python code to GPU execution: compiler layers, kernel boundaries, IR, runtime dispatch, and what each layer is responsible for.</p>
-        <div class="tags"><span class="tag">compiler stack</span><span class="tag">GPU</span><span class="tag">primer</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./from-python-to-silicon.html">Open HTML</a>
-        <a class="link" href="/zh/blog/from-python-to-silicon/">ZH</a>
-        <a class="link" href="/en/blog/from-python-to-silicon/">EN</a>
-      </div>
-    </article>
-
-    <article class="entry" data-kind="codex" data-search="codex goal mode source-level design reading state machine thread goal model tools runtime continuation budget">
-      <div class="entry-top"><span class="entry-kind">Codex Note</span><span>Source-level</span></div>
-      <div class="entry-body">
-        <h3>Codex Goal Mode</h3>
-        <p>A source-level reading of goal mode as a thread-scoped state machine: persisted goals, model tools, runtime continuation, token budget accounting, and authority boundaries.</p>
-        <div class="tags"><span class="tag">Codex</span><span class="tag">state machine</span><span class="tag">runtime</span></div>
-      </div>
-      <div class="links">
-        <a class="link primary" href="./codex-goal.html">Open HTML</a>
-      </div>
-    </article>
+      <article class="entry" data-kind="code" data-search="codex goal mode source-level design reading state machine thread goal model tools runtime continuation budget openai">
+        <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 009</span></div>
+        <div class="entry-body">
+          <h3>Codex Goal Mode</h3>
+          <p>A source-level reading of goal mode as a thread-scoped state machine: persisted goals, model tools, runtime continuation, token budget accounting, and authority boundaries.</p>
+          <div class="tags"><span class="tag">Codex</span><span class="tag">state machine</span><span class="tag">runtime</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./codex-goal.html">Deep dive →</a></div>
+      </article>
+    </div>
   </section>
 
-  <div class="empty" id="empty" aria-hidden="true">No matching page.</div>
-  <p class="note">Tip: use search for technologies like MLIR, ATT, MoE, PagedAttention, agent RL, or Codex.</p>
+  <!-- ============ PAPER ============ -->
+  <section class="shelf" id="paper" data-section="paper" style="--accent: var(--paper-c);" aria-label="Paper readings">
+    <div class="shelf-head">
+      <div class="shelf-chip">02</div>
+      <div class="shelf-title">
+        <h2>Paper</h2>
+        <div class="sub"><span class="zh">论文精读</span> · close readings of research papers, rebuilt as HTML deep dives</div>
+      </div>
+      <div class="shelf-count">3 deep dives</div>
+    </div>
+    <div class="grid">
+      <article class="entry" data-kind="paper" data-search="paper reading 001 polar agentic rl proxy llm api harness swe-bench training">
+        <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 001</span></div>
+        <div class="entry-body">
+          <h3>Polar</h3>
+          <p>Agentic RL without rewriting the harness: proxying LLM API calls, asynchronous staging, prefix merging, and what SWE-Bench tells us about scalable agent training.</p>
+          <div class="tags"><span class="tag">agent RL</span><span class="tag">proxy</span><span class="tag">SWE-Bench</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./polar.html">Deep dive →</a></div>
+      </article>
+
+      <article class="entry" data-kind="paper" data-search="paper reading 002 kernel design agents agentic loops gpu kernels ncu kernelwiki humanize autotune">
+        <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 002</span></div>
+        <div class="entry-body">
+          <h3>Kernel Design Agents</h3>
+          <p>A close read of agentic GPU kernel development: plan-execute-verify loops, KernelWiki, ncu-guided debugging, autotuning, and reward-hacking failure modes.</p>
+          <div class="tags"><span class="tag">agents</span><span class="tag">GPU kernels</span><span class="tag">autotune</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./kernel-design-agents.html">Deep dive →</a></div>
+      </article>
+
+      <article class="entry" data-kind="paper" data-search="paper reading 003 linear layouts f2 tensor layout code generation triton matrix gf2 swizzle">
+        <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 003</span></div>
+        <div class="entry-body">
+          <h3>Linear Layouts</h3>
+          <p>One binary matrix over GF(2) as the organizing principle for tensor layouts: conversion, broadcast, swizzling, slicing, and robust code generation.</p>
+          <div class="tags"><span class="tag">compiler</span><span class="tag">layout</span><span class="tag">GF(2)</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./linear-layouts.html">Deep dive →</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ TUTORIAL ============ -->
+  <section class="shelf" id="tutorial" data-section="tutorial" style="--accent: var(--tut);" aria-label="Tutorials">
+    <div class="shelf-head">
+      <div class="shelf-chip">03</div>
+      <div class="shelf-title">
+        <h2>Tutorial</h2>
+        <div class="sub"><span class="zh">教程</span> · first-principles primers and guides — one rich HTML primer, the rest bilingual blog posts</div>
+      </div>
+      <div class="shelf-count">6 pieces</div>
+    </div>
+    <div class="grid">
+      <article class="entry" data-kind="tutorial" data-search="primer from python to silicon gpu compiler stack ir mlir llvm isa ffi runtime dispatch">
+        <div class="entry-top"><span class="entry-kind">Primer · HTML</span><span>compiler stack</span></div>
+        <div class="entry-body">
+          <h3>From Python to Silicon</h3>
+          <p>A systems primer for the path from Python to GPU execution: compiler layers, kernel boundaries, IR, runtime dispatch, and what each layer is responsible for.</p>
+          <div class="tags"><span class="tag">compiler</span><span class="tag">MLIR/LLVM</span><span class="tag">ISA</span></div>
+        </div>
+        <div class="links">
+          <a class="link primary" href="./from-python-to-silicon.html">Deep dive →</a>
+          <a class="link" href="/en/blog/from-python-to-silicon/">EN</a>
+          <a class="link" href="/zh/blog/from-python-to-silicon/">中文</a>
+        </div>
+      </article>
+
+      <article class="entry" data-kind="tutorial" data-search="attention mechanisms full sparse linear nsa gla deepseek gated kernel complexity">
+        <div class="entry-top"><span class="entry-kind">Primer</span><span>attention</span></div>
+        <div class="entry-body">
+          <h3>Attention Mechanisms</h3>
+          <p>Full, Sparse, and Linear attention from first principles — up through DeepSeek NSA and Gated Linear Attention, with the tradeoffs that decide each one.</p>
+          <div class="tags"><span class="tag">attention</span><span class="tag">sparse</span><span class="tag">linear</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/attention-mechanisms/">EN</a><a class="link" href="/zh/blog/attention-mechanisms/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="tutorial" data-search="kv cache model weights inference llm sizing optimization memory">
+        <div class="entry-top"><span class="entry-kind">Primer</span><span>inference</span></div>
+        <div class="entry-body">
+          <h3>KV Cache &amp; Model Weights</h3>
+          <p>The first thing to understand before optimizing inference: what KV cache is, how it differs from model weights, and how each scales with sequence and batch.</p>
+          <div class="tags"><span class="tag">inference</span><span class="tag">KV cache</span><span class="tag">LLM</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/kv-cache-model-weights/">EN</a><a class="link" href="/zh/blog/kv-cache-model-weights/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="tutorial" data-search="memory calculation llm gpu dp tp pp ep zero parallelism h100 training inference">
+        <div class="entry-top"><span class="entry-kind">Primer</span><span>GPU memory</span></div>
+        <div class="entry-body">
+          <h3>LLM GPU Memory Calculation</h3>
+          <p>How to actually compute LLM memory on a GPU — the components, worked 7B/70B examples, and how DP / TP / PP / EP and ZeRO change the arithmetic.</p>
+          <div class="tags"><span class="tag">GPU</span><span class="tag">memory</span><span class="tag">parallelism</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/llm-gpu-memory-calculation/">EN</a><a class="link" href="/zh/blog/llm-gpu-memory-calculation/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="tutorial" data-search="sft rl training guide rlhf loss label masking dataset hyperparameters pitfalls post-training">
+        <div class="entry-top"><span class="entry-kind">Guide</span><span>post-training</span></div>
+        <div class="entry-body">
+          <h3>SFT &amp; RL Training Guide</h3>
+          <p>A first-principles guide to SFT and RL post-training: loss and label masking, dataset construction, hyperparameters, RLHF, and the common pitfalls.</p>
+          <div class="tags"><span class="tag">SFT</span><span class="tag">RL</span><span class="tag">RLHF</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/sft-rl-training-guide/">EN</a><a class="link" href="/zh/blog/sft-rl-training-guide/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="tutorial" data-search="transformer deep dive math code self-attention layernorm mlp pytorch architecture">
+        <div class="entry-top"><span class="entry-kind">Primer</span><span>transformer</span></div>
+        <div class="entry-body">
+          <h3>Transformer Deep Dive</h3>
+          <p>The Transformer rebuilt from three angles at once — the math, runnable PyTorch, and the design rationale behind self-attention, LayerNorm, and the MLP.</p>
+          <div class="tags"><span class="tag">transformer</span><span class="tag">math</span><span class="tag">code</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/transformer-math-code/">EN</a><a class="link" href="/zh/blog/transformer-math-code/">中文</a></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ BLOG ============ -->
+  <section class="shelf" id="blog" data-section="blog" style="--accent: var(--blog);" aria-label="Blog posts">
+    <div class="shelf-head">
+      <div class="shelf-chip">04</div>
+      <div class="shelf-title">
+        <h2>Blog</h2>
+        <div class="sub"><span class="zh">博客</span> · original writing — benchmarks, framework comparisons, and project notes</div>
+      </div>
+      <div class="shelf-count">4 posts</div>
+    </div>
+    <div class="grid">
+      <article class="entry" data-kind="blog" data-search="benchmark qwen3 coder eagle3 speculative decoding sglang code generation speedup">
+        <div class="entry-top"><span class="entry-kind">Benchmark</span><span>spec decoding</span></div>
+        <div class="entry-body">
+          <h3>Qwen3-Coder × EAGLE3</h3>
+          <p>A measured benchmark of EAGLE3 speculative decoding on Qwen3-Coder-30B-A3B — where the 1.87× speedup comes from and why code generation benefits most.</p>
+          <div class="tags"><span class="tag">spec decoding</span><span class="tag">benchmark</span><span class="tag">SGLang</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/eagle3-qwen3-benchmark/">EN</a><a class="link" href="/zh/blog/eagle3-qwen3-benchmark/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="blog" data-search="nemo-rl vs slime rl training framework comparison moe rocm megatron algorithms">
+        <div class="entry-top"><span class="entry-kind">Comparison</span><span>RL frameworks</span></div>
+        <div class="entry-body">
+          <h3>NeMo-RL vs slime</h3>
+          <p>A working comparison of two RL post-training frameworks — algorithms, engineering quality, MoE support, and ROCm fit — with a reasoned pick for MI300X / MI355X.</p>
+          <div class="tags"><span class="tag">RL</span><span class="tag">training</span><span class="tag">framework</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/nemo-rl-vs-slime/">EN</a><a class="link" href="/zh/blog/nemo-rl-vs-slime/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="blog" data-search="tritonforge server based multi-turn rl triton kernel generation slime megatron nvidia amd sft">
+        <div class="entry-top"><span class="entry-kind">Project</span><span>RL · kernels</span></div>
+        <div class="entry-body">
+          <h3>TritonForge</h3>
+          <p>Building a server-based, multi-turn RL system that generates Triton kernels across NVIDIA and AMD — architecture, SFT+RL methodology, results, and roadmap.</p>
+          <div class="tags"><span class="tag">RL</span><span class="tag">Triton</span><span class="tag">kernel</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/tritonforge/">EN</a><a class="link" href="/zh/blog/tritonforge/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="blog" data-search="flydsl notes basisattr fly_basis layer beneath layout mlir amd kernel optimization">
+        <div class="entry-top"><span class="entry-kind">Note</span><span>FlyDSL</span></div>
+        <div class="entry-body">
+          <h3>BasisAttr · beneath Layout</h3>
+          <p>A follow-up note beneath the FlyDSL layout algebra: what BasisAttr and Fly_Basis are, why layouts need them, and where to start completing the surface.</p>
+          <div class="tags"><span class="tag">FlyDSL</span><span class="tag">MLIR</span><span class="tag">layout</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/flydsl-layout-basis/">EN</a><a class="link" href="/zh/blog/flydsl-layout-basis/">中文</a></div>
+      </article>
+    </div>
+  </section>
+
+  <div class="empty" id="empty" aria-hidden="true">No matching entry.</div>
+  <p class="note">Code &amp; Paper open as self-contained HTML deep dives (each carries its own EN / ZH toggle). Tutorial &amp; Blog open as bilingual blog pages. Search across everything, or filter by shelf. Try: MLIR, ATT, MoE, PagedAttention, agent RL, GF(2), RLHF, Codex.</p>
 </main>
 
 <script>
   const search = document.querySelector("#search");
   const filters = Array.from(document.querySelectorAll(".filter"));
   const entries = Array.from(document.querySelectorAll(".entry"));
-  const visibleCount = document.querySelector("#visible-count");
+  const shelves = Array.from(document.querySelectorAll(".shelf"));
   const empty = document.querySelector("#empty");
   let activeFilter = "all";
 
-  function normalize(value) {
-    return value.trim().toLowerCase();
-  }
+  const normalize = (v) => v.trim().toLowerCase();
 
-  function applyFilters() {
+  function apply() {
     const query = normalize(search.value);
-    let visible = 0;
-    for (const entry of entries) {
-      const kindMatches = activeFilter === "all" || entry.dataset.kind === activeFilter;
-      const text = normalize(`${entry.textContent} ${entry.dataset.search || ""}`);
-      const queryMatches = !query || text.includes(query);
-      const show = kindMatches && queryMatches;
-      entry.hidden = !show;
-      if (show) visible += 1;
+    let totalVisible = 0;
+    for (const shelf of shelves) {
+      const kind = shelf.dataset.section;
+      const sectionAllowed = activeFilter === "all" || activeFilter === kind;
+      let shelfVisible = 0;
+      for (const entry of shelf.querySelectorAll(".entry")) {
+        const text = normalize(`${entry.textContent} ${entry.dataset.search || ""}`);
+        const queryMatches = !query || text.includes(query);
+        const show = sectionAllowed && queryMatches;
+        entry.hidden = !show;
+        if (show) shelfVisible += 1;
+      }
+      shelf.hidden = shelfVisible === 0;
+      totalVisible += shelfVisible;
     }
-    visibleCount.textContent = `${visible} visible`;
-    empty.setAttribute("aria-hidden", visible === 0 ? "false" : "true");
+    empty.setAttribute("aria-hidden", totalVisible === 0 ? "false" : "true");
   }
 
-  search.addEventListener("input", applyFilters);
+  search.addEventListener("input", apply);
   filters.forEach((button) => {
     button.addEventListener("click", () => {
       activeFilter = button.dataset.filter;
       filters.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
-      applyFilters();
+      apply();
     });
   });
 </script>

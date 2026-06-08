@@ -29,6 +29,17 @@ src/pages/[lang]/      — Bilingual page templates (.astro)
 
 Push to `main` auto-deploys via Vercel (~60s).
 
+## Content categories
+
+All published writing sorts into four shelves, surfaced by the categorized hub at `public/sources/index.html` (linked from the top nav as `sources`):
+
+- **code** 代码 — source-level readings of real codebases → self-contained HTML deep dives under `public/sources/<slug>.html` (kicker `Source Reading NNN`). **No markdown twin.**
+- **paper** 论文 — close readings of research papers → HTML deep dives under `public/sources/<slug>.html` (kicker `Paper Reading NNN`). **No markdown twin.**
+- **tutorial** 教程 — first-principles primers/guides → bilingual markdown under `src/content/blog/{en,zh}/`, plus an HTML primer when the topic deserves hand-coded plates.
+- **blog** 博客 — original writing (benchmarks, comparisons, project notes) → bilingual markdown only.
+
+As of 2026-06-08 the per-entry "appetizer" markdown for code/paper readings was pruned — the HTML deep dive is the canonical artifact, discovered via the `/sources/` hub. Do not recreate appetizer markdown for code/paper entries.
+
 ## Skills
 
-This repo has a local skill at `.claude/skills/source2blog/SKILL.md` for turning code / docs / papers into a polished, shareable, podcast-style HTML deep dive — a self-contained richly-designed HTML with hand-coded SVG plates and an EN/ZH language toggle (under `public/sources/`) plus a bilingual markdown blog pair (under `src/content/blog/{zh,en}/`). Use it whenever the user wants a new "Source Reading" entry, a deep dive on a specific repo, a podcast-style HTML on a topic, or anything matching "把 X 做成 portfolio html / blog". Read the SKILL.md for the full workflow including aesthetic differentiation rules, SVG hand-coding conventions, bilingual toggle pattern, Vercel deploy verification, and Chinese typography checks.
+This repo has a local, **category-aware** skill at `.claude/skills/source2blog/SKILL.md` for turning a source (code repo, paper, concept, or original work) into a polished portfolio artifact routed onto one of the four shelves above. Use it whenever the user wants a new code/paper deep dive, a tutorial primer, a blog post, or anything matching "把 X 做成 portfolio html / blog" / "deep dive on X" / "source-reading NNN" / "write a primer on X". The skill always registers the new entry as a card in the `/sources/` hub. Read the SKILL.md for the category routing table, aesthetic differentiation rules, SVG hand-coding conventions, the EN/ZH toggle pattern, hub-registration step, Vercel deploy verification, and Chinese typography checks.

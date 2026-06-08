@@ -1,198 +1,154 @@
 ---
 name: source2blog
-description: Turn a pile of code + docs into a shareable, narrative-driven, "podcast-style" deep-dive on jinnpan.com. Produces (a) a richly-designed self-contained HTML with hand-coded SVG diagrams + bilingual EN/ZH toggle under public/sources/, and (b) two short markdown blog summaries under src/content/blog/{zh,en}/. Use whenever the user wants to take a body of knowledge — a repo, a paper, a kernel, a system internals walkthrough — and make it easy to read, easy to learn, easy to share. Triggers include "write a source reading post on X", "do a deep dive on repo Y", "source-reading NNN", "把 X 做成 portfolio html", "把这堆代码 / 文档变成一个 blog", "deep dive on X", "write a podcast-style HTML about X", "make X shareable / learnable".
+description: Turn a source (a code repo, a paper, or a body of knowledge) into a polished, shareable artifact on jinnpan.com — routed into one of four categories. CODE and PAPER readings become richly-designed self-contained HTML deep dives under public/sources/ (hand-coded SVG plates + EN/ZH toggle), with NO markdown twin. TUTORIAL is a first-principles primer (bilingual markdown blog, plus an HTML primer when it deserves visual plates). BLOG is original writing (benchmark, comparison, project note — bilingual markdown only). Every entry is registered as a card in the /sources/ library hub. Use whenever the user wants to take a body of knowledge — a repo, a paper, a kernel, a concept, a benchmark — and make it easy to read, learn, and share. Triggers: "source2blog X", "do a deep dive on repo Y", "source-reading NNN", "paper-reading NNN", "write a primer on X", "把 X 做成 portfolio html / blog", "把这堆代码 / 文档变成一个 deep dive", "deep dive on X", "make X shareable / learnable".
 ---
 
-This skill is Jhin's workflow for **converting raw knowledge (code, docs, papers) into a polished, podcast-style HTML deep dive** on jinnpan.com. Each invocation produces three artifacts together:
+`source2blog` is Jhin's workflow for **converting a source into a polished portfolio artifact** on jinnpan.com. It is **category-aware**: the first thing you do is decide which of four shelves the entry lives on, because the category determines the output shape.
 
-1. **`public/sources/<slug>.html`** — a richly designed, self-contained HTML file with hand-coded SVG diagrams and a built-in EN/ZH language toggle. No Mermaid, no runtime JS dependencies (except Google Fonts CDN).
-2. **`src/content/blog/en/source-reading-NNN-<slug>.md`** — English short-form blog (~600-1000 words) introducing and linking to the HTML.
-3. **`src/content/blog/zh/source-reading-NNN-<slug>.md`** — Chinese mirror of the same blog (same slug, same date, same images), following Chinese typography rules from this repo's CLAUDE.md.
+## The four categories — and what each produces
 
-### When the entry is *not* a numbered "Source Reading"
+| Category | What it is | Output | Markdown? |
+|---|---|---|---|
+| **code** 代码 | A source-level reading of a real **code repository / codebase** | `public/sources/<slug>.html` — HTML deep dive, kicker `Source Reading NNN` | **No** |
+| **paper** 论文 | A close reading of a research **paper** | `public/sources/<slug>.html` — HTML deep dive, kicker `Paper Reading NNN` | **No** |
+| **tutorial** 教程 | A first-principles **primer / explainer / guide** on a concept (not one repo or paper) | bilingual `src/content/blog/{en,zh}/<slug>.md`; **optionally also** an HTML primer at `public/sources/<slug>.html` when it deserves hand-coded plates | **Yes** |
+| **blog** 博客 | **Original writing** — a benchmark, a framework comparison, an opinion, a project note | bilingual `src/content/blog/{en,zh}/<slug>.md` | **Yes** |
 
-The default series is numbered. For one-off deep dives that don't belong to the series (a talk transcript, a project retrospective, a paper-reading write-up), skip Step 0's numbering and pick a freeform slug; place the HTML under `public/sources/<slug>.html` without the NNN prefix, and drop the `Source Reading NNN —` prefix from the markdown titles. Every other step in this skill still applies.
+**In every case, you also register the entry as a card in the `/sources/` library hub (`public/sources/index.html`).** That hub is the single, categorized map of everything — it is linked from the site nav and replaces the old per-entry "appetizer" markdown.
 
-## Step 0 · Pick the number and slug
+### The big architectural rule (changed 2026-06-08)
 
-List existing entries first:
+**Code and paper readings no longer get a markdown twin.** Previously every deep dive shipped with a short `source-reading-NNN-*.md` / `paper-reading-NNN-*.md` "appetizer" whose only job was to link to the HTML. Those have all been pruned. The HTML deep dive is now the canonical, self-contained artifact, discoverable through the `/sources/` hub and the top-nav `sources` link. **Do not recreate appetizer markdown for code/paper entries.** Markdown is reserved for `tutorial` and `blog`, where the markdown *is* the content (or the primer), not an ad for an HTML page.
+
+### Deciding the category when it's ambiguous
+
+- Am I **reading someone else's artifact**? → repo = `code`, paper = `paper`.
+- Am I **teaching a concept from first principles** (no single repo/paper at the center)? → `tutorial`.
+- Am I **sharing original work / measurements / an opinion** (a benchmark I ran, a comparison I reasoned through, my own project)? → `blog`.
+- For a `tutorial`, does the topic deserve hand-coded SVG plates and a long visual walkthrough (e.g. `from-python-to-silicon`)? → also build the HTML primer. Otherwise markdown alone is enough.
+
+When in doubt, ask the user which shelf they want.
+
+---
+
+## Step 0 · Pick the category, slug, and number
+
+Decide the category (above). Then:
 
 ```bash
-ls public/sources/
-ls src/content/blog/en/source-reading-*.md
+ls public/sources/                       # existing HTML deep dives
 ```
 
-The next entry's number is `max(existing) + 1` (zero-padded to 3 digits: `001`, `002`, ...). Slug is the lowercase repo name or short identifier (e.g. `skypilot`, `sglang`, `vllm`, `triton`, `pytorch-distributed`).
+- **Slug** = lowercase repo name / paper short-name / concept identifier (e.g. `skypilot`, `polar`, `from-python-to-silicon`).
+- **Number** (code/paper only) lives **inside the HTML masthead**, not in any filename. The next number = highest existing on that shelf + 1. Find it from the hub:
 
-## Step 1 · Read the source code
+  ```bash
+  # highest Source Reading number on the code shelf:
+  grep -oE 'No\. 0[0-9]+' public/sources/index.html | sort -u | tail -1
+  ```
 
-You must actually read the target repository, not just summarize from external knowledge. Clone shallowly:
+  Numbering is a soft convention — a one-off reading (like `codex-goal`) can be unnumbered and labelled `Source-level` instead.
+
+## Step 1 · Read the source (code / paper)
+
+For `code` and `paper`, you must actually read the target, not summarize from external knowledge. Clone shallowly:
 
 ```bash
-mkdir -p ~/Documents/GitHub
-cd ~/Documents/GitHub
-git clone --depth 1 https://github.com/<org>/<repo>.git
-cd <repo>
+mkdir -p ~/Documents/GitHub && cd ~/Documents/GitHub
+git clone --depth 1 https://github.com/<org>/<repo>.git && cd <repo>
 wc -l $(find . -name "*.py" -not -path "./.*") | tail -1
 ```
 
-Map the repo: list top-level dirs, find the entry-point files, get the biggest files (these are usually load-bearing). Read the README, any `CLAUDE.md` or `AGENTS.md`, and `design_docs/` if present.
+Map the repo: list top-level dirs, find entry points, read the biggest files (usually load-bearing), the README, any `CLAUDE.md`/`AGENTS.md`, and `design_docs/`. For a paper, read the PDF end-to-end and pull the real equations/algorithms.
 
-Aim for **6 hours of equivalent reading** condensed to the post. The post is the appetizer; the HTML deep dive is the entrée. Both must be backed by real code references with `file_path:line_number` precision — invent nothing.
+Aim for **6 hours of equivalent reading** condensed into the artifact. Everything must be backed by real references — `file_path:line_number` for code, section/figure numbers for papers. Invent nothing.
 
-## Step 2 · Pick a distinctive aesthetic for the HTML
+## Step 2 · Pick a distinctive aesthetic (HTML entries)
 
-**Critical rule**: never reuse the aesthetic of a previous entry. Read the existing files first to see what's taken:
+**Critical rule**: never reuse the aesthetic of a previous entry. See what's taken:
 
 ```bash
 grep -l "font-family:" public/sources/*.html
 ```
 
-Each entry commits to one bold aesthetic direction. Past examples:
+Each HTML entry commits to one bold direction. Past examples:
 - 001 SkyPilot — dark "engineering atelier" (Fraunces + Geist + JetBrains Mono · navy/bone/rust/brass)
 - 002 SGLang — light "lab notebook" (DM Serif Display + DM Sans + JetBrains Mono · cream/cobalt/crimson)
 - 003 vLLM — dark "navigational chart" (Cormorant Garamond + Spectral + IBM Plex Mono · abyss/cream/gold/teal)
 
-For the new entry, pick a fresh direction with intent. Some untried angles: "brutalist Swiss poster" (light, Helvetica-adjacent sans + condensed display + grid breaking), "1990s scientific viz" (dark teal/lime/magenta on near-black, monospace-heavy), "Japanese minimalism" (warm off-white + ink red + single hairline grid), "art-deco geometric" (gold/black/cream + Marcellus or Cinzel display).
+For a new entry, pick a fresh direction with intent. Untried angles: "brutalist Swiss poster", "1990s scientific viz" (dark teal/lime/magenta on near-black), "Japanese minimalism" (warm off-white + ink red + hairline grid), "art-deco geometric" (gold/black/cream + Marcellus/Cinzel).
 
-**Forbidden defaults**: Inter, Roboto, Arial, system-ui as body fonts; Space Grotesk (called out by the frontend-design skill); generic purple-gradient-on-white; "rounded blue card" UI patterns. The frontend-design skill at `~/.claude/plugins/marketplaces/claude-plugins-official/plugins/frontend-design/skills/frontend-design/SKILL.md` is the authoritative guide.
+**Forbidden defaults**: Inter, Roboto, Arial, system-ui as body fonts; Space Grotesk; generic purple-gradient-on-white; "rounded blue card" UI. The frontend-design skill at `~/.claude/plugins/marketplaces/claude-plugins-official/plugins/frontend-design/skills/frontend-design/SKILL.md` is the authoritative guide.
 
 ## Step 3 · Hand-code the SVG diagrams
 
-Aim for 4-7 SVG "plates" per entry. Every diagram must be **inline `<svg viewBox="...">` with hand-calculated coordinates** — no Mermaid, no GraphViz, no `<script>` rendering. This makes the HTML bulletproof (zero parse errors possible) and gives full design control.
+4–7 SVG "plates" per HTML entry. Every diagram is **inline `<svg viewBox="...">` with hand-calculated coordinates** — no Mermaid, no GraphViz, no `<script>` rendering. Bulletproof and fully controllable.
 
-Typical plate inventory:
-- Plate I — high-level architecture (zones, processes, big components)
-- Plate II — a sequence / timeline (how one user action flows through)
-- Plate III — a key data structure (cache tree, block table, state machine)
-- Plate IV — a comparison or branching decision (DP vs ILP, two engines side-by-side)
-- Plate V-VII — domain-specific: kernel paths, file change maps, integration points
-
-Use a small shared set of SVG CSS classes (defined once in `<style>`): `.diag-node`, `.diag-text`, `.diag-edge`, `.zone-box`, `.zone-label`, plus color variants matching the post's palette. Reuse markers (`<marker id="arrowhead">`) defined once in `<defs>`.
-
-Each plate has a `.plate-meta` header (number, italic name, scale) and a `.caption` (one sentence, italic). Wide plates use `.plate.wide` to break out of the text column.
+Typical inventory: architecture (zones/processes), a sequence/timeline, a key data structure, a comparison/branch, plus domain-specific plates (kernel paths, file maps, integration points). Use a small shared set of SVG CSS classes (`.diag-node`, `.diag-text`, `.diag-edge`, `.zone-box`, `.zone-label`) defined once, and one `<marker id="arrowhead">` in `<defs>`. Each plate gets a `.plate-meta` header and a one-sentence italic `.caption`; wide plates use `.plate.wide`.
 
 ## Step 4 · Write the full HTML
 
-Structure (copy from any of the existing three for the skeleton, change palette + fonts + content):
+Copy the skeleton from any existing entry; change palette + fonts + content:
 
 ```
-<head>
-  Google Fonts <link>
-  CSS variables (--bg, --fg, accents, fonts, spacing)
-  Body, masthead, layout, rail, typography, components, plate styles
-</head>
+<head> Google Fonts · CSS variables (--bg/--fg/accents/fonts) · layout/typography/plate styles </head>
 <body>
   <nav class="rail"> sticky TOC with section numbers </nav>
-  <header class="masthead"> kicker · h1 · subtitle · spec sheet </header>
+  <header class="masthead"> kicker (e.g. "Source Reading 009") · h1 · subtitle · spec sheet </header>
   <main class="article">
-    Prologue
-    Plate I — architecture
-    Module sections (M0-M9 or fewer for smaller repos)
-      Each module: hook prose + code excerpt + insight callout + table or list
-    Plates interleaved between modules
-    Traps (or "Reefs" or "Corrections" — language matches the aesthetic)
-    Red-line questions
-    AMD-specific takeaways (when relevant to Jhin's work)
-    Epilogue
+    Prologue · Plate I (architecture) · module sections (each: hook + code/figure excerpt + insight callout + table)
+    · plates interleaved · Traps/Reefs · red-line questions · AMD takeaways (when relevant) · Epilogue
   </main>
   <footer class="colophon"> source · typography · palette · compiled-for </footer>
 </body>
 ```
 
-Target file size: **70-120 KB · 1700-2300 lines** (English-only). With the bilingual toggle from Step 4.5 this grows to **140-180 KB · 2200-2800 lines**. Keep the article column to `max-width: 720px` for readability; widen only the plates.
+Target file size: **70–120 KB · 1700–2300 lines** (English-only); **140–180 KB · 2200–2800 lines** with the bilingual toggle. Article column `max-width: 720px`; widen only plates.
 
 ## Step 4.5 · Add the EN/ZH language toggle (default-on)
 
-The HTML deep dive ships bilingual: every translatable paragraph, heading, callout, plate caption, table cell, and colophon row exists in both English and Chinese, with a floating button in the top-right that switches the visible language without a page reload. Default to having the toggle unless the user explicitly says "English only" or "single language."
+Every HTML deep dive ships bilingual: every translatable paragraph, heading, callout, plate caption, table cell, and colophon row exists in both languages, with a floating top-right toggle that switches visible language without reload. Default on unless the user says "English only."
 
-**Mechanics — the four moving parts:**
+Four moving parts:
 
-1. **CSS visibility rule** in the `<style>` block, near the bottom:
-
+1. **CSS visibility rule** near the bottom of `<style>`:
    ```css
    body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
    body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
    ```
-
-2. **The toggle button**, placed right after `<body data-lang="en">`:
-
+2. **The toggle button**, right after `<body data-lang="en">`:
    ```html
    <div class="lang-toggle" role="group" aria-label="Language">
      <button type="button" data-set="en" aria-label="English">EN</button>
      <button type="button" data-set="zh" aria-label="中文">中文</button>
    </div>
    ```
-
-   Style it as a fixed-position pill in the top-right corner (sample CSS in `flydsl.html`). Match the aesthetic of the entry — borrow palette and typography from the existing `:root` variables.
-
-3. **The JS** just before `</body>` — first-visit picks browser language (`navigator.language.startsWith('zh')` → `zh`, else `en`), thereafter persists choice in `localStorage` under a per-page key like `<slug>-source-lang`:
-
+   Style as a fixed top-right pill; borrow palette/typography from the entry's `:root` (sample in `flydsl.html`).
+3. **The JS** before `</body>` — first visit picks browser language, then persists in `localStorage` under `<slug>-source-lang`:
    ```html
    <script>
    (function() {
-     var KEY = '<slug>-source-lang';
-     var body = document.body;
-     var stored = null;
+     var KEY = '<slug>-source-lang', body = document.body, stored = null;
      try { stored = localStorage.getItem(KEY); } catch (e) {}
-     if (stored === 'en' || stored === 'zh') {
-       body.setAttribute('data-lang', stored);
-     } else {
-       var nav = (navigator.language || 'en').toLowerCase();
-       body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
-     }
+     if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+     else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
      document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
        btn.addEventListener('click', function() {
-         var v = btn.getAttribute('data-set');
-         body.setAttribute('data-lang', v);
+         var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
          try { localStorage.setItem(KEY, v); } catch (e) {}
        });
      });
    })();
    </script>
    ```
+4. **The `[lang]` content pairs** — for every translatable block add a sibling in the other language. Inline `<span>` for short phrases; separate elements for paragraphs/headings/cells.
 
-4. **The `[lang]` content pairs**. For every translatable block, add a sibling with the alternate language. Inline spans for short phrases inside a single sentence, separate elements for paragraphs and headings:
+**Translate vs leave language-neutral:** translate `<p>` prose, `<h2/3/4>`, `<th>/<td>` prose, callouts, plate captions, colophon prose. Leave code blocks, short SVG labels (`STAGE 0`, `MFMA`), inline `<code>` API names, URLs, file paths, line numbers, the masthead brand `<h1>`, and numeric meta values.
 
-   ```html
-   <h3 lang="en">The atom · Shape, Stride, Layout</h3>
-   <h3 lang="zh">原子 · Shape、 Stride、 Layout</h3>
+**Chinese typography in HTML content:** same rules as `src/content/blog/zh/` (CLAUDE.md) — half-width space after `。` `，` `：` before content characters, half-width spaces around `/` as an alternative separator. Mentally scan `[。，：][^ \n*]` before declaring done. Skip code blocks and inline code.
 
-   <p lang="en">A <code>!fly.layout</code> is a pair of integer tuples...</p>
-   <p lang="zh">一个 <code>!fly.layout</code> 是两个整数 tuple 的对...</p>
-
-   <table class="tbl">
-     <thead>
-       <tr lang="en"><th>Call</th><th>Returns</th></tr>
-       <tr lang="zh"><th>调用</th><th>返回</th></tr>
-     </thead>
-     <tbody>
-       <tr>
-         <td><code>partition_S(bA)</code></td>
-         <td lang="en">per-thread view of source</td>
-         <td lang="zh">source 的 per-thread 视图</td>
-       </tr>
-     </tbody>
-   </table>
-   ```
-
-**What to translate vs leave language-neutral:**
-
-| Translate | Leave as-is |
-|---|---|
-| `<p>` body prose | Code blocks (`.code` elements) |
-| `<h2>`, `<h3>`, `<h4>` headings | Short SVG labels (`STAGE 0`, `MFMA`, `ds_read`) |
-| `<th>` / `<td>` prose | Inline `<code>` API names |
-| Callout `.ctag` and prose | URLs, file paths, line numbers |
-| Plate captions | The masthead `<h1>` brand name |
-| Colophon `.lbl` and `.val` prose | Numerical values in meta blocks |
-
-**Chinese typography in HTML content:** the same rules as `src/content/blog/zh/` markdown apply — half-width space after `。` `，` `：` followed by content characters, half-width spaces around `/` as alternative separator. Mentally scan `[。，：][^ \n*]` patterns before declaring done. Skip code blocks and inline code.
-
-**Pairing check** before commit:
-
+**Pairing check** before commit — the two counts must be equal:
 ```bash
-# Excluding data-lang attribute and CSS [lang=...] selectors:
 python3 -c "
 import re
 html = open('public/sources/<slug>.html').read()
@@ -201,125 +157,123 @@ zh = len(re.findall(r'(?<!data-)lang=\"zh\"', html))
 print(f'en={en} zh={zh} {\"BALANCED\" if en == zh else \"MISMATCH\"}')"
 ```
 
-The two counts must be equal — every English block has a Chinese counterpart, and vice versa. A 1-block discrepancy means one language has an orphaned block that will only render in one mode.
+## Step 5 · Write the bilingual markdown (tutorial / blog only)
 
-## Step 5 · Write the bilingual markdown blogs
+**Skip this step for `code` and `paper`** — they have no markdown.
 
-Each markdown blog is a **~600-1000 word distillation**. Structure:
+For `tutorial` and `blog`, write a bilingual pair under `src/content/blog/{en,zh}/<slug>.md` (same slug, same date, same tags). This markdown is the real content — a standalone, substantive post — **not** an appetizer pointing at an HTML page.
 
 ```markdown
 ---
-title: "Source Reading NNN — Repo, Tagline"
-description: "One sentence on what this entry covers."
+title: "<Plain title — no 'Source Reading NNN' prefix>"
+description: "One sentence on what this covers."
 date: YYYY-MM-DD
-tags: ["source-reading", "MLSys", ...]
+tags: ["...", "..."]
 category: "Technical"
-lang: "en" or "zh"
+lang: "en"   # or "zh"
 ---
 
-Hook paragraph — why this repo, why now.
+Hook paragraph.
 
-## Why this matters
-
-A few sentences on the target audience and why the repo is worth 6 hours.
-
-## Five findings worth carrying
-
-1. **Bold-titled finding.** Two to three sentences explaining with concrete file_path:line_number references.
-2. ...
-
-## ★ The one insight that reframed my mental model
-
-> Block-quote insight. The most non-obvious takeaway, in one paragraph.
-
-## What's in the full reading
-
-List of plates + brief preview.
-
-**→ Full deep dive at [/sources/<slug>.html](/sources/<slug>.html)** — describes the aesthetic.
-
----
-
-*Previous: link · Next: link. Series context.*
+## ...substantive sections, math, runnable code, tables, original analysis...
 ```
 
-### Chinese typography rules (mandatory)
+- A `tutorial` teaches from first principles and is self-contained; if you also built an HTML primer (Step 4), link to it once (`Full read: [/sources/<slug>.html](/sources/<slug>.html)`) — but the markdown must still stand on its own.
+- A `blog` post is original writing and never has an HTML twin.
 
-Apply these to all `src/content/blog/zh/` content per the repo CLAUDE.md:
+### Chinese typography (mandatory)
 
-- **Half-width space after `。` `，` `：`** when followed by content characters (Chinese chars, letters, digits, opening brackets). Not at end of line, not before closing punctuation.
-- **Half-width spaces around `/`** as separator for alternatives: `MI300X / MI355X`, `SFT / RLHF / GRPO`, `TP / PP / EP`. Do NOT add spaces in: model paths (`Qwen/Qwen3-Coder-30B-A3B`), units (`tok/s`, `req/s`), single ASCII char pairs (`K/V`, `N/l`), math fractions (`1/2`), import paths.
-- **Skip code blocks, math blocks, inline code/math** — typography rules do not apply inside.
+Apply to all `src/content/blog/zh/` content per CLAUDE.md: half-width space after `。` `，` `：` before content characters; half-width spaces around `/` for alternatives (`MI300X / MI355X`, `SFT / RLHF`) but NOT in model paths (`Qwen/Qwen3-...`), units (`tok/s`), single ASCII pairs (`K/V`), fractions (`1/2`), import paths; skip code/math blocks. The zh post is a natural translation, not word-for-word; keep proper-noun technical terms in English.
 
-The zh blog should be a natural translation, not literal word-for-word. Preserve technical English terms when they're proper nouns or have no clean Chinese equivalent (e.g., "scheduler", "attention backend" can stay English; "thread", "process" should be "线程", "进程").
+## Step 5.5 · Register the entry in the library hub (ALL categories)
+
+Add a card to `public/sources/index.html` in the correct shelf, and bump the counts. This is mandatory — the hub is how every entry is discovered.
+
+1. **Add a card** inside the right `<section class="shelf" data-section="...">`'s `.grid`:
+
+   ```html
+   <!-- code / paper: HTML deep dive, single primary link -->
+   <article class="entry" data-kind="code" data-search="lowercase keywords topic tags for search">
+     <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 009</span></div>
+     <div class="entry-body">
+       <h3>Title</h3>
+       <p>One- to two-sentence description.</p>
+       <div class="tags"><span class="tag">tag</span><span class="tag">tag</span><span class="tag">tag</span></div>
+     </div>
+     <div class="links"><a class="link primary" href="./<slug>.html">Deep dive →</a></div>
+   </article>
+
+   <!-- tutorial / blog: bilingual blog page, EN + 中文 links (add a "Deep dive →" too if an HTML primer exists) -->
+   <article class="entry" data-kind="blog" data-search="lowercase keywords">
+     <div class="entry-top"><span class="entry-kind">Benchmark</span><span>short meta</span></div>
+     <div class="entry-body">
+       <h3>Title</h3><p>Description.</p>
+       <div class="tags"><span class="tag">tag</span></div>
+     </div>
+     <div class="links"><a class="link primary" href="/en/blog/<slug>/">EN</a><a class="link" href="/zh/blog/<slug>/">中文</a></div>
+   </article>
+   ```
+
+   `data-kind` ∈ `code|paper|tutorial|blog` (drives the accent color + filter). `entry-kind` label: `Source Reading` / `Paper Reading` for code/paper; for tutorial/blog use a fitting label (`Primer`, `Guide`, `Benchmark`, `Comparison`, `Project`, `Note`).
+
+2. **Bump the counts**: the matching `.stat[data-c="..."] .num`, the shelf's `.shelf-count` text, and the SVG legend count in the hero plate (and add a small `<rect>` book on that shelf's row if you want it visually exact).
 
 ## Step 6 · Verify locally
 
 ```bash
-# from ~/jinnpan.com
-npm run dev
-# → opens http://localhost:4321
-# Check that:
-#   - new blog appears in /blog list (both /en/blog and /zh/blog)
-#   - clicking it renders correctly with frontmatter
-#   - the /sources/<slug>.html link works (browser tab opens the deep dive)
-#   - on mobile width the rail collapses gracefully
+npm run dev   # http://localhost:4321
 ```
+- `/sources/` hub: new card appears in the right shelf, search + filter still work, counts updated.
+- code/paper: `/sources/<slug>.html` renders, rail/plates/toggle all work, mobile rail collapses.
+- tutorial/blog: post appears in `/en/blog` and `/zh/blog`, frontmatter renders, any `/sources/` link works.
 
 ## Step 7 · Commit and push
 
 ```bash
-git -C ~/jinnpan.com add public/sources/<slug>.html src/content/blog/en/source-reading-NNN-<slug>.md src/content/blog/zh/source-reading-NNN-<slug>.md
-git -C ~/jinnpan.com commit -m "blog: source reading NNN — <repo>"
-git -C ~/jinnpan.com push origin main
-# Vercel auto-deploys in ~60 seconds.
+# code / paper:
+git -C ~/jinnpan.com add public/sources/<slug>.html public/sources/index.html
+# tutorial / blog:
+git -C ~/jinnpan.com add src/content/blog/en/<slug>.md src/content/blog/zh/<slug>.md public/sources/index.html
+git -C ~/jinnpan.com commit -m "<category>: <slug>"
+git -C ~/jinnpan.com push origin main      # Vercel auto-deploys in ~60s
 ```
 
-## Step 7.5 · Poll Vercel + spot-check the live page
+## Step 7.5 · Poll Vercel + spot-check live
 
-After pushing, don't tell the user "it's live" until it actually is. Poll for the new content and verify it renders:
+Don't say "it's live" until it is. Poll in the background (`run_in_background: true`) for a string unique to this entry:
 
 ```bash
-# Background poll — finishes when the new HTML is reachable AND contains
-# a string unique to this entry (a translated phrase, the title, or a slug).
-URL=https://jinnpan.com/sources/<slug>.html
-until curl -sf -o /tmp/check.html "$URL" 2>/dev/null && \
-      grep -q '<unique-string-from-this-entry>' /tmp/check.html; do
-  sleep 8
-done
-echo "Vercel deploy live ✓ ($(wc -c < /tmp/check.html) bytes)"
+URL=https://jinnpan.com/sources/<slug>.html   # or https://jinnpan.com/en/blog/<slug>/
+until curl -sf -o /tmp/check.html "$URL" 2>/dev/null && grep -q '<unique-string>' /tmp/check.html; do sleep 8; done
+echo "live ✓ ($(wc -c < /tmp/check.html) bytes)"
 ```
 
-Run this in the background with `run_in_background: true` so you keep working while it polls. Vercel typically finishes in 30–90 seconds; if it's been > 3 minutes, the deploy probably failed — check `gh run list` or the Vercel dashboard.
+Vercel usually finishes in 30–90s; > 3 min means a likely failure — check `gh run list` or the Vercel dashboard. Then WebFetch spot-check the live URLs for this entry:
+- code/paper: `https://jinnpan.com/sources/<slug>.html` (masthead, rail anchors, plate count, toggle) **and** `https://jinnpan.com/sources/` (the new card shows in the right shelf).
+- tutorial/blog: `https://jinnpan.com/en/blog/<slug>/` and `https://jinnpan.com/zh/blog/<slug>/` (frontmatter, content) **and** the hub card.
 
-Once the poll exits, do a quick WebFetch spot-check on **three URLs** to verify the live pages render as expected:
-
-- `https://jinnpan.com/sources/<slug>.html` — masthead title, rail anchors, plate count, language toggle markup
-- `https://jinnpan.com/en/blog/source-reading-NNN-<slug>/` — frontmatter title, date, tags, link to /sources/<slug>.html
-- `https://jinnpan.com/zh/blog/source-reading-NNN-<slug>/` — same checks in Chinese
-
-Note the URL prefix is `/en/blog/...` (not `/blog/...`) for English; the unprefixed `/blog/` path is the legacy alias and may 404.
-
-Only report "deployed and verified" once all three return 200 and contain the expected content. If the user asks to see the result, surface the URLs and a one-line summary of what each contains — don't claim it works without checking.
+Only report "deployed and verified" once all return 200 with the expected content. The English blog path is `/en/blog/...` (the unprefixed `/blog/` is a legacy alias that may 404).
 
 ## Quality checklist before declaring done
 
-- [ ] HTML has 4+ inline SVG plates, all hand-coded coordinates
-- [ ] Aesthetic distinctly different from all previous entries (fonts AND colors)
-- [ ] **EN/ZH toggle present and content blocks paired** (see Step 4.5; `lang="en"` count == `lang="zh"` count, excluding `data-lang` and CSS selectors)
-- [ ] Every numeric claim (line count, file count) cross-checked against actual files via `wc -l`
-- [ ] Every code reference includes a `file_path:line_number`
-- [ ] zh blog AND zh HTML content pass typography rules (half-width space after `。` `，` `：` + half-width spaces around `/` separators; skip code blocks)
-- [ ] Both blogs have the same date, same slug, same tags
+- [ ] **Category decided correctly**, and the output shape matches the table (code/paper = HTML only, no markdown twin; tutorial/blog = markdown, HTML primer only if warranted)
+- [ ] **Entry registered in `/sources/index.html`** — card in the right shelf, `data-kind` + `data-search` set, counts bumped
+- [ ] (HTML) 4+ inline SVG plates, all hand-coded coordinates
+- [ ] (HTML) Aesthetic distinctly different from all previous entries (fonts AND colors)
+- [ ] (HTML) **EN/ZH toggle present and content blocks paired** (`lang="en"` count == `lang="zh"` count, excluding `data-lang` and CSS selectors)
+- [ ] Every numeric claim cross-checked against actual files (`wc -l`) / the paper
+- [ ] Every code reference includes `file_path:line_number`
+- [ ] (zh) markdown AND zh HTML pass typography rules (half-width space after `。` `，` `：`; spaces around `/` separators; skip code)
+- [ ] (tutorial/blog) both language files share the same date, slug, tags
 - [ ] At least one section ties to Jhin's AMD / kernel-optimization work where applicable
-- [ ] No emojis in the HTML or blog body (Jhin's style — only use if he explicitly asks)
-- [ ] No generic AI-writing patterns (run `/humanizer` mentally — avoid "delve into", "comprehensive", "leverage", em-dash overuse, rule-of-three lists when not natural)
-- [ ] **Anchor cross-check passes** (see below)
-- [ ] **Vercel deploy verified live** (Step 7.5: HTML URL + en blog URL + zh blog URL all return 200 with expected content)
+- [ ] No emojis in HTML or blog body (Jhin's style — only if he asks)
+- [ ] No generic AI-writing patterns (avoid "delve into", "comprehensive", "leverage", em-dash overuse, forced rule-of-three)
+- [ ] **Anchor cross-check passes** (HTML — see below)
+- [ ] **Vercel deploy verified live** (Step 7.5)
 
-### Anchor cross-check — MANDATORY before commit
+### Anchor cross-check — MANDATORY before commit (HTML entries)
 
-Before declaring the HTML done, run this cross-grep to verify that every rail/TOC link has a matching `<section id="...">` and vice versa. This catches "rail drift" — where modules get merged during writing but the rail wasn't updated.
+Verify every rail/TOC link has a matching `<section id="...">` and vice versa — catches "rail drift" when modules get merged during writing:
 
 ```bash
 F=public/sources/<slug>.html
@@ -329,13 +283,10 @@ echo "Rail-only (broken links): $(comm -23 <(echo "$rail") <(echo "$body") | tr 
 echo "Body-only (orphan sections): $(comm -13 <(echo "$rail") <(echo "$body") | tr '\n' ' ')"
 ```
 
-Both lines must print empty. If "Rail-only" is non-empty, your rail points to nothing — clicking falls back to the page top silently. If "Body-only" is non-empty, you have a real section without a nav entry — the most common case is forgetting an Epilogue link.
-
-The first three entries in this series (skypilot, sglang, vllm) all shipped with broken rails because writing-time module merges weren't reflected back into the rail. Don't repeat that — run the check.
+Both lines must print empty. Rail-only = links pointing nowhere; Body-only = sections with no nav entry (commonly a forgotten Epilogue).
 
 ## Skipping rules
 
-If the user asks for a source reading on a repo that:
-- has fewer than 20K lines of code, propose a single-blog post instead (no HTML deep dive needed)
-- is a fork or a documentation-only repo, ask whether they want the parent repo instead
-- is already covered in a previous entry, propose updating the existing entry rather than a new one
+- A `code` repo with fewer than ~20K lines, or a docs-only / fork repo → consider a `tutorial` or `blog` post instead of a full HTML deep dive; or ask whether the parent repo is meant.
+- A topic already covered by an existing entry → update that entry rather than adding a duplicate.
+- If the category is genuinely unclear (e.g. "is this a tutorial or a blog?"), ask the user which shelf they want before building.

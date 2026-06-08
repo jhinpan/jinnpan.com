@@ -52,4 +52,4 @@ Full read: [/sources/from-python-to-silicon.html](/sources/from-python-to-silico
 
 ---
 
-*Companion: the other entries in this [Source Reading series](/blog/source-reading-006-flydsl/) read specific repos in this stack — SkyPilot (orchestration), SGLang and vLLM (inference engines), mini-SGLang (teaching version), gcnasm (AMD CDNA3 assembly), FlyDSL (layout-algebra Python DSL). Each is a worked example of one of the boxes in Plate I.*
+*Companion: the other entries in this [Source Reading series](/sources/) read specific repos in this stack — SkyPilot (orchestration), SGLang and vLLM (inference engines), mini-SGLang (teaching version), gcnasm (AMD CDNA3 assembly), FlyDSL (layout-algebra Python DSL). Each is a worked example of one of the boxes in Plate I.*

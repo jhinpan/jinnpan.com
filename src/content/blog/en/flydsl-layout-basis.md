@@ -7,7 +7,7 @@ category: "Technical"
 lang: "en"
 ---
 
-After [the FlyDSL source reading](/blog/source-reading-006-flydsl/) shipped, my mentor told me to "use what you've learned about layout to round out basisType." That is when it hit me — I could explain the layout algebra to someone else, but I had not actually understood what sits *underneath* it. This is the patch.
+After [the FlyDSL source reading](/sources/flydsl.html) shipped, my mentor told me to "use what you've learned about layout to round out basisType." That is when it hit me — I could explain the layout algebra to someone else, but I had not actually understood what sits *underneath* it. This is the patch.
 
 ## Three intuitions about layout I had skipped
 

@@ -52,4 +52,4 @@ lang: "zh"
 
 ---
 
-*配套： 这个 [Source Reading 系列](/blog/source-reading-006-flydsl/) 里其他几集精读了这个栈里的具体仓库 —— SkyPilot（编排）、 SGLang / vLLM（推理引擎）、 mini-SGLang（教学版）、 gcnasm（AMD CDNA3 汇编）、 FlyDSL（layout 代数 Python DSL）。 每一集都是 Plate I 中某一格的"动手版"。*
+*配套： 这个 [Source Reading 系列](/sources/) 里其他几集精读了这个栈里的具体仓库 —— SkyPilot（编排）、 SGLang / vLLM（推理引擎）、 mini-SGLang（教学版）、 gcnasm（AMD CDNA3 汇编）、 FlyDSL（layout 代数 Python DSL）。 每一集都是 Plate I 中某一格的"动手版"。*
