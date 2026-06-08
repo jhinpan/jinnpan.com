@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Codex Goal Mode · A Source-Level Design Reading</title>
+<meta name="description" content="A source-level reading of Codex Goal mode: persistent thread state, model tools, runtime continuation, budget accounting, and failure boundaries." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&family=Archivo+Narrow:wght@500;600;700&family=Fragment+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #f5f6f1;
+    --paper2: #e8ece4;
+    --ink: #151714;
+    --muted: #61685f;
+    --faint: #9aa093;
+    --line: #c9cec2;
+    --line2: #aeb5a7;
+    --dark: #20251f;
+    --teal: #166b6a;
+    --blue: #315d9a;
+    --red: #a83b37;
+    --amber: #c6862f;
+    --green: #52794d;
+    --font-display: "Archivo Narrow", "Noto Sans SC", sans-serif;
+    --font-serif: "Alegreya", "Noto Sans SC", serif;
+    --font-mono: "Fragment Mono", "Noto Sans SC", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      linear-gradient(90deg, rgba(21, 23, 20, 0.045) 1px, transparent 1px),
+      linear-gradient(rgba(21, 23, 20, 0.04) 1px, transparent 1px),
+      var(--paper);
+    background-size: 42px 42px, 42px 42px;
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 18px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--teal); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: rgba(49, 93, 154, 0.08);
+    color: #183b70;
+    padding: 1px 5px;
+    border: 1px solid rgba(49, 93, 154, 0.15);
+  }
+  strong { color: #000; }
+
+  .lang-toggle {
+    position: fixed;
+    top: 16px;
+    right: 18px;
+    z-index: 30;
+    display: flex;
+    border: 1px solid var(--dark);
+    background: rgba(245, 246, 241, 0.92);
+    box-shadow: 4px 4px 0 rgba(21, 23, 20, 0.14);
+    font-family: var(--font-mono);
+  }
+  .lang-toggle button {
+    border: 0;
+    border-left: 1px solid var(--dark);
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  .lang-toggle button:first-child { border-left: 0; }
+  body[data-lang="en"] .lang-toggle [data-set="en"],
+  body[data-lang="zh"] .lang-toggle [data-set="zh"] {
+    background: var(--dark);
+    color: #fff;
+  }
+
+  .wrap {
+    display: grid;
+    grid-template-columns: 238px minmax(0, 1fr);
+    max-width: 1240px;
+    margin: 0 auto;
+    background: rgba(245, 246, 241, 0.72);
+  }
+  .rail {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 28px 18px 28px 22px;
+    border-right: 2px solid var(--dark);
+    background: var(--paper2);
+    overflow-y: auto;
+    font-family: var(--font-mono);
+  }
+  .rail .stamp {
+    display: inline-block;
+    transform: rotate(-2deg);
+    border: 2px solid var(--red);
+    color: var(--red);
+    padding: 5px 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-size: 13px;
+    margin-bottom: 22px;
+  }
+  .rail ol { list-style: none; padding: 0; margin: 0; }
+  .rail a {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    padding: 7px 0;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .rail a:hover { color: var(--ink); }
+  .rail .n { color: var(--red); }
+  .rail .meta {
+    margin-top: 26px;
+    padding-top: 16px;
+    border-top: 2px solid var(--dark);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.75;
+  }
+
+  .article { min-width: 0; padding-bottom: 100px; }
+  .masthead {
+    padding: 78px clamp(24px, 6vw, 74px) 44px;
+    border-bottom: 2px solid var(--dark);
+    background:
+      linear-gradient(135deg, rgba(22, 107, 106, 0.08), transparent 42%),
+      linear-gradient(0deg, rgba(168, 59, 55, 0.08), transparent 36%),
+      var(--paper);
+  }
+  .kicker {
+    margin: 0 0 18px;
+    font-family: var(--font-mono);
+    color: var(--red);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    line-height: 1.04;
+    margin: 0;
+    letter-spacing: 0;
+  }
+  h1 {
+    max-width: 980px;
+    font-size: clamp(48px, 8vw, 106px);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .subtitle {
+    max-width: 800px;
+    margin: 24px 0 0;
+    font-size: 23px;
+    line-height: 1.42;
+    color: #394039;
+  }
+  .spec {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 34px;
+    border: 2px solid var(--dark);
+  }
+  .spec div {
+    min-height: 78px;
+    padding: 12px 14px;
+    border-right: 1px solid var(--dark);
+    background: rgba(255, 255, 255, 0.32);
+  }
+  .spec div:last-child { border-right: 0; }
+  .spec .k {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .spec .v {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  section {
+    max-width: 810px;
+    padding: 58px 40px 0;
+  }
+  section > h2 {
+    font-size: 14px;
+    color: var(--red);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+  section > .lede {
+    margin: 0 0 22px;
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 43px);
+    line-height: 1.1;
+    font-weight: 700;
+  }
+  h3 {
+    color: var(--teal);
+    font-size: 25px;
+    margin: 34px 0 11px;
+  }
+  h4 {
+    color: var(--blue);
+    font-size: 17px;
+    margin: 26px 0 9px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  p { margin: 0 0 18px; }
+  .lead { font-size: 22px; line-height: 1.55; color: #333b34; }
+
+  .note,
+  .warning,
+  .claim {
+    margin: 20px 0 24px;
+    padding: 16px 18px;
+    border: 2px solid var(--dark);
+    background: rgba(255, 255, 255, 0.42);
+    box-shadow: 5px 5px 0 rgba(21, 23, 20, 0.12);
+  }
+  .note .tag,
+  .warning .tag,
+  .claim .tag {
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+  .warning { border-color: var(--red); }
+  .claim { border-color: var(--teal); }
+
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0 24px;
+    font-size: 15px;
+  }
+  .tbl th, .tbl td {
+    text-align: left;
+    vertical-align: top;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line2);
+  }
+  .tbl th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .code {
+    margin: 18px 0 24px;
+    padding: 15px 16px;
+    overflow-x: auto;
+    white-space: pre;
+    border: 2px solid var(--dark);
+    background: #20251f;
+    color: #edf1e8;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    box-shadow: 5px 5px 0 rgba(21, 23, 20, 0.18);
+  }
+  .code .c { color: #9aa093; }
+  .code .k { color: #ffd27d; }
+  .code .g { color: #83c7bb; }
+  .code .r { color: #f09b94; }
+
+  .refs {
+    display: grid;
+    gap: 12px;
+    margin: 22px 0;
+  }
+  .ref {
+    padding: 12px 14px;
+    border-left: 4px solid var(--teal);
+    background: rgba(255, 255, 255, 0.46);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .ref b { color: var(--red); }
+
+  .plate {
+    margin: 34px 0 30px;
+  }
+  .plate.wide {
+    max-width: none;
+    margin: 36px -40px 32px;
+  }
+  .plate-meta {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    margin-bottom: 9px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .plate-meta .pn { color: var(--red); font-weight: 700; }
+  .plate-meta .name {
+    font-family: var(--font-serif);
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+    font-style: italic;
+  }
+  .plate svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 2px solid var(--dark);
+    background: #eef1e9;
+    box-shadow: 6px 6px 0 rgba(21, 23, 20, 0.14);
+  }
+  .caption {
+    margin: 10px 2px 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-style: italic;
+  }
+  .s-box { fill: #fbfcf8; stroke: var(--dark); stroke-width: 2; }
+  .s-soft { fill: #dce6e1; stroke: var(--teal); stroke-width: 2; }
+  .s-warn { fill: #f3ded9; stroke: var(--red); stroke-width: 2; }
+  .s-amber { fill: #f0e5cd; stroke: var(--amber); stroke-width: 2; }
+  .s-edge { stroke: var(--dark); stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+  .s-dash { stroke: var(--muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 5; marker-end: url(#arrow); }
+  .s-text { font-family: var(--font-mono); font-size: 13px; fill: var(--ink); }
+  .s-small { font-family: var(--font-mono); font-size: 10px; fill: var(--muted); }
+  .s-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; fill: var(--ink); }
+
+  .colophon {
+    max-width: 810px;
+    margin: 76px 40px 0;
+    padding-top: 24px;
+    border-top: 2px solid var(--dark);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .colophon .row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    padding: 5px 0;
+  }
+  .colophon .lbl { color: var(--red); text-transform: uppercase; letter-spacing: .08em; }
+
+  body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+  body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+  @media (max-width: 920px) {
+    .wrap { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .spec { grid-template-columns: 1fr 1fr; }
+    section, .masthead, .colophon { padding-left: 22px; padding-right: 22px; }
+    .plate.wide { margin-left: 0; margin-right: 0; }
+  }
+  @media (max-width: 560px) {
+    .spec { grid-template-columns: 1fr; }
+    .spec div { border-right: 0; border-bottom: 1px solid var(--dark); }
+    .spec div:last-child { border-bottom: 0; }
+    .lang-toggle { top: 10px; right: 10px; }
+  }
+</style>
+</head>
+<body data-lang="zh">
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#151714"></path>
+    </marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <nav class="rail">
+    <div class="stamp">Codex Goal</div>
+    <ol>
+      <li><a href="#thesis"><span class="n">00</span><span lang="en">Thesis</span><span lang="zh">主论点</span></a></li>
+      <li><a href="#contract"><span class="n">01</span><span lang="en">Public contract</span><span lang="zh">公开语义</span></a></li>
+      <li><a href="#model"><span class="n">02</span><span lang="en">State model</span><span lang="zh">状态模型</span></a></li>
+      <li><a href="#doors"><span class="n">03</span><span lang="en">Three front doors</span><span lang="zh">三个入口</span></a></li>
+      <li><a href="#runtime"><span class="n">04</span><span lang="en">Runtime dispatcher</span><span lang="zh">运行时调度</span></a></li>
+      <li><a href="#accounting"><span class="n">05</span><span lang="en">Usage accounting</span><span lang="zh">用量统计</span></a></li>
+      <li><a href="#continuation"><span class="n">06</span><span lang="en">Continuation loop</span><span lang="zh">自动续跑</span></a></li>
+      <li><a href="#boundaries"><span class="n">07</span><span lang="en">Boundaries</span><span lang="zh">边界条件</span></a></li>
+      <li><a href="#judgment"><span class="n">08</span><span lang="en">Design judgment</span><span lang="zh">设计判断</span></a></li>
+      <li><a href="#map"><span class="n">09</span><span lang="en">Reading map</span><span lang="zh">阅读地图</span></a></li>
+    </ol>
+    <div class="meta">
+      <div>codex-cli 0.137.0</div>
+      <div>openai/codex · rust-v0.137.0</div>
+      <div>commit f221438b</div>
+    </div>
+  </nav>
+
+  <main class="article">
+    <header class="masthead">
+      <p class="kicker"><span lang="en">Source-level design reading · June 2026</span><span lang="zh">源码级设计阅读 · 2026-06</span></p>
+      <h1><span lang="en">Goal Mode Is a Thread State Machine</span><span lang="zh">Goal Mode 是线程状态机</span></h1>
+      <p class="subtitle" lang="en">A deep read of Codex Goal mode: why it is not just a prompt, how it persists objective state, how the model is allowed to touch it, and how the runtime keeps working without letting the model own pause, budget, or usage-limit semantics.</p>
+      <p class="subtitle" lang="zh">这是一篇 Codex Goal mode 的深度源码阅读： 它为什么不是简单把目标塞进 prompt， 它怎样持久化 objective， 模型能触碰哪些部分， 以及 runtime 怎样自动续跑但不把暂停、 预算、 usage limit 的控制权交给模型。</p>
+      <div class="spec">
+        <div><span class="k">Version</span><span class="v">codex-cli 0.137.0<br />rust-v0.137.0</span></div>
+        <div><span class="k">Source</span><span class="v">openai/codex<br />f221438b691b</span></div>
+        <div><span class="k">Core files</span><span class="v">core/src/goals.rs<br />state/runtime/goals.rs</span></div>
+        <div><span class="k">Surface</span><span class="v">/goal · app server RPC<br />model tools</span></div>
+      </div>
+    </header>
+
+    <section id="thesis">
+      <h2><span lang="en">00 · Thesis</span><span lang="zh">00 · 主论点</span></h2>
+      <p class="lede" lang="en">The useful mental model is: goal mode is a persistent thread-scoped state machine with an autonomous turn scheduler attached.</p>
+      <p class="lede" lang="zh">最有用的 mental model 是： goal mode 是一个 thread-scoped 的持久状态机， 外面再挂一个自动 turn scheduler。</p>
+
+      <p class="lead" lang="en">The public documentation says a goal is a persistent objective and completion criterion. The code makes that concrete by splitting the system into four layers: user controls, model-visible tools, core runtime policy, and SQLite state. This split is the design.</p>
+      <p class="lead" lang="zh">公开文档说 goal 是持久 objective 和完成标准。 源码把这句话落成四层： 用户控制、 模型可见工具、 core runtime policy、 SQLite 状态。 这个拆分本身就是设计重点。</p>
+
+      <div class="claim">
+        <span class="tag">central claim</span>
+        <p lang="en">Codex deliberately gives the model the ability to <em>finish</em> or <em>declare a real block</em>, but keeps pause, resume, budget-limit, usage-limit, and replacement semantics in the host/runtime layer.</p>
+        <p lang="zh">Codex 有意让模型可以 <em>完成目标</em> 或 <em>声明真实阻塞</em>， 但把 pause、 resume、 budget-limit、 usage-limit 和 replacement 语义留在 host / runtime 层。</p>
+      </div>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate I</span><span class="name" lang="en">The four-layer shape</span><span class="name" lang="zh">四层结构</span></div>
+        <svg viewBox="0 0 900 420" role="img" aria-label="Four-layer architecture of Codex Goal mode">
+          <rect x="40" y="42" width="820" height="68" class="s-box"></rect>
+          <text x="64" y="73" class="s-title">Surfaces</text>
+          <text x="64" y="96" class="s-small">/goal · app server RPC · model tools</text>
+          <rect x="40" y="138" width="250" height="92" class="s-soft"></rect>
+          <rect x="325" y="138" width="250" height="92" class="s-amber"></rect>
+          <rect x="610" y="138" width="250" height="92" class="s-warn"></rect>
+          <text x="62" y="172" class="s-title">User authority</text>
+          <text x="62" y="196" class="s-small">set / edit / pause / resume / clear</text>
+          <text x="347" y="172" class="s-title">Model authority</text>
+          <text x="347" y="196" class="s-small">get · create · complete · blocked</text>
+          <text x="632" y="172" class="s-title">System authority</text>
+          <text x="632" y="196" class="s-small">budget · usage · continuation</text>
+          <path d="M165 230 L165 286" class="s-edge"></path>
+          <path d="M450 230 L450 286" class="s-edge"></path>
+          <path d="M735 230 L735 286" class="s-edge"></path>
+          <rect x="210" y="286" width="480" height="72" class="s-box"></rect>
+          <text x="244" y="318" class="s-title">core/src/goals.rs</text>
+          <text x="244" y="342" class="s-small">GoalRuntimeEvent dispatcher · accounting · continuation</text>
+          <path d="M450 358 L450 386" class="s-edge"></path>
+          <rect x="250" y="386" width="400" height="28" class="s-soft"></rect>
+          <text x="326" y="406" class="s-small">goals_1.sqlite · thread_goals</text>
+        </svg>
+        <p class="caption" lang="en">The model is not the owner of the state machine. It can request only narrow transitions; the runtime owns the rest.</p>
+        <p class="caption" lang="zh">模型不是状态机的 owner。 它只能请求很窄的 transition， 其他 transition 由 runtime 控制。</p>
+      </div>
+    </section>
+
+    <section id="contract">
+      <h2><span lang="en">01 · Public Contract</span><span lang="zh">01 · 公开语义</span></h2>
+      <p class="lede" lang="en">The manual describes goal text as both starting prompt and definition of done. The implementation preserves that idea, but turns it into persisted data and lifecycle hooks.</p>
+      <p class="lede" lang="zh">Manual 把 goal text 描述成起始 prompt 和 definition of done。 实现保留了这个语义， 但把它落成持久数据和 lifecycle hooks。</p>
+
+      <p lang="en">The official manual section says Goal mode is for longer tasks, especially when Codex needs a durable definition of success. It also exposes `/goal` across app, IDE, and CLI surfaces and says `features.goals` controls availability. In the source, that feature is stable and default-enabled.</p>
+      <p lang="zh">官方 manual 说 Goal mode 用在长任务里， 特别是 Codex 需要一个持久成功标准的时候。 它也说明 app、 IDE、 CLI 都通过 `/goal` 暴露这个能力， 并由 `features.goals` 控制。 源码里这个 feature 已经是 stable 且默认启用。</p>
+
+      <pre class="code"><span class="c"># distilled from official manual + features/src/lib.rs</span>
+GoalMode =
+  persistent_objective
+  + completion_criteria
+  + feature_flag("goals", stable, default_enabled=true)</pre>
+
+      <div class="refs">
+        <div class="ref"><b>Manual:</b> <a href="https://developers.openai.com/codex/codex-manual.md">codex-manual.md</a>, Goal mode section, lines 508-548 in the fetched manual.</div>
+        <div class="ref"><b>Feature flag:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/features/src/lib.rs#L193-L195">features/src/lib.rs:193</a> and <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/features/src/lib.rs#L1120-L1125">features/src/lib.rs:1120</a>.</div>
+      </div>
+
+      <div class="note">
+        <span class="tag">reading rule</span>
+        <p lang="en">Do not read goal mode as a model prompt trick. The prompt is only one actuator. The durable object is in state, and the scheduler is in core runtime.</p>
+        <p lang="zh">不要把 goal mode 理解成一个 prompt trick。 prompt 只是 actuator 之一。 真正持久的是 state object， 自动推进来自 core runtime。</p>
+      </div>
+    </section>
+
+    <section id="model">
+      <h2><span lang="en">02 · State Model</span><span lang="zh">02 · 状态模型</span></h2>
+      <p class="lede" lang="en">There are two shapes for the same object: a public protocol shape for UI and tools, and an internal state shape with a hidden `goal_id` for concurrency safety.</p>
+      <p class="lede" lang="zh">同一个 object 有两种形状： 给 UI 和 tools 的公开 protocol shape， 以及带隐藏 `goal_id` 的内部 state shape， 后者用于并发安全。</p>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th><span lang="en">Layer</span><span lang="zh">层</span></th>
+            <th><span lang="en">Fields</span><span lang="zh">字段</span></th>
+            <th><span lang="en">Design point</span><span lang="zh">设计点</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>protocol</code></td>
+            <td><code>thread_id</code>, <code>objective</code>, <code>status</code>, budget and usage counters</td>
+            <td lang="en">What clients and model tools are allowed to observe.</td>
+            <td lang="zh">clients 和模型工具允许观察的形状。</td>
+          </tr>
+          <tr>
+            <td><code>state</code></td>
+            <td>protocol fields + hidden <code>goal_id</code></td>
+            <td lang="en">The runtime uses the hidden id to avoid stale writes.</td>
+            <td lang="zh">runtime 用隐藏 id 避免 stale write。</td>
+          </tr>
+          <tr>
+            <td><code>sqlite</code></td>
+            <td><code>thread_id</code> primary key in <code>thread_goals</code></td>
+            <td lang="en">One current goal per persisted thread.</td>
+            <td lang="zh">每个 persisted thread 只有一个当前 goal。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <pre class="code"><span class="c"># distilled from protocol.rs and goals_migrations/0001_thread_goals.sql</span>
+ThreadGoal {
+  thread_id, objective, status,
+  token_budget?, tokens_used, time_used_seconds,
+  created_at, updated_at
+}
+
+thread_goals table:
+  primary key: thread_id
+  hidden safety key: goal_id
+  status in active | paused | blocked | usage_limited | budget_limited | complete</pre>
+
+      <p lang="en">The status set is telling. `blocked` and `complete` are semantic judgments. `paused` is user control. `usage_limited` and `budget_limited` are system control. `active` is the only state that participates in normal autonomous continuation.</p>
+      <p lang="zh">状态集合很能说明设计。 `blocked` 和 `complete` 是语义判断。 `paused` 是用户控制。 `usage_limited` 和 `budget_limited` 是系统控制。 `active` 是唯一参与正常自动续跑的状态。</p>
+
+      <div class="plate">
+        <div class="plate-meta"><span class="pn">Plate II</span><span class="name" lang="en">Status machine</span><span class="name" lang="zh">状态机</span></div>
+        <svg viewBox="0 0 760 360" role="img" aria-label="Goal status state machine">
+          <rect x="58" y="132" width="130" height="64" class="s-soft"></rect>
+          <text x="91" y="169" class="s-title">active</text>
+          <rect x="304" y="44" width="130" height="64" class="s-box"></rect>
+          <text x="340" y="82" class="s-title">paused</text>
+          <rect x="304" y="132" width="130" height="64" class="s-warn"></rect>
+          <text x="333" y="169" class="s-title">blocked</text>
+          <rect x="304" y="220" width="130" height="64" class="s-amber"></rect>
+          <text x="321" y="258" class="s-title">complete</text>
+          <rect x="552" y="88" width="150" height="64" class="s-warn"></rect>
+          <text x="580" y="126" class="s-title">usage limit</text>
+          <rect x="552" y="188" width="150" height="64" class="s-amber"></rect>
+          <text x="575" y="226" class="s-title">budget limit</text>
+          <path d="M188 152 C234 122 258 90 304 76" class="s-edge"></path>
+          <path d="M304 92 C252 118 232 144 188 160" class="s-edge"></path>
+          <path d="M188 164 L304 164" class="s-edge"></path>
+          <path d="M188 176 C234 214 256 240 304 252" class="s-edge"></path>
+          <path d="M188 148 C360 80 454 88 552 116" class="s-dash"></path>
+          <path d="M188 184 C360 236 456 238 552 220" class="s-dash"></path>
+          <text x="198" y="84" class="s-small">user pause / resume</text>
+          <text x="198" y="154" class="s-small">model declares block</text>
+          <text x="198" y="238" class="s-small">model proves done</text>
+          <text x="504" y="78" class="s-small">system</text>
+          <text x="504" y="276" class="s-small">system</text>
+        </svg>
+        <p class="caption" lang="en">The status machine is split by authority. That is why `update_goal` cannot pause or budget-limit a goal.</p>
+        <p class="caption" lang="zh">状态机按 authority 分层。 所以 `update_goal` 不能 pause， 也不能 budget-limit 一个 goal。</p>
+      </div>
+
+      <div class="refs">
+        <div class="ref"><b>Protocol fields:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/protocol/src/protocol.rs#L3622-L3662">protocol/src/protocol.rs:3622-3662</a>.</div>
+        <div class="ref"><b>SQLite table:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/state/goals_migrations/0001_thread_goals.sql#L1-L18">state/goals_migrations/0001_thread_goals.sql:1-18</a>.</div>
+        <div class="ref"><b>Hidden id:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/state/src/model/thread_goal.rs#L59-L68">state/src/model/thread_goal.rs:59-68</a>.</div>
+      </div>
+    </section>
+
+    <section id="doors">
+      <h2><span lang="en">03 · Three Front Doors</span><span lang="zh">03 · 三个入口</span></h2>
+      <p class="lede" lang="en">Goal mode has three ingress paths. They all mutate the same state, but each path is given a different permission envelope.</p>
+      <p class="lede" lang="zh">Goal mode 有三个入口。 它们最终都改同一个 state， 但每个入口的权限边界不同。</p>
+
+      <h3 lang="en">Door A · `/goal` in the TUI</h3>
+      <h3 lang="zh">入口 A · TUI 里的 `/goal`</h3>
+      <p lang="en">The TUI parser treats `/goal clear`, `/goal edit`, `/goal pause`, and `/goal resume` as control commands. Any other non-empty argument becomes a candidate objective. If there is no thread yet, it queues the slash command until a session exists.</p>
+      <p lang="zh">TUI parser 把 `/goal clear`、 `/goal edit`、 `/goal pause`、 `/goal resume` 当作控制命令。 其他非空参数会变成候选 objective。 如果当前还没有 thread， 它会把 slash command 先排队， 等 session 存在后再处理。</p>
+
+      <pre class="code"><span class="c"># distilled from tui/src/chatwidget/slash_dispatch.rs</span>
+if input is "clear"      -> ClearThreadGoal
+if input is "edit"       -> OpenThreadGoalEditor
+if input is "pause"      -> SetThreadGoalStatus(Paused)
+if input is "resume"     -> SetThreadGoalStatus(Active)
+otherwise                -> SetThreadGoalObjective(..., ConfirmIfExists)</pre>
+
+      <h3 lang="en">Door B · App Server RPC</h3>
+      <h3 lang="zh">入口 B · App Server RPC</h3>
+      <p lang="en">The app server exposes `thread/goal/set`, `thread/goal/get`, and `thread/goal/clear`. Before mutating, it resolves a materialized thread, reconciles the rollout into state, validates objective and budget, then emits ordered notifications so UI state and runtime state converge.</p>
+      <p lang="zh">App server 暴露 `thread/goal/set`、 `thread/goal/get`、 `thread/goal/clear`。 变更前它会解析 materialized thread， 把 rollout reconcile 到 state， 校验 objective 和 budget， 再发有序 notification， 让 UI state 和 runtime state 收敛。</p>
+
+      <h3 lang="en">Door C · Model tools</h3>
+      <h3 lang="zh">入口 C · 模型工具</h3>
+      <p lang="en">The model gets `get_goal`, `create_goal`, and `update_goal`. But `update_goal` only exposes `complete` and `blocked`. This is the most important guardrail in the public tool contract.</p>
+      <p lang="zh">模型拿到的是 `get_goal`、 `create_goal`、 `update_goal`。 但 `update_goal` 只暴露 `complete` 和 `blocked`。 这是工具 contract 里最重要的 guardrail。</p>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th><span lang="en">Actor</span><span lang="zh">Actor</span></th>
+            <th><span lang="en">Can do</span><span lang="zh">能做什么</span></th>
+            <th><span lang="en">Cannot do</span><span lang="zh">不能做什么</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>User / UI</td>
+            <td lang="en">Set, replace, edit, pause, resume, clear.</td>
+            <td lang="zh">设置、 替换、 编辑、 暂停、 恢复、 清除。</td>
+            <td lang="en">Bypass validation or ephemeral-thread constraints.</td>
+            <td lang="zh">绕过校验或 ephemeral thread 约束。</td>
+          </tr>
+          <tr>
+            <td>Model</td>
+            <td lang="en">Read, explicitly create, mark complete, mark blocked.</td>
+            <td lang="zh">读取、 显式创建、 标记完成、 标记阻塞。</td>
+            <td lang="en">Pause, resume, budget-limit, usage-limit, clear.</td>
+            <td lang="zh">暂停、 恢复、 budget-limit、 usage-limit、 clear。</td>
+          </tr>
+          <tr>
+            <td>Runtime</td>
+            <td lang="en">Account usage, trigger continuation, enforce budget and usage limits.</td>
+            <td lang="zh">统计用量、 触发续跑、 执行预算和 usage limit。</td>
+            <td lang="en">Decide semantic completion by itself.</td>
+            <td lang="zh">自己判断语义完成。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="refs">
+        <div class="ref"><b>TUI parser:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/tui/src/chatwidget/slash_dispatch.rs#L682-L780">tui/src/chatwidget/slash_dispatch.rs:682-780</a>.</div>
+        <div class="ref"><b>App RPC processor:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/app-server/src/request_processors/thread_goal_processor.rs#L92-L248">app-server/src/request_processors/thread_goal_processor.rs:92-248</a>.</div>
+        <div class="ref"><b>Tool spec:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/tools/handlers/goal_spec.rs#L12-L98">core/src/tools/handlers/goal_spec.rs:12-98</a>.</div>
+      </div>
+    </section>
+
+    <section id="runtime">
+      <h2><span lang="en">04 · Runtime Dispatcher</span><span lang="zh">04 · 运行时调度</span></h2>
+      <p class="lede" lang="en">The center of the design is `goal_runtime_apply`: a dispatcher that converts session lifecycle events into state mutations, accounting, steering prompts, and new turns.</p>
+      <p class="lede" lang="zh">设计中心是 `goal_runtime_apply`： 它把 session lifecycle events 转成 state mutation、 accounting、 steering prompt 和新的 turn。</p>
+
+      <pre class="code"><span class="c"># distilled from core/src/goals.rs</span>
+on TurnStarted        -> bind current active goal to this turn
+on ToolCompleted      -> account tokens/time, maybe inject budget steering
+on ToolCompletedGoal  -> account, but suppress budget steering
+on TurnFinished       -> final accounting for the turn
+on MaybeContinueIdle  -> launch another turn if active goal is still pending
+on UsageLimitReached  -> mark current active goal usage_limited
+on ExternalSet/Clear  -> reconcile runtime state with UI/RPC mutation
+on ThreadResumed      -> restore runtime state and maybe continue</pre>
+
+      <p lang="en">This dispatcher is why Goal mode can survive context compaction and multiple turns. The current objective is not trusted to remain in the model's short-term conversational memory; the runtime can rehydrate it into the next turn as internal context.</p>
+      <p lang="zh">这个 dispatcher 是 Goal mode 能跨 context compaction 和多轮运行的原因。 当前 objective 不依赖模型短期对话记忆保存； runtime 可以在下一轮把它重新注入成 internal context。</p>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate III</span><span class="name" lang="en">A single turn under goal mode</span><span class="name" lang="zh">Goal mode 下的一轮 turn</span></div>
+        <svg viewBox="0 0 920 360" role="img" aria-label="Turn lifecycle with goal runtime events">
+          <rect x="38" y="48" width="150" height="70" class="s-soft"></rect>
+          <text x="64" y="78" class="s-title">Turn start</text>
+          <text x="64" y="102" class="s-small">token baseline</text>
+          <rect x="258" y="48" width="150" height="70" class="s-box"></rect>
+          <text x="286" y="78" class="s-title">Model work</text>
+          <text x="286" y="102" class="s-small">messages · reasoning</text>
+          <rect x="478" y="48" width="150" height="70" class="s-amber"></rect>
+          <text x="510" y="78" class="s-title">Tool finish</text>
+          <text x="510" y="102" class="s-small">account delta</text>
+          <rect x="698" y="48" width="150" height="70" class="s-warn"></rect>
+          <text x="728" y="78" class="s-title">Turn stop</text>
+          <text x="728" y="102" class="s-small">final accounting</text>
+          <path d="M188 83 L258 83" class="s-edge"></path>
+          <path d="M408 83 L478 83" class="s-edge"></path>
+          <path d="M628 83 L698 83" class="s-edge"></path>
+          <rect x="192" y="190" width="540" height="76" class="s-box"></rect>
+          <text x="222" y="222" class="s-title">GoalRuntimeState</text>
+          <text x="222" y="247" class="s-small">turn snapshot · wall clock snapshot · continuation lock · reported budget id</text>
+          <path d="M112 118 C120 166 160 184 232 190" class="s-dash"></path>
+          <path d="M552 118 C560 166 530 184 500 190" class="s-dash"></path>
+          <path d="M774 118 C760 166 708 184 658 190" class="s-dash"></path>
+          <rect x="322" y="294" width="280" height="44" class="s-soft"></rect>
+          <text x="358" y="322" class="s-small">MaybeContinueIfIdle -> next turn</text>
+          <path d="M462 266 L462 294" class="s-edge"></path>
+        </svg>
+        <p class="caption" lang="en">The runtime records the goal against a specific turn, then updates usage at tool and turn boundaries.</p>
+        <p class="caption" lang="zh">runtime 把 goal 绑定到具体 turn， 然后在 tool 和 turn 边界更新用量。</p>
+      </div>
+
+      <div class="refs">
+        <div class="ref"><b>Dispatcher:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L305-L395">core/src/goals.rs:305-395</a>.</div>
+        <div class="ref"><b>Turn hooks:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/tasks/mod.rs#L344-L353">core/src/tasks/mod.rs:344-353</a> and <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/tasks/mod.rs#L754-L800">754-800</a>.</div>
+        <div class="ref"><b>Tool hook:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/tools/registry.rs#L652-L668">core/src/tools/registry.rs:652-668</a>.</div>
+      </div>
+    </section>
+
+    <section id="accounting">
+      <h2><span lang="en">05 · Usage Accounting</span><span lang="zh">05 · 用量统计</span></h2>
+      <p class="lede" lang="en">Goal mode does not merely remember an objective. It measures how much agent budget has been spent pursuing that objective.</p>
+      <p class="lede" lang="zh">Goal mode 不只是记住一个 objective。 它还会统计 agent 为这个 objective 消耗了多少预算。</p>
+
+      <p lang="en">There are two counters: wall-clock seconds and goal token usage. The runtime tracks a token baseline at turn start, then accounts deltas after tool calls and at turn end. The state layer clamps negative deltas to zero and can flip an active goal into `budget_limited` when tokens cross the configured budget.</p>
+      <p lang="zh">这里有两个 counter： wall-clock seconds 和 goal token usage。 runtime 在 turn start 记录 token baseline， 然后在 tool call 后和 turn end 统计 delta。 state 层会把负 delta clamp 到 0， 并在 tokens 超过预算时把 active goal 翻成 `budget_limited`。</p>
+
+      <pre class="code"><span class="c"># distilled from core/src/goals.rs and state/src/runtime/goals.rs</span>
+token_delta =
+  current_non_cached_input_plus_output
+  - last_accounted_non_cached_input_plus_output
+
+persist:
+  time_used_seconds += wall_clock_delta
+  tokens_used       += token_delta
+
+if status is active and tokens_used >= token_budget:
+  status = budget_limited</pre>
+
+      <p lang="en">The hidden `goal_id` matters here. Accounting is only applied when the expected id still matches. Without that, a late tool finish from an older turn could charge a freshly replaced goal.</p>
+      <p lang="zh">隐藏的 `goal_id` 在这里很关键。 accounting 只有在 expected id 仍然匹配时才落库。 否则旧 turn 的迟到 tool finish 可能把用量记到新替换的 goal 上。</p>
+
+      <div class="plate">
+        <div class="plate-meta"><span class="pn">Plate IV</span><span class="name" lang="en">Why `goal_id` exists</span><span class="name" lang="zh">为什么需要 `goal_id`</span></div>
+        <svg viewBox="0 0 760 340" role="img" aria-label="Goal id prevents stale accounting">
+          <rect x="52" y="50" width="180" height="62" class="s-soft"></rect>
+          <text x="74" y="82" class="s-title">Turn A</text>
+          <text x="74" y="103" class="s-small">active goal_id = g1</text>
+          <rect x="52" y="210" width="180" height="62" class="s-warn"></rect>
+          <text x="74" y="242" class="s-title">Turn B</text>
+          <text x="74" y="263" class="s-small">new goal_id = g2</text>
+          <rect x="334" y="70" width="170" height="54" class="s-amber"></rect>
+          <text x="358" y="102" class="s-title">late tool finish</text>
+          <rect x="550" y="136" width="160" height="70" class="s-box"></rect>
+          <text x="574" y="168" class="s-title">SQLite row</text>
+          <text x="574" y="190" class="s-small">thread_id primary key</text>
+          <path d="M232 82 L334 94" class="s-edge"></path>
+          <path d="M232 242 C358 250 448 224 550 188" class="s-edge"></path>
+          <path d="M504 98 C540 106 558 120 582 136" class="s-dash"></path>
+          <text x="336" y="154" class="s-small">expected g1 != current g2</text>
+          <text x="336" y="174" class="s-small">drop stale accounting</text>
+        </svg>
+        <p class="caption" lang="en">The DB has one row per thread, so `goal_id` is the concurrency token that distinguishes logical goals over time.</p>
+        <p class="caption" lang="zh">DB 每个 thread 只有一行， 所以 `goal_id` 是区分不同时刻 logical goal 的 concurrency token。</p>
+      </div>
+
+      <div class="refs">
+        <div class="ref"><b>Runtime accounting:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L936-L1056">core/src/goals.rs:936-1056</a>.</div>
+        <div class="ref"><b>State accounting:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/state/src/runtime/goals.rs#L385-L497">state/src/runtime/goals.rs:385-497</a>.</div>
+        <div class="ref"><b>Token formula:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L1550-L1554">core/src/goals.rs:1550-1554</a>.</div>
+      </div>
+    </section>
+
+    <section id="continuation">
+      <h2><span lang="en">06 · Continuation Loop</span><span lang="zh">06 · 自动续跑</span></h2>
+      <p class="lede" lang="en">Automatic continuation is conservative. It starts a new turn only when the thread is idle, there is no trigger-turn mailbox input, and the stored goal is still the same active goal.</p>
+      <p class="lede" lang="zh">自动续跑是保守的。 它只有在 thread idle、 没有 trigger-turn mailbox input、 且 DB 中仍然是同一个 active goal 时才启动新 turn。</p>
+
+      <pre class="code"><span class="c"># distilled from maybe_start_goal_continuation_turn</span>
+if not feature_enabled: stop
+if mode is Plan: stop
+if active_turn exists: stop
+if user-triggered input is pending: stop
+goal = read_db(thread_id)
+if goal.status != active: stop
+if goal_id changed before launch: cancel reservation
+inject continuation prompt as internal context
+start a default turn</pre>
+
+      <p lang="en">The continuation prompt is also carefully worded: it treats the objective as user data, keeps the full objective intact, asks for evidence before completion, and prevents the model from shrinking success to the easiest completed subset.</p>
+      <p lang="zh">continuation prompt 也写得很谨慎： 它把 objective 当作 user data， 保留完整 objective， 要求完成前做 evidence audit， 并阻止模型把成功标准缩小到最容易完成的子集。</p>
+
+      <div class="plate wide">
+        <div class="plate-meta"><span class="pn">Plate V</span><span class="name" lang="en">Continuation gates</span><span class="name" lang="zh">续跑 gate</span></div>
+        <svg viewBox="0 0 900 330" role="img" aria-label="Continuation gate diagram">
+          <rect x="44" y="56" width="112" height="54" class="s-box"></rect>
+          <text x="70" y="88" class="s-title">Idle?</text>
+          <rect x="204" y="56" width="132" height="54" class="s-box"></rect>
+          <text x="224" y="88" class="s-title">No input?</text>
+          <rect x="384" y="56" width="144" height="54" class="s-box"></rect>
+          <text x="408" y="88" class="s-title">Goal active?</text>
+          <rect x="576" y="56" width="144" height="54" class="s-box"></rect>
+          <text x="596" y="88" class="s-title">Same id?</text>
+          <rect x="768" y="56" width="92" height="54" class="s-soft"></rect>
+          <text x="788" y="88" class="s-title">Start</text>
+          <path d="M156 83 L204 83" class="s-edge"></path>
+          <path d="M336 83 L384 83" class="s-edge"></path>
+          <path d="M528 83 L576 83" class="s-edge"></path>
+          <path d="M720 83 L768 83" class="s-edge"></path>
+          <rect x="248" y="190" width="408" height="82" class="s-amber"></rect>
+          <text x="280" y="226" class="s-title">Injected context</text>
+          <text x="280" y="250" class="s-small">continuation.md: objective + budget + completion audit</text>
+          <path d="M814 110 C796 176 704 204 656 216" class="s-dash"></path>
+          <text x="74" y="152" class="s-small">any failed gate returns without a turn</text>
+        </svg>
+        <p class="caption" lang="en">The continuation loop is explicit scheduling, not a magical long-running model call.</p>
+        <p class="caption" lang="zh">续跑 loop 是显式 scheduling， 不是一个神奇的长时间模型调用。</p>
+      </div>
+
+      <div class="refs">
+        <div class="ref"><b>Continuation:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L1243-L1395">core/src/goals.rs:1243-1395</a>.</div>
+        <div class="ref"><b>Continuation prompt:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/prompts/templates/goals/continuation.md">prompts/templates/goals/continuation.md</a>.</div>
+      </div>
+    </section>
+
+    <section id="boundaries">
+      <h2><span lang="en">07 · Boundaries</span><span lang="zh">07 · 边界条件</span></h2>
+      <p class="lede" lang="en">Most of the interesting engineering is in what Goal mode refuses to do.</p>
+      <p class="lede" lang="zh">Goal mode 最有意思的工程点， 在于它拒绝做什么。</p>
+
+      <h3 lang="en">Plan mode ignores goal continuation</h3>
+      <h3 lang="zh">Plan mode 忽略 goal continuation</h3>
+      <p lang="en">The runtime explicitly ignores goal continuation while the collaboration mode is `Plan`. That avoids turning a planning conversation into an autonomous execution loop.</p>
+      <p lang="zh">runtime 在 collaboration mode 是 `Plan` 时显式忽略 goal continuation。 这避免把 planning conversation 变成自动执行 loop。</p>
+
+      <h3 lang="en">Ephemeral threads cannot own goals</h3>
+      <h3 lang="zh">Ephemeral thread 不能拥有 goal</h3>
+      <p lang="en">App server and core both require a materialized thread with a state database. The TUI turns that into a user-facing message: goals need a saved session.</p>
+      <p lang="zh">App server 和 core 都要求 materialized thread 加 state database。 TUI 把这个约束转成用户提示： goals 需要 saved session。</p>
+
+      <h3 lang="en">Budget limited is not complete</h3>
+      <h3 lang="zh">Budget limited 不等于 complete</h3>
+      <p lang="en">When the token budget is hit, the runtime injects budget steering that tells the model to wrap up and not start new substantive work. It also says not to call `update_goal` unless the goal is actually complete.</p>
+      <p lang="zh">token budget 被打满后， runtime 会注入 budget steering， 要求模型收尾， 不要开始新的实质工作。 它同时强调： 除非 goal 真的完成， 否则不要调用 `update_goal`。</p>
+
+      <pre class="code"><span class="c"># boundary summary</span>
+Plan mode                 -> no automatic continuation
+Ephemeral thread          -> no persisted goal
+Budget exhausted          -> budget_limited, not complete
+Usage limit reached       -> usage_limited, resumable by user
+Model calls update_goal   -> only complete or blocked accepted</pre>
+
+      <div class="warning">
+        <span class="tag">semantic boundary</span>
+        <p lang="en">The runtime can measure work and enforce stop states, but it cannot prove the user's real-world objective. Completion is still a model claim, made safer by tool restrictions and completion-audit instructions.</p>
+        <p lang="zh">runtime 可以衡量工作量并执行停止状态， 但它不能证明用户的真实目标已经达成。 完成仍然是模型声明， 只是通过工具限制和 completion-audit 指令变得更安全。</p>
+      </div>
+
+      <div class="refs">
+        <div class="ref"><b>Plan-mode guard:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L1487-L1489">core/src/goals.rs:1487-1489</a>.</div>
+        <div class="ref"><b>Ephemeral error:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/tui/src/app/thread_goal_actions.rs#L15-L18">tui/src/app/thread_goal_actions.rs:15-18</a>.</div>
+        <div class="ref"><b>Budget prompt:</b> <a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/prompts/templates/goals/budget_limit.md">prompts/templates/goals/budget_limit.md</a>.</div>
+      </div>
+    </section>
+
+    <section id="judgment">
+      <h2><span lang="en">08 · Design Judgment</span><span lang="zh">08 · 设计判断</span></h2>
+      <p class="lede" lang="en">The implementation is conservative in the right places. It makes the goal durable, but it does not let durability become unlimited agency.</p>
+      <p class="lede" lang="zh">这个实现保守得很到位。 它让 goal 持久， 但没有让持久性变成无限 agency。</p>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th><span lang="en">Choice</span><span lang="zh">选择</span></th>
+            <th><span lang="en">Why it matters</span><span lang="zh">为什么重要</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>thread_id</code> primary key</td>
+            <td lang="en">A thread has one current goal. Replacing a goal resets usage, which matches user intent better than silently mixing objectives.</td>
+            <td lang="zh">一个 thread 只有一个当前 goal。 替换 goal 会重置 usage， 这比静默混合多个 objective 更符合用户预期。</td>
+          </tr>
+          <tr>
+            <td><code>goal_id</code> hidden from protocol</td>
+            <td lang="en">Clients do not need it, but runtime writes need it to avoid stale accounting and stale continuation.</td>
+            <td lang="zh">client 不需要它， 但 runtime write 需要它来避免 stale accounting 和 stale continuation。</td>
+          </tr>
+          <tr>
+            <td>Narrow model tool</td>
+            <td lang="en">The model can conclude, but it cannot silently pause, resume, clear, or self-extend budgets.</td>
+            <td lang="zh">模型可以做结论， 但不能静默 pause、 resume、 clear， 也不能自己扩预算。</td>
+          </tr>
+          <tr>
+            <td>Idle continuation</td>
+            <td lang="en">Continuation happens only after normal pending work is drained, so user input wins over autonomous progress.</td>
+            <td lang="zh">续跑只在普通 pending work drain 之后发生， 所以用户输入优先于自动推进。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="plate">
+        <div class="plate-meta"><span class="pn">Plate VI</span><span class="name" lang="en">The authority split</span><span class="name" lang="zh">Authority split</span></div>
+        <svg viewBox="0 0 760 360" role="img" aria-label="Authority split between user, model, and runtime">
+          <rect x="70" y="48" width="180" height="240" class="s-soft"></rect>
+          <rect x="290" y="48" width="180" height="240" class="s-amber"></rect>
+          <rect x="510" y="48" width="180" height="240" class="s-warn"></rect>
+          <text x="112" y="84" class="s-title">User</text>
+          <text x="332" y="84" class="s-title">Model</text>
+          <text x="548" y="84" class="s-title">Runtime</text>
+          <text x="98" y="126" class="s-text">set / edit</text>
+          <text x="98" y="154" class="s-text">pause / resume</text>
+          <text x="98" y="182" class="s-text">clear / replace</text>
+          <text x="318" y="126" class="s-text">read</text>
+          <text x="318" y="154" class="s-text">create if asked</text>
+          <text x="318" y="182" class="s-text">complete</text>
+          <text x="318" y="210" class="s-text">blocked</text>
+          <text x="538" y="126" class="s-text">account usage</text>
+          <text x="538" y="154" class="s-text">budget limit</text>
+          <text x="538" y="182" class="s-text">usage limit</text>
+          <text x="538" y="210" class="s-text">schedule next turn</text>
+        </svg>
+        <p class="caption" lang="en">The goal system is not about trusting the model more. It is about giving the host enough structure to keep the model moving safely.</p>
+        <p class="caption" lang="zh">goal system 不是“更相信模型”。 它是给 host 足够结构， 让模型能安全地持续推进。</p>
+      </div>
+
+      <div class="note">
+        <span class="tag">what I would watch</span>
+        <p lang="en">The weakest point is not the state machine; it is semantic completion. The code can protect budgets and stale writes, but the final “done” signal is only as good as the model's evidence audit and the user's goal wording.</p>
+        <p lang="zh">最弱的点不是状态机， 而是 semantic completion。 代码能保护预算和 stale write， 但最终 “done” 信号的质量取决于模型 evidence audit 和用户 goal wording。</p>
+      </div>
+    </section>
+
+    <section id="map">
+      <h2><span lang="en">09 · Reading Map</span><span lang="zh">09 · 阅读地图</span></h2>
+      <p class="lede" lang="en">If you want to inspect this yourself, read the files in this order. Each file answers one design question.</p>
+      <p class="lede" lang="zh">如果你要自己继续看， 建议按这个顺序读。 每个文件回答一个设计问题。</p>
+
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th><span lang="en">Question</span><span lang="zh">问题</span></th>
+            <th><span lang="en">File</span><span lang="zh">文件</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td lang="en">What is a goal?</td>
+            <td lang="zh">goal 是什么？</td>
+            <td><a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/protocol/src/protocol.rs#L3622-L3662">protocol/src/protocol.rs:3622-3662</a></td>
+          </tr>
+          <tr>
+            <td lang="en">Where is it stored?</td>
+            <td lang="zh">它存在哪里？</td>
+            <td><a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/state/goals_migrations/0001_thread_goals.sql#L1-L18">state/goals_migrations/0001_thread_goals.sql:1-18</a></td>
+          </tr>
+          <tr>
+            <td lang="en">How can UI mutate it?</td>
+            <td lang="zh">UI 怎样修改它？</td>
+            <td><a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/app-server/src/request_processors/thread_goal_processor.rs#L92-L248">app-server/src/request_processors/thread_goal_processor.rs:92-248</a></td>
+          </tr>
+          <tr>
+            <td lang="en">How can the model mutate it?</td>
+            <td lang="zh">模型怎样修改它？</td>
+            <td><a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/tools/handlers/goal_spec.rs#L12-L98">core/src/tools/handlers/goal_spec.rs:12-98</a></td>
+          </tr>
+          <tr>
+            <td lang="en">Who owns lifecycle policy?</td>
+            <td lang="zh">谁拥有 lifecycle policy？</td>
+            <td><a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L305-L395">core/src/goals.rs:305-395</a></td>
+          </tr>
+          <tr>
+            <td lang="en">How does continuation start?</td>
+            <td lang="zh">续跑怎样启动？</td>
+            <td><a href="https://github.com/openai/codex/blob/rust-v0.137.0/codex-rs/core/src/goals.rs#L1243-L1395">core/src/goals.rs:1243-1395</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="claim">
+        <span class="tag">one-sentence summary</span>
+        <p lang="en">Codex Goal mode is a host-managed loop around a persisted objective, with the model allowed to drive work but not allowed to own the stop-state machinery.</p>
+        <p lang="zh">Codex Goal mode 是 host 围绕 persisted objective 管理的 loop， 模型可以推进工作， 但不能拥有 stop-state machinery。</p>
+      </div>
+    </section>
+
+    <footer class="colophon">
+      <div class="row"><span class="lbl">source</span><span>openai/codex · rust-v0.137.0 · f221438b691b8f749d98f22077c93ebe01923fbe</span></div>
+      <div class="row"><span class="lbl">manual</span><span>Official Codex manual fetched 2026-06-08 through the Codex docs helper</span></div>
+      <div class="row"><span class="lbl">style</span><span>Swiss systems map · hand-coded SVG plates · bilingual toggle</span></div>
+      <div class="row"><span class="lbl">note</span><span>Code blocks are distilled excerpts and pseudocode sketches; line links point to the authoritative source.</span></div>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function() {
+  var KEY = 'codex-goal-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'zh').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var value = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', value);
+      try { localStorage.setItem(KEY, value); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
