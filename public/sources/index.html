@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Source Library · jinnpan.com</title>
+<meta name="description" content="An index of the source-reading, paper-reading, and deep-dive HTML pages published under jinnpan.com/sources." />
+<style>
+  :root {
+    --paper: #f6f3ea;
+    --paper2: #ebe6d9;
+    --ink: #171714;
+    --muted: #68675f;
+    --line: #c7c0ad;
+    --line2: #9f998a;
+    --teal: #126b68;
+    --blue: #315d92;
+    --red: #a24036;
+    --amber: #bb7a25;
+    --green: #4e744c;
+    --dark: #22231f;
+    --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    --font-serif: Georgia, "Noto Serif SC", serif;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      linear-gradient(90deg, rgba(23, 23, 20, 0.045) 1px, transparent 1px),
+      linear-gradient(rgba(23, 23, 20, 0.04) 1px, transparent 1px),
+      var(--paper);
+    background-size: 40px 40px, 40px 40px;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    line-height: 1.55;
+  }
+
+  a { color: inherit; }
+  .shell {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 28px clamp(18px, 3vw, 42px) 56px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid var(--dark);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .home {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .home-mark {
+    width: 22px;
+    height: 22px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--dark);
+    background: var(--dark);
+    color: var(--paper);
+    font-weight: 700;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: clamp(24px, 5vw, 70px);
+    align-items: end;
+    padding: clamp(34px, 7vw, 80px) 0 30px;
+  }
+  .kicker {
+    margin: 0 0 12px;
+    color: var(--red);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 0;
+    max-width: 760px;
+    font-family: var(--font-serif);
+    font-size: clamp(48px, 8vw, 108px);
+    line-height: .95;
+    letter-spacing: 0;
+  }
+  .lede {
+    max-width: 740px;
+    margin: 22px 0 0;
+    color: #3b3b35;
+    font-size: clamp(18px, 2vw, 23px);
+  }
+
+  .shelf-plate {
+    border: 2px solid var(--dark);
+    background: rgba(235, 230, 217, .72);
+    box-shadow: 8px 8px 0 rgba(23, 23, 20, .12);
+    padding: 14px;
+  }
+  .shelf-plate svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 0;
+    border-top: 2px solid var(--dark);
+    border-bottom: 2px solid var(--dark);
+    background: rgba(246, 243, 234, .94);
+    backdrop-filter: blur(8px);
+  }
+  .search {
+    width: 100%;
+    min-height: 44px;
+    border: 2px solid var(--dark);
+    border-radius: 0;
+    background: #fffaf0;
+    color: var(--ink);
+    font: 15px var(--font-mono);
+    padding: 0 14px;
+    outline: none;
+  }
+  .search:focus {
+    box-shadow: 4px 4px 0 rgba(18, 107, 104, .22);
+    border-color: var(--teal);
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .filter {
+    min-height: 36px;
+    border: 1px solid var(--dark);
+    border-radius: 0;
+    background: transparent;
+    color: var(--dark);
+    font: 12px var(--font-mono);
+    padding: 0 11px;
+    cursor: pointer;
+  }
+  .filter[aria-pressed="true"] {
+    background: var(--dark);
+    color: var(--paper);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 2px solid var(--dark);
+    margin: 24px 0;
+    background: rgba(255, 250, 240, .72);
+  }
+  .stat {
+    min-width: 0;
+    padding: 14px 16px;
+    border-left: 1px solid var(--dark);
+  }
+  .stat:first-child { border-left: 0; }
+  .stat .num {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 38px;
+    line-height: 1;
+  }
+  .stat .label {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font: 12px var(--font-mono);
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 28px 0 14px;
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 1;
+  }
+  .visible-count {
+    color: var(--muted);
+    font: 12px var(--font-mono);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .entry {
+    display: flex;
+    min-height: 278px;
+    flex-direction: column;
+    border: 2px solid var(--dark);
+    background: rgba(255, 250, 240, .78);
+    box-shadow: 5px 5px 0 rgba(23, 23, 20, .10);
+  }
+  .entry[data-kind="source"] { --accent: var(--teal); }
+  .entry[data-kind="paper"] { --accent: var(--red); }
+  .entry[data-kind="primer"] { --accent: var(--blue); }
+  .entry[data-kind="codex"] { --accent: var(--green); }
+  .entry[hidden] { display: none; }
+  .entry-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--dark);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .entry-kind {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .entry-body {
+    padding: 18px 16px 14px;
+    flex: 1;
+  }
+  .entry h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 28px;
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+  .entry p {
+    margin: 12px 0 0;
+    color: #404039;
+    font-size: 15px;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .tag {
+    border: 1px solid var(--line2);
+    color: var(--muted);
+    font: 11px var(--font-mono);
+    padding: 3px 6px;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--dark);
+  }
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    border: 1px solid var(--dark);
+    color: var(--ink);
+    font: 12px var(--font-mono);
+    padding: 0 10px;
+    text-decoration: none;
+  }
+  .link.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .link:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0 rgba(23, 23, 20, .18);
+  }
+
+  .empty {
+    display: none;
+    border: 2px dashed var(--line2);
+    color: var(--muted);
+    padding: 36px;
+    text-align: center;
+    font: 14px var(--font-mono);
+  }
+  .empty[aria-hidden="false"] { display: block; }
+
+  .note {
+    margin-top: 28px;
+    color: var(--muted);
+    font: 12px var(--font-mono);
+  }
+
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: 1fr; }
+    .shelf-plate { max-width: 420px; }
+    .controls { grid-template-columns: 1fr; }
+    .filters { justify-content: flex-start; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat:nth-child(odd) { border-left: 0; }
+    .stat:nth-child(n+3) { border-top: 1px solid var(--dark); }
+  }
+  @media (max-width: 640px) {
+    .shell { padding-inline: 16px; }
+    .topbar { align-items: flex-start; flex-direction: column; }
+    .grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+    .stat { border-left: 0; border-top: 1px solid var(--dark); }
+    .stat:first-child { border-top: 0; }
+    .entry { min-height: auto; }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <nav class="topbar" aria-label="Page">
+    <a class="home" href="/">
+      <span class="home-mark">J</span>
+      <span>jinnpan.com</span>
+    </a>
+    <span>Static HTML deep dives under /sources</span>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <p class="kicker">Source Library</p>
+      <h1>Deep Dive Index</h1>
+      <p class="lede">这里集中放源码精读、 论文精读和系统长文。 每一张卡片都直达完整 HTML， 有些也附带中英 blog 摘要入口。</p>
+    </div>
+    <figure class="shelf-plate" aria-label="A small visual map of the source library">
+      <svg viewBox="0 0 320 240" role="img" aria-labelledby="plate-title plate-desc">
+        <title id="plate-title">Library map</title>
+        <desc id="plate-desc">A diagram showing source readings, paper readings, primers, and Codex notes as shelves connected to the index.</desc>
+        <rect x="1" y="1" width="318" height="238" fill="#fffaf0" stroke="#22231f" stroke-width="2" />
+        <line x1="32" y1="184" x2="288" y2="184" stroke="#22231f" stroke-width="3" />
+        <line x1="32" y1="126" x2="288" y2="126" stroke="#22231f" stroke-width="3" />
+        <line x1="32" y1="68" x2="288" y2="68" stroke="#22231f" stroke-width="3" />
+        <g stroke="#22231f" stroke-width="1.5">
+          <rect x="44" y="82" width="18" height="42" fill="#126b68" />
+          <rect x="66" y="78" width="22" height="46" fill="#315d92" />
+          <rect x="92" y="88" width="16" height="36" fill="#4e744c" />
+          <rect x="112" y="74" width="24" height="50" fill="#bb7a25" />
+          <rect x="140" y="84" width="18" height="40" fill="#126b68" />
+          <rect x="162" y="76" width="20" height="48" fill="#a24036" />
+          <rect x="186" y="90" width="17" height="34" fill="#315d92" />
+          <rect x="207" y="80" width="22" height="44" fill="#126b68" />
+          <rect x="233" y="86" width="18" height="38" fill="#4e744c" />
+          <rect x="255" y="72" width="19" height="52" fill="#a24036" />
+          <rect x="54" y="142" width="23" height="40" fill="#126b68" />
+          <rect x="82" y="136" width="18" height="46" fill="#126b68" />
+          <rect x="105" y="148" width="25" height="34" fill="#315d92" />
+          <rect x="135" y="132" width="18" height="50" fill="#a24036" />
+          <rect x="158" y="140" width="20" height="42" fill="#bb7a25" />
+          <rect x="183" y="146" width="22" height="36" fill="#126b68" />
+          <rect x="210" y="134" width="18" height="48" fill="#4e744c" />
+          <rect x="233" y="144" width="24" height="38" fill="#315d92" />
+        </g>
+        <path d="M40 48 H280" stroke="#a24036" stroke-width="2" stroke-dasharray="5 5" />
+        <text x="42" y="35" fill="#171714" font-family="ui-monospace, monospace" font-size="15">/sources/index.html</text>
+        <text x="42" y="216" fill="#68675f" font-family="ui-monospace, monospace" font-size="11">13 pages · search · filters · direct links</text>
+      </svg>
+    </figure>
+  </header>
+
+  <section class="controls" aria-label="Library controls">
+    <input class="search" id="search" type="search" placeholder="Search title, topic, tag..." autocomplete="off" />
+    <div class="filters" role="group" aria-label="Filter by type">
+      <button class="filter" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="filter" type="button" data-filter="source" aria-pressed="false">Source</button>
+      <button class="filter" type="button" data-filter="paper" aria-pressed="false">Paper</button>
+      <button class="filter" type="button" data-filter="primer" aria-pressed="false">Primer</button>
+      <button class="filter" type="button" data-filter="codex" aria-pressed="false">Codex</button>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Library statistics">
+    <div class="stat"><span class="num">13</span><span class="label">HTML pages</span></div>
+    <div class="stat"><span class="num">8</span><span class="label">source readings</span></div>
+    <div class="stat"><span class="num">3</span><span class="label">paper readings</span></div>
+    <div class="stat"><span class="num">2</span><span class="label">primers / notes</span></div>
+  </section>
+
+  <div class="section-head">
+    <h2>All Pages</h2>
+    <span class="visible-count" id="visible-count">13 visible</span>
+  </div>
+
+  <section class="grid" id="library" aria-label="Deep dive pages">
+    <article class="entry" data-kind="source" data-search="source reading 001 skypilot cloud kubernetes infra optimizer managed spot provisioning">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 001</span></div>
+      <div class="entry-body">
+        <h3>SkyPilot</h3>
+        <p>Cloud orchestration as an optimization problem: resources, regions, spot instances, Kubernetes, jobs, and the control loops that make them practical.</p>
+        <div class="tags"><span class="tag">cloud</span><span class="tag">infra</span><span class="tag">scheduler</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./skypilot.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-001-skypilot/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-001-skypilot/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 002 sglang llm serving scheduler runtime radix cache router inference">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 002</span></div>
+      <div class="entry-body">
+        <h3>SGLang</h3>
+        <p>A serving-system read focused on runtime structure, request scheduling, cache management, routing, and the boundary between Python control and fast inference paths.</p>
+        <div class="tags"><span class="tag">LLM serving</span><span class="tag">runtime</span><span class="tag">cache</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./sglang.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-002-sglang/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-002-sglang/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 003 vllm pagedattention scheduler batching kv cache serving">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 003</span></div>
+      <div class="entry-body">
+        <h3>vLLM</h3>
+        <p>The wrap-up of the initial serving trilogy: scheduler pressure, PagedAttention, KV memory, batching, and how design choices compare against SGLang.</p>
+        <div class="tags"><span class="tag">PagedAttention</span><span class="tag">KV cache</span><span class="tag">scheduler</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./vllm.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-003-vllm/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-003-vllm/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 004 mini-sglang minimal implementation pedagogy llm serving learning">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 004</span></div>
+      <div class="entry-body">
+        <h3>mini-SGLang</h3>
+        <p>A smaller codebase read as a teaching artifact: what a minimal implementation makes explicit, what it hides, and how to learn from that compression.</p>
+        <div class="tags"><span class="tag">minimal</span><span class="tag">teaching</span><span class="tag">serving</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./mini-sglang.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-004-mini-sglang/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-004-mini-sglang/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 005 gcnasm amd cdna3 assembly gpu kernel optimization">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 005</span></div>
+      <div class="entry-body">
+        <h3>GCNasm</h3>
+        <p>A descent into hand-written AMD GPU assembly: CDNA3 idioms, occupancy, memory movement, instruction selection, and the optimization patterns behind fast kernels.</p>
+        <div class="tags"><span class="tag">AMD</span><span class="tag">assembly</span><span class="tag">kernel</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./gcnasm.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-005-gcnasm/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-005-gcnasm/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 006 flydsl python dsl mlir layout algebra copy mma gpu kernels">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 006</span></div>
+      <div class="entry-body">
+        <h3>FlyDSL</h3>
+        <p>A Python DSL with typed MLIR underneath: layout algebra, copy and MMA atoms, compiler boundaries, and what it takes to express production GEMM from Python.</p>
+        <div class="tags"><span class="tag">DSL</span><span class="tag">MLIR</span><span class="tag">layout</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./flydsl.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-006-flydsl/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-006-flydsl/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 007 aiter moe tuner gemm autotuning amd rocm kernel">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 007</span></div>
+      <div class="entry-body">
+        <h3>AITER MoE Tuner</h3>
+        <p>A tuner-first reading of MoE GEMM search: config space, benchmarking discipline, hardware assumptions, and why tuning code is often kernel knowledge in disguise.</p>
+        <div class="tags"><span class="tag">MoE</span><span class="tag">GEMM</span><span class="tag">autotune</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./aiter.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-007-aiter/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-007-aiter/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="source" data-search="source reading 008 rocprof viewer rocprofv3 advanced thread trace att amd profiler gpu">
+      <div class="entry-top"><span class="entry-kind">Source Reading</span><span>No. 008</span></div>
+      <div class="entry-body">
+        <h3>rocprof Viewer</h3>
+        <p>A field guide to AMD instruction-level profiling: rocprofv3 capture, Advanced Thread Trace, source mapping, and how to read the viewer panels without fooling yourself.</p>
+        <div class="tags"><span class="tag">profiling</span><span class="tag">ATT</span><span class="tag">ROCm</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./rocprof-viewer.html">Open HTML</a>
+        <a class="link" href="/zh/blog/source-reading-008-rocprof-viewer/">ZH</a>
+        <a class="link" href="/en/blog/source-reading-008-rocprof-viewer/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="paper" data-search="paper reading 001 polar agentic rl proxy llm api harness swe-bench training">
+      <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 001</span></div>
+      <div class="entry-body">
+        <h3>Polar</h3>
+        <p>Agentic RL without rewriting the harness: proxying LLM API calls, asynchronous staging, prefix merging, and what SWE-Bench tells us about scalable agent training.</p>
+        <div class="tags"><span class="tag">agent RL</span><span class="tag">proxy</span><span class="tag">SWE-Bench</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./polar.html">Open HTML</a>
+        <a class="link" href="/zh/blog/paper-reading-001-polar/">ZH</a>
+        <a class="link" href="/en/blog/paper-reading-001-polar/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="paper" data-search="paper reading 002 kernel design agents agentic loops gpu kernels ncu kernelwiki humanize">
+      <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 002</span></div>
+      <div class="entry-body">
+        <h3>Kernel Design Agents</h3>
+        <p>A close read of agentic GPU kernel development: plan-execute-verify loops, KernelWiki, ncu-guided debugging, autotuning, and reward-hacking failure modes.</p>
+        <div class="tags"><span class="tag">agents</span><span class="tag">GPU kernels</span><span class="tag">autotune</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./kernel-design-agents.html">Open HTML</a>
+        <a class="link" href="/zh/blog/paper-reading-002-kernel-design-agents/">ZH</a>
+        <a class="link" href="/en/blog/paper-reading-002-kernel-design-agents/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="paper" data-search="paper reading 003 linear layouts f2 tensor layout code generation triton matrix gf2">
+      <div class="entry-top"><span class="entry-kind">Paper Reading</span><span>No. 003</span></div>
+      <div class="entry-body">
+        <h3>Linear Layouts</h3>
+        <p>One binary matrix over GF(2) as the organizing principle for tensor layouts: conversion, broadcast, swizzling, slicing, and robust code generation.</p>
+        <div class="tags"><span class="tag">compiler</span><span class="tag">layout</span><span class="tag">GF(2)</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./linear-layouts.html">Open HTML</a>
+        <a class="link" href="/zh/blog/paper-reading-003-linear-layouts/">ZH</a>
+        <a class="link" href="/en/blog/paper-reading-003-linear-layouts/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="primer" data-search="primer from python to silicon gpu compiler stack python silicon rocm kernel">
+      <div class="entry-top"><span class="entry-kind">Primer</span><span>GPU stack</span></div>
+      <div class="entry-body">
+        <h3>From Python to Silicon</h3>
+        <p>A systems primer for the path from Python code to GPU execution: compiler layers, kernel boundaries, IR, runtime dispatch, and what each layer is responsible for.</p>
+        <div class="tags"><span class="tag">compiler stack</span><span class="tag">GPU</span><span class="tag">primer</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./from-python-to-silicon.html">Open HTML</a>
+        <a class="link" href="/zh/blog/from-python-to-silicon/">ZH</a>
+        <a class="link" href="/en/blog/from-python-to-silicon/">EN</a>
+      </div>
+    </article>
+
+    <article class="entry" data-kind="codex" data-search="codex goal mode source-level design reading state machine thread goal model tools runtime continuation budget">
+      <div class="entry-top"><span class="entry-kind">Codex Note</span><span>Source-level</span></div>
+      <div class="entry-body">
+        <h3>Codex Goal Mode</h3>
+        <p>A source-level reading of goal mode as a thread-scoped state machine: persisted goals, model tools, runtime continuation, token budget accounting, and authority boundaries.</p>
+        <div class="tags"><span class="tag">Codex</span><span class="tag">state machine</span><span class="tag">runtime</span></div>
+      </div>
+      <div class="links">
+        <a class="link primary" href="./codex-goal.html">Open HTML</a>
+      </div>
+    </article>
+  </section>
+
+  <div class="empty" id="empty" aria-hidden="true">No matching page.</div>
+  <p class="note">Tip: use search for technologies like MLIR, ATT, MoE, PagedAttention, agent RL, or Codex.</p>
+</main>
+
+<script>
+  const search = document.querySelector("#search");
+  const filters = Array.from(document.querySelectorAll(".filter"));
+  const entries = Array.from(document.querySelectorAll(".entry"));
+  const visibleCount = document.querySelector("#visible-count");
+  const empty = document.querySelector("#empty");
+  let activeFilter = "all";
+
+  function normalize(value) {
+    return value.trim().toLowerCase();
+  }
+
+  function applyFilters() {
+    const query = normalize(search.value);
+    let visible = 0;
+    for (const entry of entries) {
+      const kindMatches = activeFilter === "all" || entry.dataset.kind === activeFilter;
+      const text = normalize(`${entry.textContent} ${entry.dataset.search || ""}`);
+      const queryMatches = !query || text.includes(query);
+      const show = kindMatches && queryMatches;
+      entry.hidden = !show;
+      if (show) visible += 1;
+    }
+    visibleCount.textContent = `${visible} visible`;
+    empty.setAttribute("aria-hidden", visible === 0 ? "false" : "true");
+  }
+
+  search.addEventListener("input", applyFilters);
+  filters.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeFilter = button.dataset.filter;
+      filters.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+      applyFilters();
+    });
+  });
+</script>
+</body>
+</html>
