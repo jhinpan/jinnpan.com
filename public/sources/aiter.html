@@ -117,6 +117,19 @@
 
     .rail b { color: var(--amber); font-weight: 600; margin-right: 6px; }
 
+    .rail-home {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--dim);
+      text-decoration: none;
+      margin-bottom: 22px;
+      transition: color 0.15s ease;
+    }
+
+    .rail-home:hover { color: var(--amber); }
+
     .page {
       min-width: 0;
     }
@@ -376,6 +389,7 @@
   </div>
   <div class="shell">
     <nav class="rail">
+      <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
       <div class="mark">AITER<br />MOE<br />TUNER</div>
       <a href="#prologue"><b>00</b><span lang="en">Prologue</span><span lang="zh">开场</span></a>
       <a href="#map"><b>01</b><span lang="en">File Map</span><span lang="zh">文件地图</span></a>

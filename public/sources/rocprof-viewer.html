@@ -46,6 +46,8 @@
   .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 232px minmax(0,1fr); gap: 0; max-width: 1180px; margin: 0 auto; }
   /* rail */
   .rail { position: sticky; top: 0; align-self: start; height: 100vh; padding: 30px 18px 30px 24px; border-right: 1px solid var(--line2); font-family: var(--font-mono); font-size: 12.5px; overflow-y: auto; }
+  .rail-home { display: inline-block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color .15s; }
+  .rail-home:hover { color: var(--grn); }
   .rail .badge { font-family: var(--font-display); font-weight: 700; letter-spacing: .14em; font-size: 12px; color: var(--grn); text-transform: uppercase; }
   .rail ol { list-style: none; margin: 22px 0 0; padding: 0; }
   .rail li { margin: 0 0 2px; }
@@ -139,6 +141,7 @@
 
 <div class="wrap">
   <nav class="rail">
+    <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
     <div class="badge">Source Reading 008</div>
     <ol>
       <li><a href="#prologue"><span class="n">00</span><span lang="en">Prologue</span><span lang="zh">序章</span></a></li>

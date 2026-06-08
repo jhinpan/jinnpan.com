@@ -252,6 +252,18 @@ body::after {
   color: var(--dim);
   margin-bottom: 28px;
 }
+.rail .rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.2s;
+}
+.rail .rail-home:hover { color: var(--gold); }
 .rail ol {
   list-style: none;
   padding: 0;
@@ -738,6 +750,7 @@ td code { font-size: 12px; padding: 0 4px; }
 
 <!-- ============ NAV RAIL ============ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/">← The Library</a>
   <div class="brand"><span class="v">v</span>LLM</div>
   <div class="ref">FILE № 003 · 2026.05.12</div>
 

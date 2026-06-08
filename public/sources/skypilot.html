@@ -212,6 +212,19 @@ body::before {
 .rail::-webkit-scrollbar { width: 4px; }
 .rail::-webkit-scrollbar-thumb { background: var(--ink-line); }
 
+.rail .rail-home {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bone-mute);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.2s;
+}
+.rail .rail-home:hover { color: var(--brass); }
+
 .rail .brand {
   font-family: var(--serif);
   font-size: 18px;
@@ -738,6 +751,7 @@ td code { font-size: 12px; padding: 0 4px; }
 
 <!-- =============== NAV RAIL =============== -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/">← The Library</a>
   <div class="brand">Sky<em>Pilot</em></div>
   <div class="ref">FILE № 001 · 2026.05.12</div>
 

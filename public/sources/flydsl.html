@@ -277,6 +277,18 @@ body::after {
   background: var(--rule-soft);
   margin: 16px 0;
 }
+.rail .rail-home {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--chalk-mute);
+  text-decoration: none;
+  margin-bottom: 22px;
+  transition: color 0.18s;
+}
+.rail .rail-home:hover { color: var(--rust); }
 
 @media (max-width: 1280px) {
   body { padding-left: 0; }
@@ -694,6 +706,7 @@ body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
 
 <!-- ============ NAV RAIL ============ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
   <div class="brand"><em>FlyDSL</em></div>
   <div class="ref">FILE № <span class="pin">006</span> · 2026.05.26</div>
   <ol>

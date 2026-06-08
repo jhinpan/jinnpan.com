@@ -236,6 +236,18 @@ body::after {
 .rail::-webkit-scrollbar { width: 4px; }
 .rail::-webkit-scrollbar-thumb { background: var(--rule); }
 
+.rail .rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.18s;
+}
+.rail .rail-home:hover { color: var(--oxblood); }
+
 .rail .brand {
   font-family: var(--display);
   font-weight: 600;
@@ -799,6 +811,7 @@ body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
 
 <!-- ================ RAIL ================ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
   <div class="brand">From Python<br><em>to silicon</em></div>
   <div class="ref">N<span class="pin">.007</span> · 2026-05-26</div>
   <ol>

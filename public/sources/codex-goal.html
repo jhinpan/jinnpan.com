@@ -99,6 +99,16 @@
     overflow-y: auto;
     font-family: var(--font-mono);
   }
+  .rail-home {
+    display: inline-block;
+    margin-bottom: 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .rail-home:hover { color: var(--teal); text-decoration: underline; text-underline-offset: 3px; }
   .rail .stamp {
     display: inline-block;
     transform: rotate(-2deg);
@@ -411,6 +421,7 @@
 
 <div class="wrap">
   <nav class="rail">
+    <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
     <div class="stamp">Codex Goal</div>
     <ol>
       <li><a href="#thesis"><span class="n">00</span><span lang="en">Thesis</span><span lang="zh">主论点</span></a></li>

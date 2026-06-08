@@ -287,6 +287,20 @@ body::before {
   background: var(--trace);
   margin: 18px 0;
 }
+.rail .rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vellum-soft);
+  text-decoration: none;
+  margin-bottom: 22px;
+  transition: color 0.18s;
+}
+.rail .rail-home:hover {
+  color: var(--phosphor);
+}
 
 @media (max-width: 1280px) {
   body { padding-left: 0; }
@@ -676,6 +690,7 @@ section { scroll-margin-top: 32px; }
 
 <!-- ============ NAV RAIL ============ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/">← The Library</a>
   <div class="brand"><em>gcnasm</em></div>
   <div class="ref">FILE № <span class="pin">005</span> · 2026.05.17</div>
   <ol>

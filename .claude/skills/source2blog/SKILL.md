@@ -93,7 +93,7 @@ Copy the skeleton from any existing entry; change palette + fonts + content:
 ```
 <head> Google Fonts · CSS variables (--bg/--fg/accents/fonts) · layout/typography/plate styles </head>
 <body>
-  <nav class="rail"> sticky TOC with section numbers </nav>
+  <nav class="rail"> "← The Library" back-link to /sources/ (top of rail) · sticky TOC with section numbers </nav>
   <header class="masthead"> kicker (e.g. "Source Reading 009") · h1 · subtitle · spec sheet </header>
   <main class="article">
     Prologue · Plate I (architecture) · module sections (each: hook + code/figure excerpt + insight callout + table)
@@ -261,6 +261,7 @@ Only report "deployed and verified" once all return 200 with the expected conten
 - [ ] (HTML) 4+ inline SVG plates, all hand-coded coordinates
 - [ ] (HTML) Aesthetic distinctly different from all previous entries (fonts AND colors)
 - [ ] (HTML) **EN/ZH toggle present and content blocks paired** (`lang="en"` count == `lang="zh"` count, excluding `data-lang` and CSS selectors)
+- [ ] (HTML) **Back-link to the `/sources/` hub present** — `← The Library` at the top of the rail (or in the masthead if no rail); bilingual paired spans when the toggle is on, so it stays language-balanced
 - [ ] Every numeric claim cross-checked against actual files (`wc -l`) / the paper
 - [ ] Every code reference includes `file_path:line_number`
 - [ ] (zh) markdown AND zh HTML pass typography rules (half-width space after `。` `，` `：`; spaces around `/` separators; skip code)

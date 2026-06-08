@@ -88,6 +88,21 @@ body::after {
   z-index: 1;
 }
 
+.masthead .home-link {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--margin);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.2s;
+}
+.masthead .home-link:hover {
+  color: var(--oxblood);
+}
+
 .masthead .series {
   font-family: var(--mono);
   font-size: 11px;
@@ -642,6 +657,7 @@ td code { font-size: 12px; padding: 0 4px; }
 
 <!-- ============ MASTHEAD ============ -->
 <header class="masthead">
+  <a class="home-link" href="/sources/">← The Library</a>
   <div class="series">File N° 004 · Source Reading · with reflections</div>
 
   <h1><span class="mini">mini-</span><span class="sg">SGLang.</span></h1>

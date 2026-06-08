@@ -275,6 +275,17 @@ body::before {
   color: var(--ink-dim);
   margin-bottom: 28px;
 }
+.rail .rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 0.2s;
+}
+.rail .rail-home:hover { color: var(--cobalt); }
 .rail ol {
   list-style: none;
   padding: 0;
@@ -771,6 +782,7 @@ sup.ref {
 
 <!-- ============ NAV RAIL ============ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/">← The Library</a>
   <div class="brand"><span class="sg">SG</span><span class="lang">Lang</span></div>
   <div class="ref">FILE № 002 · 2026.05.12</div>
 

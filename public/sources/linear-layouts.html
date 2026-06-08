@@ -140,6 +140,8 @@ body[data-lang="zh"] .masthead .subtitle { font-family: var(--serif-sc); font-st
 }
 .rail::-webkit-scrollbar { width: 4px; }
 .rail::-webkit-scrollbar-thumb { background: var(--edge); }
+.rail .rail-home { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-soft); text-decoration: none; margin-bottom: 22px; transition: color 0.16s; }
+.rail .rail-home:hover { color: var(--lime); }
 .rail .brand { font-family: var(--display); font-size: 21px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--bone); margin-bottom: 3px; }
 .rail .brand em { font-style: normal; color: var(--lime); }
 .rail .brand .f2 { color: var(--magenta); }
@@ -303,6 +305,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ============ RAIL ============ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
   <div class="brand"><em>LINEAR</em> <span class="f2">F₂</span></div>
   <div class="ref"><span lang="en">PAPER № <span class="pin">003</span> · 2026.06.05</span><span lang="zh">论文 № <span class="pin">003</span> · 2026.06.05</span></div>
   <ol>

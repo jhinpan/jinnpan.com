@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -196,6 +196,8 @@ body[data-lang="zh"] .masthead .subtitle { font-family: var(--serif-sc); font-st
 .rail ol li a { color: var(--ink-soft); text-decoration: none; transition: color 0.16s; display: block; line-height: 1.3; }
 .rail ol li a:hover { color: var(--polar); }
 .rail .divider { height: 1px; background: var(--hairline); margin: 16px 0; }
+.rail-home { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--ink-mute); text-decoration: none; margin-bottom: 22px; border-bottom: 1px solid transparent; transition: color 0.16s, border-color 0.16s; }
+.rail-home:hover { color: var(--polar); border-bottom-color: var(--polar); }
 
 @media (max-width: 1280px) {
   body { padding-left: 0; }
@@ -341,6 +343,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ============ NAV RAIL ============ -->
 <nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
   <div class="brand"><em>Polar</em></div>
   <div class="ref"><span lang="en">PAPER № <span class="pin">001</span> · 2026.05.30</span><span lang="zh">论文 № <span class="pin">001</span> · 2026.05.30</span></div>
   <ol>
