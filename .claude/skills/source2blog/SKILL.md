@@ -1,6 +1,7 @@
 ---
 name: source2blog
-description: Turn a source (a code repo, a paper, or a body of knowledge) into a polished, shareable artifact on jinnpan.com — routed into one of four categories. CODE and PAPER readings become richly-designed self-contained HTML deep dives under public/sources/ (hand-coded SVG plates + EN/ZH toggle), with NO markdown twin. TUTORIAL is a first-principles primer (bilingual markdown blog, plus an HTML primer when it deserves visual plates). BLOG is original writing (benchmark, comparison, project note — bilingual markdown only). Every entry is registered as a card in the /sources/ library hub. Use whenever the user wants to take a body of knowledge — a repo, a paper, a kernel, a concept, a benchmark — and make it easy to read, learn, and share. Triggers: "source2blog X", "do a deep dive on repo Y", "source-reading NNN", "paper-reading NNN", "write a primer on X", "把 X 做成 portfolio html / blog", "把这堆代码 / 文档变成一个 deep dive", "deep dive on X", "make X shareable / learnable".
+description: >-
+  Turn a source (a code repo, a paper, or a body of knowledge) into a polished, shareable artifact on jinnpan.com — routed into one of four categories. CODE and PAPER readings become richly-designed self-contained HTML deep dives under public/sources/ (hand-coded SVG plates + EN/ZH toggle), with NO markdown twin. TUTORIAL is a first-principles primer (bilingual markdown blog, plus an HTML primer when it deserves visual plates). BLOG is original writing (benchmark, comparison, project note — bilingual markdown only). Every entry is registered as a card in the /sources/ library hub. Use whenever the user wants to take a body of knowledge — a repo, a paper, a kernel, a concept, a benchmark — and make it easy to read, learn, and share. Triggers: "source2blog X", "do a deep dive on repo Y", "source-reading NNN", "paper-reading NNN", "write a primer on X", "把 X 做成 portfolio html / blog", "把这堆代码 / 文档变成一个 deep dive", "deep dive on X", "make X shareable / learnable".
 ---
 
 `source2blog` is Jhin's workflow for **converting a source into a polished portfolio artifact** on jinnpan.com. It is **category-aware**: the first thing you do is decide which of four shelves the entry lives on, because the category determines the output shape.
@@ -62,6 +63,8 @@ wc -l $(find . -name "*.py" -not -path "./.*") | tail -1
 Map the repo: list top-level dirs, find entry points, read the biggest files (usually load-bearing), the README, any `CLAUDE.md`/`AGENTS.md`, and `design_docs/`. For a paper, read the PDF end-to-end and pull the real equations/algorithms.
 
 Aim for **6 hours of equivalent reading** condensed into the artifact. Everything must be backed by real references — `file_path:line_number` for code, section/figure numbers for papers. Invent nothing.
+
+When naming a concrete file in prose, tables, callouts, captions, or summaries, make the filename itself clickable whenever possible. For external code readings, use commit-pinned source links with line fragments, e.g. `<a href="https://github.com/org/repo/blob/<sha>/path/file.py#L12-L34"><code>path/file.py</code></a>`. For site-local files in final handoff notes, use clickable markdown file links. Jhin often clicks these names to inspect the source directly, so avoid leaving important filenames as inert plain text.
 
 ## Step 2 · Pick a distinctive aesthetic (HTML entries)
 
@@ -264,6 +267,7 @@ Only report "deployed and verified" once all return 200 with the expected conten
 - [ ] (HTML) **Back-link to the `/sources/` hub present** — `← The Library` at the top of the rail (or in the masthead if no rail); bilingual paired spans when the toggle is on, so it stays language-balanced
 - [ ] Every numeric claim cross-checked against actual files (`wc -l`) / the paper
 - [ ] Every code reference includes `file_path:line_number`
+- [ ] Concrete filenames mentioned in prose, tables, callouts, captions, or final handoff notes are clickable links where possible; prefer commit-pinned source links with line fragments for external repos
 - [ ] (zh) markdown AND zh HTML pass typography rules (half-width space after `。` `，` `：`; spaces around `/` separators; skip code)
 - [ ] (tutorial/blog) both language files share the same date, slug, tags
 - [ ] At least one section ties to Jhin's AMD / kernel-optimization work where applicable
