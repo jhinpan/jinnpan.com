@@ -743,15 +743,63 @@ td code { font-size: 12px; padding: 0 4px; }
   .article { margin: 48px auto; padding: 0; }
   .article h2 { margin: 64px 0 16px; }
 }
+
+/* ============ LANGUAGE TOGGLE ============ */
+.lang-toggle {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 120;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  background: rgba(20,23,26,0.82);
+  border: 1px solid var(--ink-line);
+  border-radius: 999px;
+  padding: 3px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+}
+.lang-toggle button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bone-dim);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.lang-toggle button:hover { color: var(--brass); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+  color: var(--ink-deep);
+  background: var(--brass);
+}
+@media (max-width: 768px) {
+  .lang-toggle { top: 12px; right: 12px; }
+}
+
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 </style>
 </head>
-<body>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
 
 <div class="grain"></div>
 
 <!-- =============== NAV RAIL =============== -->
 <nav class="rail">
-  <a class="rail-home" href="/sources/">← The Library</a>
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
   <div class="brand">Sky<em>Pilot</em></div>
   <div class="ref">FILE № 001 · 2026.05.12</div>
 
@@ -787,8 +835,11 @@ td code { font-size: 12px; padding: 0 4px; }
 
   <h1>Sky<em>Pilot</em>,<br>opened up.</h1>
 
-  <p class="subtitle">
+  <p class="subtitle" lang="zh">
     一份用 6.5 小时把 21 万行代码读穿的笔记 — 从 <code style="font-family:var(--mono);font-size:0.78em;background:transparent;border:none;color:var(--brass);padding:0;">sky launch foo.yaml</code> 那个回车键，一路走到 MI300X 上 skylet 守护进程的事件循环。
+  </p>
+  <p class="subtitle" lang="en">
+    Notes from reading 211K lines of code straight through in 6.5 hours — from the Enter key on <code style="font-family:var(--mono);font-size:0.78em;background:transparent;border:none;color:var(--brass);padding:0;">sky launch foo.yaml</code> all the way down to the event loop of the skylet daemon on an MI300X.
   </p>
 
   <div class="meta">
@@ -819,12 +870,18 @@ td code { font-size: 12px; padding: 0 4px; }
 <section id="prologue">
   <h2><span class="num">§ 00 · Prologue</span>Why we cracked this open.</h2>
 
-  <p class="lede">
+  <p class="lede" lang="zh">
     SkyPilot 是开源多云编排里的事实标准。表面是一行 <code>sky launch</code>，底下藏着一套客户机/服务器/节点守护的三段式系统、一个混合 DP + ILP 求解器、一组面向 24 个云厂商的多态抽象，以及 6562 行单文件后端。读它，是为了把"如何用一个统一控制平面调度异构基础设施"这件事彻底搞清楚 — 因为我们手头正在搭的，是它的近亲。
   </p>
+  <p class="lede" lang="en">
+    SkyPilot is the de facto standard for open-source multi-cloud orchestration. On the surface it is a single <code>sky launch</code>; underneath sits a three-tier client / server / node-daemon system, a hybrid DP + ILP solver, a set of polymorphic abstractions spanning 24 cloud vendors, and a 6,562-line single-file backend. We read it to fully understand how one unified control plane schedules heterogeneous infrastructure — because what we're building right now is a close cousin of it.
+  </p>
 
-  <p>
+  <p lang="zh">
     这次精读分 11 个模块（M0 → M9，加一个中途插入的 M2.5），共 6.5 小时。本档案是读后的总览：架构总图、9-stage 执行流水线、Optimizer 的 DP / ILP 路由、两层 job 状态机、加新云后端的文件改动清单 — 全部以手绘 SVG 呈现，无运行时依赖，离线可读。
+  </p>
+  <p lang="en">
+    This reading spans 11 modules (M0 → M9, plus an M2.5 wedged in mid-way), 6.5 hours total. This file is the post-reading overview: the architecture map, the 9-stage execution pipeline, the Optimizer's DP / ILP routing, the two-level job state machine, and the file-change checklist for adding a new cloud backend — all rendered as hand-drawn SVG, no runtime dependencies, readable offline.
   </p>
 
   <div class="metrics">
@@ -842,7 +899,8 @@ td code { font-size: 12px; padding: 0 4px; }
     <div class="cell"><div class="num">107</div><div class="lbl">skylet/skylet.py</div></div>
   </div>
 
-  <p style="color:var(--bone-mute); font-size:13px; font-style:italic; margin-top:-12px;">— 上表为 master 分支（commit f8bb042）核心文件行数；前 4 个最大的合计已是 SkyPilot 实际"心脏"的一半以上。</p>
+  <p lang="zh" style="color:var(--bone-mute); font-size:13px; font-style:italic; margin-top:-12px;">— 上表为 master 分支（commit f8bb042）核心文件行数；前 4 个最大的合计已是 SkyPilot 实际"心脏"的一半以上。</p>
+  <p lang="en" style="color:var(--bone-mute); font-size:13px; font-style:italic; margin-top:-12px;">— Line counts of the core files on master (commit f8bb042); the four largest alone already make up more than half of SkyPilot's actual "heart."</p>
 </section>
 
 <!-- =============== PLATE I: ARCHITECTURE OVERVIEW =============== -->
@@ -1019,9 +1077,13 @@ td code { font-size: 12px; padding: 0 4px; }
       <text x="10" y="14" class="diag-num-text">3</text>
     </g>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="en">
     <strong style="color:var(--bone);">Three zones, one program.</strong>
     Zone A (Client) packages a <code>Task</code> and POSTs to Zone B. Zone B (FastAPI server) spawns a <em>process</em> per request, runs the 9-stage execution pipeline, and reaches into Zone C (provisioned VMs) over SSH / Ray / gRPC. The head-node skylet daemon is small (107 lines) — it is mostly an event-loop wrapper around four gRPC services and six recurring jobs. Special controllers (Managed Jobs · SkyServe · Load Balancer) are themselves ordinary SkyPilot tasks running in Zone C.
+  </div>
+  <div class="caption" lang="zh">
+    <strong style="color:var(--bone);">三个区，一个程序。</strong>
+    Zone A（客户端）打包一个 <code>Task</code> 并 POST 给 Zone B。Zone B（FastAPI server）为每个请求 spawn 一个<em>进程</em>，跑 9-stage 执行流水线，再通过 SSH / Ray / gRPC 伸进 Zone C（已 provision 的 VM）。head 节点上的 skylet 守护进程很小（107 行）—— 它基本上就是包着四个 gRPC service 和六个周期 job 的事件循环。特殊控制器（Managed Jobs · SkyServe · Load Balancer）本身就是跑在 Zone C 里的普通 SkyPilot task。
   </div>
 </section>
 
@@ -1029,19 +1091,28 @@ td code { font-size: 12px; padding: 0 4px; }
 <section id="m0">
   <h2><span class="num">§ M0 · 20 min</span>The repository, <em>in repose.</em></h2>
 
-  <p>
+  <p lang="zh">
     把 21 万行的仓库当成一个整体先看一眼。它叫 sky，主包就是 <code>sky/</code>，根目录还有三个有意思的伙伴：<code>agent/</code>（SkyPilot Agent Skills — 给 LLM agent 用的 GPU 接入封装，v0.12 新功能）、<code>llm/</code>（45+ 个 LLM 训练/serving 例子，从 DeepSeek-R1 到 Kimi-K2），还有 <code>examples/amd/</code> — 4 个直接面向 MI 系列硬件的官方 YAML 范例。
+  </p>
+  <p lang="en">
+    Take in the 211K-line repo as a whole first. It is called sky; the main package is just <code>sky/</code>, and the root has three interesting companions: <code>agent/</code> (SkyPilot Agent Skills — a GPU-access wrapper for LLM agents, new in v0.12), <code>llm/</code> (45+ LLM training/serving examples, from DeepSeek-R1 to Kimi-K2), and <code>examples/amd/</code> — four official YAML samples aimed directly at MI-series hardware.
   </p>
 
   <div class="insight">
-    <div class="label">观察 · OBSERVATION</div>
-    <p><strong>主包 + 伙伴目录</strong>这种结构在大型 ML 系统里很常见，但 SkyPilot 把 <code>llm/</code> 和 <code>agent/</code> 都做成顶层目录（而不是塞进 <code>examples/</code> 子目录），等于在宣告"这些是 first-class 的产品形态，不是普通示例"。版本和迭代节奏可以与主包解耦 — 这是个值得偷的工程姿势。</p>
+    <div class="label" lang="zh">观察 · OBSERVATION</div>
+    <div class="label" lang="en">OBSERVATION</div>
+    <p lang="zh"><strong>主包 + 伙伴目录</strong>这种结构在大型 ML 系统里很常见，但 SkyPilot 把 <code>llm/</code> 和 <code>agent/</code> 都做成顶层目录（而不是塞进 <code>examples/</code> 子目录），等于在宣告"这些是 first-class 的产品形态，不是普通示例"。版本和迭代节奏可以与主包解耦 — 这是个值得偷的工程姿势。</p>
+    <p lang="en"><strong>Main package + companion directories</strong> is common in large ML systems, but SkyPilot makes both <code>llm/</code> and <code>agent/</code> top-level directories (instead of burying them under <code>examples/</code>), which is a declaration that "these are first-class product surfaces, not mere samples." Their versioning and release cadence can decouple from the main package — a posture worth stealing.</p>
   </div>
 
-  <h3>公开 API 表面 · <code>sky/__init__.py</code></h3>
+  <h3 lang="zh">公开 API 表面 · <code>sky/__init__.py</code></h3>
+  <h3 lang="en">The public API surface · <code>sky/__init__.py</code></h3>
 
-  <p>
+  <p lang="zh">
     258 行的薄薄一份。它做的事情只有三件：(1) 在 import 时强制规范 HTTP/HTTPS 代理环境变量（因为 GCP SDK 对大小写敏感有 bug），(2) 重新导出 <code>sky.client.sdk</code> 里所有动词 API 到顶层命名空间，(3) 给 24 个云类型起别名。<code>sky.launch</code> 之所以不在 <code>sky/launch.py</code>，是因为 SkyPilot 用了门面模式 — 用户调 <code>sky.launch()</code> 感觉是本地函数，实际背后是 client → HTTP → server → execution pipeline 的整套链路。
+  </p>
+  <p lang="en">
+    A thin 258 lines. It does exactly three things: (1) at import time, force-normalizes the HTTP/HTTPS proxy environment variables (because the GCP SDK has a case-sensitivity bug), (2) re-exports all the verb APIs from <code>sky.client.sdk</code> into the top-level namespace, and (3) aliases the 24 cloud types. <code>sky.launch</code> doesn't live in <code>sky/launch.py</code> because SkyPilot uses the facade pattern — calling <code>sky.launch()</code> feels like a local function, but behind it is the full client → HTTP → server → execution pipeline chain.
   </p>
 
   <pre data-lang="python"><code># sky/__init__.py · line 83-84
@@ -1059,16 +1130,18 @@ GCP = clouds.GCP
 Kubernetes = clouds.Kubernetes
 K8s = Kubernetes                          # ← 别名的别名</code></pre>
 
-  <p>那条 <code># Keep this order to avoid cyclic imports</code> 注释是真实工程债 — 内部模块之间有循环依赖，导入顺序敏感。读源码时如果看到 <code>task.py</code> 和 <code>resources.py</code> 互相 import，不用惊讶。</p>
+  <p lang="zh">那条 <code># Keep this order to avoid cyclic imports</code> 注释是真实工程债 — 内部模块之间有循环依赖，导入顺序敏感。读源码时如果看到 <code>task.py</code> 和 <code>resources.py</code> 互相 import，不用惊讶。</p>
+  <p lang="en">That <code># Keep this order to avoid cyclic imports</code> comment is real engineering debt — internal modules have circular dependencies, so import order is load-bearing. Don't be surprised when you see <code>task.py</code> and <code>resources.py</code> importing each other.</p>
 </section>
 
 <!-- ====== M1 ====== -->
 <section id="m1">
   <h2><span class="num">§ M1 · 35 min</span>Three objects, one universe.</h2>
 
-  <p>三个文件，三个数据类，是 SkyPilot 整个 universe 的元素周期表：</p>
+  <p lang="zh">三个文件，三个数据类，是 SkyPilot 整个 universe 的元素周期表：</p>
+  <p lang="en">Three files, three data classes — the periodic table of SkyPilot's entire universe:</p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>File</th><th>Lines</th><th>Classes</th><th>Role</th></tr></thead>
     <tbody>
       <tr><td><code>sky/task.py</code></td><td>2,142</td><td>2</td><td>中枢请求对象（什么要跑）</td></tr>
@@ -1076,19 +1149,35 @@ K8s = Kubernetes                          # ← 别名的别名</code></pre>
       <tr><td><code>sky/dag.py</code></td><td>228</td><td>3</td><td>Task DAG（多个 Task 怎么编排）</td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>File</th><th>Lines</th><th>Classes</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>sky/task.py</code></td><td>2,142</td><td>2</td><td>The central request object (what to run)</td></tr>
+      <tr><td><code>sky/resources.py</code></td><td>2,816</td><td>2</td><td>Resource spec (where and how to run)</td></tr>
+      <tr><td><code>sky/dag.py</code></td><td>228</td><td>3</td><td>Task DAG (how multiple Tasks are orchestrated)</td></tr>
+    </tbody>
+  </table>
 
-  <p>反直觉的是 — <strong><code>Resources</code> 比 <code>Task</code> 还大</strong>。原因是 <code>Resources</code> 有 30+ 个 <code>@property</code> 暴露视图：infra / cloud / region / zone / instance_type / cpus / memory / accelerators / use_spot / disk_size / disk_tier / network_tier / image_id / ports / labels / autostop_config / priority / docker_login_config / ... 每个字段都对应一个云上的实际配置维度，24 个云全部要覆盖 — 字段就是这么多。</p>
+  <p lang="zh">反直觉的是 — <strong><code>Resources</code> 比 <code>Task</code> 还大</strong>。原因是 <code>Resources</code> 有 30+ 个 <code>@property</code> 暴露视图：infra / cloud / region / zone / instance_type / cpus / memory / accelerators / use_spot / disk_size / disk_tier / network_tier / image_id / ports / labels / autostop_config / priority / docker_login_config / ... 每个字段都对应一个云上的实际配置维度，24 个云全部要覆盖 — 字段就是这么多。</p>
+  <p lang="en">Counterintuitively — <strong><code>Resources</code> is bigger than <code>Task</code></strong>. The reason is that <code>Resources</code> exposes 30+ <code>@property</code> views: infra / cloud / region / zone / instance_type / cpus / memory / accelerators / use_spot / disk_size / disk_tier / network_tier / image_id / ports / labels / autostop_config / priority / docker_login_config / ... Each field maps to a real configuration dimension on the cloud, and all 24 clouds have to be covered — that's just how many fields there are.</p>
 
   <div class="insight">
-    <div class="label">设计模式 · IMMUTABLE VALUE OBJECT</div>
-    <p>所有 30+ 字段都是只读 <code>@property</code>，写操作走私有 <code>_set_*</code> 方法 + 公开 <code>Resources.copy(**override)</code> 函数式更新。这种 immutable 设计在 Optimizer 流水线里至关重要 — 它要从用户的"约束 Resources"枚举出 N 个候选（AWS-spot vs GCP-on-demand vs ...），如果 Resources 是 mutable 的，并发枚举就会互相污染。</p>
-    <p><strong>付出的代价是 DX：</strong> Resources 类长达 2816 行，每个字段都要写 property + private setter + 在 copy/__init__ 里处理。这是教科书级的"开发者体验换正确性"工程取舍。</p>
+    <div class="label" lang="zh">设计模式 · IMMUTABLE VALUE OBJECT</div>
+    <div class="label" lang="en">DESIGN PATTERN · IMMUTABLE VALUE OBJECT</div>
+    <p lang="zh">所有 30+ 字段都是只读 <code>@property</code>，写操作走私有 <code>_set_*</code> 方法 + 公开 <code>Resources.copy(**override)</code> 函数式更新。这种 immutable 设计在 Optimizer 流水线里至关重要 — 它要从用户的"约束 Resources"枚举出 N 个候选（AWS-spot vs GCP-on-demand vs ...），如果 Resources 是 mutable 的，并发枚举就会互相污染。</p>
+    <p lang="en">All 30+ fields are read-only <code>@property</code>; writes go through private <code>_set_*</code> methods plus the public functional-update <code>Resources.copy(**override)</code>. This immutable design is critical in the Optimizer pipeline — it has to enumerate N candidates from the user's "constraint Resources" (AWS-spot vs GCP-on-demand vs ...), and if Resources were mutable, concurrent enumeration would cross-contaminate.</p>
+    <p lang="zh"><strong>付出的代价是 DX：</strong> Resources 类长达 2816 行，每个字段都要写 property + private setter + 在 copy/__init__ 里处理。这是教科书级的"开发者体验换正确性"工程取舍。</p>
+    <p lang="en"><strong>The cost is DX:</strong> the Resources class runs 2,816 lines, with every field requiring a property + private setter + handling in copy/__init__. A textbook "trade developer experience for correctness" engineering call.</p>
   </div>
 
-  <h3>YAML → Python 的翻译：<code>_fill_in_env_vars</code> 的 JSON 中转大法</h3>
+  <h3 lang="zh">YAML → Python 的翻译：<code>_fill_in_env_vars</code> 的 JSON 中转大法</h3>
+  <h3 lang="en">Translating YAML → Python: the JSON round-trip trick in <code>_fill_in_env_vars</code></h3>
 
-  <p>
+  <p lang="zh">
     用户写 <code>file_mounts: { /model/llama-${SIZE}b: s3://llama-weights/${SIZE}b }</code>，SkyPilot 怎么把 <code>${SIZE}</code> 替换成实际值？直觉做法是递归遍历嵌套 dict 的每个字符串字段。SkyPilot 用了一个聪明的 trick：
+  </p>
+  <p lang="en">
+    The user writes <code>file_mounts: { /model/llama-${SIZE}b: s3://llama-weights/${SIZE}b }</code> — how does SkyPilot substitute <code>${SIZE}</code> with the real value? The intuitive approach is to recursively walk every string field of the nested dict. SkyPilot uses a clever trick instead:
   </p>
 
   <pre data-lang="python · sky/task.py:83"><code>def _fill_in_env_vars(yaml_field, task_envs):
@@ -1102,34 +1191,49 @@ K8s = Kubernetes                          # ← 别名的别名</code></pre>
     yaml_field_str = re.sub(pattern, replace_var, yaml_field_str)
     return json.loads(yaml_field_str)                 # 3) JSON 反序列化回 dict</code></pre>
 
-  <p>
+  <p lang="zh">
     3 行核心代码就替代了"递归遍历嵌套结构"的几十行 walker。可行性的前提：(1) schema 已经被 <code>validate_schema</code> 在上游校验过，(2) 不需要支持 bash 默认值语法 <code>${VAR:-default}</code>（这是个挂了好几年的 TODO，<code>line 115</code>）。性能上每次跑一次 JSON 序列化/反序列化不是最优，但对配置加载这种"少量、一次性"场景，简洁度胜过性能。
+  </p>
+  <p lang="en">
+    Three lines of core code replace dozens of lines of "recursive nested-structure walker." The preconditions that make it work: (1) the schema has already been validated upstream by <code>validate_schema</code>, and (2) there's no need to support bash default-value syntax <code>${VAR:-default}</code> (a TODO that's been open for years, <code>line 115</code>). Running a JSON serialize/deserialize each time isn't optimal, but for "small, one-shot" config loading, brevity wins over performance.
   </p>
 
   <div class="insight">
-    <div class="label">可偷的设计 · STEAL THIS</div>
-    <p>这个模式可以直接搬到你 AMD 的 agent 配置系统 — 需要在嵌套 YAML/JSON 里做 <code>${MI300X_HOSTS}</code> / <code>${TRITON_VERSION}</code> 之类的模板替换时，JSON 中转 + regex 比写递归 walker 简洁 10 倍，而且 LLM 也容易 review。</p>
+    <div class="label" lang="zh">可偷的设计 · STEAL THIS</div>
+    <div class="label" lang="en">STEAL THIS</div>
+    <p lang="zh">这个模式可以直接搬到你 AMD 的 agent 配置系统 — 需要在嵌套 YAML/JSON 里做 <code>${MI300X_HOSTS}</code> / <code>${TRITON_VERSION}</code> 之类的模板替换时，JSON 中转 + regex 比写递归 walker 简洁 10 倍，而且 LLM 也容易 review。</p>
+    <p lang="en">This pattern drops straight into your AMD agent config system — whenever you need template substitution like <code>${MI300X_HOSTS}</code> / <code>${TRITON_VERSION}</code> inside nested YAML/JSON, a JSON round-trip + regex is 10× more compact than a recursive walker, and far easier for an LLM to review.</p>
   </div>
 
-  <h3>另外两个值得记的点</h3>
+  <h3 lang="zh">另外两个值得记的点</h3>
+  <h3 lang="en">Two more things worth noting</h3>
 
-  <p><strong><code>ManagedSecretRef</code></strong>（<code>line 279</code>）— 一个 dataclass，三个字段（<code>name / mount_path / scope_override</code>）。它让 YAML 里能写 <code>secrets: [secrets:HF_TOKEN, secrets:workspace:GH_PAT]</code> 这种<em>命名引用</em>而不是内联值；token 实际值存在 server 端的 vault 里，YAML 自己不暴露。<code>scope_override</code> 决定查哪个命名空间（personal / workspace / global）。</p>
+  <p lang="zh"><strong><code>ManagedSecretRef</code></strong>（<code>line 279</code>）— 一个 dataclass，三个字段（<code>name / mount_path / scope_override</code>）。它让 YAML 里能写 <code>secrets: [secrets:HF_TOKEN, secrets:workspace:GH_PAT]</code> 这种<em>命名引用</em>而不是内联值；token 实际值存在 server 端的 vault 里，YAML 自己不暴露。<code>scope_override</code> 决定查哪个命名空间（personal / workspace / global）。</p>
+  <p lang="en"><strong><code>ManagedSecretRef</code></strong> (<code>line 279</code>) — a dataclass with three fields (<code>name / mount_path / scope_override</code>). It lets YAML write <em>named references</em> like <code>secrets: [secrets:HF_TOKEN, secrets:workspace:GH_PAT]</code> instead of inline values; the actual token lives in the server-side vault, and the YAML never exposes it. <code>scope_override</code> decides which namespace to look in (personal / workspace / global).</p>
 
-  <p><strong><code>register_task_validator</code></strong>（<code>line 36</code>）— SkyPilot 的 plugin 机制典范。一个全局列表 <code>_task_validators</code>，<code>Task.validate()</code> 时遍历调用。<em>谁注册</em>不显式，靠 module import 副作用触发。如果你将来想给 SkyPilot 加"AMD-specific 任务校验"（比如 <code>run</code> 命令里出现 <code>cuda</code> 关键字但 <code>resources</code> 是 AMD 时警告），不用 fork 主代码，写个 plugin 注册到这里即可。</p>
+  <p lang="zh"><strong><code>register_task_validator</code></strong>（<code>line 36</code>）— SkyPilot 的 plugin 机制典范。一个全局列表 <code>_task_validators</code>，<code>Task.validate()</code> 时遍历调用。<em>谁注册</em>不显式，靠 module import 副作用触发。如果你将来想给 SkyPilot 加"AMD-specific 任务校验"（比如 <code>run</code> 命令里出现 <code>cuda</code> 关键字但 <code>resources</code> 是 AMD 时警告），不用 fork 主代码，写个 plugin 注册到这里即可。</p>
+  <p lang="en"><strong><code>register_task_validator</code></strong> (<code>line 36</code>) — a model of SkyPilot's plugin mechanism. A global list <code>_task_validators</code>, iterated over during <code>Task.validate()</code>. <em>Who registers</em> is implicit, triggered by module-import side effects. If you ever want to add "AMD-specific task validation" to SkyPilot (e.g. warn when the <code>run</code> command contains the <code>cuda</code> keyword but <code>resources</code> is AMD), you don't fork the main code — just write a plugin and register it here.</p>
 </section>
 
 <!-- ====== M2 + M2.5 ====== -->
 <section id="m2">
   <h2><span class="num">§ M2 / M2.5 · 60 min</span>CLI · SDK · the FastAPI in the middle.</h2>
 
-  <p>
+  <p lang="zh">
     把用户敲的 <code>sky launch foo.yaml</code> 拆解开看，它跨越四个进程边界：终端 shell → Click CLI → Python SDK → FastAPI server → 子进程 executor。每一跳都值得展开。
   </p>
+  <p lang="en">
+    Take the user's <code>sky launch foo.yaml</code> apart and it crosses four process boundaries: terminal shell → Click CLI → Python SDK → FastAPI server → subprocess executor. Every hop is worth unpacking.
+  </p>
 
-  <h3>Click CLI · <code>sky/client/cli/command.py</code> · 7,954 行</h3>
+  <h3 lang="zh">Click CLI · <code>sky/client/cli/command.py</code> · 7,954 行</h3>
+  <h3 lang="en">Click CLI · <code>sky/client/cli/command.py</code> · 7,954 lines</h3>
 
-  <p>
+  <p lang="zh">
     我们之前估计 2900 行，实际接近三倍 — 它把 30+ 个子命令（<code>launch / exec / status / queue / cost_report / logs / down / stop / autostop / start / check / show-gpus / jobs / serve ...</code>）的处理逻辑全放一起。<code>launch</code> 子命令处理器在 <code>line 1235</code>，接受 30+ 个 Click 选项 — 注意到 <code>infra</code>、<code>cloud</code>、<code>region</code>、<code>zone</code> 是<em>并存的</em>，老接口（cloud/region/zone）和新接口（infra）渐进迁移期共存。
+  </p>
+  <p lang="en">
+    We'd estimated 2,900 lines; it's nearly triple that — it lumps the handler logic for 30+ subcommands (<code>launch / exec / status / queue / cost_report / logs / down / stop / autostop / start / check / show-gpus / jobs / serve ...</code>) all together. The <code>launch</code> subcommand handler is at <code>line 1235</code> and takes 30+ Click options — note that <code>infra</code>, <code>cloud</code>, <code>region</code>, and <code>zone</code> <em>coexist</em>: the old interface (cloud/region/zone) and the new one (infra) live side by side during a gradual migration.
   </p>
 
   <pre data-lang="python · cli/command.py:1305"><code>task_or_dag = _make_task_or_dag_from_entrypoint_with_overrides(
@@ -1149,41 +1253,61 @@ K8s = Kubernetes                          # ← 别名的别名</code></pre>
 request_id = sdk.launch(task, dryrun=dryrun, ...)
 # ↑ 这一调走 HTTP，返回 request_id (不是结果！)</code></pre>
 
-  <h3>Python SDK · <code>sky/client/sdk.py</code> · 3,237 行</h3>
+  <h3 lang="zh">Python SDK · <code>sky/client/sdk.py</code> · 3,237 行</h3>
+  <h3 lang="en">Python SDK · <code>sky/client/sdk.py</code> · 3,237 lines</h3>
 
-  <p>
+  <p lang="zh">
     关键签名揭示一切：<code>def launch(task, ...) -&gt; RequestId[Tuple[Optional[int], Optional[ResourceHandle]]]</code>。<strong>返回 <code>RequestId</code> 而不是结果。</strong>SDK 是<em>异步</em>的 — 你拿到 ID 之后用 <code>sky.stream_and_get(request_id)</code> 才能取实际结果（或者 CLI 替你做这件事）。原因：launch 可能要跑 30 分钟（provision VM + 装依赖 + 跑 setup），HTTP 请求绝不能阻塞。
   </p>
+  <p lang="en">
+    The key signature tells the whole story: <code>def launch(task, ...) -&gt; RequestId[Tuple[Optional[int], Optional[ResourceHandle]]]</code>. <strong>It returns a <code>RequestId</code>, not a result.</strong> The SDK is <em>async</em> — once you have the ID, you call <code>sky.stream_and_get(request_id)</code> to fetch the actual result (or the CLI does it for you). The reason: a launch may run for 30 minutes (provision the VM + install dependencies + run setup), and the HTTP request must never block.
+  </p>
 
-  <p>SDK 还有几个 <code>_is_launched_by_jobs_controller</code> / <code>_is_launched_by_sky_serve_controller</code> 这种内部标志 — 这暗示 Managed Jobs 和 SkyServe 内部会<strong>递归</strong>调 SDK launch 子任务（在 controller VM 上启动 worker VM）。</p>
+  <p lang="zh">SDK 还有几个 <code>_is_launched_by_jobs_controller</code> / <code>_is_launched_by_sky_serve_controller</code> 这种内部标志 — 这暗示 Managed Jobs 和 SkyServe 内部会<strong>递归</strong>调 SDK launch 子任务（在 controller VM 上启动 worker VM）。</p>
+  <p lang="en">The SDK also carries internal flags like <code>_is_launched_by_jobs_controller</code> / <code>_is_launched_by_sky_serve_controller</code> — a hint that Managed Jobs and SkyServe <strong>recursively</strong> call SDK launch for sub-tasks internally (spinning up worker VMs from the controller VM).</p>
 
-  <h3>FastAPI server · <code>sky/server/server.py</code> · 3,524 行</h3>
+  <h3 lang="zh">FastAPI server · <code>sky/server/server.py</code> · 3,524 行</h3>
+  <h3 lang="en">FastAPI server · <code>sky/server/server.py</code> · 3,524 lines</h3>
 
-  <p>
+  <p lang="zh">
     <code>line 926</code> 一行揭示骨架：
+  </p>
+  <p lang="en">
+    One line at <code>line 926</code> reveals the skeleton:
   </p>
 
   <pre data-lang="python · server.py:926"><code>app = fastapi.FastAPI(prefix='/api/v1', debug=True, lifespan=lifespan)</code></pre>
 
-  <p>
+  <p lang="zh">
     然后是 <strong>10+ 个 middleware</strong>：RBAC / RequestID / BasicAuth / BearerToken / AuthProxy / SecurityHeaders / InternalDashboardPrefix / CacheControlStatic / PathClean / GracefulShutdown / APIVersion。从 routes 看，端点包括 <code>/token</code> / <code>/api/v1/auth/*</code> / <code>/check</code> / <code>/enabled_clouds</code> 以及一长串异步任务（cleanup_upload_ids / cleanup_unreferenced_file_mounts / loop_lag_monitor 等），全部跑在 FastAPI 的 <code>lifespan</code> 上下文里。
   </p>
+  <p lang="en">
+    Then come <strong>10+ middlewares</strong>: RBAC / RequestID / BasicAuth / BearerToken / AuthProxy / SecurityHeaders / InternalDashboardPrefix / CacheControlStatic / PathClean / GracefulShutdown / APIVersion. From the routes, the endpoints include <code>/token</code> / <code>/api/v1/auth/*</code> / <code>/check</code> / <code>/enabled_clouds</code> plus a long list of async tasks (cleanup_upload_ids / cleanup_unreferenced_file_mounts / loop_lag_monitor and more), all running inside FastAPI's <code>lifespan</code> context.
+  </p>
 
-  <h3>Request executor · <code>sky/server/requests/executor.py</code></h3>
+  <h3 lang="zh">Request executor · <code>sky/server/requests/executor.py</code></h3>
+  <h3 lang="en">Request executor · <code>sky/server/requests/executor.py</code></h3>
 
-  <p>这是最关键的一段，整个客户机/服务器解耦的真相在这里：</p>
+  <p lang="zh">这是最关键的一段，整个客户机/服务器解耦的真相在这里：</p>
+  <p lang="en">This is the most critical piece — the whole truth of the client/server decoupling lives here:</p>
 
   <pre data-lang="python · requests/executor.py:85"><code>multiprocessing.set_start_method('spawn', force=True)
 # On macOS, the default start method for multiprocessing is 'fork', which...</code></pre>
 
-  <p>
+  <p lang="zh">
     每个 launch 请求被丢进一个独立的<strong>子进程</strong>（spawn，不是 fork）跑。这才是为什么 launch 不会阻塞其他请求：它在另一个 Python 解释器里跑，FastAPI 线程立刻返回 <code>request_id</code>。配合 <code>BurstableExecutor</code>，可以根据负载动态加进程。还有一个 <code>OnDemandThreadExecutor</code>（line 100）专门处理"轻量同步请求在协程里的执行"。
+  </p>
+  <p lang="en">
+    Each launch request is dropped into its own <strong>subprocess</strong> (spawn, not fork) to run. That's exactly why launch doesn't block other requests: it runs in a separate Python interpreter, and the FastAPI thread returns the <code>request_id</code> immediately. Paired with <code>BurstableExecutor</code>, processes can be added dynamically based on load. There's also an <code>OnDemandThreadExecutor</code> (line 100) dedicated to "running lightweight synchronous requests inside coroutines."
   </p>
 
   <div class="insight">
-    <div class="label">三段式架构的真相 · WHY THIS MATTERS</div>
-    <p>"用户调 <code>sky.launch()</code> 像本地函数"的体验，是 4 个进程 + 1 个 HTTP 协议 + spawn 多进程 executor 共同协作的结果。它的代价是<strong>整个系统是 eventually consistent 的</strong> — 你拿到 request_id 那一刻，可能 VM 还没开始 provision。后续所有"等待 / 状态查询 / 取消"都要回到 server 查那个 request_id 的状态。</p>
-    <p>这种"submit → poll / stream"模式直接对应你 multi-agent kernel optimization 系统里的 agent 任务投递 — 同样的 request_id 设计可以借鉴。</p>
+    <div class="label" lang="zh">三段式架构的真相 · WHY THIS MATTERS</div>
+    <div class="label" lang="en">WHY THIS MATTERS</div>
+    <p lang="zh">"用户调 <code>sky.launch()</code> 像本地函数"的体验，是 4 个进程 + 1 个 HTTP 协议 + spawn 多进程 executor 共同协作的结果。它的代价是<strong>整个系统是 eventually consistent 的</strong> — 你拿到 request_id 那一刻，可能 VM 还没开始 provision。后续所有"等待 / 状态查询 / 取消"都要回到 server 查那个 request_id 的状态。</p>
+    <p lang="en">The "calling <code>sky.launch()</code> feels like a local function" experience is the result of 4 processes + 1 HTTP protocol + a spawn-based multiprocess executor working together. The cost is that <strong>the whole system is eventually consistent</strong> — the moment you get the request_id, the VM may not have started provisioning yet. Every subsequent "wait / status query / cancel" has to go back to the server and check the state of that request_id.</p>
+    <p lang="zh">这种"submit → poll / stream"模式直接对应你 multi-agent kernel optimization 系统里的 agent 任务投递 — 同样的 request_id 设计可以借鉴。</p>
+    <p lang="en">This "submit → poll / stream" pattern maps directly onto agent task submission in your multi-agent kernel optimization system — the same request_id design is worth borrowing.</p>
   </div>
 </section>
 
@@ -1265,8 +1389,11 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
       <text x="600" y="332" text-anchor="middle" class="diag-text tiny muted" style="font-style: italic;">⤿  later: sdk.stream_and_get(request_id) ⤿  to fetch actual result</text>
     </g>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="zh">
     四进程 / 一次 RPC / 一次子进程派生。在 server 返回 request_id 的那一刻，executor 子进程才<em>刚刚</em>开始跑真正的 launch 流水线（接下来 30 分钟的事情）。CLI 默认会自动 stream 后续日志，但 <code>--async</code> 模式下就会立刻退出，只留 ID 在手 — 这正是 controller 在 spot 恢复后能"接续"先前 launch 的关键。
+  </div>
+  <div class="caption" lang="en">
+    Four processes / one RPC / one subprocess fork. The instant the server returns the request_id, the executor subprocess has <em>only just</em> started running the real launch pipeline (the next 30 minutes of work). By default the CLI auto-streams the subsequent logs, but in <code>--async</code> mode it exits immediately, leaving you with just the ID — which is precisely what lets a controller "resume" a prior launch after spot recovery.
   </div>
 </section>
 
@@ -1274,8 +1401,11 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
 <section id="m3">
   <h2><span class="num">§ M3 · 40 min</span>Nine stages, <em>one pipeline.</em></h2>
 
-  <p>
+  <p lang="zh">
     一旦请求落到 executor 子进程，<code>sky/execution.py</code>（939 行）就开始按 9 个 stage 推进。我们之前 plan 时以为是 7 个 — 实际枚举有 9 个，多出来的是 <code>CLONE_DISK</code>（experimental，从另一个 cluster 克隆磁盘到新 cluster）和 <code>OPTIMIZE</code>（之前漏数）。
+  </p>
+  <p lang="en">
+    Once a request lands in the executor subprocess, <code>sky/execution.py</code> (939 lines) starts advancing through 9 stages. While planning we'd assumed 7 — the actual enum has 9, the extras being <code>CLONE_DISK</code> (experimental, clones a disk from another cluster into a new one) and <code>OPTIMIZE</code> (which we'd previously missed counting).
   </p>
 
   <pre data-lang="python · execution.py:48"><code>class Stage(enum.Enum):
@@ -1289,9 +1419,10 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
     EXEC = enum.auto()
     DOWN = enum.auto()</code></pre>
 
-  <p>每个 stage 都直接映射到 <code>backend.method()</code> 调用 — backend 抽象就是这套"做 9 件事"的契约：</p>
+  <p lang="zh">每个 stage 都直接映射到 <code>backend.method()</code> 调用 — backend 抽象就是这套"做 9 件事"的契约：</p>
+  <p lang="en">Each stage maps directly to a <code>backend.method()</code> call — the backend abstraction is exactly this "do 9 things" contract:</p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>Stage</th><th>Maps to</th><th>What happens</th></tr></thead>
     <tbody>
       <tr><td>CLONE_DISK</td><td><code>_maybe_clone_disk_from_cluster</code></td><td>从另一个 cluster 复制磁盘镜像</td></tr>
@@ -1305,11 +1436,28 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
       <tr><td>DOWN</td><td><code>backend.teardown(...)</code></td><td><code>--down</code> 时拆 cluster</td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>Stage</th><th>Maps to</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>CLONE_DISK</td><td><code>_maybe_clone_disk_from_cluster</code></td><td>copy a disk image from another cluster</td></tr>
+      <tr><td>OPTIMIZE</td><td><code>Optimizer.optimize(dag)</code></td><td>pick cloud × region × instance, write to <code>task.best_resources</code></td></tr>
+      <tr><td>PROVISION</td><td><code>backend.provision(...)</code></td><td>actually pull VMs from the cloud, return a ResourceHandle</td></tr>
+      <tr><td>SYNC_WORKDIR</td><td><code>backend.sync_workdir(...)</code></td><td>rsync the local workdir to the VM</td></tr>
+      <tr><td>SYNC_FILE_MOUNTS</td><td><code>backend.sync_file_mounts(...)</code></td><td>storage mounts (S3/GCS) + file mounts</td></tr>
+      <tr><td>SETUP</td><td><code>backend.setup(...)</code></td><td>run the user setup command (install deps)</td></tr>
+      <tr><td>PRE_EXEC</td><td><code>backend.set_autostop(...)</code></td><td>configure idle autostop</td></tr>
+      <tr><td>EXEC</td><td><code>backend.execute(...)</code></td><td>run the user run command, return a job_id</td></tr>
+      <tr><td>DOWN</td><td><code>backend.teardown(...)</code></td><td>tear down the cluster when <code>--down</code></td></tr>
+    </tbody>
+  </table>
 
   <div class="insight">
-    <div class="label">隐藏的并发控制 · OPTIMISTIC + LOCK-INTERIOR FALLBACK</div>
-    <p><code>execution.py:474-505</code> 的注释揭示一个微妙设计：OPTIMIZE 在 per-cluster lock <em>之外</em>跑（因为 optimize 耗时，不能阻塞别的请求），但 backend 拿到锁后会发现"决策可能已过期"（比如 cluster 刚被别人删了）。补救方法是给 backend 传一个 <code>planner</code> callback — 锁内如果发现需要重 plan，就调它再跑一次 optimizer。</p>
-    <p>这是"乐观优化 + 临界区兜底"的并发模式，处理"长决策 + 临界区状态可能漂移"的经典做法。</p>
+    <div class="label" lang="zh">隐藏的并发控制 · OPTIMISTIC + LOCK-INTERIOR FALLBACK</div>
+    <div class="label" lang="en">HIDDEN CONCURRENCY CONTROL · OPTIMISTIC + LOCK-INTERIOR FALLBACK</div>
+    <p lang="zh"><code>execution.py:474-505</code> 的注释揭示一个微妙设计：OPTIMIZE 在 per-cluster lock <em>之外</em>跑（因为 optimize 耗时，不能阻塞别的请求），但 backend 拿到锁后会发现"决策可能已过期"（比如 cluster 刚被别人删了）。补救方法是给 backend 传一个 <code>planner</code> callback — 锁内如果发现需要重 plan，就调它再跑一次 optimizer。</p>
+    <p lang="en">The comment at <code>execution.py:474-505</code> reveals a subtle design: OPTIMIZE runs <em>outside</em> the per-cluster lock (because optimize is slow and can't block other requests), but once the backend grabs the lock it may find "the decision could be stale" (e.g. the cluster was just deleted by someone else). The fix is to pass the backend a <code>planner</code> callback — if it detects inside the lock that a re-plan is needed, it calls this to run the optimizer again.</p>
+    <p lang="zh">这是"乐观优化 + 临界区兜底"的并发模式，处理"长决策 + 临界区状态可能漂移"的经典做法。</p>
+    <p lang="en">This is the "optimistic optimization + critical-section fallback" concurrency pattern — a classic way to handle "long decision + state may drift inside the critical section."</p>
   </div>
 </section>
 
@@ -1439,8 +1587,11 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
     </g>
     <line class="diag-edge dashed" x1="240" y1="176" x2="240" y2="218" stroke="var(--brass)"/>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="zh">
     每个 stage 都是条件触发（<code>if Stage.X in stages:</code>），所以 <code>sky exec</code>（在已存在的 cluster 上跑命令）只会触发 SYNC_WORKDIR + EXEC 两个 stage。<code>provision / setup / exec</code> 三个 stage 是"贵"的 — 各自可能耗时数分钟。
+  </div>
+  <div class="caption" lang="en">
+    Every stage is conditionally fired (<code>if Stage.X in stages:</code>), so <code>sky exec</code> (running a command on an existing cluster) only triggers two stages: SYNC_WORKDIR + EXEC. The three stages <code>provision / setup / exec</code> are the "expensive" ones — each can take minutes.
   </div>
 </section>
 
@@ -1448,23 +1599,36 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
 <section id="m4">
   <h2><span class="num">§ M4 · 45 min</span>The Optimizer, <em>DP × ILP.</em></h2>
 
-  <p>
+  <p lang="zh">
     Optimizer 是 SkyPilot 的技术宝石 — 1805 行做一件事：在 24 个云 × N 个 region × M 个 instance type × spot/on-demand × egress 的笛卡尔积里挑出代价最小（或时间最短）的资源分配方案。
   </p>
+  <p lang="en">
+    The Optimizer is SkyPilot's technical jewel — 1,805 lines doing one thing: across the Cartesian product of 24 clouds × N regions × M instance types × spot/on-demand × egress, pick the resource allocation with the lowest cost (or shortest time).
+  </p>
 
-  <p>关键的判别在第一步：拿到 <code>Dag</code> 之后，问它 <code>dag.is_chain()</code>：</p>
+  <p lang="zh">关键的判别在第一步：拿到 <code>Dag</code> 之后，问它 <code>dag.is_chain()</code>：</p>
+  <p lang="en">The key branch happens in the first step: given the <code>Dag</code>, ask it <code>dag.is_chain()</code>:</p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>DAG 拓扑</th><th>算法</th><th>复杂度</th><th>文件位置</th></tr></thead>
     <tbody>
       <tr><td>Chain（线性 pipeline）</td><td>动态规划 (DP)</td><td>O(N · R²)</td><td><code>_optimize_by_dp · line 429</code></td></tr>
       <tr><td>General DAG（分支/合并）</td><td>整数线性规划 (ILP)，PuLP + CBC</td><td>NP-hard，但实际可解</td><td><code>_optimize_by_ilp · line 490</code></td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>DAG topology</th><th>Algorithm</th><th>Complexity</th><th>File location</th></tr></thead>
+    <tbody>
+      <tr><td>Chain (linear pipeline)</td><td>Dynamic Programming (DP)</td><td>O(N · R²)</td><td><code>_optimize_by_dp · line 429</code></td></tr>
+      <tr><td>General DAG (branch/merge)</td><td>Integer Linear Programming (ILP), PuLP + CBC</td><td>NP-hard, but tractable in practice</td><td><code>_optimize_by_ilp · line 490</code></td></tr>
+    </tbody>
+  </table>
 
-  <h3>动态规划 · chain DAG 上的最短路径</h3>
+  <h3 lang="zh">动态规划 · chain DAG 上的最短路径</h3>
+  <h3 lang="en">Dynamic programming · shortest path on a chain DAG</h3>
 
-  <p>状态定义：<code>dp_best_objective[node][resources] = 用 resources 配置跑完 node 的最小累积代价</code>。状态转移：</p>
+  <p lang="zh">状态定义：<code>dp_best_objective[node][resources] = 用 resources 配置跑完 node 的最小累积代价</code>。状态转移：</p>
+  <p lang="en">State definition: <code>dp_best_objective[node][resources] = the minimum cumulative cost to finish node using the resources config</code>. State transition:</p>
 
   <pre data-lang="python · optimizer.py:444"><code># dp_best_objective[node][resources]
 #     = my_execution_cost(node, resources)
@@ -1473,11 +1637,14 @@ request_id = sdk.launch(task, dryrun=dryrun, ...)
 #         + egress_cost(parent → node, parent_resources, resources)
 #       )</code></pre>
 
-  <p>再加一个 <code>dp_point_backs[node][resources] = best_parent_resources</code> 用于反向回溯路径。这就是 Bellman 最短路径在"资源候选图"上的应用 — 每个 (node, resources) 是图上一个节点，相邻节点之间的边权是 execution_cost + egress_cost。</p>
+  <p lang="zh">再加一个 <code>dp_point_backs[node][resources] = best_parent_resources</code> 用于反向回溯路径。这就是 Bellman 最短路径在"资源候选图"上的应用 — 每个 (node, resources) 是图上一个节点，相邻节点之间的边权是 execution_cost + egress_cost。</p>
+  <p lang="en">Add a <code>dp_point_backs[node][resources] = best_parent_resources</code> for backtracking the path. This is Bellman shortest-path applied to a "resource-candidate graph" — each (node, resources) is a vertex, and the edge weight between adjacent vertices is execution_cost + egress_cost.</p>
 
-  <h3>整数线性规划 · 一般 DAG 上的双线性优化</h3>
+  <h3 lang="zh">整数线性规划 · 一般 DAG 上的双线性优化</h3>
+  <h3 lang="en">Integer linear programming · bilinear optimization on a general DAG</h3>
 
-  <p>ILP 公式的 docstring 是教科书级的清晰，直接抄录关键部分：</p>
+  <p lang="zh">ILP 公式的 docstring 是教科书级的清晰，直接抄录关键部分：</p>
+  <p lang="en">The docstring for the ILP formulation is textbook-clear; the key part is reproduced verbatim:</p>
 
   <pre data-lang="ilp · optimizer.py:509"><code>For cost optimization (after linearization):
   minimize_{c, e}  Σ c[v]ᵀ · k[v]     # execution costs at each node v
@@ -1495,14 +1662,19 @@ For time (makespan) optimization:
     plus the same one-hot constraints</code></pre>
 
   <div class="insight">
-    <div class="label">数学 trick · LINEARIZE THE BILINEAR</div>
-    <p>纯二次决策 <code>c[u] · c[v]ᵀ</code>（"u 选 r₁ 且 v 选 r₂"）让问题不是 ILP 而是更难求解的 quadratic IP。SkyPilot 用经典的 McCormick 线性化：引入辅助变量 <code>e[u,v]</code> 表示"edge 端配置 (r₁, r₂) 是否被同时选中"，加 one-hot 约束使 <code>e</code> 与 <code>c</code> 自洽，然后整个问题就成了 ILP，PuLP + CBC 求解器能跑。</p>
-    <p>这个 trick 在你做"多 agent 资源调度"时直接可用 — 任何"两个对象都得选某种配置且配对有代价"的问题，都能这么打平成 ILP。</p>
+    <div class="label" lang="zh">数学 trick · LINEARIZE THE BILINEAR</div>
+    <div class="label" lang="en">MATH TRICK · LINEARIZE THE BILINEAR</div>
+    <p lang="zh">纯二次决策 <code>c[u] · c[v]ᵀ</code>（"u 选 r₁ 且 v 选 r₂"）让问题不是 ILP 而是更难求解的 quadratic IP。SkyPilot 用经典的 McCormick 线性化：引入辅助变量 <code>e[u,v]</code> 表示"edge 端配置 (r₁, r₂) 是否被同时选中"，加 one-hot 约束使 <code>e</code> 与 <code>c</code> 自洽，然后整个问题就成了 ILP，PuLP + CBC 求解器能跑。</p>
+    <p lang="en">The raw quadratic decision <code>c[u] · c[v]ᵀ</code> ("u picks r₁ and v picks r₂") makes the problem not an ILP but a harder-to-solve quadratic IP. SkyPilot uses the classic McCormick linearization: introduce an auxiliary variable <code>e[u,v]</code> for "whether the edge-endpoint configs (r₁, r₂) are both selected," add one-hot constraints so that <code>e</code> stays consistent with <code>c</code>, and the whole problem becomes an ILP that the PuLP + CBC solver can handle.</p>
+    <p lang="zh">这个 trick 在你做"多 agent 资源调度"时直接可用 — 任何"两个对象都得选某种配置且配对有代价"的问题，都能这么打平成 ILP。</p>
+    <p lang="en">This trick is directly usable for your "multi-agent resource scheduling" — any problem where "two objects each pick a config and the pairing carries a cost" can be flattened into an ILP this way.</p>
   </div>
 
-  <h3>三种"特殊"路径</h3>
+  <h3 lang="zh">三种"特殊"路径</h3>
+  <h3 lang="en">Three "special" paths</h3>
 
-  <p>除了主路径，<code>optimize_job_group</code>（line 1037）处理 v0.12 引入的"job group"语义 — 多个 task 必须跑在同一个 cloud / region 上（典型：RL 训练里 actor 和 replay-buffer 必须在同一可用区减少延迟）。它走的是 <code>_optimize_same_infra</code> + <code>_find_common_infras</code> + <code>_select_best_infra</code> 这条特殊路径，把"基础设施一致"作为硬约束。</p>
+  <p lang="zh">除了主路径，<code>optimize_job_group</code>（line 1037）处理 v0.12 引入的"job group"语义 — 多个 task 必须跑在同一个 cloud / region 上（典型：RL 训练里 actor 和 replay-buffer 必须在同一可用区减少延迟）。它走的是 <code>_optimize_same_infra</code> + <code>_find_common_infras</code> + <code>_select_best_infra</code> 这条特殊路径，把"基础设施一致"作为硬约束。</p>
+  <p lang="en">Beyond the main path, <code>optimize_job_group</code> (line 1037) handles the "job group" semantics introduced in v0.12 — multiple tasks that must run on the same cloud / region (typical case: in RL training the actor and replay-buffer must share an availability zone to cut latency). It takes a special path through <code>_optimize_same_infra</code> + <code>_find_common_infras</code> + <code>_select_best_infra</code>, treating "infrastructure consistency" as a hard constraint.</p>
 </section>
 
 <!-- =============== PLATE IV: DAG ROUTING =============== -->
@@ -1609,8 +1781,11 @@ For time (makespan) optimization:
     <line class="diag-edge brass" x1="280" y1="420" x2="500" y2="450" marker-end="url(#ah4)"/>
     <line class="diag-edge brass" x1="920" y1="420" x2="700" y2="450" marker-end="url(#ah4)"/>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="zh">
     所有 chain DAG（包括最常见的"单 task"特例）走 DP 分支，瞬间完成。多分支 / 多汇聚的 DAG 走 ILP，把笛卡尔积空间打成线性规划。<strong>OPTIMIZE 这个 stage 在 client 端还是 server 端跑？</strong>—— 在 server 端：catalog 数据和 PuLP 都装在 server 容器里，client 不背这个重担。
+  </div>
+  <div class="caption" lang="en">
+    Every chain DAG (including the most common "single-task" special case) takes the DP branch and finishes instantly. Multi-branch / multi-merge DAGs take ILP, flattening the Cartesian product space into a linear program. <strong>Does the OPTIMIZE stage run on the client or the server?</strong> — On the server: the catalog data and PuLP both live in the server container, so the client doesn't carry that weight.
   </div>
 </section>
 
@@ -1618,13 +1793,18 @@ For time (makespan) optimization:
 <section id="m5">
   <h2><span class="num">§ M5 / M6 · 75 min</span>Backend × Cloud, <em>the polymorphic dance.</em></h2>
 
-  <p>
+  <p lang="zh">
     这两层互为因果，必须一起读。<code>backend.py</code>（212 行）定义 <code>Backend[ResourceHandle]</code> 泛型抽象基类，列出 9 个 stage 对应的方法。<code>cloud.py</code>（1041 行）定义 <code>Cloud</code> 抽象基类，列出 14 个云必须实现的方法。
   </p>
+  <p lang="en">
+    These two layers are mutually defining and must be read together. <code>backend.py</code> (212 lines) defines the generic abstract base class <code>Backend[ResourceHandle]</code>, listing the methods for the 9 stages. <code>cloud.py</code> (1,041 lines) defines the abstract base class <code>Cloud</code>, listing the 14 methods every cloud must implement.
+  </p>
 
-  <p>关键洞察是：<strong>Backend 是"调用方"，Cloud 是"被调用方"</strong>。先读 backend 你才能知道 cloud 接口为什么长那样 — 抽象方法的形状是被调用模式塑造出来的。</p>
+  <p lang="zh">关键洞察是：<strong>Backend 是"调用方"，Cloud 是"被调用方"</strong>。先读 backend 你才能知道 cloud 接口为什么长那样 — 抽象方法的形状是被调用模式塑造出来的。</p>
+  <p lang="en">The key insight: <strong>Backend is the "caller," Cloud is the "callee."</strong> Read backend first and you'll understand why the cloud interface looks the way it does — the shape of the abstract methods is dictated by the call pattern.</p>
 
-  <h3>Backend 抽象的形状</h3>
+  <h3 lang="zh">Backend 抽象的形状</h3>
+  <h3 lang="en">The shape of the Backend abstraction</h3>
 
   <pre data-lang="python · backends/backend.py:30"><code>class Backend(Generic[_ResourceHandleType]):
     def provision(self, task, to_provision_config, dryrun, ...) -> Tuple[ResourceHandle, bool]: ...
@@ -1636,9 +1816,10 @@ For time (makespan) optimization:
     def register_info(self, **kwargs): ...
     # ... 加上几个 internal _method 钩子</code></pre>
 
-  <p>主实现 <code>CloudVmRayBackend</code> 在 <code>cloud_vm_ray_backend.py</code> 里，<strong>6562 行单文件</strong>。它的"主类"<code>CloudVmRayBackend</code> 本身从 line 3038 开始，到 line 6562 — 单个类 3500 行。文件里还有 7 个 helper 类：</p>
+  <p lang="zh">主实现 <code>CloudVmRayBackend</code> 在 <code>cloud_vm_ray_backend.py</code> 里，<strong>6562 行单文件</strong>。它的"主类"<code>CloudVmRayBackend</code> 本身从 line 3038 开始，到 line 6562 — 单个类 3500 行。文件里还有 7 个 helper 类：</p>
+  <p lang="en">The main implementation <code>CloudVmRayBackend</code> lives in <code>cloud_vm_ray_backend.py</code>, a <strong>6,562-line single file</strong>. The "main class" <code>CloudVmRayBackend</code> itself starts at line 3038 and runs to line 6562 — a single class of 3,500 lines. The file also holds 7 helper classes:</p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>Class</th><th>Line</th><th>Role</th></tr></thead>
     <tbody>
       <tr><td><code>GangSchedulingStatus</code></td><td>385</td><td>多节点 gang schedule 的状态枚举</td></tr>
@@ -1651,16 +1832,35 @@ For time (makespan) optimization:
       <tr><td><code>CloudVmRayBackend</code></td><td>3038</td><td>主类</td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>Class</th><th>Line</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>GangSchedulingStatus</code></td><td>385</td><td>state enum for multi-node gang scheduling</td></tr>
+      <tr><td><code>FailoverCloudErrorHandlerV1 / V2</code></td><td>402 / 529</td><td>failover decisions on provision failure (V1 old interface, V2 new)</td></tr>
+      <tr><td><code>RetryingVmProvisioner</code></td><td>796</td><td>the key one — retries provision across three levels: zone → region → cloud</td></tr>
+      <tr><td><code>SSHTunnelInfo</code></td><td>1938</td><td>SSH tunnel connection info</td></tr>
+      <tr><td><code>CloudVmRayResourceHandle</code></td><td>1955</td><td>the public ResourceHandle implementation — holds cluster state</td></tr>
+      <tr><td><code>LocalResourcesHandle</code></td><td>2795</td><td>local-mode special case</td></tr>
+      <tr><td><code>SkyletClient</code></td><td>2843</td><td>★ the backend → skylet gRPC client</td></tr>
+      <tr><td><code>CloudVmRayBackend</code></td><td>3038</td><td>the main class</td></tr>
+    </tbody>
+  </table>
 
-  <h3>名字里的"Ray"是什么 Ray</h3>
+  <h3 lang="zh">名字里的"Ray"是什么 Ray</h3>
+  <h3 lang="en">Which "Ray" is the Ray in the name</h3>
 
-  <p>
+  <p lang="zh">
     <code>CloudVmRayBackend</code> 里的 "Ray" 指 <a href="https://ray.io">ray.io</a> 项目 — 但<strong>不是用 Ray 做分布式训练</strong>，而是借用 Ray 的 cluster launcher（<code>ray up</code> / <code>ray attach</code>）来管 VM 生命周期。SkyPilot 早期是 Ray 的扩展，后来独立发展，这是历史包袱 + 设计选择。<code>sky/skylet/ray_patches/</code> 子目录里能看到他们对 Ray cluster launcher 的私有 patch。
   </p>
+  <p lang="en">
+    The "Ray" in <code>CloudVmRayBackend</code> refers to the <a href="https://ray.io">ray.io</a> project — but <strong>it isn't using Ray for distributed training</strong>. It borrows Ray's cluster launcher (<code>ray up</code> / <code>ray attach</code>) to manage VM lifecycles. SkyPilot started as a Ray extension and later spun off, so this is part legacy baggage, part design choice. The <code>sky/skylet/ray_patches/</code> subdirectory shows their private patches to the Ray cluster launcher.
+  </p>
 
-  <h3>Cloud 抽象的 14 个必实现方法</h3>
+  <h3 lang="zh">Cloud 抽象的 14 个必实现方法</h3>
+  <h3 lang="en">The Cloud abstraction's 14 required methods</h3>
 
-  <p>每个云（AWS / GCP / Kubernetes / SSH / Slurm / RunPod / ...）必须告诉 SkyPilot：</p>
+  <p lang="zh">每个云（AWS / GCP / Kubernetes / SSH / Slurm / RunPod / ...）必须告诉 SkyPilot：</p>
+  <p lang="en">Every cloud (AWS / GCP / Kubernetes / SSH / Slurm / RunPod / ...) must tell SkyPilot:</p>
 
   <pre data-lang="python · clouds/cloud.py · abstract methods"><code>regions_with_offering(instance_type, accel, use_spot, region, zone)
 zones_provision_loop(...)               # 迭代 zones 用于 provision 尝试
@@ -1677,15 +1877,19 @@ get_credential_file_mounts()
 _unsupported_features_for_resources(r)
 query_status(name_id_filter)            # 从云上拉 cluster 当前状态</code></pre>
 
-  <p>具体实现 26 个云覆盖 — 加起来代码量惊人（aws.py 1712 行，kubernetes.py 1491 行）。这正是"加新云后端"工作的核心 — 后面 Red Line 1 会详述。</p>
+  <p lang="zh">具体实现 26 个云覆盖 — 加起来代码量惊人（aws.py 1712 行，kubernetes.py 1491 行）。这正是"加新云后端"工作的核心 — 后面 Red Line 1 会详述。</p>
+  <p lang="en">The concrete implementations cover 26 clouds — the combined code volume is staggering (aws.py is 1,712 lines, kubernetes.py 1,491). This is exactly the heart of "adding a new cloud backend" — detailed later in Red Line 1.</p>
 </section>
 
 <!-- ====== M7 ====== -->
 <section id="m7">
   <h2><span class="num">§ M7 · 40 min</span>Skylet, <em>the satellite.</em></h2>
 
-  <p>
+  <p lang="zh">
     最让人惊喜的发现：<code>sky/skylet/skylet.py</code> 只有 <strong>107 行</strong>。这个被誉为"SkyPilot 的 kubelet"的节点守护进程，本体精简到不可思议 — 它就做两件事：(1) 启动 gRPC server，(2) 跑一个 6 事件的轮询事件循环。重逻辑全在配套模块里。
+  </p>
+  <p lang="en">
+    The most pleasant surprise: <code>sky/skylet/skylet.py</code> is only <strong>107 lines</strong>. This node daemon — dubbed "SkyPilot's kubelet" — has an absurdly lean core. It does just two things: (1) start a gRPC server, and (2) run a 6-event polling loop. All the heavy logic lives in companion modules.
   </p>
 
   <pre data-lang="python · skylet/skylet.py:27"><code>EVENTS = [
@@ -1705,9 +1909,10 @@ def run_event_loop():
         for event in EVENTS:
             event.run()</code></pre>
 
-  <p>gRPC server 暴露 4 个服务，全部用 protobuf 生成的 stub：</p>
+  <p lang="zh">gRPC server 暴露 4 个服务，全部用 protobuf 生成的 stub：</p>
+  <p lang="en">The gRPC server exposes 4 services, all using protobuf-generated stubs:</p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>Service</th><th>Proto</th><th>谁是 client</th></tr></thead>
     <tbody>
       <tr><td><code>AutostopServiceImpl</code></td><td><code>autostopv1</code></td><td>backend, 配置 autostop</td></tr>
@@ -1716,13 +1921,26 @@ def run_event_loop():
       <tr><td><code>ManagedJobsServiceImpl</code></td><td><code>managed_jobsv1</code></td><td>jobs controller</td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>Service</th><th>Proto</th><th>Who's the client</th></tr></thead>
+    <tbody>
+      <tr><td><code>AutostopServiceImpl</code></td><td><code>autostopv1</code></td><td>backend, configures autostop</td></tr>
+      <tr><td><code>JobsServiceImpl</code></td><td><code>jobsv1</code></td><td>backend, submits/queries jobs</td></tr>
+      <tr><td><code>ServeServiceImpl</code></td><td><code>servev1</code></td><td>serve controller</td></tr>
+      <tr><td><code>ManagedJobsServiceImpl</code></td><td><code>managed_jobsv1</code></td><td>jobs controller</td></tr>
+    </tbody>
+  </table>
 
-  <p>SkyletClient（<code>cloud_vm_ray_backend.py:2843</code>）就是这些 gRPC service 的客户端 — backend 通过它跟节点上的 skylet 通信。</p>
+  <p lang="zh">SkyletClient（<code>cloud_vm_ray_backend.py:2843</code>）就是这些 gRPC service 的客户端 — backend 通过它跟节点上的 skylet 通信。</p>
+  <p lang="en">SkyletClient (<code>cloud_vm_ray_backend.py:2843</code>) is the client for these gRPC services — the backend talks to the skylet on the node through it.</p>
 
   <div class="insight">
-    <div class="label">值得偷的设计模式 · MICRO-DAEMON + FAT MODULES</div>
-    <p>守护进程本体保持极薄，重逻辑全部下沉到独立模块（<code>job_lib.py</code> 1459 行 · <code>log_lib.py</code> 909 行 · <code>autostop_lib.py</code> 382 行 · <code>events.py</code> 442 行 · <code>services.py</code> 634 行）。这种"小核心 + 大附件"的拆法让你可以单独测试每个 lib，而 daemon 本身只是 wiring。</p>
-    <p>对你 multi-agent kernel optimization 系统的 worker daemon 设计完全适用 — 把"agent 本体"做成 100 行的 event loop + gRPC server，把"kernel benchmark / profile / analysis"做成独立 lib。</p>
+    <div class="label" lang="zh">值得偷的设计模式 · MICRO-DAEMON + FAT MODULES</div>
+    <div class="label" lang="en">A PATTERN WORTH STEALING · MICRO-DAEMON + FAT MODULES</div>
+    <p lang="zh">守护进程本体保持极薄，重逻辑全部下沉到独立模块（<code>job_lib.py</code> 1459 行 · <code>log_lib.py</code> 909 行 · <code>autostop_lib.py</code> 382 行 · <code>events.py</code> 442 行 · <code>services.py</code> 634 行）。这种"小核心 + 大附件"的拆法让你可以单独测试每个 lib，而 daemon 本身只是 wiring。</p>
+    <p lang="en">The daemon proper stays razor-thin, with all the heavy logic pushed down into separate modules (<code>job_lib.py</code> 1,459 lines · <code>log_lib.py</code> 909 · <code>autostop_lib.py</code> 382 · <code>events.py</code> 442 · <code>services.py</code> 634). This "small core + large attachments" split lets you test each lib in isolation, while the daemon itself is just wiring.</p>
+    <p lang="zh">对你 multi-agent kernel optimization 系统的 worker daemon 设计完全适用 — 把"agent 本体"做成 100 行的 event loop + gRPC server，把"kernel benchmark / profile / analysis"做成独立 lib。</p>
+    <p lang="en">It fits the worker-daemon design of your multi-agent kernel optimization system perfectly — make the "agent proper" a 100-line event loop + gRPC server, and make "kernel benchmark / profile / analysis" standalone libs.</p>
   </div>
 </section>
 
@@ -1815,8 +2033,11 @@ def run_event_loop():
     <line class="diag-edge dashed" x1="170" y1="380" x2="220" y2="408"/>
     <line class="diag-edge dashed" x1="550" y1="380" x2="500" y2="408"/>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="zh">
     左臂（gRPC）应答外部调用；右臂（event loop）巡视本地状态。两条腿共享同一组下层库 — 这是"daemon 即 wiring，logic 在 lib"的范式。
+  </div>
+  <div class="caption" lang="en">
+    The left arm (gRPC) answers external calls; the right arm (event loop) patrols local state. Both legs share the same lower libraries — this is the "daemon is wiring, logic in libs" paradigm.
   </div>
 </section>
 
@@ -1824,8 +2045,11 @@ def run_event_loop():
 <section id="m8">
   <h2><span class="num">§ M8 · 35 min</span>Managed Jobs, <em>two state machines.</em></h2>
 
-  <p>
+  <p lang="zh">
     Managed Jobs 是 SkyPilot 的杀手特性 — 在 spot 实例上跑长跑作业不丢进度。它的核心设计是<strong>两层状态机</strong>，一个隔离另一个的瞬态故障：
+  </p>
+  <p lang="en">
+    Managed Jobs is SkyPilot's killer feature — run long jobs on spot instances without losing progress. Its core design is a <strong>two-level state machine</strong>, one isolating the transient failures of the other:
   </p>
 
   <pre data-lang="python · jobs/state.py:369"><code>class ManagedJobStatus(enum.Enum):
@@ -1841,16 +2065,22 @@ def run_event_loop():
         ManagedJobStatus = [PENDING, STARTING, RUNNING, ...]
     """</code></pre>
 
-  <p>翻译成人话：</p>
+  <p lang="zh">翻译成人话：</p>
+  <p lang="en">In plain terms:</p>
 
-  <ul>
+  <ul lang="zh">
     <li><strong>JobStatus</strong>（在 worker cluster 的节点上）：被 spot 抢占时会经历 <code>RUNNING → FAILED</code>；恢复后新 cluster 起来又走 <code>INIT → SETTING_UP → PENDING → RUNNING</code>。一个 managed job 的生命周期里这个底层状态可能<em>反复</em> RUNNING → FAILED → RUNNING。</li>
     <li><strong>ManagedJobStatus</strong>（在独立的 jobs controller VM 上）：从用户视角看到的状态。底下被抢 N 次，这里始终是 <code>RUNNING</code>。只有当 controller 决定"不再 recover"了，才会进入 <code>FAILED_NO_RESOURCE</code> 或 <code>FAILED_CONTROLLER</code>。</li>
   </ul>
+  <ul lang="en">
+    <li><strong>JobStatus</strong> (on the nodes of the worker cluster): when preempted by spot, it goes <code>RUNNING → FAILED</code>; after recovery a new cluster comes up and walks <code>INIT → SETTING_UP → PENDING → RUNNING</code> again. Over a managed job's lifetime this low-level status may go RUNNING → FAILED → RUNNING <em>repeatedly</em>.</li>
+    <li><strong>ManagedJobStatus</strong> (on the separate jobs controller VM): the status as the user sees it. No matter how many times it's preempted underneath, this stays <code>RUNNING</code>. Only when the controller decides "no more recovery" does it enter <code>FAILED_NO_RESOURCE</code> or <code>FAILED_CONTROLLER</code>.</li>
+  </ul>
 
-  <p>这种"上层状态吸收下层抖动"的设计同样反映在 <code>recovery_strategy.py</code>（1024 行）里：</p>
+  <p lang="zh">这种"上层状态吸收下层抖动"的设计同样反映在 <code>recovery_strategy.py</code>（1024 行）里：</p>
+  <p lang="en">This "the upper status absorbs the lower jitter" design is also reflected in <code>recovery_strategy.py</code> (1,024 lines):</p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>Strategy class</th><th>Line</th><th>Behavior on preemption</th></tr></thead>
     <tbody>
       <tr><td><code>StrategyExecutor</code></td><td>61</td><td>抽象基类，定义 <code>recover()</code> 钩子</td></tr>
@@ -1858,12 +2088,23 @@ def run_event_loop():
       <tr><td><code>EagerFailoverStrategyExecutor</code></td><td>936</td><td>抢占后立即跳到下一个 region，不死磕</td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>Strategy class</th><th>Line</th><th>Behavior on preemption</th></tr></thead>
+    <tbody>
+      <tr><td><code>StrategyExecutor</code></td><td>61</td><td>abstract base class, defines the <code>recover()</code> hook</td></tr>
+      <tr><td><code>FailoverStrategyExecutor</code></td><td>815</td><td>exhaust all zones/regions, then switch clouds</td></tr>
+      <tr><td><code>EagerFailoverStrategyExecutor</code></td><td>936</td><td>jump to the next region immediately on preemption, no hammering</td></tr>
+    </tbody>
+  </table>
 
-  <p>scheduler.py（466 行）单独控制"controller 进程"的并行度 — 因为每个 managed job 在 controller VM 上是一个独立 Python 进程，太多 controller 会撑爆 VM 内存。</p>
+  <p lang="zh">scheduler.py（466 行）单独控制"controller 进程"的并行度 — 因为每个 managed job 在 controller VM 上是一个独立 Python 进程，太多 controller 会撑爆 VM 内存。</p>
+  <p lang="en">scheduler.py (466 lines) separately controls the concurrency of the "controller processes" — because each managed job is a separate Python process on the controller VM, too many controllers will blow out the VM's memory.</p>
 
   <div class="insight">
-    <div class="label">直接相关 · DIRECTLY APPLICABLE</div>
-    <p>"两层状态机吸收瞬态故障"的设计是你的 multi-agent kernel optimization 系统应该照搬的 — agent 跑 kernel benchmark 时 ROCm 偶发 OOM / driver hang / 节点掉线，<em>底层 task 状态</em>反复抖动，但<em>上层 agent 任务状态</em>应该稳定保持 RUNNING，让 agent 不感知底层故障。<code>recovery_strategy.py</code> 那种"策略可插拔"的接口直接抄。</p>
+    <div class="label" lang="zh">直接相关 · DIRECTLY APPLICABLE</div>
+    <div class="label" lang="en">DIRECTLY APPLICABLE</div>
+    <p lang="zh">"两层状态机吸收瞬态故障"的设计是你的 multi-agent kernel optimization 系统应该照搬的 — agent 跑 kernel benchmark 时 ROCm 偶发 OOM / driver hang / 节点掉线，<em>底层 task 状态</em>反复抖动，但<em>上层 agent 任务状态</em>应该稳定保持 RUNNING，让 agent 不感知底层故障。<code>recovery_strategy.py</code> 那种"策略可插拔"的接口直接抄。</p>
+    <p lang="en">The "two-level state machine absorbs transient failures" design is one your multi-agent kernel optimization system should copy outright — when an agent runs a kernel benchmark and ROCm intermittently OOMs / driver-hangs / drops a node, the <em>lower task status</em> jitters back and forth, but the <em>upper agent task status</em> should hold steady at RUNNING so the agent never feels the underlying failure. Copy the "pluggable strategy" interface of <code>recovery_strategy.py</code> directly.</p>
   </div>
 </section>
 
@@ -1943,8 +2184,11 @@ def run_event_loop():
     <text x="600" y="40" text-anchor="middle" class="diag-text head" style="font-size: 16px;">A managed job <tspan font-style="italic" fill="#d4a76a">survives two spot preemptions</tspan></text>
     <text x="600" y="60" text-anchor="middle" class="diag-text muted">Top lane (controller view): one continuous RUNNING. Bottom lane (cluster view): three RUNNING phases on three different clusters.</text>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="zh">
     用户看到的"一个 job 跑了 6 小时"是上层平直的红线；底下其实是三段独立的 cluster 生命周期，每次抢占触发 <code>recovery_strategy.recover()</code> 重新 provision + sync + setup + exec。两层状态机的隔离让"长跑作业"变成可能。
+  </div>
+  <div class="caption" lang="en">
+    What the user sees — "one job ran for 6 hours" — is the flat red line on the upper lane; underneath are actually three separate cluster lifecycles, each preemption triggering <code>recovery_strategy.recover()</code> to re-provision + sync + setup + exec. The isolation of the two-level state machine is what makes "long-running jobs" possible.
   </div>
 </section>
 
@@ -1952,11 +2196,14 @@ def run_event_loop():
 <section id="m9">
   <h2><span class="num">§ M9 · 35 min</span>SkyServe, <em>scaling out.</em></h2>
 
-  <p>
+  <p lang="zh">
     SkyServe 是模型 serving 子系统 — 把 N 个 replica 跑在多云多区，自动扩缩，路由请求。结构上跟 Managed Jobs 镜像对称：每个 service 有独立的 controller VM，下面挂 K 个 replica VM，外加一个独立的 load balancer 进程负责把流量分发到健康的 replica。
   </p>
+  <p lang="en">
+    SkyServe is the model-serving subsystem — run N replicas across multiple clouds and regions, autoscale, and route requests. Structurally it mirrors Managed Jobs: each service has its own controller VM, with K replica VMs hanging beneath it, plus a separate load balancer process that distributes traffic to the healthy replicas.
+  </p>
 
-  <table>
+  <table lang="zh">
     <thead><tr><th>File</th><th>Lines</th><th>Role</th></tr></thead>
     <tbody>
       <tr><td><code>controller.py</code></td><td>297</td><td>service 生命周期</td></tr>
@@ -1970,50 +2217,85 @@ def run_event_loop():
       <tr><td><code>serve_utils.py</code></td><td>1,934</td><td>helpers</td></tr>
     </tbody>
   </table>
+  <table lang="en">
+    <thead><tr><th>File</th><th>Lines</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>controller.py</code></td><td>297</td><td>service lifecycle</td></tr>
+      <tr><td><code>replica_managers.py</code></td><td>1,564</td><td>★ replica health monitoring + self-healing</td></tr>
+      <tr><td><code>autoscalers.py</code></td><td>1,288</td><td>scaling policies like QueueLengthAutoscaler</td></tr>
+      <tr><td><code>load_balancer.py</code></td><td>342</td><td>FastAPI process, routes HTTP</td></tr>
+      <tr><td><code>load_balancing_policies.py</code></td><td>262</td><td>round_robin / least_load / etc.</td></tr>
+      <tr><td><code>spot_placer.py</code></td><td>281</td><td>placement strategy for replicas on spot</td></tr>
+      <tr><td><code>service_spec.py</code></td><td>661</td><td>YAML schema</td></tr>
+      <tr><td><code>serve_state.py</code></td><td>835</td><td>state DB</td></tr>
+      <tr><td><code>serve_utils.py</code></td><td>1,934</td><td>helpers</td></tr>
+    </tbody>
+  </table>
 
-  <p>关键发现：load balancer 自己<strong>就是一个 FastAPI 进程</strong>（<code>load_balancer.py:53</code>: <code>self._app = fastapi.FastAPI()</code>），跑在 controller VM 上。意味着 user request 的 hot path 是 <code>client → LB FastAPI → replica HTTP server</code>，多一跳但代价可控（同 VM 内）。</p>
+  <p lang="zh">关键发现：load balancer 自己<strong>就是一个 FastAPI 进程</strong>（<code>load_balancer.py:53</code>: <code>self._app = fastapi.FastAPI()</code>），跑在 controller VM 上。意味着 user request 的 hot path 是 <code>client → LB FastAPI → replica HTTP server</code>，多一跳但代价可控（同 VM 内）。</p>
+  <p lang="en">Key finding: the load balancer <strong>is itself a FastAPI process</strong> (<code>load_balancer.py:53</code>: <code>self._app = fastapi.FastAPI()</code>) running on the controller VM. That means the hot path for a user request is <code>client → LB FastAPI → replica HTTP server</code> — one extra hop, but the cost is bounded (it's within the same VM).</p>
 
-  <p><code>spot_placer.py</code> 是个有趣的独立模块 — 它<em>不</em>复用 Optimizer 的 ILP 逻辑，而是有专门策略：<strong>把 replica 分散在不同 region / zone，降低"同一时刻全军覆没"的概率</strong>。这是 serving 特有的可用性考虑。</p>
+  <p lang="zh"><code>spot_placer.py</code> 是个有趣的独立模块 — 它<em>不</em>复用 Optimizer 的 ILP 逻辑，而是有专门策略：<strong>把 replica 分散在不同 region / zone，降低"同一时刻全军覆没"的概率</strong>。这是 serving 特有的可用性考虑。</p>
+  <p lang="en"><code>spot_placer.py</code> is an interesting standalone module — it does <em>not</em> reuse the Optimizer's ILP logic, but has a dedicated strategy: <strong>spread replicas across different regions / zones to lower the chance of "the whole fleet going down at once."</strong> This is an availability concern specific to serving.</p>
 
-  <p>Autoscaler 用 <code>AutoscalerDecisionOperator</code> 二元决策（SCALE_UP / SCALE_DOWN）+ <code>AutoscalerDecision(operator, target)</code> 数据类。<code>QueueLengthAutoscaler</code> 是一个具体实现 — 看队列深度做扩缩。这种"decision + operator"结构方便插入新策略（QPS / latency / GPU util）。</p>
+  <p lang="zh">Autoscaler 用 <code>AutoscalerDecisionOperator</code> 二元决策（SCALE_UP / SCALE_DOWN）+ <code>AutoscalerDecision(operator, target)</code> 数据类。<code>QueueLengthAutoscaler</code> 是一个具体实现 — 看队列深度做扩缩。这种"decision + operator"结构方便插入新策略（QPS / latency / GPU util）。</p>
+  <p lang="en">The autoscaler uses an <code>AutoscalerDecisionOperator</code> binary decision (SCALE_UP / SCALE_DOWN) + an <code>AutoscalerDecision(operator, target)</code> dataclass. <code>QueueLengthAutoscaler</code> is one concrete implementation — it scales based on queue depth. This "decision + operator" structure makes it easy to plug in new policies (QPS / latency / GPU util).</p>
 </section>
 
 <!-- =============== TRAPS =============== -->
 <section id="traps">
   <h2><span class="num">§ Traps · five of them</span>What I wish I'd known.</h2>
 
-  <p class="lede">新人最容易栽的五个坑 — 如果你将来读源码、做改动、或者跟 SkyPilot 团队提 PR，先记住这几条。</p>
+  <p class="lede" lang="zh">新人最容易栽的五个坑 — 如果你将来读源码、做改动、或者跟 SkyPilot 团队提 PR，先记住这几条。</p>
+  <p class="lede" lang="en">The five traps newcomers fall into most — if you're going to read the source, make changes, or send the SkyPilot team a PR, memorize these first.</p>
 
   <div class="trap">
-    <div class="label">Trap № 1 · The "Ray" pun</div>
-    <p><code>cloud_vm_ray_backend.py</code> 里的 "Ray" 不是分布式训练 Ray，是借 <a href="https://ray.io">ray.io</a> 的 cluster launcher 管 VM。<code>sky/skylet/ray_patches/</code> 子目录可以确认 — 那是他们对 Ray cluster launcher 的私有 patch。SkyPilot 早期是 Ray 的扩展，独立后还沿用了 Ray 的 VM 编排底层。</p>
+    <div class="label" lang="zh">Trap № 1 · The "Ray" pun</div>
+    <div class="label" lang="en">Trap № 1 · The "Ray" pun</div>
+    <p lang="zh"><code>cloud_vm_ray_backend.py</code> 里的 "Ray" 不是分布式训练 Ray，是借 <a href="https://ray.io">ray.io</a> 的 cluster launcher 管 VM。<code>sky/skylet/ray_patches/</code> 子目录可以确认 — 那是他们对 Ray cluster launcher 的私有 patch。SkyPilot 早期是 Ray 的扩展，独立后还沿用了 Ray 的 VM 编排底层。</p>
+    <p lang="en">The "Ray" in <code>cloud_vm_ray_backend.py</code> is not distributed-training Ray; it borrows <a href="https://ray.io">ray.io</a>'s cluster launcher to manage VMs. The <code>sky/skylet/ray_patches/</code> subdirectory confirms it — those are their private patches to the Ray cluster launcher. SkyPilot started as a Ray extension, and after spinning off it kept using Ray's VM-orchestration layer.</p>
   </div>
 
   <div class="trap">
-    <div class="label">Trap № 2 · Four <code>state.py</code> files</div>
-    <p>这是新人必混的：</p>
-    <ul>
+    <div class="label" lang="zh">Trap № 2 · Four <code>state.py</code> files</div>
+    <div class="label" lang="en">Trap № 2 · Four <code>state.py</code> files</div>
+    <p lang="zh">这是新人必混的：</p>
+    <p lang="en">A guaranteed source of confusion for newcomers:</p>
+    <ul lang="zh">
       <li><code>sky/skylet/job_lib.py</code> — 节点本地 job DB</li>
       <li><code>sky/jobs/state.py</code> — managed job 全局 DB（在 jobs controller 上）</li>
       <li><code>sky/serve/serve_state.py</code> — serving 状态</li>
       <li><code>sky/server/state.py</code> — API server 状态</li>
     </ul>
-    <p>四个不同 FSM，对应 4 个不同层级的 job 概念。读 M7 / M8 / M9 时画一张对照表别忘了。</p>
+    <ul lang="en">
+      <li><code>sky/skylet/job_lib.py</code> — node-local job DB</li>
+      <li><code>sky/jobs/state.py</code> — global managed-job DB (on the jobs controller)</li>
+      <li><code>sky/serve/serve_state.py</code> — serving state</li>
+      <li><code>sky/server/state.py</code> — API server state</li>
+    </ul>
+    <p lang="zh">四个不同 FSM，对应 4 个不同层级的 job 概念。读 M7 / M8 / M9 时画一张对照表别忘了。</p>
+    <p lang="en">Four different FSMs, mapping to 4 different levels of the job concept. When reading M7 / M8 / M9, don't forget to draw a cross-reference table.</p>
   </div>
 
   <div class="trap">
-    <div class="label">Trap № 3 · <code>_fill_in_env_vars</code> 不只是字符串替换</div>
-    <p>看似只是 <code>${VAR}</code> 替换，实际上还涉及 secrets 不写日志、Docker 登录凭证不进 envs、和 file_mounts/storage/service/volumes 的多场景调用。它是个安全边界，不是无脑替换 — 加 plugin 时如果你引入新的"需要替换 env vars 的字段"，记得调它。</p>
+    <div class="label" lang="zh">Trap № 3 · <code>_fill_in_env_vars</code> 不只是字符串替换</div>
+    <div class="label" lang="en">Trap № 3 · <code>_fill_in_env_vars</code> is more than string substitution</div>
+    <p lang="zh">看似只是 <code>${VAR}</code> 替换，实际上还涉及 secrets 不写日志、Docker 登录凭证不进 envs、和 file_mounts/storage/service/volumes 的多场景调用。它是个安全边界，不是无脑替换 — 加 plugin 时如果你引入新的"需要替换 env vars 的字段"，记得调它。</p>
+    <p lang="en">It looks like mere <code>${VAR}</code> substitution, but it also handles keeping secrets out of logs, keeping Docker login credentials out of envs, and multi-scenario calls across file_mounts/storage/service/volumes. It's a security boundary, not a dumb replace — when adding a plugin, if you introduce a new "field that needs env-var substitution," remember to call it.</p>
   </div>
 
   <div class="trap">
-    <div class="label">Trap № 4 · Optimizer 在 server 端跑（不在 client）</div>
-    <p>直觉很容易反过来想 — client 上有 PuLP 也能跑啊。但 catalog 数据（pricing / availability CSV）在 server 端容器里，client 不背这个重，所以 OPTIMIZE 是 server 端 executor 子进程里跑的。这点决定了：(1) catalog 同步策略只发生在 server 上，(2) client 想"先看看代价"得发请求到 server。</p>
+    <div class="label" lang="zh">Trap № 4 · Optimizer 在 server 端跑（不在 client）</div>
+    <div class="label" lang="en">Trap № 4 · The Optimizer runs on the server (not the client)</div>
+    <p lang="zh">直觉很容易反过来想 — client 上有 PuLP 也能跑啊。但 catalog 数据（pricing / availability CSV）在 server 端容器里，client 不背这个重，所以 OPTIMIZE 是 server 端 executor 子进程里跑的。这点决定了：(1) catalog 同步策略只发生在 server 上，(2) client 想"先看看代价"得发请求到 server。</p>
+    <p lang="en">Intuition easily gets this backwards — the client has PuLP too, so why not run it there? But the catalog data (pricing / availability CSV) lives in the server-side container, and the client doesn't carry that weight, so OPTIMIZE runs in the server-side executor subprocess. This determines that: (1) the catalog sync strategy only happens on the server, and (2) a client that wants to "preview the cost" has to send a request to the server.</p>
   </div>
 
   <div class="trap">
-    <div class="label">Trap № 5 · Plugin 机制隐式调用</div>
-    <p><code>register_task_validator</code> · <code>sky/server/plugins.py</code> · <code>plugin_hooks.py</code> — SkyPilot 有完整 plugin 体系，但不在主流程显式调用，靠装饰器 + entry_points + module import 副作用触发。读代码时看到"这函数貌似没人调"，先怀疑是 plugin hook。</p>
+    <div class="label" lang="zh">Trap № 5 · Plugin 机制隐式调用</div>
+    <div class="label" lang="en">Trap № 5 · The plugin mechanism is invoked implicitly</div>
+    <p lang="zh"><code>register_task_validator</code> · <code>sky/server/plugins.py</code> · <code>plugin_hooks.py</code> — SkyPilot 有完整 plugin 体系，但不在主流程显式调用，靠装饰器 + entry_points + module import 副作用触发。读代码时看到"这函数貌似没人调"，先怀疑是 plugin hook。</p>
+    <p lang="en"><code>register_task_validator</code> · <code>sky/server/plugins.py</code> · <code>plugin_hooks.py</code> — SkyPilot has a full plugin system, but it isn't called explicitly in the main flow; it's triggered by decorators + entry_points + module-import side effects. When you read the code and see "this function seems to have no callers," suspect a plugin hook first.</p>
   </div>
 </section>
 
@@ -2021,11 +2303,13 @@ def run_event_loop():
 <section id="redlines">
   <h2><span class="num">§ Red lines · three</span>The big questions.</h2>
 
-  <p class="lede">读完整套源码，你应该能口头回答这三个大问题。每个红线问题贯穿多个模块，是真正的"懂了"指标。</p>
+  <p class="lede" lang="zh">读完整套源码，你应该能口头回答这三个大问题。每个红线问题贯穿多个模块，是真正的"懂了"指标。</p>
+  <p class="lede" lang="en">After reading the whole source, you should be able to answer these three big questions out loud. Each red-line question cuts across multiple modules — the real measure of having "got it."</p>
 
   <div class="qa">
-    <div class="q">如果要给 SkyPilot 加一个新云后端（比如 AMD ROCm 集群、或 Nebius / Crusoe 这种 neocloud），要改哪些文件？按什么顺序？</div>
-    <div class="a">
+    <div class="q" lang="zh">如果要给 SkyPilot 加一个新云后端（比如 AMD ROCm 集群、或 Nebius / Crusoe 这种 neocloud），要改哪些文件？按什么顺序？</div>
+    <div class="q" lang="en">To add a new cloud backend to SkyPilot (say an AMD ROCm cluster, or a neocloud like Nebius / Crusoe), which files do you change, and in what order?</div>
+    <div class="a" lang="zh">
       <p>这是<strong>对你 AMD 工作直接相关</strong>的红线。读完 M5 / M6 / M7 你应该能列出：</p>
       <ol>
         <li><code>sky/clouds/&lt;new&gt;.py</code> — 实现 <code>Cloud</code> 抽象基类的 14 个抽象方法</li>
@@ -2038,20 +2322,40 @@ def run_event_loop():
       </ol>
       <p style="margin-top: 14px;">CLAUDE.md 官方的"Adding a new cloud provider"流程是 4 步（前 3 步 + 第 4 步），实际工作量通常落在 1+3+5 — 见下方 Plate VII。</p>
     </div>
-  </div>
-
-  <div class="qa">
-    <div class="q">一条 <code>sky launch foo.yaml</code> 命令，从按下回车到 VM 上 run 起来，跨越多少个进程、几次 RPC、几次 SSH？</div>
-    <div class="a">
-      <p>读完整个 repo 你应该能画一张时序图：</p>
-      <p style="margin-top: 8px;"><strong>进程</strong>：terminal → CLI Python 进程 → SDK 同进程 → server FastAPI 进程 → executor spawn 的子进程 → ray launcher 在 client VM 起子进程 → 云 SDK 调云 API 起 VM → cloud-init 在 VM 上拉 skylet → skylet 起 4 个 gRPC service。<strong>共 9 个 Python 进程边界。</strong></p>
-      <p><strong>RPC / 网络</strong>：CLI → server 1 次 HTTP POST + N 次 stream/poll；server → 云 API 数十次；server SSH → VM 数次（rsync workdir、装依赖、提交 job）；backend → skylet gRPC 数次。<strong>核心路径约 5 类网络协议</strong>：HTTP、云厂商 REST API、SSH、gRPC、object storage upload/download。</p>
+    <div class="a" lang="en">
+      <p>This is the red line <strong>most directly relevant to your AMD work</strong>. After M5 / M6 / M7 you should be able to list:</p>
+      <ol>
+        <li><code>sky/clouds/&lt;new&gt;.py</code> — implement the 14 abstract methods of the <code>Cloud</code> base class</li>
+        <li><code>sky/catalog/&lt;new&gt;_catalog.py</code> — provide pricing / availability (feed the Optimizer its price matrix)</li>
+        <li><code>sky/provision/&lt;new&gt;/</code> — implement the low-level node start/stop logic</li>
+        <li><code>sky/clouds/__init__.py</code> — register the new cloud alias (so <code>sky.MyCloud</code> works)</li>
+        <li><code>sky/check.py</code> — add the credential check (so <code>sky check</code> recognizes the new cloud)</li>
+        <li>(optional) <code>sky/serve/spot_placer.py</code> — register a placement strategy if the new cloud has spot</li>
+        <li>(optional) <code>sky/dashboard/</code> — show the new cloud's icon and metadata in the Web UI</li>
+      </ol>
+      <p style="margin-top: 14px;">The official "Adding a new cloud provider" flow in CLAUDE.md is 4 steps (the first 3 + step 4), but the real work usually lands on 1+3+5 — see Plate VII below.</p>
     </div>
   </div>
 
   <div class="qa">
-    <div class="q">SkyPilot 的核心抽象到底是什么？Task / Resources / Cluster — 设计者把"状态"放在了哪一层？</div>
-    <div class="a">
+    <div class="q" lang="zh">一条 <code>sky launch foo.yaml</code> 命令，从按下回车到 VM 上 run 起来，跨越多少个进程、几次 RPC、几次 SSH？</div>
+    <div class="q" lang="en">For one <code>sky launch foo.yaml</code> command, from pressing Enter to the run starting on the VM — how many processes, RPCs, and SSH connections does it cross?</div>
+    <div class="a" lang="zh">
+      <p>读完整个 repo 你应该能画一张时序图：</p>
+      <p style="margin-top: 8px;"><strong>进程</strong>：terminal → CLI Python 进程 → SDK 同进程 → server FastAPI 进程 → executor spawn 的子进程 → ray launcher 在 client VM 起子进程 → 云 SDK 调云 API 起 VM → cloud-init 在 VM 上拉 skylet → skylet 起 4 个 gRPC service。<strong>共 9 个 Python 进程边界。</strong></p>
+      <p><strong>RPC / 网络</strong>：CLI → server 1 次 HTTP POST + N 次 stream/poll；server → 云 API 数十次；server SSH → VM 数次（rsync workdir、装依赖、提交 job）；backend → skylet gRPC 数次。<strong>核心路径约 5 类网络协议</strong>：HTTP、云厂商 REST API、SSH、gRPC、object storage upload/download。</p>
+    </div>
+    <div class="a" lang="en">
+      <p>After reading the whole repo you should be able to draw a sequence diagram:</p>
+      <p style="margin-top: 8px;"><strong>Processes</strong>: terminal → CLI Python process → SDK (same process) → server FastAPI process → executor-spawned subprocess → ray launcher spinning up a subprocess on the client VM → cloud SDK calling the cloud API to start the VM → cloud-init pulling skylet onto the VM → skylet starting 4 gRPC services. <strong>9 Python process boundaries in all.</strong></p>
+      <p><strong>RPC / network</strong>: CLI → server, 1 HTTP POST + N stream/polls; server → cloud API, dozens; server SSH → VM, several (rsync workdir, install deps, submit job); backend → skylet gRPC, several. <strong>Roughly 5 classes of network protocol on the core path</strong>: HTTP, cloud-vendor REST API, SSH, gRPC, and object-storage upload/download.</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="q" lang="zh">SkyPilot 的核心抽象到底是什么？Task / Resources / Cluster — 设计者把"状态"放在了哪一层？</div>
+    <div class="q" lang="en">What is SkyPilot's core abstraction, really? Task / Resources / Cluster — at which layer did the designers put "state"?</div>
+    <div class="a" lang="zh">
       <p>三分法明显：</p>
       <ul>
         <li><strong>Task</strong> 是<em>无状态请求</em>（值对象）— 一次 launch 对应一个 Task，请求结束生命周期结束</li>
@@ -2059,6 +2363,15 @@ def run_event_loop():
         <li><strong>Cluster</strong> 是<em>带状态实体</em>（DB 在 <code>sky/server/state.py</code> 和 <code>sky/skylet/job_lib.py</code>）— 描述"现在是什么"</li>
       </ul>
       <p style="margin-top: 12px;">这种"请求 / 规格 / 实体"三分法是后续可以借鉴到你的 multi-agent kernel optimization 系统的核心设计原则。你的 kernel optimization 任务（Task）应该是无状态的、可重放的；硬件 + 软件配置（Resources）应该是不可变值对象，可以快速枚举变体；实际跑起来的 agent worker（Cluster 类比）才有状态、需要 DB。</p>
+    </div>
+    <div class="a" lang="en">
+      <p>The three-way split is clear:</p>
+      <ul>
+        <li><strong>Task</strong> is a <em>stateless request</em> (value object) — one launch corresponds to one Task, and its lifecycle ends when the request ends</li>
+        <li><strong>Resources</strong> is an <em>immutable spec value object</em> (functional update via <code>.copy(**override)</code>) — describes "what you want"</li>
+        <li><strong>Cluster</strong> is a <em>stateful entity</em> (DBs in <code>sky/server/state.py</code> and <code>sky/skylet/job_lib.py</code>) — describes "what is right now"</li>
+      </ul>
+      <p style="margin-top: 12px;">This "request / spec / entity" trichotomy is a core design principle worth borrowing for your multi-agent kernel optimization system. Your kernel optimization task (Task) should be stateless and replayable; the hardware + software config (Resources) should be an immutable value object you can enumerate variants of quickly; and only the actually-running agent worker (the Cluster analogue) carries state and needs a DB.</p>
     </div>
   </div>
 </section>
@@ -2191,8 +2504,11 @@ def run_event_loop():
       <text x="20" y="104" class="diag-text tiny muted">Estimated effort: 2-3 days for a working prototype, 1-2 weeks for production-grade with all 14 methods + tests.</text>
     </g>
   </svg>
-  <div class="caption">
+  <div class="caption" lang="zh">
     第 1、2、3 步是新文件，第 4、5 步是修改现有文件，第 6、7 步可选。如果你的 AMD 集群是 K8s 上跑（CSP 风格），最简方式是<em>直接用 SkyPilot 已有的 kubernetes 后端</em>，不需要新写 cloud —— 只需在 K8s 上 deploy SkyPilot helm chart，集群就能被 <code>sky launch --infra k8s</code> 调度。
+  </div>
+  <div class="caption" lang="en">
+    Steps 1, 2, 3 are new files; steps 4, 5 edit existing files; steps 6, 7 are optional. If your AMD cluster runs on K8s (CSP-style), the simplest path is to <em>just use SkyPilot's existing kubernetes backend</em> — no new cloud needed. Deploy the SkyPilot helm chart on K8s and the cluster can be scheduled by <code>sky launch --infra k8s</code>.
   </div>
 </section>
 
@@ -2206,23 +2522,37 @@ def run_event_loop():
 
   <h2><span class="num">§ Epilogue</span>What we found, <em>and what's next.</em></h2>
 
-  <p>
+  <p lang="zh">
     SkyPilot 不是一个云抽象层；它是一个<strong>三段式分布式系统</strong>（client / API server / VM agent），中间用一个 9-stage 流水线把"用户意图"翻译成"VM 上跑的进程"。它的工程价值不是哪一个具体算法（虽然 Optimizer 的 DP+ILP 混合很漂亮），而是<strong>边界清晰</strong> — Task 是请求、Resources 是规格、Backend 是执行契约、Cloud 是多态被调用方、Skylet 是节点上的事件循环、Managed Jobs 是两层状态机吸收瞬态故障、SkyServe 是多副本拓扑。每一层的职责锐利分明，加新功能（新云、新调度策略、新 serving 拓扑）有清晰的接入点。
   </p>
-
-  <p>
-    对你 multi-agent kernel optimization 系统的几个直接借鉴：
+  <p lang="en">
+    SkyPilot is not a cloud abstraction layer; it's a <strong>three-tier distributed system</strong> (client / API server / VM agent), with a 9-stage pipeline in the middle translating "user intent" into "processes running on a VM." Its engineering value isn't any single algorithm (though the Optimizer's DP+ILP hybrid is beautiful), but its <strong>clean boundaries</strong> — Task is the request, Resources is the spec, Backend is the execution contract, Cloud is the polymorphic callee, Skylet is the node's event loop, Managed Jobs is a two-level state machine absorbing transient failures, and SkyServe is the multi-replica topology. Each layer's responsibility is sharply defined, and adding new features (a new cloud, a new scheduling policy, a new serving topology) has a clear entry point.
   </p>
 
-  <ul>
+  <p lang="zh">
+    对你 multi-agent kernel optimization 系统的几个直接借鉴：
+  </p>
+  <p lang="en">
+    A few things to borrow directly for your multi-agent kernel optimization system:
+  </p>
+
+  <ul lang="zh">
     <li><strong>异步 request_id 模式</strong> — agent 任务投递返回 ID，长跑用 stream/poll 拿结果。直接照搬 <code>sky/server/requests/executor.py</code> 的 spawn 多进程模式。</li>
     <li><strong>JSON 中转字符串替换</strong> — agent 配置里的 <code>${MI300X_HOSTS}</code> 模板替换，三行代码搞定，参考 M1 的 <code>_fill_in_env_vars</code>。</li>
     <li><strong>两层状态机吸收抖动</strong> — kernel benchmark 偶发 OOM / driver hang 应该被下层状态机吸收，agent 任务的上层状态保持稳定。参考 M8 的 JobStatus vs ManagedJobStatus。</li>
     <li><strong>"daemon 是 wiring, logic 在 lib"</strong> — agent worker 本体保持 100 行级别，把 benchmark / profile / analysis 拆成独立 lib。参考 M7 的 skylet 107 行。</li>
     <li><strong>插件化 validator / strategy</strong> — recovery strategy 可插拔，task validator 可注册。给你的 kernel optimization 加新策略时不要 fork 主代码，靠 plugin 注册。参考 <code>register_task_validator</code> 和 <code>recovery_strategy.py</code>。</li>
   </ul>
+  <ul lang="en">
+    <li><strong>The async request_id pattern</strong> — agent task submission returns an ID; long runs use stream/poll to fetch results. Copy the spawn-based multiprocess pattern of <code>sky/server/requests/executor.py</code> outright.</li>
+    <li><strong>JSON round-trip string substitution</strong> — template substitution like <code>${MI300X_HOSTS}</code> in agent configs, done in three lines; see <code>_fill_in_env_vars</code> from M1.</li>
+    <li><strong>A two-level state machine absorbs jitter</strong> — intermittent OOM / driver hang during a kernel benchmark should be absorbed by the lower state machine while the agent task's upper status stays stable. See JobStatus vs ManagedJobStatus from M8.</li>
+    <li><strong>"The daemon is wiring, the logic is in libs"</strong> — keep the agent worker proper at the 100-line scale and split benchmark / profile / analysis into standalone libs. See skylet's 107 lines from M7.</li>
+    <li><strong>Pluggable validators / strategies</strong> — the recovery strategy is pluggable, the task validator is registerable. When adding a new strategy to your kernel optimization, don't fork the main code — register a plugin. See <code>register_task_validator</code> and <code>recovery_strategy.py</code>.</li>
+  </ul>
 
-  <p style="margin-top: 40px;">— Fin.</p>
+  <p lang="zh" style="margin-top: 40px;">— Fin.</p>
+  <p lang="en" style="margin-top: 40px;">— Fin.</p>
 </section>
 
 </main>
@@ -2231,31 +2561,57 @@ def run_event_loop():
 <footer class="colophon">
   <div class="row">
     <div class="col">
-      <h5>Colophon</h5>
+      <h5 lang="en">Colophon</h5>
+      <h5 lang="zh">版本说明</h5>
       <p>Source: github.com/skypilot-org/skypilot</p>
       <p>Commit: f8bb042 · master · 2026-05-12</p>
-      <p>Reading: 6.5h across 4 sessions</p>
-      <p>Total lines surveyed: 211,510</p>
+      <p lang="en">Reading: 6.5h across 4 sessions</p>
+      <p lang="zh">精读：6.5 小时，分 4 次</p>
+      <p lang="en">Total lines surveyed: 211,510</p>
+      <p lang="zh">通览代码行数：211,510</p>
     </div>
     <div class="col">
-      <h5>Typography</h5>
-      <p>Display — Fraunces, var. opsz/wght</p>
-      <p>Body — Geist Sans</p>
+      <h5 lang="en">Typography</h5>
+      <h5 lang="zh">字体</h5>
+      <p lang="en">Display — Fraunces, var. opsz/wght</p>
+      <p lang="zh">标题 — Fraunces, var. opsz/wght</p>
+      <p lang="en">Body — Geist Sans</p>
+      <p lang="zh">正文 — Geist Sans</p>
       <p>Mono — JetBrains Mono</p>
     </div>
     <div class="col">
-      <h5>Palette</h5>
+      <h5 lang="en">Palette</h5>
+      <h5 lang="zh">配色</h5>
       <p>ink · bone · rust · brass · patina · vermillion</p>
-      <p>after engineering blueprints, ca. 1962</p>
+      <p lang="en">after engineering blueprints, ca. 1962</p>
+      <p lang="zh">取自工程蓝图，约 1962 年</p>
     </div>
     <div class="col">
-      <h5>Compiled for</h5>
-      <p>Jhin Pan · AMD Spring 2026 Intern</p>
-      <p>MAS for Kernel Optimization</p>
+      <h5 lang="en">Compiled for</h5>
+      <h5 lang="zh">编纂予</h5>
+      <p lang="en">Jhin Pan · AMD Spring 2026 Intern</p>
+      <p lang="zh">Jhin Pan · AMD 2026 春季实习生</p>
+      <p lang="en">MAS for Kernel Optimization</p>
+      <p lang="zh">面向 Kernel 优化的多智能体系统</p>
       <p>panjin1221@gmail.com</p>
     </div>
   </div>
 </footer>
+
+<script>
+(function() {
+  var KEY = 'skypilot-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
