@@ -1,0 +1,854 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Source Reading 010 · AITER CI Kernel Surface</title>
+  <meta name="description" content="A source-level map of ROCm/AITER's CI workflows, kernel tests, shape coverage, and downstream gates." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #f4efe2;
+      --paper-2: #e6ddca;
+      --ink: #161510;
+      --muted: #6d6659;
+      --line: #b9ac93;
+      --heavy: #242018;
+      --panel: #fffaf0;
+      --teal: #126b68;
+      --rust: #a24036;
+      --blue: #315d92;
+      --green: #4e744c;
+      --amber: #b96d1b;
+      --violet: #6650a4;
+      --mono: "IBM Plex Mono", monospace;
+      --display: "Archivo Black", sans-serif;
+      --serif: "Literata", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(90deg, rgba(22, 21, 16, .045) 1px, transparent 1px),
+        linear-gradient(rgba(22, 21, 16, .04) 1px, transparent 1px),
+        var(--paper);
+      background-size: 34px 34px, 34px 34px;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.68;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--teal); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    code {
+      font-family: var(--mono);
+      font-size: .88em;
+      color: #4b2a00;
+      background: rgba(185, 109, 27, .12);
+      padding: .08rem .28rem;
+      border: 1px solid rgba(185, 109, 27, .22);
+    }
+
+    .lang-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 30;
+      display: flex;
+      gap: 2px;
+      padding: 4px;
+      border: 2px solid var(--heavy);
+      background: rgba(244, 239, 226, .94);
+      box-shadow: 5px 5px 0 rgba(22, 21, 16, .16);
+    }
+    .lang-toggle button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font: 12px var(--mono);
+      padding: 7px 10px;
+    }
+    body[data-lang="en"] .lang-toggle button[data-set="en"],
+    body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+      background: var(--heavy);
+      color: var(--paper);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 26px 20px;
+      background: #201d16;
+      color: var(--paper);
+      border-right: 4px solid var(--heavy);
+      overflow: auto;
+    }
+    .rail-home {
+      display: block;
+      margin-bottom: 28px;
+      color: #d5c9b3;
+      font: 12px var(--mono);
+      text-decoration: none;
+    }
+    .rail .mark {
+      margin: 0 0 24px;
+      font-family: var(--display);
+      font-size: 28px;
+      line-height: .96;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .rail a {
+      display: block;
+      padding: 10px 0;
+      border-top: 1px solid rgba(244, 239, 226, .16);
+      color: #cfc3ae;
+      font: 12px var(--mono);
+      text-decoration: none;
+    }
+    .rail a:hover { color: #fff7e8; }
+    .rail b { color: #e5a34f; margin-right: 6px; }
+
+    .page { min-width: 0; }
+    .masthead {
+      padding: 86px clamp(24px, 6vw, 92px) 38px;
+      border-bottom: 4px solid var(--heavy);
+      background:
+        radial-gradient(circle at 86% 18%, rgba(18, 107, 104, .12), transparent 34%),
+        linear-gradient(180deg, #fffaf0 0%, var(--paper) 100%);
+    }
+    .kicker {
+      margin: 0 0 18px;
+      color: var(--rust);
+      font: 12px var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      letter-spacing: 0;
+    }
+    h1 {
+      max-width: 1040px;
+      font-family: var(--display);
+      font-size: clamp(44px, 8.2vw, 108px);
+      line-height: .92;
+      text-transform: uppercase;
+    }
+    h2 {
+      margin-bottom: 18px;
+      font-family: var(--display);
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: .98;
+      text-transform: uppercase;
+    }
+    h3 {
+      margin: 28px 0 10px;
+      font-family: var(--mono);
+      color: var(--rust);
+      font-size: 14px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      max-width: 900px;
+      margin: 26px 0 0;
+      color: #3d392f;
+      font-size: clamp(19px, 2.1vw, 25px);
+      line-height: 1.5;
+    }
+    .spec {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 0;
+      max-width: 1060px;
+      margin-top: 36px;
+      border: 2px solid var(--heavy);
+      background: var(--heavy);
+    }
+    .spec div {
+      min-height: 78px;
+      padding: 13px 14px;
+      background: var(--panel);
+      border-right: 1px solid var(--heavy);
+    }
+    .spec div:last-child { border-right: 0; }
+    .lbl {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font: 11px var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .val {
+      display: block;
+      color: var(--ink);
+      font: 13px var(--mono);
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .article {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 54px 24px 96px;
+    }
+    section { margin: 66px 0; scroll-margin-top: 24px; }
+    p { margin: 0 0 18px; }
+    .lead {
+      font-size: 21px;
+      color: #342f26;
+    }
+    .rule {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 18px 0;
+      border-top: 2px solid var(--heavy);
+    }
+    .rule:last-child { border-bottom: 2px solid var(--heavy); }
+    .rule .tag {
+      color: var(--teal);
+      font: 12px var(--mono);
+      text-transform: uppercase;
+    }
+    .callout {
+      margin: 24px 0;
+      padding: 18px 20px;
+      border: 2px solid var(--heavy);
+      background: #f9e7c7;
+      box-shadow: 6px 6px 0 rgba(22, 21, 16, .12);
+    }
+    .callout strong {
+      color: #6a3100;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 26px 0;
+    }
+    .metric {
+      min-height: 118px;
+      padding: 18px;
+      border: 2px solid var(--heavy);
+      background: var(--panel);
+      box-shadow: 4px 4px 0 rgba(22, 21, 16, .10);
+    }
+    .metric .num {
+      display: block;
+      color: var(--teal);
+      font-family: var(--display);
+      font-size: 42px;
+      line-height: 1;
+    }
+    .metric .txt {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font: 12px var(--mono);
+      line-height: 1.45;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 22px 0;
+      background: var(--panel);
+      border: 2px solid var(--heavy);
+      font-size: 15px;
+    }
+    th, td {
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      color: var(--paper);
+      background: var(--heavy);
+      font: 12px var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .plate {
+      width: min(1060px, calc(100vw - 300px));
+      margin: 34px 0 34px 50%;
+      transform: translateX(-50%);
+      border: 2px solid var(--heavy);
+      background: #fffaf0;
+      box-shadow: 8px 8px 0 rgba(22, 21, 16, .12);
+    }
+    .plate-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--heavy);
+      font: 12px var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .plate svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .caption {
+      margin: 0;
+      padding: 12px 16px 16px;
+      color: var(--muted);
+      font-size: 14px;
+      font-style: italic;
+    }
+    .node { fill: #fffaf0; stroke: #242018; stroke-width: 2; }
+    .node-dark { fill: #242018; stroke: #242018; stroke-width: 2; }
+    .node-teal { fill: #126b68; stroke: #242018; stroke-width: 2; }
+    .node-rust { fill: #a24036; stroke: #242018; stroke-width: 2; }
+    .node-blue { fill: #315d92; stroke: #242018; stroke-width: 2; }
+    .node-green { fill: #4e744c; stroke: #242018; stroke-width: 2; }
+    .edge { fill: none; stroke: #242018; stroke-width: 2; marker-end: url(#arrow); }
+    .thin { fill: none; stroke: #796f5f; stroke-width: 1.4; }
+    .diag-text { font-family: "IBM Plex Mono", monospace; font-size: 13px; fill: #161510; }
+    .diag-small { font-family: "IBM Plex Mono", monospace; font-size: 10px; fill: #5e5548; }
+    .diag-invert { font-family: "IBM Plex Mono", monospace; font-size: 12px; fill: #fffaf0; }
+    .diag-title { font-family: "Archivo Black", sans-serif; font-size: 20px; fill: #161510; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 24px;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 240, .78);
+      color: #40382d;
+      font: 12px var(--mono);
+      padding: 5px 8px;
+    }
+    .refs {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font: 12px var(--mono);
+    }
+    .refs a { color: var(--rust); }
+    .colophon {
+      max-width: 820px;
+      margin: 40px auto 0;
+      padding: 24px;
+      border-top: 2px solid var(--heavy);
+      color: var(--muted);
+      font: 12px var(--mono);
+    }
+
+    body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+    body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      .rail {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 4px solid var(--heavy);
+      }
+      .rail nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 18px;
+      }
+      .spec { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .spec div:nth-child(2) { border-right: 0; }
+      .spec div:nth-child(n+3) { border-top: 1px solid var(--heavy); }
+      .plate {
+        width: 100%;
+        margin-left: 0;
+        transform: none;
+      }
+    }
+    @media (max-width: 700px) {
+      body { font-size: 17px; }
+      .masthead { padding-top: 74px; }
+      .article { padding-inline: 18px; }
+      .metrics { grid-template-columns: 1fr; }
+      .rule { grid-template-columns: 1fr; gap: 6px; }
+      .spec { grid-template-columns: 1fr; }
+      .spec div { border-right: 0; border-top: 1px solid var(--heavy); }
+      .spec div:first-child { border-top: 0; }
+      table { display: block; overflow-x: auto; }
+      .lang-toggle { top: 10px; right: 10px; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-set="en" aria-label="English">EN</button>
+    <button type="button" data-set="zh" aria-label="中文">中文</button>
+  </div>
+
+  <div class="shell">
+    <aside class="rail">
+      <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+      <p class="mark">AITER<br />CI<br />Surface</p>
+      <nav aria-label="Table of contents">
+        <a href="#brief"><b>01</b><span lang="en">Brief</span><span lang="zh">摘要</span></a>
+        <a href="#benchmark-yaml"><b>02</b><span lang="en">The stale benchmark file</span><span lang="zh">历史 benchmark 文件</span></a>
+        <a href="#ci-map"><b>03</b><span lang="en">CI map</span><span lang="zh">CI 地图</span></a>
+        <a href="#kernels"><b>04</b><span lang="en">Kernel surface</span><span lang="zh">Kernel 覆盖面</span></a>
+        <a href="#shapes"><b>05</b><span lang="en">Shape pressure</span><span lang="zh">Shape 压力点</span></a>
+        <a href="#downstream"><b>06</b><span lang="en">Downstream gates</span><span lang="zh">下游门禁</span></a>
+        <a href="#mirror"><b>07</b><span lang="en">What to mirror</span><span lang="zh">我们该对标什么</span></a>
+        <a href="#sources"><b>08</b><span lang="en">Source refs</span><span lang="zh">源码引用</span></a>
+      </nav>
+    </aside>
+
+    <main class="page">
+      <header class="masthead">
+        <p class="kicker">Source Reading 010 · ROCm/AITER</p>
+        <h1>AITER CI Kernel Surface</h1>
+        <p class="subtitle" lang="en">
+          A source-level map of what ROCm/AITER actually runs in CI: which workflows are active, which kernel families are exercised, and which shapes deserve attention when we mirror their coverage.
+        </p>
+        <p class="subtitle" lang="zh">
+          这是一张 ROCm/AITER 当前 CI 的源码级地图： 哪些 workflow 还在主线， 哪些 kernel family 会被跑到， 以及我们对标时最该盯住哪些 shape。
+        </p>
+        <div class="spec" aria-label="Audit metadata">
+          <div><span class="lbl">Repo</span><span class="val">ROCm/aiter</span></div>
+          <div><span class="lbl">Snapshot</span><span class="val">main @ ff61bb39977907f5e2071894ab20bf6b2a2a9e77</span></div>
+          <div><span class="lbl">Category</span><span class="val">code · source reading</span></div>
+          <div><span class="lbl">Date</span><span class="val">2026-06-11</span></div>
+        </div>
+      </header>
+
+      <article class="article">
+        <section id="brief">
+          <h2><span lang="en">The Short Version</span><span lang="zh">先给结论</span></h2>
+          <p class="lead" lang="en">
+            AITER's main CI is not one benchmark workflow. It is a layered test surface: top-level operator scripts, Triton pytest shards, multi-GPU collectives, FlashAttention integration, and end-to-end vLLM / SGLang / ATOM gates.
+          </p>
+          <p class="lead" lang="zh">
+            AITER 主线 CI 不是一个 benchmark workflow。 它是一层层测试面： top-level operator 脚本、Triton pytest shard、multi-GPU collective、FlashAttention 集成， 以及 vLLM / SGLang / ATOM 下游门禁。
+          </p>
+
+          <div class="metrics" aria-label="Test file counts">
+            <div class="metric"><span class="num">77</span><span class="txt" lang="en">top-level AITER operator test files</span><span class="txt" lang="zh">top-level AITER operator 测试文件</span></div>
+            <div class="metric"><span class="num">99</span><span class="txt" lang="en">Triton pytest files</span><span class="txt" lang="zh">Triton pytest 文件</span></div>
+            <div class="metric"><span class="num">19</span><span class="txt" lang="en">multi-GPU test files</span><span class="txt" lang="zh">multi-GPU 测试文件</span></div>
+          </div>
+
+          <div class="rule">
+            <div class="tag">Reading rule</div>
+            <p lang="en">For top-level AITER tests, CI executes <code>python3 file.py</code> through <code>.github/scripts/aiter_test.sh</code>. For Triton tests, CI executes pytest shards. Treat CLI defaults and explicit shell invocations as the hard CI contract; pytest-only parametrization is a broader local test surface unless the workflow calls pytest.</p>
+            <p lang="zh">top-level AITER 测试在 CI 里通过 <code>.github/scripts/aiter_test.sh</code> 执行 <code>python3 file.py</code>。 Triton 测试则跑 pytest shard。 所以判断“CI 真跑什么”时， CLI 默认参数和 shell 里的显式调用是硬合同；pytest-only 参数矩阵只有在 workflow 调 pytest 时才算主线覆盖。</p>
+          </div>
+        </section>
+
+        <section id="benchmark-yaml">
+          <h2><span lang="en">The Example Is Historical</span><span lang="zh">你给的例子是历史痕迹</span></h2>
+          <div class="callout">
+            <p lang="en"><strong><code>aiter-benchmark.yaml</code> is visible in GitHub Actions history, but it is not present in current <code>main</code>.</strong> The file came from closed, unmerged PR #2115 on <code>benchmark_release</code>. It delegated to ATOM's benchmark workflow with <code>deepseek-r1-0528=true</code>, <code>--kv_cache_dtype fp8 -tp 8</code>, and <code>param_list="1024,1024,128,0.8"</code>.</p>
+            <p lang="zh"><strong><code>aiter-benchmark.yaml</code> 在 GitHub Actions 历史里还能看到， 但当前 <code>main</code> 没有这个文件。</strong> 它来自已关闭、未合入的 PR #2115 / <code>benchmark_release</code>。 那个 workflow 只是委托 ATOM benchmark， 参数是 <code>deepseek-r1-0528=true</code>、<code>--kv_cache_dtype fp8 -tp 8</code>、<code>param_list="1024,1024,128,0.8"</code>。</p>
+          </div>
+
+          <figure class="plate" aria-label="Workflow status plate">
+            <div class="plate-head"><span>Plate I</span><span>Actions history versus main</span></div>
+            <svg viewBox="0 0 980 330" role="img" aria-labelledby="p1-title p1-desc">
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#242018" />
+                </marker>
+              </defs>
+              <title id="p1-title">Historical benchmark workflow</title>
+              <desc id="p1-desc">A diagram showing that aiter-benchmark lives in Actions history, not current main, and delegates to ATOM.</desc>
+              <rect x="24" y="24" width="270" height="122" class="node-rust" />
+              <text x="44" y="62" class="diag-invert">Actions history</text>
+              <text x="44" y="88" class="diag-invert">Aiter Benchmark</text>
+              <text x="44" y="114" class="diag-invert">aiter-benchmark.yaml</text>
+              <rect x="354" y="24" width="250" height="122" class="node" />
+              <text x="376" y="62" class="diag-text">Current main</text>
+              <text x="376" y="88" class="diag-text">.github/workflows</text>
+              <text x="376" y="114" class="diag-text">file absent</text>
+              <path d="M306 84 H342" class="edge" />
+              <path d="M446 152 V218 H648" class="edge" />
+              <rect x="672" y="184" width="250" height="98" class="node-teal" />
+              <text x="696" y="220" class="diag-invert">PR #2115</text>
+              <text x="696" y="244" class="diag-invert">closed / unmerged</text>
+              <text x="696" y="268" class="diag-invert">delegates to ATOM</text>
+              <rect x="58" y="210" width="460" height="52" fill="#fff4da" stroke="#242018" stroke-width="2" />
+              <text x="76" y="242" class="diag-text">shape-like payload: 1024,1024,128,0.8 + fp8 KV + TP8</text>
+            </svg>
+            <p class="caption" lang="en">The benchmark file is useful evidence, but not a current mainline gate.</p>
+            <p class="caption" lang="zh">这个 benchmark 文件可以当历史证据看， 但不能算当前主线门禁。</p>
+          </figure>
+        </section>
+
+        <section id="ci-map">
+          <h2><span lang="en">The Active CI Map</span><span lang="zh">当前主线 CI 地图</span></h2>
+          <p lang="en">The active surface splits cleanly into three levels: kernel correctness, integration correctness, and downstream model gates. The source path matters because each level answers a different risk question.</p>
+          <p lang="zh">当前活跃测试面可以分成三层： kernel correctness、integration correctness、downstream model gate。 这些路径回答的是不同风险问题， 不能混成一个“benchmark 是否通过”。</p>
+
+          <figure class="plate" aria-label="CI map plate">
+            <div class="plate-head"><span>Plate II</span><span>Workflow stack</span></div>
+            <svg viewBox="0 0 980 440" role="img" aria-labelledby="p2-title p2-desc">
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#242018" />
+                </marker>
+              </defs>
+              <title id="p2-title">AITER workflow stack</title>
+              <desc id="p2-desc">A three-layer map from operator tests to integration tests and downstream gates.</desc>
+              <rect x="28" y="42" width="250" height="126" class="node-teal" />
+              <text x="52" y="78" class="diag-invert">Kernel layer</text>
+              <text x="52" y="106" class="diag-invert">aiter-test.yaml</text>
+              <text x="52" y="132" class="diag-invert">triton-test.yaml</text>
+              <text x="52" y="154" class="diag-invert">split into 8 shards</text>
+
+              <rect x="366" y="42" width="250" height="126" class="node-blue" />
+              <text x="390" y="78" class="diag-invert">Integration layer</text>
+              <text x="390" y="106" class="diag-invert">FlashAttention</text>
+              <text x="390" y="132" class="diag-invert">OPUS</text>
+              <text x="390" y="154" class="diag-invert">wheel smoke</text>
+
+              <rect x="704" y="42" width="250" height="126" class="node-green" />
+              <text x="728" y="78" class="diag-invert">Model layer</text>
+              <text x="728" y="106" class="diag-invert">vLLM</text>
+              <text x="728" y="132" class="diag-invert">SGLang</text>
+              <text x="728" y="154" class="diag-invert">ATOM / Kimi</text>
+
+              <path d="M278 105 H354" class="edge" />
+              <path d="M616 105 H692" class="edge" />
+
+              <rect x="68" y="246" width="170" height="70" class="node" />
+              <text x="90" y="274" class="diag-text">77 AITER</text>
+              <text x="90" y="296" class="diag-small">python3 file.py</text>
+              <rect x="280" y="246" width="170" height="70" class="node" />
+              <text x="302" y="274" class="diag-text">99 Triton</text>
+              <text x="302" y="296" class="diag-small">pytest -v</text>
+              <rect x="492" y="246" width="170" height="70" class="node" />
+              <text x="514" y="274" class="diag-text">19 Multi-GPU</text>
+              <text x="514" y="296" class="diag-small">main-only pool</text>
+              <rect x="704" y="246" width="170" height="70" class="node" />
+              <text x="726" y="274" class="diag-text">TP8 models</text>
+              <text x="726" y="296" class="diag-small">latency / gsm8k</text>
+              <path d="M153 178 V234" class="edge" />
+              <path d="M491 178 V214 H365 V234" class="edge" />
+              <path d="M829 178 V234" class="edge" />
+            </svg>
+            <p class="caption" lang="en">AITER's CI is not flat: a failure in a kernel shard and a failure in Kimi accuracy mean different things.</p>
+            <p class="caption" lang="zh">AITER 的 CI 不是一张平表： kernel shard 挂掉和 Kimi accuracy 挂掉， 含义完全不同。</p>
+          </figure>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Workflow</th>
+                <th>What it covers</th>
+                <th>Trigger shape</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>aiter-test.yaml</code></td>
+                <td><span lang="en">Core top-level operator tests, MI35X + MI300X, 8 shards; main also runs multi-GPU tests and tuned-op regression.</span><span lang="zh">核心 top-level operator tests， MI35X + MI300X， 8 shard；main 还跑 multi-GPU tests 和 tuned-op regression。</span></td>
+                <td>PR / main / daily / manual</td>
+              </tr>
+              <tr>
+                <td><code>triton-test.yaml</code></td>
+                <td><span lang="en">Triton tests under <code>op_tests/triton_tests</code>, pytest shards, MI35X by default and MI300X when requested.</span><span lang="zh"><code>op_tests/triton_tests</code> 下的 Triton tests， pytest shard， 默认 MI35X， 需要时跑 MI300X。</span></td>
+                <td>Triton path PR / main / manual</td>
+              </tr>
+              <tr>
+                <td><code>flash_attention_integration.yaml</code></td>
+                <td><span lang="en">Dao-AILab FlashAttention integration with representative PR filters.</span><span lang="zh">Dao-AILab FlashAttention 集成， PR 上只跑代表性过滤条件。</span></td>
+                <td><code>2048-2048</code>, <code>1024-1024</code>, <code>16-20000</code></td>
+              </tr>
+              <tr>
+                <td><code>vllm_benchmark.yaml</code></td>
+                <td><span lang="en">8-GPU vLLM latency for GPT-OSS-120B, DeepSeek-R1-0528, and Kimi-K2.5.</span><span lang="zh">8-GPU vLLM latency， 覆盖 GPT-OSS-120B、DeepSeek-R1-0528、Kimi-K2.5。</span></td>
+                <td><code>batch=123 input=456 output=78 tp=8</code></td>
+              </tr>
+              <tr>
+                <td><code>kimi-*</code>, <code>sglang_*</code>, <code>atom-test</code></td>
+                <td><span lang="en">Downstream accuracy and throughput gates. These are model-system tests, not just kernel unit tests.</span><span lang="zh">下游 accuracy 和 throughput 门禁。 这些是 model-system tests， 不只是 kernel unit tests。</span></td>
+                <td>labels / schedule / main</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="refs" lang="en">Refs: <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh#L14-L24">aiter_test.sh:14-24</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh#L73-L78">aiter_test.sh:73-78</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/triton-test.yaml#L193">triton-test.yaml:193</a>.</p>
+          <p class="refs" lang="zh">引用：<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh#L14-L24">aiter_test.sh:14-24</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh#L73-L78">aiter_test.sh:73-78</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/triton-test.yaml#L193">triton-test.yaml:193</a>。</p>
+        </section>
+
+        <section id="kernels">
+          <h2><span lang="en">Kernel Surface</span><span lang="zh">Kernel 覆盖面</span></h2>
+          <p lang="en">The weighted shard list is the best quick proxy for what AITER treats as expensive and important. The heaviest top-level files are fused QK norm + cache quant, MLA, batch prefill, MHA, PA, rope, and top-k.</p>
+          <p lang="zh">weighted shard list 是判断 AITER 认为哪些测试“又贵又重要”的最快入口。 top-level 最重的是 fused QK norm + cache quant、MLA、batch prefill、MHA、PA、rope、top-k。</p>
+
+          <div class="chips" aria-label="Kernel families">
+            <span class="chip">GEMM a16w16</span>
+            <span class="chip">GEMM a8w8</span>
+            <span class="chip">GEMM blockscale</span>
+            <span class="chip">Batched GEMM</span>
+            <span class="chip">MoE</span>
+            <span class="chip">MoE 2-stage</span>
+            <span class="chip">MLA / persistent / sparse</span>
+            <span class="chip">MHA / varlen</span>
+            <span class="chip">Paged Attention</span>
+            <span class="chip">Batch Prefill</span>
+            <span class="chip">RoPE</span>
+            <span class="chip">TopK</span>
+            <span class="chip">KV cache</span>
+            <span class="chip">Quant</span>
+            <span class="chip">RMSNorm / LayerNorm</span>
+            <span class="chip">Multi-GPU collectives</span>
+          </div>
+
+          <figure class="plate" aria-label="Kernel weights plate">
+            <div class="plate-head"><span>Plate III</span><span>Weighted kernel attention</span></div>
+            <svg viewBox="0 0 980 460" role="img" aria-labelledby="p3-title p3-desc">
+              <title id="p3-title">Kernel test weight bars</title>
+              <desc id="p3-desc">A bar chart of representative long-running AITER and Triton tests.</desc>
+              <text x="34" y="38" class="diag-title">AITER top-level weights</text>
+              <g transform="translate(34,66)">
+                <text x="0" y="18" class="diag-small">fused qk norm mrope cache quant</text><rect x="280" y="4" width="520" height="18" fill="#126b68" />
+                <text x="0" y="54" class="diag-small">MLA</text><rect x="280" y="40" width="462" height="18" fill="#126b68" />
+                <text x="0" y="90" class="diag-small">MLA persistent</text><rect x="280" y="76" width="423" height="18" fill="#126b68" />
+                <text x="0" y="126" class="diag-small">batch prefill</text><rect x="280" y="112" width="365" height="18" fill="#126b68" />
+                <text x="0" y="162" class="diag-small">MHA / PA / varlen</text><rect x="280" y="148" width="350" height="18" fill="#126b68" />
+                <text x="0" y="198" class="diag-small">rope + topk</text><rect x="280" y="184" width="220" height="18" fill="#126b68" />
+              </g>
+              <text x="34" y="308" class="diag-title">Triton weights</text>
+              <g transform="translate(34,334)">
+                <text x="0" y="18" class="diag-small">pa decode gluon</text><rect x="280" y="4" width="400" height="18" fill="#315d92" />
+                <text x="0" y="54" class="diag-small">causal conv1d</text><rect x="280" y="40" width="382" height="18" fill="#315d92" />
+                <text x="0" y="90" class="diag-small">attention/mha_v3</text><rect x="280" y="76" width="322" height="18" fill="#315d92" />
+              </g>
+            </svg>
+            <p class="caption" lang="en">The shard weights are not correctness thresholds, but they expose where CI time is spent.</p>
+            <p class="caption" lang="zh">shard weight 不是 correctness 阈值， 但它暴露了 CI 时间主要花在哪里。</p>
+          </figure>
+
+          <p class="refs" lang="en">Refs: <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh#L52-L56">split_tests.sh:52-56</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh#L68-L87">split_tests.sh:68-87</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh#L147-L169">split_tests.sh:147-169</a>.</p>
+          <p class="refs" lang="zh">引用：<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh#L52-L56">split_tests.sh:52-56</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh#L68-L87">split_tests.sh:68-87</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh#L147-L169">split_tests.sh:147-169</a>。</p>
+        </section>
+
+        <section id="shapes">
+          <h2><span lang="en">Shape Pressure Points</span><span lang="zh">Shape 压力点</span></h2>
+          <p lang="en">AITER's shapes are not random unit-test shapes. They cluster around decode-side skinny GEMM, large-model projection GEMM, MoE token extremes, long-context MLA, and attention boundary lengths.</p>
+          <p lang="zh">AITER 的 shape 不是随便挑的 unit-test shape。 它们集中在 decode-side skinny GEMM、大模型 projection GEMM、MoE token 极值、long-context MLA、以及 attention 边界长度。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Kernel</th>
+                <th>Shapes to notice</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GEMM a8w8</td>
+                <td><span lang="en"><code>M=[1..16384]</code> over projection forms such as <code>N=1280,K=8192</code> and <code>N=8192,K=1024</code>; hipmm preshuffle includes <code>7424 x 8192</code> cases.</span><span lang="zh">projection 形态覆盖 <code>M=[1..16384]</code>， 例如 <code>N=1280,K=8192</code> 和 <code>N=8192,K=1024</code>；hipmm preshuffle 还有 <code>7424 x 8192</code> cases。</span></td>
+              </tr>
+              <tr>
+                <td>GEMM blockscale</td>
+                <td><span lang="en"><code>M=1..10240</code>, default <code>N=24576,K=1536</code>, with <code>ck_preshuffle</code> true and false.</span><span lang="zh"><code>M=1..10240</code>， 默认 <code>N=24576,K=1536</code>， 并且 <code>ck_preshuffle</code> true / false 都跑。</span></td>
+              </tr>
+              <tr>
+                <td>MLA</td>
+                <td><span lang="en">Default contexts <code>21,64,256,512,1200,3200,5200,8192</code>; CI adds <code>49152</code>, <code>98304</code>, <code>10000/100000</code>, and boundary <code>1,21,63,64,65,256</code>.</span><span lang="zh">默认 context 是 <code>21,64,256,512,1200,3200,5200,8192</code>；CI 额外加 <code>49152</code>、<code>98304</code>、<code>10000/100000</code>， 以及边界 <code>1,21,63,64,65,256</code>。</span></td>
+              </tr>
+              <tr>
+                <td>MoE</td>
+                <td><span lang="en"><code>moe_2stage</code> uses <code>hidden=7168</code>, <code>inter=256</code>, <code>expert=257</code>, <code>topk=9</code>, and tokens up to <code>163840</code>. Blockscale uses <code>expert=256</code>, <code>topk=8</code>.</span><span lang="zh"><code>moe_2stage</code> 使用 <code>hidden=7168</code>、<code>inter=256</code>、<code>expert=257</code>、<code>topk=9</code>， tokens 到 <code>163840</code>。 blockscale 使用 <code>expert=256</code>、<code>topk=8</code>。</span></td>
+              </tr>
+              <tr>
+                <td>PA / TopK</td>
+                <td><span lang="en">Paged attention contexts include <code>7,26,57,66,109,128,257,282,4097</code>; top-k per row contexts go to <code>128000</code>, with <code>top_k=512/1024/2048</code>.</span><span lang="zh">Paged attention context 包括 <code>7,26,57,66,109,128,257,282,4097</code>；top-k per row context 到 <code>128000</code>，<code>top_k=512/1024/2048</code>。</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <figure class="plate" aria-label="Shape pressure plate">
+            <div class="plate-head"><span>Plate IV</span><span>Shape pressure lanes</span></div>
+            <svg viewBox="0 0 980 390" role="img" aria-labelledby="p4-title p4-desc">
+              <title id="p4-title">Shape pressure lanes</title>
+              <desc id="p4-desc">Four lanes showing the shape ranges emphasized by AITER tests.</desc>
+              <line x1="80" y1="76" x2="900" y2="76" class="thin" />
+              <line x1="80" y1="154" x2="900" y2="154" class="thin" />
+              <line x1="80" y1="232" x2="900" y2="232" class="thin" />
+              <line x1="80" y1="310" x2="900" y2="310" class="thin" />
+              <text x="32" y="82" class="diag-small">GEMM</text>
+              <text x="32" y="160" class="diag-small">MLA</text>
+              <text x="32" y="238" class="diag-small">MoE</text>
+              <text x="32" y="316" class="diag-small">TopK</text>
+              <circle cx="116" cy="76" r="10" fill="#a24036" stroke="#242018" stroke-width="2" />
+              <circle cx="210" cy="76" r="10" fill="#a24036" stroke="#242018" stroke-width="2" />
+              <circle cx="410" cy="76" r="10" fill="#a24036" stroke="#242018" stroke-width="2" />
+              <circle cx="736" cy="76" r="10" fill="#a24036" stroke="#242018" stroke-width="2" />
+              <text x="98" y="48" class="diag-small">M=1</text>
+              <text x="184" y="48" class="diag-small">M=32</text>
+              <text x="382" y="48" class="diag-small">M=1024</text>
+              <text x="700" y="48" class="diag-small">M=16384</text>
+              <rect x="112" y="140" width="20" height="28" fill="#126b68" stroke="#242018" stroke-width="2" />
+              <rect x="214" y="130" width="20" height="38" fill="#126b68" stroke="#242018" stroke-width="2" />
+              <rect x="420" y="114" width="20" height="54" fill="#126b68" stroke="#242018" stroke-width="2" />
+              <rect x="662" y="88" width="20" height="80" fill="#126b68" stroke="#242018" stroke-width="2" />
+              <rect x="820" y="70" width="20" height="98" fill="#126b68" stroke="#242018" stroke-width="2" />
+              <text x="642" y="190" class="diag-small">49k / 98k / 100k ctx</text>
+              <circle cx="110" cy="232" r="9" fill="#315d92" stroke="#242018" stroke-width="2" />
+              <circle cx="178" cy="232" r="9" fill="#315d92" stroke="#242018" stroke-width="2" />
+              <circle cx="260" cy="232" r="9" fill="#315d92" stroke="#242018" stroke-width="2" />
+              <circle cx="620" cy="232" r="12" fill="#315d92" stroke="#242018" stroke-width="2" />
+              <circle cx="872" cy="232" r="16" fill="#315d92" stroke="#242018" stroke-width="2" />
+              <text x="812" y="262" class="diag-small">163840 tokens</text>
+              <rect x="98" y="298" width="72" height="24" fill="#4e744c" stroke="#242018" stroke-width="2" />
+              <rect x="250" y="298" width="86" height="24" fill="#4e744c" stroke="#242018" stroke-width="2" />
+              <rect x="506" y="298" width="112" height="24" fill="#4e744c" stroke="#242018" stroke-width="2" />
+              <rect x="742" y="298" width="130" height="24" fill="#4e744c" stroke="#242018" stroke-width="2" />
+              <text x="740" y="350" class="diag-small">context 128000, k 2048</text>
+            </svg>
+            <p class="caption" lang="en">The important shape fact is not only maximum size; it is the mix of tiny decode cases, model-like projections, and long-context tails.</p>
+            <p class="caption" lang="zh">重要的不只是最大 shape， 而是 tiny decode case、model-like projection 和 long-context tail 混在一起。</p>
+          </figure>
+
+          <p class="refs" lang="en">Refs: <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_gemm_a8w8.py#L505-L546">test_gemm_a8w8.py:505-546</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_gemm_a8w8_blockscale.py#L260-L283">test_gemm_a8w8_blockscale.py:260-283</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_mla.py#L756-L795">test_mla.py:756-795</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh#L106-L114">aiter_test.sh:106-114</a>.</p>
+          <p class="refs" lang="zh">引用：<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_gemm_a8w8.py#L505-L546">test_gemm_a8w8.py:505-546</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_gemm_a8w8_blockscale.py#L260-L283">test_gemm_a8w8_blockscale.py:260-283</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_mla.py#L756-L795">test_mla.py:756-795</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh#L106-L114">aiter_test.sh:106-114</a>。</p>
+        </section>
+
+        <section id="downstream">
+          <h2><span lang="en">Downstream Gates Are Part Of The Surface</span><span lang="zh">下游门禁也是测试面的一部分</span></h2>
+          <p lang="en">The model gates show what AITER is optimizing for at system level. vLLM uses fixed latency inputs; Kimi performance sweeps concurrency; Kimi accuracy gates GSM8K; ATOM carries frontier-model smoke. These tests do not identify a single bad kernel, but they catch integration drift that unit tests can miss.</p>
+          <p lang="zh">model gate 暴露的是 AITER 在系统层面想守住什么。 vLLM 用固定 latency input；Kimi performance sweep concurrency；Kimi accuracy gate GSM8K；ATOM 承担 frontier-model smoke。 这些测试不一定能定位某个坏 kernel， 但能抓住 unit test 容易漏掉的集成漂移。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Model / shape</th>
+                <th>Signal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>vLLM benchmark</td>
+                <td>GPT-OSS-120B fp8 KV, DeepSeek-R1-0528, Kimi-K2.5; <code>batch=123,input=456,output=78,tp=8</code></td>
+                <td><span lang="en">Latency smoke under 8-GPU serving.</span><span lang="zh">8-GPU serving 下的 latency smoke。</span></td>
+              </tr>
+              <tr>
+                <td>Kimi perf</td>
+                <td><code>ISL=1024</code>, <code>OSL=1024</code>, concurrency <code>4/8/16/32/64</code></td>
+                <td><span lang="en">Throughput floor at high concurrency.</span><span lang="zh">高 concurrency 下的吞吐下限。</span></td>
+              </tr>
+              <tr>
+                <td>Kimi accuracy</td>
+                <td>Kimi-K2.5 MXFP4, GSM8K 3-shot</td>
+                <td><span lang="en">Flexible-extract threshold <code>0.92</code>.</span><span lang="zh">flexible-extract 阈值 <code>0.92</code>。</span></td>
+              </tr>
+              <tr>
+                <td>SGLang / ATOM</td>
+                <td>DeepSeek-R1-MXFP4, Qwen 3.5, GPT-OSS-120B, Kimi-K2.5</td>
+                <td><span lang="en">Backend-specific integration and accuracy smoke.</span><span lang="zh">backend-specific 集成和 accuracy smoke。</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="refs" lang="en">Refs: <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/vllm_benchmark.yaml#L145-L155">vllm_benchmark.yaml:145-155</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/vllm_benchmark.yaml#L261">vllm_benchmark.yaml:261</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/kimi_vllm_perf.sh#L10-L15">kimi_vllm_perf.sh:10-15</a>, <a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/kimi-downstream.yaml#L73-L74">kimi-downstream.yaml:73-74</a>.</p>
+          <p class="refs" lang="zh">引用：<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/vllm_benchmark.yaml#L145-L155">vllm_benchmark.yaml:145-155</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/vllm_benchmark.yaml#L261">vllm_benchmark.yaml:261</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/kimi_vllm_perf.sh#L10-L15">kimi_vllm_perf.sh:10-15</a>、<a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows/kimi-downstream.yaml#L73-L74">kimi-downstream.yaml:73-74</a>。</p>
+        </section>
+
+        <section id="mirror">
+          <h2><span lang="en">What We Should Mirror First</span><span lang="zh">我们优先对标什么</span></h2>
+          <p lang="en">For FlyDSL or any AMD kernel stack trying to compare against AITER, the practical coverage target is not "run every file." The target is to match the pressure points that AITER protects.</p>
+          <p lang="zh">如果 FlyDSL 或其他 AMD kernel stack 要对标 AITER， 实际目标不是“把每个文件都跑一遍”。 目标是先覆盖 AITER 真正保护的压力点。</p>
+
+          <div class="rule">
+            <div class="tag">01 GEMM</div>
+            <p lang="en">Cover skinny decode GEMM around <code>M=1..16</code>, then projection-like <code>M=1..16k</code> with model N/K pairs.</p>
+            <p lang="zh">先覆盖 <code>M=1..16</code> 的 skinny decode GEMM， 再覆盖 <code>M=1..16k</code> 的 projection-like model N/K pairs。</p>
+          </div>
+          <div class="rule">
+            <div class="tag">02 MoE</div>
+            <p lang="en">Include token extremes up to <code>163840</code>, top-k routing, blockscale variants, and the large-model hidden dimension <code>7168</code>.</p>
+            <p lang="zh">包括 tokens 到 <code>163840</code> 的极端值、top-k routing、blockscale variants， 以及大模型常见的 <code>hidden=7168</code>。</p>
+          </div>
+          <div class="rule">
+            <div class="tag">03 Attention</div>
+            <p lang="en">Keep MLA long contexts <code>49k/98k/100k</code>, boundary contexts around powers of two, and PA's small odd contexts.</p>
+            <p lang="zh">保留 MLA long context <code>49k/98k/100k</code>、power-of-two 附近的边界 context， 以及 PA 的小型奇数 context。</p>
+          </div>
+          <div class="rule">
+            <div class="tag">04 System</div>
+            <p lang="en">Use one TP8 downstream smoke for a latency path and one accuracy path; otherwise kernel-only CI can look healthy while serving integration drifts.</p>
+            <p lang="zh">至少保留一个 TP8 downstream latency smoke 和一个 accuracy path；否则 kernel-only CI 可能看起来健康， 但 serving integration 已经漂移。</p>
+          </div>
+        </section>
+
+        <section id="sources">
+          <h2><span lang="en">Source References</span><span lang="zh">源码引用</span></h2>
+          <p lang="en">All source links below are pinned to the audited commit.</p>
+          <p lang="zh">下面的源码链接都固定到本次审计使用的 commit。</p>
+          <ul>
+            <li><a href="https://github.com/ROCm/aiter/tree/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/workflows">current workflow directory</a></li>
+            <li><a href="https://github.com/ROCm/aiter/actions/workflows/aiter-benchmark.yaml">Aiter Benchmark Actions history</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/aiter_test.sh">.github/scripts/aiter_test.sh</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/.github/scripts/split_tests.sh">.github/scripts/split_tests.sh</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_gemm_a8w8.py">op_tests/test_gemm_a8w8.py</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_gemm_a8w8_blockscale.py">op_tests/test_gemm_a8w8_blockscale.py</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_mla.py">op_tests/test_mla.py</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_moe_2stage.py">op_tests/test_moe_2stage.py</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_pa.py">op_tests/test_pa.py</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/test_topk_per_row.py">op_tests/test_topk_per_row.py</a></li>
+            <li><a href="https://github.com/ROCm/aiter/blob/ff61bb39977907f5e2071894ab20bf6b2a2a9e77/op_tests/op_benchmarks/triton/model_benchmarking_tool/model_shapes.json">model_shapes.json</a></li>
+          </ul>
+        </section>
+      </article>
+
+      <footer class="colophon">
+        <p lang="en">Compiled for jinnpan.com as a categorized code reading. Source snapshot: ROCm/AITER main @ ff61bb39977907f5e2071894ab20bf6b2a2a9e77.</p>
+        <p lang="zh">作为 jinnpan.com 的 code reading 发布。 源码快照： ROCm/AITER main @ ff61bb39977907f5e2071894ab20bf6b2a2a9e77。</p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+  (function() {
+    var KEY = 'aiter-ci-kernel-audit-source-lang';
+    var body = document.body;
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) {}
+    if (stored === 'en' || stored === 'zh') {
+      body.setAttribute('data-lang', stored);
+    } else {
+      var nav = (navigator.language || 'en').toLowerCase();
+      body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+    }
+    document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var v = btn.getAttribute('data-set');
+        body.setAttribute('data-lang', v);
+        try { localStorage.setItem(KEY, v); } catch (e) {}
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
