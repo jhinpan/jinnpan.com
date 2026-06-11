@@ -315,7 +315,11 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
     <li><a href="#example"><span lang="en">The 16×16 example</span><span lang="zh">16×16 的例子</span></a></li>
     <li><a href="#toolbox"><span lang="en">The four operators</span><span lang="zh">四个算子</span></a></li>
     <li><a href="#completeness"><span lang="en">Every layout is linear</span><span lang="zh">所有布局都是线性的</span></a></li>
+    <li><a href="#zoo"><span lang="en">The layout zoo</span><span lang="zh">布局动物园</span></a></li>
     <li><a href="#swizzle"><span lang="en">Optimal swizzling</span><span lang="zh">最优 swizzling</span></a></li>
+    <li><a href="#shuffle"><span lang="en">Warp shuffle &amp; gather</span><span lang="zh">warp shuffle 与 gather</span></a></li>
+    <li><a href="#simd"><span lang="en">SIMD primitives</span><span lang="zh">SIMD 原语</span></a></li>
+    <li><a href="#mixed"><span lang="en">Mixed precision</span><span lang="zh">混合精度</span></a></li>
     <li><a href="#results"><span lang="en">Results &amp; bug fixes</span><span lang="zh">结果与修 bug</span></a></li>
     <div class="divider"></div>
     <li><a href="#for-amd"><span lang="en">For our AMD work</span><span lang="zh">对我们 AMD 的意义</span></a></li>
@@ -820,17 +824,108 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 </div>
 </section>
 
+<!-- ====================================================== ZOO -->
+<section id="zoo">
+<h2 lang="en"><span class="num">§ 06 · The census and the engine</span>The layout zoo</h2>
+<h2 lang="zh"><span class="num">§ 06 · 点名与引擎</span>布局动物园</h2>
+
+<p lang="en">Before the flagship algorithms, the paper does its bookkeeping: it inventories every layout Triton already had (its Figure 3) and shows the whole zoo collapses into two families. <strong>Distributed</strong> layouts spread a tensor across registers, threads and warps — Blocked, Sliced, MMA and MMAInput all live here. <strong>Memory</strong> layouts store it in a programmable memory and come in two flavors, Unswizzled and Swizzled. The point of the census is completeness: name them all, then prove each is one matrix over F₂, so nothing in the compiler falls outside the abstraction.</p>
+<p lang="zh">在旗舰算法之前， 论文先做记账： 它把 Triton 已有的每一种布局都点了一遍（它的 Figure 3）， 并说明整个动物园坍缩成两个家族。 <strong>分布式</strong> 布局把张量铺在寄存器、 线程和 warp 上 —— Blocked、 Sliced、 MMA、 MMAInput 都住在这里。 <strong>内存</strong> 布局把它存进可编程内存， 分两种： Unswizzled 和 Swizzled。 这次点名的意义在于完备： 先把它们全叫出来， 再证明每一个都是 F₂ 上的一个矩阵， 这样编译器里就没有任何东西落在抽象之外。</p>
+
+<p lang="en">But a static census isn't enough — a real kernel threads a tensor through dozens of ops, each of which may want a different layout. The <em>layout engine</em> is the part that decides who wins. It starts from <strong>anchor layouts</strong>: ops with a hard requirement — <code>tt.dot</code> wants its operands in an MMA layout, a global load or store wants Blocked — pin a layout in place. From those anchors it runs a forward pass along the use chains, carrying each layout to its consumers; where two requirements collide it inserts a <code>convert_layout</code>; then a backward pass rematerializes along the definition chain, so when recomputing a value is cheaper than converting it, the compiler does that instead.</p>
+<p lang="zh">但静态点名还不够 —— 一个真实 kernel 会把一个张量穿过几十个 op， 每个都可能想要不同的布局。 <em>布局引擎</em> 就是决定谁说了算的那一部分。 它从 <strong>anchor 布局</strong> 出发： 有硬性要求的 op —— <code>tt.dot</code> 要操作数是 MMA 布局， 全局 load 或 store 要 Blocked —— 把一个布局钉在原地。 从这些 anchor 出发， 它沿 use chain 做一次前向传播， 把每个布局带给它的消费者； 两个要求撞车的地方就插一个 <code>convert_layout</code>； 然后沿 definition chain 做一次后向传播 rematerialize， 当重算一个值比转换它更便宜时， 编译器就改成重算。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VI</span>
+    <span class="pname" lang="en">The Triton layout zoo, and how a layout propagates</span><span class="pname" lang="zh">Triton 布局动物园， 以及布局如何传播</span>
+    <span class="pscale">Fig 3 · §4.4</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="l6-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7b9085"/></marker>
+  </defs>
+
+  <line x1="490" y1="20" x2="490" y2="318" stroke="#24382c" stroke-width="1" stroke-dasharray="3 4"/>
+
+  <!-- LEFT: taxonomy -->
+  <text class="diag-text label" x="24" y="30">THE TRITON LAYOUT ZOO · FIG 3</text>
+
+  <rect class="zone" x="130" y="44" width="220" height="34" rx="3"/>
+  <text class="diag-text small" x="240" y="66" text-anchor="middle">all tensor layouts</text>
+
+  <rect class="zone fill-cyn" x="28" y="118" width="196" height="96" rx="3"/>
+  <text class="diag-text cyn" x="44" y="142" style="font-size:17px">Distributed</text>
+  <text class="diag-text tiny" x="44" y="160">spread on reg / thr / warp</text>
+  <text class="diag-text small" x="44" y="184">· Blocked   · Sliced</text>
+  <text class="diag-text small" x="44" y="204">· MMA   · MMAInput</text>
+
+  <rect class="zone fill-mag" x="244" y="118" width="206" height="96" rx="3"/>
+  <text class="diag-text mag" x="260" y="142" style="font-size:17px">Memory</text>
+  <text class="diag-text tiny" x="260" y="160">in shared / tensor mem</text>
+  <text class="diag-text small" x="260" y="184">· Unswizzled</text>
+  <text class="diag-text small" x="260" y="204">· Swizzled  (a shear)</text>
+
+  <path class="edge" d="M210,78 L150,116" marker-end="url(#l6-dim)"/>
+  <path class="edge" d="M286,78 L330,116" marker-end="url(#l6-dim)"/>
+
+  <rect class="zone fill-lim" x="28" y="240" width="422" height="72" rx="3"/>
+  <text class="diag-text lim mono tiny" x="44" y="262">EVERY BOX = ONE BINARY MATRIX OVER F₂</text>
+  <text class="diag-text small" x="44" y="284">distributed → def 4.10 (permutation + zero cols)</text>
+  <text class="diag-text small" x="44" y="302">memory → def 4.14 (invertible, 1–2 ones per col)</text>
+
+  <!-- RIGHT: propagation -->
+  <text class="diag-text label" x="510" y="30">HOW A LAYOUT PROPAGATES · §4.4</text>
+
+  <rect class="zone amb" x="516" y="44" width="438" height="46" rx="3"/>
+  <text class="diag-text amb mono tiny" x="530" y="64">1 · ANCHOR</text>
+  <text class="diag-text small" x="530" y="82">tt.dot pins MMA · global load / store pins Blocked</text>
+
+  <rect class="zone lim" x="516" y="116" width="438" height="46" rx="3"/>
+  <text class="diag-text lim mono tiny" x="530" y="136">2 · FORWARD · along use chains</text>
+  <text class="diag-text small" x="530" y="154">carry each layout down to its consumer ops</text>
+
+  <rect class="zone mag" x="516" y="188" width="438" height="46" rx="3"/>
+  <text class="diag-text mag mono tiny" x="530" y="208">3 · CONFLICT · at multi-input ops</text>
+  <text class="diag-text small" x="530" y="226">reconcile candidates — insert convert_layout</text>
+
+  <rect class="zone cyn" x="516" y="260" width="438" height="46" rx="3"/>
+  <text class="diag-text cyn mono tiny" x="530" y="280">4 · BACKWARD · rematerialize on def chain</text>
+  <text class="diag-text small" x="530" y="298">recompute when that beats converting</text>
+
+  <path class="edge" d="M735,90 L735,114" marker-end="url(#l6-dim)"/>
+  <path class="edge" d="M735,162 L735,186" marker-end="url(#l6-dim)"/>
+  <path class="edge" d="M735,234 L735,258" marker-end="url(#l6-dim)"/>
+
+  <text class="diag-text small" x="24" y="344">shape ops (trans / reshape / join / split / expand_dims / broadcast) stay in-family ⇒ near no-op; a transpose is just M′ = T·M — zero bytes moved.</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">The legacy Triton layouts (Fig 3) fall into two families — Distributed (Blocked, Sliced, MMA, MMAInput) and Memory (Unswizzled, Swizzled) — and linear layouts prove every one is a single matrix over F₂. The engine on the right is what makes that pay: anchors pin layouts at hard-requirement ops, a forward pass carries them along use chains, conflicts insert a <code>convert_layout</code>, and a backward pass rematerializes when recomputing beats converting. Because shape ops stay in-family, a transpose is just <code>M′ = T·M</code> — no data moved.</div>
+  <div class="caption" lang="zh">Triton 的旧布局（Fig 3）落进两个家族 —— 分布式（Blocked、 Sliced、 MMA、 MMAInput）和内存（Unswizzled、 Swizzled）—— 而线性布局证明每一个都是 F₂ 上的单个矩阵。 右边的引擎让这件事兑现： anchor 在有硬性要求的 op 上钉住布局， 前向传播沿 use chain 把它们带下去， 冲突处插一个 <code>convert_layout</code>， 后向传播在重算比转换更划算时 rematerialize。 因为形状 op 留在同族内， 一次转置就只是 <code>M′ = T·M</code> —— 不搬数据。</div>
+</div>
+
+<p lang="en">The reason the engine works is closure: every Triton shape op — <code>tt.trans</code>, <code>tt.reshape</code>, <code>tt.join</code>, <code>tt.split</code>, <code>tt.expand_dims</code>, <code>tt.broadcast</code> — maps a distributed layout to another distributed layout in the same family, so the op can usually become a near no-op instead of forcing a data shuffle. A transpose is the cleanest case: it's just another linear map <code>T</code>, so the transposed tensor's layout is <code>M′ = T·M</code>, computed at compile time with zero bytes moved. The old per-layout system couldn't even <em>represent</em> the transpose of an MMA layout, so it had to fall back to a real conversion; linear layouts get it for free.</p>
+<p lang="zh">引擎能转起来， 靠的是闭包性： 每一个 Triton 形状 op —— <code>tt.trans</code>、 <code>tt.reshape</code>、 <code>tt.join</code>、 <code>tt.split</code>、 <code>tt.expand_dims</code>、 <code>tt.broadcast</code> —— 都把一个分布式布局映射到同族的另一个分布式布局， 所以这个 op 通常能变成一个近乎 no-op， 而不必强行 shuffle 数据。 转置是最干净的例子： 它本身就是另一个线性映射 <code>T</code>， 于是转置后张量的布局就是 <code>M′ = T·M</code>， 在编译期算出来， 零字节搬运。 旧的逐布局系统连一个 MMA 布局的转置都 <em>表示</em> 不出来， 只能退回到一次真正的转换； 线性布局白拿。</p>
+
+<div class="callout cyan">
+  <span class="ctag" lang="en">Why this matters for porting</span><span class="ctag" lang="zh">为什么这对移植重要</span>
+  <p lang="en">A backward-rematerialization pass that can compare layouts <em>across</em> families is exactly what an NV→AMD agent needs. It can ask "is this <code>mma</code> layout, after a transpose and a reshape, equal to the <code>mfma</code> layout the AMD path wants?" as one matrix equality, and skip the conversion when the answer is yes. The old engine couldn't even pose that question — it had no way to compare a Blocked layout with a Sliced one, let alone an <code>mma</code> with an <code>mfma</code>.</p>
+  <p lang="zh">一个能 <em>跨</em> 家族比较布局的后向 rematerialize pass， 正是 NV→AMD agent 需要的。 它可以把"这个 <code>mma</code> 布局经过一次转置和一次 reshape 之后， 等不等于 AMD 路径想要的 <code>mfma</code> 布局？"问成一次矩阵相等判断， 答案为是时就跳过转换。 旧引擎连这个问题都提不出来 —— 它没办法把一个 Blocked 布局和一个 Sliced 布局比较， 更别说拿 <code>mma</code> 和 <code>mfma</code> 比了。</p>
+</div>
+</section>
+
 <!-- ====================================================== SWIZZLE -->
 <section id="swizzle">
-<h2 lang="en"><span class="num">§ 06 · The flagship algorithm</span>Optimal swizzling</h2>
-<h2 lang="zh"><span class="num">§ 06 · 旗舰算法</span>最优 swizzling</h2>
+<h2 lang="en"><span class="num">§ 07 · The flagship algorithm</span>Optimal swizzling</h2>
+<h2 lang="zh"><span class="num">§ 07 · 旗舰算法</span>最优 swizzling</h2>
 
 <p lang="en">Bank conflicts are the oldest tax in GPU shared memory: when two threads in a warp hit the same bank on different addresses, the access serializes. For decades the fix has been fixed swizzle patterns lifted from a hardware manual and a lot of trial and error. The paper's most important contribution turns this into an algorithm that derives the <em>optimal</em> swizzle for an arbitrary layout — provably maximizing vectorization while minimizing conflicts.</p>
 <p lang="zh">Bank 冲突是 GPU 共享内存里最古老的税： 当一个 warp 里的两个线程在不同地址上撞到同一个 bank， 访问就被串行化。 几十年来的解法是从硬件手册里抄固定的 swizzle 模式， 外加大量试错。 论文最重要的贡献， 是把这件事变成一个能为任意布局推导 <em>最优</em> swizzle 的算法 —— 可证明地最大化向量化、 同时最小化冲突。</p>
 
 <div class="plate wide">
   <div class="plate-meta">
-    <span class="pnum">Plate VI</span>
+    <span class="pnum">Plate VII</span>
     <span class="pname" lang="en">Bank conflict as a subspace intersection</span><span class="pname" lang="zh">把 bank 冲突看成子空间交集</span>
     <span class="pscale">after Fig. 5</span>
   </div>
@@ -902,17 +997,246 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
   <div class="caption" lang="zh">把共享内存地址建模成 <code>Vec × Bank × Seg</code>。 冲突恰好发生在两个线程在不同段上落到同一个 bank 时 —— 也就是 <code>span(Seg) ∩ span(Thr) ≠ {0}</code>。 算法从线程访问子空间的 <em>补空间</em> 里构造段的基， 让不同的段映射到不同的 bank； 只有当安全空间耗尽时才借用冲突空间里的向量， 给出一个可证明冲突最小的 swizzle。 下方： 16 个元素的读取拆成四次无冲突事务。</div>
 </div>
 
-<p lang="en">The same machinery powers warp-shuffle generation. When the conversion matrix's warp block is the identity (no inter-warp movement) and its register block can be made to vectorize, the data exchange can ride <code>shfl.sync</code> instead of bouncing through shared memory. The algorithm constructs a basis <code>G</code> from the source and target thread indices whose vectors <em>are</em> the XOR shuffle patterns the hardware wants, then tiles the exchange into a minimal number of rounds. Previously this was hand-written PTX; now it falls out of the linear-algebra crank, and the layout-conversion micro-benchmark shows up to 3.93× over shared-memory-always Triton, while gather hits 14.20×.</p>
-<p lang="zh">同一套机器也驱动 warp-shuffle 生成。 当转换矩阵的 warp 块是单位阵（没有 warp 间搬运）、 而它的寄存器块能被凑成可向量化时， 数据交换就能骑 <code>shfl.sync</code>， 而不必在共享内存里弹来弹去。 算法从源线程索引和目标线程索引构造一个基 <code>G</code>， 它的向量 <em>就是</em> 硬件想要的 XOR shuffle 模式， 然后把交换 tile 成最少的轮数。 这以前是手写 PTX； 现在它从线性代数的摇柄里掉出来， 布局转换的 micro-benchmark 显示相对"永远走共享内存"的 Triton 最高 3.93×， 而 gather 达到 14.20×。</p>
+<p lang="en">The construction is worth seeing once, because it's the template for the warp-shuffle and gather algorithms that follow. Write the shared-memory layout as a map <code>M : Vec × Bank × Seg → addr</code>: <code>Vec</code> is the vectorized chunk a single instruction moves, <code>Bank</code> indexes the 32 banks, and <code>Seg</code> says which segment — which 128-byte transaction — an address falls in. A conflict is precisely when two threads of a warp want the same bank in different segments, which in subspace terms is <code>span(Seg) ∩ span(A_Thr) ≠ {0}</code>, where <code>A_Thr</code> is the space the warp's thread bits sweep.</p>
+<p lang="zh">这个构造值得看一遍， 因为它是后面 warp-shuffle 和 gather 算法的模板。 把共享内存布局写成一个映射 <code>M : Vec × Bank × Seg → addr</code>： <code>Vec</code> 是单条指令搬运的向量化块， <code>Bank</code> 索引 32 个 bank， <code>Seg</code> 说的是一个地址落在哪个段 —— 哪个 128 字节事务 —— 里。 冲突恰好发生在一个 warp 的两个线程想要不同段里的同一个 bank 时， 用子空间的话说就是 <code>span(Seg) ∩ span(A_Thr) ≠ {0}</code>， 其中 <code>A_Thr</code> 是 warp 的线程位扫过的空间。</p>
+
+<p lang="en">So the algorithm picks the segment basis to dodge that intersection. Let <code>P = span(S_Vec ∪ A_Bank)</code> be the space already spoken for by the vectorization and bank bits; it wants the largest subspace <code>H</code> with <code>P ∩ span(H) = {0}</code>. It builds <code>H</code> from the leftover thread vectors as <code>{e_i ⊕ f_i}</code> — the same XOR-pairing trick that drives warp shuffles — then fills the remaining segment columns from a complement <code>C</code> of <code>P</code>, dipping into the conflicting space only if the safe space runs out. The output is the swizzle matrix <code>M</code>: provably maximal-vectorization and minimal-conflict, for <em>any</em> distributed layout feeding the store, on NVIDIA or AMD alike. Decades of hand-tuned swizzle constants become one subspace solve.</p>
+<p lang="zh">于是算法挑段的基来躲开那个交集。 令 <code>P = span(S_Vec ∪ A_Bank)</code> 是已经被向量化位和 bank 位占住的空间； 它要找最大的子空间 <code>H</code> 使得 <code>P ∩ span(H) = {0}</code>。 它用剩下的线程向量按 <code>{e_i ⊕ f_i}</code> 构造 <code>H</code> —— 跟 warp shuffle 用的是同一个 XOR 配对技巧 —— 再从 <code>P</code> 的补空间 <code>C</code> 里填满剩余的段列， 只有当安全空间耗尽时才借用冲突空间。 输出就是那个 swizzle 矩阵 <code>M</code>： 可证明向量化最大、 冲突最小， 对喂给这次 store 的 <em>任意</em> 分布式布局都成立， NVIDIA 和 AMD 一视同仁。 几十年手调的 swizzle 常数， 变成一次子空间求解。</p>
+</section>
+
+<!-- ====================================================== SHUFFLE -->
+<section id="shuffle">
+<h2 lang="en"><span class="num">§ 08 · The second algorithm</span>Warp shuffle &amp; gather</h2>
+<h2 lang="zh"><span class="num">§ 08 · 第二个算法</span>warp shuffle 与 gather</h2>
+
+<p lang="en">Two more algorithms fall out of the same crank, and the first is warp-shuffle generation. Recall that a layout conversion is <code>C = B⁻¹A</code>, and that <code>C</code> splits by resource into register, thread and warp blocks. When the <em>warp</em> block is the identity — no element needs to cross a warp boundary — the whole exchange can happen inside a warp with <code>shfl.sync</code>, skipping the shared-memory round-trip entirely. The only open questions are which lanes shuffle with which, and in how few rounds.</p>
+<p lang="zh">还有两个算法从同一个摇柄里掉出来， 第一个是 warp-shuffle 生成。 回忆一下， 一次布局转换是 <code>C = B⁻¹A</code>， 而 <code>C</code> 按资源拆成寄存器、 线程、 warp 三块。 当 <em>warp</em> 块是单位阵时 —— 没有元素需要跨 warp 边界 —— 整个交换就能在一个 warp 内用 <code>shfl.sync</code> 完成， 完全跳过往返共享内存。 剩下的问题只有： 哪些 lane 跟哪些 shuffle， 以及用多少轮。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate VIII</span>
+    <span class="pname" lang="en">Warp shuffle in rounds</span><span class="pname" lang="zh">warp shuffle 分轮进行</span>
+    <span class="pscale">§5.4.2 · after Fig. 4</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="l8-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5ef2a0"/></marker>
+  </defs>
+
+  <text class="diag-text label" x="24" y="28">WARP SHUFFLE · §5.4.2 · exchange A → B inside one warp, no shared memory</text>
+
+  <!-- LAYOUT A -->
+  <text class="diag-text small" x="40" y="60">LAYOUT A · contiguous pairs</text>
+  <rect class="bit1" x="40"  y="72" width="46" height="34"/><text class="diag-text lim" x="63"  y="94" text-anchor="middle">0</text>
+  <rect class="bit1" x="40"  y="110" width="46" height="34"/><text class="diag-text lim" x="63"  y="132" text-anchor="middle">1</text>
+  <rect class="zone cyn" x="92"  y="72" width="46" height="34" fill="#0c2429"/><text class="diag-text cyn" x="115" y="94" text-anchor="middle">2</text>
+  <rect class="zone cyn" x="92"  y="110" width="46" height="34" fill="#0c2429"/><text class="diag-text cyn" x="115" y="132" text-anchor="middle">3</text>
+  <rect class="bitx" x="144" y="72" width="46" height="34"/><text class="diag-text mag" x="167" y="94" text-anchor="middle">4</text>
+  <rect class="bitx" x="144" y="110" width="46" height="34"/><text class="diag-text mag" x="167" y="132" text-anchor="middle">5</text>
+  <rect class="zone amb" x="196" y="72" width="46" height="34" fill="#2a2110"/><text class="diag-text amb" x="219" y="94" text-anchor="middle">6</text>
+  <rect class="zone amb" x="196" y="110" width="46" height="34" fill="#2a2110"/><text class="diag-text amb" x="219" y="132" text-anchor="middle">7</text>
+  <text class="diag-text tiny" x="63"  y="160" text-anchor="middle">t0</text>
+  <text class="diag-text tiny" x="115" y="160" text-anchor="middle">t1</text>
+  <text class="diag-text tiny" x="167" y="160" text-anchor="middle">t2</text>
+  <text class="diag-text tiny" x="219" y="160" text-anchor="middle">t3</text>
+
+  <!-- arrow -->
+  <path class="edge lim" d="M248,108 L296,108" marker-end="url(#l8-dim)"/>
+  <text class="diag-text lim tiny" x="272" y="100" text-anchor="middle">shuffle</text>
+  <text class="diag-text tiny" x="272" y="126" text-anchor="middle">s(1)·s(2)</text>
+
+  <!-- LAYOUT B -->
+  <text class="diag-text small" x="300" y="60">LAYOUT B · strided pairs</text>
+  <rect class="bit1" x="300" y="72" width="46" height="34"/><text class="diag-text lim" x="323" y="94" text-anchor="middle">0</text>
+  <rect class="bitx" x="300" y="110" width="46" height="34"/><text class="diag-text mag" x="323" y="132" text-anchor="middle">4</text>
+  <rect class="bit1" x="352" y="72" width="46" height="34"/><text class="diag-text lim" x="375" y="94" text-anchor="middle">1</text>
+  <rect class="bitx" x="352" y="110" width="46" height="34"/><text class="diag-text mag" x="375" y="132" text-anchor="middle">5</text>
+  <rect class="zone cyn" x="404" y="72" width="46" height="34" fill="#0c2429"/><text class="diag-text cyn" x="427" y="94" text-anchor="middle">2</text>
+  <rect class="zone amb" x="404" y="110" width="46" height="34" fill="#2a2110"/><text class="diag-text amb" x="427" y="132" text-anchor="middle">6</text>
+  <rect class="zone cyn" x="456" y="72" width="46" height="34" fill="#0c2429"/><text class="diag-text cyn" x="479" y="94" text-anchor="middle">3</text>
+  <rect class="zone amb" x="456" y="110" width="46" height="34" fill="#2a2110"/><text class="diag-text amb" x="479" y="132" text-anchor="middle">7</text>
+  <text class="diag-text tiny" x="323" y="160" text-anchor="middle">t0</text>
+  <text class="diag-text tiny" x="375" y="160" text-anchor="middle">t1</text>
+  <text class="diag-text tiny" x="427" y="160" text-anchor="middle">t2</text>
+  <text class="diag-text tiny" x="479" y="160" text-anchor="middle">t3</text>
+  <text class="diag-text tiny" x="300" y="184">each lane now holds data from two source lanes ⇒ a shuffle happened</text>
+
+  <!-- construction panel -->
+  <rect class="zone" x="560" y="44" width="396" height="176" rx="3"/>
+  <text class="diag-text label" x="576" y="66">THE CONSTRUCTION</text>
+  <text class="diag-text small mono" x="576" y="92">I = A_Thr ∩ B_Thr   → already agree, skip</text>
+  <text class="diag-text small mono" x="576" y="114">E = A_Thr \ I      F = B_Thr \ I</text>
+  <text class="diag-text small mono mag" x="576" y="136">G = { eᵢ ⊕ fᵢ }   = XOR shuffle masks</text>
+  <text class="diag-text small mono" x="576" y="158">extend V ∪ I ∪ G to a basis R</text>
+  <text class="diag-text small mono" x="576" y="180">⇒ 2^|R| rounds · one element each</text>
+  <text class="diag-text lim small" x="576" y="206">rides shfl.sync — shared mem never touched</text>
+
+  <!-- gather strip -->
+  <rect class="zone fill-cyn" x="24" y="238" width="932" height="74" rx="3"/>
+  <text class="diag-text cyn mono tiny" x="40" y="262">GATHER · §5.5 — the same machinery</text>
+  <text class="diag-text small" x="40" y="284">tl.gather(src, index, axis): if L^axis_Wrp = 0 (the axis never depends on warp id), all data is in-warp →</text>
+  <text class="diag-text small" x="40" y="304">lower to 2^|L^axis_Thr| warp-shuffle rounds instead of a shared-memory scatter. Peaks at 14.20×.</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Converting layout A (each thread owns a contiguous pair) to B (each owns a strided pair) is a pure in-warp shuffle. The algorithm strips the shared part <code>I = A_Thr ∩ B_Thr</code>, pairs the leftovers as <code>G = {eᵢ ⊕ fᵢ}</code> — and each vector of <code>G</code> <em>is</em> the XOR mask a <code>shfl.sync</code> wants — then runs <code>2^|R|</code> rounds, one element per thread per round. <code>tl.gather</code> reuses the exact same machinery whenever its axis data stays inside a warp.</div>
+  <div class="caption" lang="zh">把布局 A（每个线程拥有一个连续对）转成 B（每个拥有一个跨步对）是一次纯 warp 内 shuffle。 算法剥掉共有部分 <code>I = A_Thr ∩ B_Thr</code>， 把剩余配成 <code>G = {eᵢ ⊕ fᵢ}</code> —— 而 <code>G</code> 的每个向量 <em>就是</em> 一次 <code>shfl.sync</code> 想要的 XOR 掩码 —— 然后跑 <code>2^|R|</code> 轮， 每线程每轮一个元素。 <code>tl.gather</code> 只要它的 axis 数据留在一个 warp 内， 就复用一模一样的机器。</div>
+</div>
+
+<p lang="en">The algorithm answers both questions with one basis. Let <code>I = A_Thr ∩ B_Thr</code> be the thread vectors the two layouts already share — those need no exchange. Strip them out to get the leftovers <code>E = A_Thr \ I</code> and <code>F = B_Thr \ I</code>, which have equal size when there's no broadcast, and pair them as <code>G = {e_i ⊕ f_i}</code>. Each vector of <code>G</code> is literally the XOR mask a <code>shfl.sync</code> wants — the bit difference between the lane that holds a value and the lane that needs it. Extend the safe space to a full basis <code>R</code> and you get exactly <code>2^|R|</code> rounds, each thread sending and receiving one vectorized element. What used to be hand-written PTX is now a basis construction, and the conversion micro-benchmark shows up to 3.93× over a Triton that always routes through shared memory.</p>
+<p lang="zh">算法用一个基同时回答这两个问题。 令 <code>I = A_Thr ∩ B_Thr</code> 是两个布局已经共有的线程向量 —— 这些不需要交换。 把它们剥掉得到剩余 <code>E = A_Thr \ I</code> 和 <code>F = B_Thr \ I</code>， 没有广播时两者大小相等， 再配对成 <code>G = {e_i ⊕ f_i}</code>。 <code>G</code> 的每个向量， 字面上就是一次 <code>shfl.sync</code> 想要的 XOR 掩码 —— 持有某个值的 lane 和需要它的 lane 之间的位差。 把安全空间扩成一个完整的基 <code>R</code>， 你就得到恰好 <code>2^|R|</code> 轮， 每个线程每轮发送并接收一个向量化元素。 以前要手写 PTX 的事， 现在是一次构造基； 转换的 micro-benchmark 显示相对"永远走共享内存"的 Triton 最高 3.93×。</p>
+
+<p lang="en">Gather rides the same rails. <code>tl.gather(src, index, axis)</code> pulls elements out of <code>src</code> at positions given by <code>index</code>. If all the data along <code>axis</code> happens to live inside one warp — testable as "the axis rows of the layout matrix have an all-zero warp block," <code>L^axis_Wrp = 0</code> — then no element has to leave its warp, and the gather lowers to <code>2^|L^axis_Thr|</code> warp-shuffle rounds instead of a shared-memory scatter. The compiler decides this by reading a few matrix columns, not by guessing; the micro-benchmark hits 14.20× at its peak, before the round count grows enough to eat the win.</p>
+<p lang="zh">gather 走同一条轨道。 <code>tl.gather(src, index, axis)</code> 按 <code>index</code> 给的位置从 <code>src</code> 里取元素。 如果沿 <code>axis</code> 的所有数据恰好住在一个 warp 内 —— 可以判定为"布局矩阵里 axis 那些行的 warp 块全是零"， 即 <code>L^axis_Wrp = 0</code> —— 那么没有元素需要离开它的 warp， gather 就降级成 <code>2^|L^axis_Thr|</code> 轮 warp shuffle， 而不是一次共享内存的 scatter。 编译器靠读几列矩阵来决定这件事， 而不是靠猜； micro-benchmark 在峰值打到 14.20×， 再往后轮数涨到把收益吃掉为止。</p>
+</section>
+
+<!-- ====================================================== SIMD -->
+<section id="simd">
+<h2 lang="en"><span class="num">§ 09 · Reading the matrix, not the cases</span>SIMD primitives</h2>
+<h2 lang="zh"><span class="num">§ 09 · 读矩阵， 而不是逐情况</span>SIMD 原语</h2>
+
+<p lang="en">Two more code-gen wins come from querying the matrix instead of pattern-matching on layout names. The first is vectorization. To load or store a thread's elements with the widest possible instruction, the compiler needs the longest run of logically-contiguous elements that map to consecutive registers. With a linear layout that's a question about <code>L⁻¹</code>: find the largest <code>u</code> such that <code>L⁻¹_Reg(i) = i</code> for every <code>i ≤ u</code>. One algebraic query, where Triton used a case-by-case heuristic that gave up entirely on shapes like <code>[128, 1]</code> and left vectorization on the table.</p>
+<p lang="zh">还有两个代码生成的收益来自查询矩阵、 而不是对布局名字做模式匹配。 第一个是向量化。 要用尽可能宽的指令 load 或 store 一个线程的元素， 编译器需要找到映射到连续寄存器的、 最长的一段逻辑连续元素。 在线性布局里这是一个关于 <code>L⁻¹</code> 的问题： 找最大的 <code>u</code>， 使得对每个 <code>i ≤ u</code> 都有 <code>L⁻¹_Reg(i) = i</code>。 一次代数查询， 而 Triton 原来用的是逐情况启发式： 它在形如 <code>[128, 1]</code> 的形状上直接放弃， 把向量化的收益白白丢掉。</p>
+
+<p lang="en">The second is selecting a specific hardware instruction. Each SIMD instruction — a vectorized <code>ld.shared.v4</code>, an <code>ldmatrix</code>, an <code>stmatrix</code> — moves data in a fixed little tile <code>T</code>, itself a tiny layout. Theorem 5.1 says the instruction can lower a transfer <code>L</code> if and only if the left-division <code>L /ₗ T</code> exists — i.e. <code>L</code> tiles cleanly into copies of <code>T</code>. For <code>ld.shared.v4</code> the tile is just an identity (data contiguous in both register and memory); for <code>ldmatrix</code> it's a more intricate matrix encoding the eight-threads-cooperate-per-row pattern. So instruction selection is mechanical: try <code>L /ₗ T_ldmatrix</code>, and if it divides, emit <code>ldmatrix</code>; else try <code>L /ₗ T_ld.v4</code>; else fall back to scalar.</p>
+<p lang="zh">第二个是选一条具体的硬件指令。 每条 SIMD 指令 —— 一个向量化的 <code>ld.shared.v4</code>、 一个 <code>ldmatrix</code>、 一个 <code>stmatrix</code> —— 都按一个固定的小 tile <code>T</code> 搬数据， 这个 tile 本身就是一个小布局。 定理 5.1 说： 当且仅当左除 <code>L /ₗ T</code> 存在时， 这条指令能降级一次传输 <code>L</code> —— 也就是 <code>L</code> 能干净地由 <code>T</code> 的副本平铺出来。 对 <code>ld.shared.v4</code>， tile 就是一个单位阵（数据在寄存器和内存里都连续）； 对 <code>ldmatrix</code>， 它是一个更复杂的矩阵， 编码了"每行 8 个线程协作"的模式。 于是选指令是机械的： 试 <code>L /ₗ T_ldmatrix</code>， 能整除就发 <code>ldmatrix</code>； 否则试 <code>L /ₗ T_ld.v4</code>； 再不行就退回标量。</p>
+
+<div class="callout amber">
+  <span class="ctag" lang="en">A free lunch: register permutation</span><span class="ctag" lang="zh">白吃的午餐： 寄存器置换</span>
+  <p lang="en">When the division almost works — the layout is right but the registers are in the wrong order — the compiler doesn't give up. It permutes the registers with a matrix <code>P_Reg</code> and divides <code>P_Reg·L</code> instead. A register permutation moves no data; it just renames <code>r0,r1,r2,r3</code> to <code>r0,r2,r1,r3</code> in the emitted code, so the fix costs essentially nothing and unlocks the wide instruction anyway. That kind of free win only appears once layouts are objects you can do algebra on.</p>
+  <p lang="zh">当除法差一点就成 —— 布局对了， 但寄存器顺序不对 —— 编译器不放弃。 它用一个矩阵 <code>P_Reg</code> 置换寄存器， 改成对 <code>P_Reg·L</code> 做除法。 寄存器置换不搬任何数据； 它只是在生成的代码里把 <code>r0, r1, r2, r3</code> 改名成 <code>r0, r2, r1, r3</code>， 所以这个修正几乎零成本， 却照样解锁了宽指令。 这种白拿的收益， 只有当布局变成你能对它做代数的对象之后才会出现。</p>
+</div>
+</section>
+
+<!-- ====================================================== MIXED -->
+<section id="mixed">
+<h2 lang="en"><span class="num">§ 10 · The same trick, fewer lines</span>Mixed precision</h2>
+<h2 lang="zh"><span class="num">§ 10 · 同样的招式， 更少的代码</span>混合精度</h2>
+
+<p lang="en">Low precision is everywhere in modern models, usually with one operand high-precision and one low — and the newest GPUs (NVIDIA B200, AMD MI350x) support formats like MXFP4 natively, where 32 fp4 elements share a single 8-bit scale. Where the hardware doesn't, Triton emulates: to compute <code>mxfp4 × bf16</code> it upcasts the mxfp4 to bf16, with the eight threads of each MMA row sharing one scale. Expressing that in the old system meant a brand-new layout plus conversions across every distributed and memory layout it touched. In linear layouts it's a shape transform: describe the scale's broadcast with <code>tt.reshape</code> / <code>tt.transpose</code> / <code>tt.broadcast</code>, and the engine derives the right layout to load the scales while a generic shared-memory load handles the rest.</p>
+<p lang="zh">低精度在现代模型里到处都是， 通常一个操作数高精度、 一个低精度 —— 而最新的 GPU（NVIDIA B200、 AMD MI350x）原生支持像 MXFP4 这样的格式， 其中 32 个 fp4 元素共享一个 8 位 scale。 硬件不支持的地方， Triton 就仿真： 要算 <code>mxfp4 × bf16</code>， 它把 mxfp4 upcast 成 bf16， 每个 MMA 行的 8 个线程共享一个 scale。 在旧系统里表达这件事， 意味着一个全新的布局， 外加它碰到的每一个分布式和内存布局之间的转换。 在线性布局里它只是一次形状变换： 用 <code>tt.reshape</code> / <code>tt.transpose</code> / <code>tt.broadcast</code> 描述 scale 的广播， 引擎就推导出加载 scale 的正确布局， 其余的交给一个通用的共享内存 load。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate IX</span>
+    <span class="pname" lang="en">mxfp4 × bf16: a layout problem, five lines of Python</span><span class="pname" lang="zh">mxfp4 × bf16： 一个布局问题， 五行 Python</span>
+    <span class="pscale">§5.2</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 290" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="l9-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5ef2a0"/></marker>
+  </defs>
+
+  <text class="diag-text label" x="24" y="28">MIXED PRECISION · mxfp4 × bf16 · §5.2</text>
+
+  <!-- NAIVE -->
+  <rect class="zone" x="24" y="44" width="290" height="150" rx="3"/>
+  <text class="diag-text small" x="40" y="66">NAIVE LOAD</text>
+  <rect class="zone fill-lim" x="40" y="80" width="250" height="22"/><text class="diag-text tiny" x="48" y="95">bf16 · ld.global.v4 — wide</text>
+  <rect class="zone fill-amb" x="40"  y="116" width="56" height="18"/>
+  <rect class="zone fill-amb" x="104" y="116" width="56" height="18"/>
+  <rect class="zone fill-amb" x="168" y="116" width="56" height="18"/>
+  <rect class="zone fill-amb" x="232" y="116" width="56" height="18"/>
+  <text class="diag-text tiny" x="48" y="152">mxfp4 · 2 regs/row → can't vectorize</text>
+  <text class="diag-text amb tiny" x="48" y="174">wgmma stalls on the narrow stream</text>
+
+  <!-- arrow -->
+  <path class="edge lim" d="M320,118 L372,118" marker-end="url(#l9-dim)"/>
+  <text class="diag-text small" x="322" y="108">pre-shuffle</text>
+  <text class="diag-text tiny" x="322" y="134">bf16 in HBM</text>
+
+  <!-- SHUFFLED -->
+  <rect class="zone" x="388" y="44" width="290" height="150" rx="3"/>
+  <text class="diag-text small" x="404" y="66">PRE-SHUFFLED</text>
+  <rect class="zone fill-lim" x="404" y="80" width="250" height="22"/><text class="diag-text tiny" x="412" y="95">bf16 · rearranged</text>
+  <rect class="zone fill-lim" x="404" y="116" width="250" height="22"/><text class="diag-text tiny" x="412" y="131">mxfp4 · now loads wide</text>
+  <text class="diag-text lim tiny" x="404" y="174">both vectorized → wgmma fed</text>
+
+  <!-- scale note -->
+  <rect class="zone amb" x="688" y="44" width="268" height="150" rx="3"/>
+  <text class="diag-text amb mono tiny" x="704" y="66">THE SCALE</text>
+  <text class="diag-text small" x="704" y="92">1 scale / 32 mxfp4 elems</text>
+  <text class="diag-text small" x="704" y="114">broadcast via tt.broadcast</text>
+  <text class="diag-text small" x="704" y="136">= a zero column in the</text>
+  <text class="diag-text small" x="704" y="156">scale's layout matrix</text>
+  <text class="diag-text amb tiny" x="704" y="180">broadcasting, for free</text>
+
+  <!-- comparison -->
+  <rect class="zone" x="24" y="210" width="932" height="60" rx="3"/>
+  <text class="diag-text label" x="40" y="232">SAME OPTIMIZATION · TWO PRICE TAGS</text>
+  <text class="diag-text small" x="40" y="256">Machete: thousands of lines + a CUTLASS dependency</text>
+  <text class="diag-text lim small" x="470" y="256">Linear layouts: ~5 lines of Python · tt.reshape / tt.transpose / tt.broadcast</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Loading <code>mxfp4</code> packed then upcasting starves the Tensor Core: <code>wgmma</code> wants two registers per row, which the narrow fp4 stream can't feed at full width. Pre-shuffling the <code>bf16</code> operand in HBM lets the <code>mxfp4</code> load wide too, so both operands vectorize. The shared scale (one per 32 elements) is just a broadcast — a zero column. Machete implements this reshuffle in thousands of lines plus CUTLASS; in linear layouts it's about five lines of shape ops.</div>
+  <div class="caption" lang="zh">把 <code>mxfp4</code> 打包加载、 再 upcast， 会饿着 Tensor Core： <code>wgmma</code> 要每行两个寄存器， 而窄的 fp4 流喂不满。 在 HBM 里预先重排 <code>bf16</code> 操作数， 让 <code>mxfp4</code> 也能宽着 load， 两个操作数就都向量化了。 共享的 scale（每 32 个元素一个）只是一次广播 —— 一个零列。 Machete 用几千行加 CUTLASS 实现这次重排； 在线性布局里它大约是五行形状 op。</div>
+</div>
+
+<p lang="en">The sharper win is in how the data is laid out before the Tensor Core ever runs. Loading low-precision data and only then upcasting is slow, because <code>mxfp4</code> can't use the wide vectorized loads — <code>wgmma</code> wants two registers per row per thread, which the packed fp4 layout doesn't give. The fix is to pre-shuffle the high-precision operand in HBM so the low-precision one loads wide too. The Machete framework does exactly this with thousands of lines of code and a CUTLASS dependency; with linear layouts the same physical reshuffle is a handful of shape ops — about five lines of Python — because a complex byte rearrangement decomposes into a sequence of linear shape transforms the engine already knows how to lower.</p>
+<p lang="zh">更锋利的收益在于 Tensor Core 还没开跑之前、 数据怎么摆。 先加载低精度数据再 upcast 很慢， 因为 <code>mxfp4</code> 用不了宽的向量化 load —— <code>wgmma</code> 要每线程每行两个寄存器， 而打包的 fp4 布局给不出来。 解法是在 HBM 里预先重排高精度操作数， 让低精度那个也能宽着 load。 Machete 框架正是这么干的， 用了几千行代码加一个 CUTLASS 依赖； 用线性布局， 同样的物理重排是寥寥几个形状 op —— 大约五行 Python —— 因为一次复杂的字节重排， 会分解成引擎本来就会降级的一串线性形状变换。</p>
+
+<div class="callout cyan">
+  <span class="ctag" lang="en">When reframing surfaces a bug</span><span class="ctag" lang="zh">重塑问题时， bug 现形</span>
+  <p lang="en">One number stands out: <code>mxfp4 × f16</code> got 1.87×, more than the others, because reshaping the problem also surfaced a plain bug — old Triton wasn't using <code>wgmma</code> for f16 in the mixed-precision path at all. That's the recurring theme of this paper: porting a problem into the linear-layout frame doesn't just make it faster, it makes the wrong cases visible.</p>
+  <p lang="zh">有一个数字很扎眼： <code>mxfp4 × f16</code> 拿到 1.87×， 比其它都高， 因为把问题重新塑形的同时， 也暴露了一个朴素的 bug —— 旧 Triton 在混合精度路径里压根没给 f16 用 <code>wgmma</code>。 这是这篇论文反复出现的主题： 把一个问题搬进线性布局的框架里， 不只让它更快， 还让那些算错的情况现了形。</p>
+</div>
 </section>
 
 <!-- ====================================================== RESULTS -->
 <section id="results">
-<h2 lang="en"><span class="num">§ 07 · Does it pay off</span>Results &amp; bug fixes</h2>
-<h2 lang="zh"><span class="num">§ 07 · 它划算吗</span>结果与修 bug</h2>
+<h2 lang="en"><span class="num">§ 11 · Does it pay off</span>Results &amp; bug fixes</h2>
+<h2 lang="zh"><span class="num">§ 11 · 它划算吗</span>结果与修 bug</h2>
 
 <p lang="en">The honest headline is modest and the subplots are large. Across 265 real-world cases from TritonBench on three platforms, Triton-Linear lands between 0.96× and 1.40×, averaging 1.07×. The sub-1.0 cases are mostly runtime noise on tiny inputs. The wins concentrate where efficient primitives like <code>ldmatrix</code> / <code>stmatrix</code> get used in layout conversion and shared-memory load/store: <code>int4_gemm</code>, <code>gemm</code>, <code>flex_attention</code>.</p>
 <p lang="zh">诚实的标题很朴素， 副线却很大。 在三个平台上来自 TritonBench 的 265 个真实 case 中， Triton-Linear 落在 0.96× 到 1.40× 之间， 平均 1.07×。 低于 1.0 的 case 大多是小输入上的运行时噪音。 收益集中在高效原语如 <code>ldmatrix</code> / <code>stmatrix</code> 被用于布局转换和共享内存读写的地方： <code>int4_gemm</code>、 <code>gemm</code>、 <code>flex_attention</code>。</p>
+
+<div class="plate wide">
+  <div class="plate-meta">
+    <span class="pnum">Plate X</span>
+    <span class="pname" lang="en">The benchmark board</span><span class="pname" lang="zh">benchmark 记分牌</span>
+    <span class="pscale">§6 · RTX4090 · GH200 · MI250</span>
+  </div>
+  <div class="plate-body">
+<svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg">
+  <text class="diag-text label" x="24" y="28">THE BENCHMARK BOARD · Triton-Linear ÷ Triton</text>
+
+  <!-- micro-benchmarks -->
+  <text class="diag-text label lim" x="24" y="58">MICRO-BENCHMARKS · isolated wins (note: scale differs from real below)</text>
+  <line x1="274" y1="66" x2="274" y2="142" class="grid-l" stroke-dasharray="3 3"/>
+  <text class="diag-text tiny" x="274" y="156" text-anchor="middle">1×</text>
+
+  <text class="diag-text small" x="24" y="86">gather (shuffle)</text>
+  <rect class="zone fill-lim" x="250" y="72" width="341" height="20"/><text class="diag-text lim small" x="600" y="87">14.20×</text>
+  <text class="diag-text small" x="24" y="114">LD/ST width</text>
+  <rect class="zone fill-lim" x="250" y="100" width="168" height="20"/><text class="diag-text lim small" x="428" y="115">up to 7×</text>
+  <text class="diag-text small" x="24" y="142">layout conv.</text>
+  <rect class="zone fill-lim" x="250" y="128" width="94" height="20"/><text class="diag-text lim small" x="354" y="143">3.93×</text>
+
+  <!-- correctness chips -->
+  <rect class="zone fill-amb" x="24" y="170" width="460" height="46" rx="3"/>
+  <text class="diag-text amb mono tiny" x="40" y="190">MIXED-PRECISION MATMUL · PASS RATE</text>
+  <text class="diag-text bn small" x="40" y="208">46.6% → 100%   ·   784 cases</text>
+  <rect class="zone fill-cyn" x="500" y="170" width="456" height="46" rx="3"/>
+  <text class="diag-text cyn mono tiny" x="516" y="190">BROADCAST SHARED-MEM STORES</text>
+  <text class="diag-text bn small" x="516" y="208">−76% instructions</text>
+
+  <!-- real -->
+  <text class="diag-text label cyn" x="24" y="244">REAL BENCHMARKS · TritonBench · 265 cases · avg 1.07× · max 1.40×</text>
+  <line x1="250" y1="252" x2="250" y2="318" class="grid-l" stroke-dasharray="3 3"/>
+  <text class="diag-text tiny" x="250" y="266" text-anchor="middle">1.0</text>
+
+  <text class="diag-text small" x="24" y="274">RTX4090</text>
+  <rect class="zone fill-cyn" x="250" y="260" width="296" height="16"/><text class="diag-text cyn small" x="556" y="273">0.97–1.37×</text>
+  <text class="diag-text small" x="24" y="298">GH200</text>
+  <rect class="zone fill-cyn" x="250" y="284" width="320" height="16"/><text class="diag-text cyn small" x="580" y="297">0.96–1.40×</text>
+  <text class="diag-text small" x="24" y="322">MI250 (AMD)</text>
+  <rect class="zone fill-mag" x="250" y="308" width="24" height="16"/><text class="diag-text mag small" x="284" y="321">1.00–1.03×  · gated by missing ldmatrix</text>
+</svg>
+  </div>
+  <div class="caption" lang="en">Two scales, one story. The micro-benchmarks isolate where the framework moves the needle hardest: gather and layout conversion ride warp shuffles instead of shared memory (14.20× and 3.93×), LD/ST gets up to 7× wider, broadcast sheds 76% of its stores, and mixed-precision matmul goes from 46.6% to a clean 100% pass. The real-world headline is honest and modest — 1.07× average, 1.40× max over 265 cases — and the MI250 bar is the tell: AMD's gains are gated by the missing <code>ldmatrix</code> primitive, not by the algebra.</div>
+  <div class="caption" lang="zh">两套刻度， 一个故事。 micro-benchmark 隔离出框架发力最猛的地方： gather 和布局转换骑 warp shuffle 而不是共享内存（14.20× 和 3.93×）， LD/ST 宽度最高 7×， 广播甩掉 76% 的 store， 混合精度 matmul 从 46.6% 干净地升到 100% 通过。 真实世界的标题诚实而朴素 —— 265 个 case 上平均 1.07×、 最高 1.40× —— 而 MI250 那一条是关键信号： AMD 的收益被缺失的 <code>ldmatrix</code> 原语卡住， 而不是被代数卡住。</div>
+</div>
 
 <table class="tbl">
   <thead>
@@ -965,8 +1289,8 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ====================================================== FOR AMD -->
 <section id="for-amd">
-<h2 lang="en"><span class="num">§ 08 · Carrying it home</span>For our AMD work</h2>
-<h2 lang="zh"><span class="num">§ 08 · 带回家</span>对我们 AMD 的意义</h2>
+<h2 lang="en"><span class="num">§ 12 · Carrying it home</span>For our AMD work</h2>
+<h2 lang="zh"><span class="num">§ 12 · 带回家</span>对我们 AMD 的意义</h2>
 
 <p lang="en">Reading this with our two goals in mind, three things transfer directly.</p>
 <p lang="zh">带着我们两个目标读它， 有三件事可以直接迁移。</p>
@@ -989,8 +1313,8 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ====================================================== EPILOGUE -->
 <section id="epilogue">
-<h2 lang="en"><span class="num">§ 09 · Closing</span>Epilogue</h2>
-<h2 lang="zh"><span class="num">§ 09 · 收尾</span>尾声</h2>
+<h2 lang="en"><span class="num">§ 13 · Closing</span>Epilogue</h2>
+<h2 lang="zh"><span class="num">§ 13 · 收尾</span>尾声</h2>
 
 <p lang="en">What I keep coming back to is how little the paper invents and how much it reorganizes. There's no new hardware, no exotic IR, no learned model. There's one observation — GPU indices are bits, so layouts are linear maps over F₂ — pushed relentlessly through an entire compiler backend until the quadratic mess of per-pair converters collapses into <code>B⁻¹A</code>, broadcasting becomes a zero column, and bank-conflict-free swizzling becomes a subspace you solve for. That's the kind of move worth studying: not a bigger hammer, but the right coordinate system, in which the hard problems turn out to be linear.</p>
 <p lang="zh">我反复回味的， 是这篇论文发明得多么少、 重组得多么多。 没有新硬件、 没有奇异的 IR、 没有学出来的模型。 只有一个观察 —— GPU 索引是位， 所以布局是 F₂ 上的线性映射 —— 被不依不饶地推过整个编译器后端， 直到那一堆二次方数量的逐对转换器坍缩成 <code>B⁻¹A</code>， 广播变成一个零列， 无 bank 冲突的 swizzling 变成一个你解出来的子空间。 这才是值得研究的招式： 不是更大的锤子， 而是对的坐标系 —— 在那个坐标系里， 难题原来都是线性的。</p>
@@ -1004,8 +1328,11 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ====================================================== REFERENCES -->
 <section id="references">
-<h2 lang="en"><span class="num">§ 10 · Sources</span>References &amp; citation</h2>
-<h2 lang="zh"><span class="num">§ 10 · 出处</span>参考与引用</h2>
+<h2 lang="en"><span class="num">§ 14 · Sources</span>References &amp; citation</h2>
+<h2 lang="zh"><span class="num">§ 14 · 出处</span>参考与引用</h2>
+
+<p lang="en"><strong>Where this sits.</strong> The closest prior art is CuTe, NVIDIA's layout algebra in CUTLASS 3.0 — but CuTe is a <em>library</em> that hands experts the tools to build layouts by hand, while linear layouts are a compiler-internal framework that derives and optimizes them automatically. It also doesn't compete with polyhedral compilation: the polyhedral model works over the integers ℤ on loop-level scheduling and dependencies, while linear layouts work over F₂ on the bit-level data distribution inside a tile. Different rings, different jobs — complementary, not rival.</p>
+<p lang="zh"><strong>它的位置。</strong> 最接近的先前工作是 CuTe， NVIDIA 在 CUTLASS 3.0 里的 layout 代数 —— 但 CuTe 是一个 <em>库</em>， 把手动搭布局的工具交给专家， 而线性布局是一个编译器内置框架， 自动推导并优化布局。 它也不和多面体编译竞争： 多面体模型在整数 ℤ 上工作， 处理循环级的调度和依赖， 而线性布局在 F₂ 上工作， 处理一个 tile 内部位级的数据分布。 不同的环、 不同的活 —— 互补， 而非对手。</p>
 
 <ul class="refs">
   <li><span class="t" lang="en">Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2</span><span class="t" lang="zh">Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F2</span><br>
@@ -1016,12 +1343,12 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
   <span lang="en">Where linear layouts are integrated, as the GPU code-generation layer. </span><span lang="zh">线性布局被集成进去的地方， 即 GPU 代码生成层。 </span><a href="https://github.com/triton-lang/triton">github.com/triton-lang/triton</a></li>
 </ul>
 
-<div class="cite" lang="en">Reading compiled 2026-06-05 · jinnpan.com/sources/linear-layouts.html
-Source: arXiv:2505.23819 · diagrams hand-coded, all coordinates by hand
-Bilingual EN/ZH · phosphor-oscilloscope plate set</div>
-<div class="cite" lang="zh">精读整理于 2026-06-05 · jinnpan.com/sources/linear-layouts.html
-来源： arXiv:2505.23819 · 图为手写 SVG， 坐标全部手算
-双语 EN/ZH · 磷光示波器配图</div>
+<div class="cite" lang="en">Reading compiled 2026-06-05 · expanded 2026-06-08 (warp shuffle, SIMD, mixed precision, benchmarks)
+jinnpan.com/sources/linear-layouts.html · Source: arXiv:2505.23819
+10 plates hand-coded, all coordinates by hand · Bilingual EN/ZH · phosphor-oscilloscope plate set</div>
+<div class="cite" lang="zh">精读整理于 2026-06-05 · 2026-06-08 扩写（warp shuffle、 SIMD、 混合精度、 benchmark）
+jinnpan.com/sources/linear-layouts.html · 来源： arXiv:2505.23819
+10 张配图手写 SVG， 坐标全部手算 · 双语 EN/ZH · 磷光示波器配图</div>
 </section>
 
 </main>
