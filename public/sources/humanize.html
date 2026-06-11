@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Humanize · Source Reading 011 — the loop that won't let the agent quit</title>
+<meta name="description" content="A line-by-line reading of PolyArch/humanize: a Claude Code plugin that wraps an AI agent in a shell-hook control loop with an independent Codex reviewer. State-as-filename, a Stop-hook gauntlet, and a feedback controller with circuit breakers — read against the real source." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Chivo:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=B612+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #07243c;
+  --bg-2: #0a2c49;
+  --panel: #0c3454;
+  --panel-2: #0e3a5e;
+  --ink: #dde9f3;
+  --ink-soft: #a4c1d8;
+  --ink-faint: #5f87a6;
+  --line: #163f60;
+  --line-bright: #2a648f;
+  --cyan: #58b7eb;
+  --cyan-soft: #8fd0f4;
+  --redline: #ff6c49;
+  --redline-soft: #ff9277;
+  --amber: #f4b24e;
+  --paper: #0a2a45;
+  --display: 'Oswald', 'Noto Sans SC', sans-serif;
+  --body: 'Chivo', 'Noto Sans SC', system-ui, sans-serif;
+  --mono: 'B612 Mono', ui-monospace, monospace;
+  --sc: 'Noto Sans SC', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(42, 100, 143, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 100, 143, 0.07) 1px, transparent 1px);
+  background-size: 30px 30px;
+  background-position: -1px -1px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-weight: 300;
+  line-height: 1.72;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* radial vignette for drafting-table depth */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 80% at 50% 0%, transparent 40%, rgba(3, 16, 28, 0.55) 100%);
+  z-index: 0;
+}
+
+/* ============ LAYOUT ============ */
+.shell { display: flex; gap: 0; position: relative; z-index: 1; }
+
+.rail {
+  width: 256px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 34px 26px 40px;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(8, 35, 58, 0.6), rgba(7, 30, 50, 0.2));
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--line-bright); }
+
+.rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-decoration: none;
+  margin-bottom: 26px;
+  transition: color 0.16s;
+}
+.rail-home:hover { color: var(--cyan); }
+
+.rail .brand {
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 2px;
+  line-height: 1;
+}
+.rail .brand .governor { color: var(--cyan); }
+.rail .ref {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  margin-bottom: 26px;
+}
+.rail .ref .pin { color: var(--redline); }
+
+.rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: toc;
+}
+.rail ol li { margin: 0; }
+.rail ol li a {
+  display: block;
+  padding: 5px 0 5px 30px;
+  position: relative;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-left: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  counter-increment: toc;
+}
+.rail ol li a::before {
+  content: counter(toc, upper-roman);
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 24px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0;
+  color: var(--ink-faint);
+  text-align: right;
+}
+.rail ol li a:hover { color: var(--cyan); }
+.rail ol li a.active { color: var(--cyan); border-left-color: var(--cyan); }
+.rail ol li a.active::before { color: var(--cyan); }
+.rail .rail-foot {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+/* ============ MAIN ============ */
+.main { flex: 1; min-width: 0; }
+
+.masthead {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 84px 40px 50px;
+  border-bottom: 1px solid var(--line);
+}
+.kicker {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--redline);
+  margin-bottom: 26px;
+}
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(46px, 8vw, 82px);
+  line-height: 0.94;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.masthead h1 .governor { color: var(--cyan); }
+.masthead .sub {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: clamp(17px, 2.4vw, 21px);
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+  margin: 0 0 30px;
+  max-width: 620px;
+  line-height: 1.4;
+}
+body[data-lang="zh"] .masthead .sub { font-family: var(--sc); font-weight: 300; }
+
+.spec {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  border: 1px solid var(--line);
+  margin-top: 8px;
+}
+.spec .cell {
+  padding: 13px 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.spec .cell:nth-child(2n) { border-right: none; }
+.spec .cell .k {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 4px;
+}
+.spec .cell .v {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--cyan-soft);
+  word-break: break-word;
+}
+
+/* ============ ARTICLE ============ */
+.article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 40px 100px;
+}
+.article section { padding: 56px 0 8px; border-bottom: 1px solid var(--line); }
+.article section:last-of-type { border-bottom: none; }
+
+.sec-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--redline);
+  margin-bottom: 14px;
+}
+.article h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(28px, 4.4vw, 40px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0 0 26px;
+  color: var(--ink);
+}
+body[data-lang="zh"] .article h2 { font-family: var(--display), var(--sc); letter-spacing: 0.02em; }
+.article h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin: 40px 0 14px;
+}
+.article h4 {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  margin: 28px 0 10px;
+}
+.article p { margin: 0 0 18px; }
+.article p.lede {
+  font-size: 20px;
+  line-height: 1.6;
+  color: var(--ink);
+  font-weight: 300;
+}
+.article a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid var(--line-bright); }
+.article a:hover { border-bottom-color: var(--cyan); }
+.article strong { color: var(--ink); font-weight: 600; }
+.article em { color: var(--cyan-soft); font-style: italic; }
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--panel);
+  color: var(--cyan-soft);
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+}
+.redmark { color: var(--redline); }
+.ambmark { color: var(--amber); }
+
+/* code blocks */
+.code {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--cyan);
+  margin: 20px 0;
+  overflow-x: auto;
+}
+.code.red { border-left-color: var(--redline); }
+.code .code-head {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 30, 50, 0.6);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.code .code-head a { color: var(--ink-faint); border: none; }
+.code .code-head a:hover { color: var(--cyan); }
+.code pre {
+  margin: 0;
+  padding: 15px 18px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  color: var(--ink);
+  white-space: pre;
+}
+.code pre .c { color: var(--ink-faint); }
+.code pre .k { color: var(--cyan); }
+.code pre .s { color: var(--amber); }
+.code pre .r { color: var(--redline-soft); }
+.code pre .v { color: var(--cyan-soft); }
+
+/* callout */
+.callout {
+  border: 1px solid var(--line-bright);
+  background: linear-gradient(180deg, rgba(12, 52, 84, 0.5), rgba(10, 42, 69, 0.3));
+  padding: 18px 20px;
+  margin: 22px 0;
+  position: relative;
+}
+.callout::before {
+  content: "";
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 9px; height: 9px;
+  border-top: 2px solid var(--cyan);
+  border-left: 2px solid var(--cyan);
+}
+.callout::after {
+  content: "";
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 9px; height: 9px;
+  border-bottom: 2px solid var(--cyan);
+  border-right: 2px solid var(--cyan);
+}
+.callout .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 8px;
+}
+.callout.red { border-color: var(--redline); }
+.callout.red::before, .callout.red::after { border-color: var(--redline); }
+.callout.red .label { color: var(--redline); }
+.callout p:last-child { margin-bottom: 0; }
+
+/* tables */
+.tbl { margin: 24px 0; overflow-x: auto; border: 1px solid var(--line); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td {
+  text-align: left;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  vertical-align: top;
+}
+th:last-child, td:last-child { border-right: none; }
+thead th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--redline);
+  background: rgba(8, 30, 50, 0.6);
+  font-weight: 700;
+}
+tbody tr:last-child td { border-bottom: none; }
+td code { font-size: 11.5px; background: transparent; border: none; padding: 0; color: var(--cyan-soft); }
+tbody tr:hover { background: rgba(12, 52, 84, 0.3); }
+
+/* plates */
+.plate { margin: 34px 0; border: 1px solid var(--line); background: rgba(8, 30, 50, 0.4); }
+.plate.wide {
+  margin-left: calc(-1 * (100vw - 100%) / 2);
+  margin-right: calc(-1 * (100vw - 100%) / 2);
+  max-width: 100vw;
+}
+.plate-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.plate-meta .id { color: var(--redline); }
+.plate-body { padding: 22px 18px; overflow-x: auto; }
+.plate svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.caption {
+  font-family: var(--body);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+  padding: 0 16px 16px;
+  line-height: 1.5;
+}
+body[data-lang="zh"] .caption { font-family: var(--sc); }
+
+/* SVG shared classes */
+.diag-node { fill: var(--panel); stroke: var(--line-bright); stroke-width: 1.2; }
+.diag-node-cyan { fill: rgba(88, 183, 235, 0.12); stroke: var(--cyan); stroke-width: 1.4; }
+.diag-node-red { fill: rgba(255, 108, 73, 0.1); stroke: var(--redline); stroke-width: 1.4; }
+.diag-node-amber { fill: rgba(244, 178, 78, 0.1); stroke: var(--amber); stroke-width: 1.3; }
+.diag-label { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+.diag-label-sm { font-family: var(--mono); font-size: 10px; fill: var(--ink-soft); }
+.diag-label-xs { font-family: var(--mono); font-size: 8.5px; fill: var(--ink-faint); letter-spacing: 0.04em; }
+.diag-title { font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.diag-edge { fill: none; stroke: var(--line-bright); stroke-width: 1.3; }
+.diag-edge-cyan { fill: none; stroke: var(--cyan); stroke-width: 1.4; }
+.diag-edge-red { fill: none; stroke: var(--redline); stroke-width: 1.4; }
+.diag-edge-dash { fill: none; stroke: var(--ink-faint); stroke-width: 1.1; stroke-dasharray: 4 3; }
+.fill-cyan { fill: var(--cyan); }
+.fill-red { fill: var(--redline); }
+.fill-amber { fill: var(--amber); }
+.fill-ink { fill: var(--ink); }
+.fill-soft { fill: var(--ink-soft); }
+
+/* language toggle */
+.lang-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 50;
+  display: flex;
+  border: 1px solid var(--line-bright);
+  background: rgba(7, 36, 60, 0.9);
+  backdrop-filter: blur(6px);
+}
+.lang-toggle button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 6px 11px;
+  background: transparent;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.lang-toggle button + button { border-left: 1px solid var(--line-bright); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+  color: var(--bg);
+  background: var(--cyan);
+}
+
+/* colophon */
+.colophon {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 40px 90px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+.colophon .row { display: flex; gap: 14px; border-top: 1px solid var(--line); padding: 9px 0; }
+.colophon .row .ck { width: 130px; flex-shrink: 0; color: var(--redline); text-transform: uppercase; }
+.colophon .row .cv { color: var(--ink-soft); }
+.colophon a { color: var(--cyan); text-decoration: none; }
+
+/* language visibility */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+body[data-lang="zh"] { font-family: var(--sc); }
+body[data-lang="zh"] .article p,
+body[data-lang="zh"] .article li { line-height: 1.85; }
+
+/* mobile */
+@media (max-width: 900px) {
+  .rail {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .rail ol { columns: 2; column-gap: 18px; }
+  .shell { flex-direction: column; }
+  .masthead, .article, .colophon { padding-left: 22px; padding-right: 22px; }
+  .plate.wide { margin-left: -22px; margin-right: -22px; }
+  .spec { grid-template-columns: 1fr; }
+  .spec .cell { border-right: none; }
+}
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="shell">
+
+<!-- ============ RAIL ============ -->
+<nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+  <div class="brand">HUMAN<span class="governor">IZE</span></div>
+  <div class="ref"><span lang="en">SOURCE READING № <span class="pin">011</span> · 2026.06.11</span><span lang="zh">源码精读 № <span class="pin">011</span> · 2026.06.11</span></div>
+  <ol>
+    <li><a href="#prologue"><span lang="en">Prologue</span><span lang="zh">序章</span></a></li>
+    <li><a href="#machine"><span lang="en">The Machine</span><span lang="zh">整台机器</span></a></li>
+    <li><a href="#hooks"><span lang="en">The Hook Skeleton</span><span lang="zh">钩子骨架</span></a></li>
+    <li><a href="#state"><span lang="en">State as Filename</span><span lang="zh">用文件名当状态</span></a></li>
+    <li><a href="#gauntlet"><span lang="en">The Stop-Hook Gauntlet</span><span lang="zh">Stop 钩子的关卡</span></a></li>
+    <li><a href="#codex"><span lang="en">Codex, the Outside Eye</span><span lang="zh">Codex： 外部之眼</span></a></li>
+    <li><a href="#control"><span lang="en">A Control Loop</span><span lang="zh">一个控制回路</span></a></li>
+    <li><a href="#quiz"><span lang="en">Begin with the End</span><span lang="zh">以终为始</span></a></li>
+    <li><a href="#planning"><span lang="en">The Planning Pipeline</span><span lang="zh">计划流水线</span></a></li>
+    <li><a href="#bitlesson"><span lang="en">Bitter-Lesson Memory</span><span lang="zh">苦涩教训记忆</span></a></li>
+    <li><a href="#defense"><span lang="en">Why It Can't Cheat</span><span lang="zh">为何无法作弊</span></a></li>
+    <li><a href="#tricks"><span lang="en">Small Cleverness</span><span lang="zh">小巧思抽屉</span></a></li>
+    <li><a href="#amd"><span lang="en">Transfer to Kernels</span><span lang="zh">迁移到 kernel agent</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+  </ol>
+  <div class="rail-foot">
+    <span lang="en">PolyArch/humanize v1.16.0<br>21K LOC shell · 29K LOC tests<br>MIT · read @ 0ec921a</span>
+    <span lang="zh">PolyArch/humanize v1.16.0<br>2.1 万行 shell · 2.9 万行测试<br>MIT · 读于 0ec921a</span>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="kicker"><span lang="en">Source Reading 011 · The Governor</span><span lang="zh">源码精读 011 · 调速器</span></div>
+  <h1>HUMAN<span class="governor">IZE</span></h1>
+  <p class="sub"><span lang="en">A Claude Code plugin that wraps an AI agent in a shell-hook control loop and hands the brakes to an independent reviewer. Read line by line against the real source.</span><span lang="zh">一个 Claude Code 插件： 用 shell 钩子把 AI agent 关进一个控制回路， 再把刹车交给一个独立的审查者。 对着真实源码逐行读。</span></p>
+  <div class="spec">
+    <div class="cell"><div class="k"><span lang="en">Repository</span><span lang="zh">仓库</span></div><div class="v"><a href="https://github.com/PolyArch/humanize" style="color:var(--cyan-soft);border:none;">PolyArch/humanize</a></div></div>
+    <div class="cell"><div class="k"><span lang="en">What it is</span><span lang="zh">是什么</span></div><div class="v"><span lang="en">iterative-dev plugin</span><span lang="zh">迭代开发插件</span></div></div>
+    <div class="cell"><div class="k"><span lang="en">Language</span><span lang="zh">语言</span></div><div class="v">Bash · jq · Python</div></div>
+    <div class="cell"><div class="k"><span lang="en">Reviewed by</span><span lang="zh">审查者</span></div><div class="v">codex CLI · gpt-5.5</div></div>
+    <div class="cell"><div class="k"><span lang="en">Enforced by</span><span lang="zh">靠什么强制</span></div><div class="v"><span lang="en">7 lifecycle hooks</span><span lang="zh">7 个生命周期钩子</span></div></div>
+    <div class="cell"><div class="k"><span lang="en">Commit</span><span lang="zh">提交</span></div><div class="v">0ec921a · v1.16.0</div></div>
+  </div>
+</header>
+
+<main class="article">
+
+<!-- ============ PROLOGUE ============ -->
+<section id="prologue">
+  <div class="sec-num"><span lang="en">§ 00 — Prologue</span><span lang="zh">§ 00 — 序章</span></div>
+  <h2><span lang="en">A plugin that won't let you stop</span><span lang="zh">一个不让你停下来的插件</span></h2>
+
+  <p class="lede"><span lang="en">Almost every coding-agent tool is built to <em>help the model do more</em>. Humanize is built to <em>stop the model from quitting too early</em>. That inversion is the whole idea, and it is worth understanding because it is the same problem we face when we point agents at long-horizon kernel optimization.</span><span lang="zh">几乎所有 coding agent 工具的设计目标都是<em>让模型多干点</em>。 Humanize 反过来： 它的目标是<em>不让模型太早收工</em>。 这个反转就是它的全部立意—— 也正是我们让 agent 去做长周期 kernel 优化时撞上的同一个问题， 所以值得读懂。</span></p>
+
+  <p><span lang="en">The pitch in the README is plain: Claude implements a plan, an independent <code>codex</code> process reviews the work, and issues feed back into implementation until the work is genuinely done. The authors call the loop <strong>RLCR</strong> — &ldquo;Ralph-Loop with Codex Review,&rdquo; which they note also reads as &ldquo;Reinforcement Learning with Code Review.&rdquo; What the README does not advertise is the mechanism: there is no daemon, no orchestrator process, no agent framework. The entire loop is implemented as <strong>Claude Code lifecycle hooks</strong> — shell scripts the harness runs at fixed moments — and a pile of state files in a timestamped directory.</span><span lang="zh">README 的卖点很直白： Claude 实现一份计划， 一个独立的 <code>codex</code> 进程审查产出， 发现的问题再喂回实现阶段， 直到活儿真正干完。 作者把这个循环叫 <strong>RLCR</strong>—— &ldquo;Ralph-Loop with Codex Review&rdquo;， 他们还说这也能读成 &ldquo;Reinforcement Learning with Code Review&rdquo;。 README 没怎么宣传的是它的机制： 没有常驻进程、 没有编排器、 没有 agent 框架。 整个循环是用 <strong>Claude Code 的生命周期钩子</strong>实现的—— 也就是 harness 在固定时刻执行的 shell 脚本—— 外加一堆放在带时间戳目录里的状态文件。</span></p>
+
+  <p><span lang="en">That makes it an unusually good source-reading subject. The cleverness is not in any single algorithm; it is in how a handful of `exit 2`s and atomic `mv`s combine into something that behaves like a controller with a setpoint and a circuit breaker. I read the loaded files at commit <code>0ec921a</code>: the 2,221-line Stop hook, the 1,578-line shared library, the 1,541-line setup script, the validators, the command prompts, and the agent definitions. Everything below cites the real lines.</span><span lang="zh">这让它成了一个特别好的源码精读对象。 它的妙处不在某一个算法， 而在于一把 `exit 2` 和原子 `mv` 怎么拼成了一个行为上带设定点和断路器的控制器。 我读的是提交 <code>0ec921a</code> 的核心文件： 2221 行的 Stop 钩子、 1578 行的共享库、 1541 行的安装脚本、 那些校验器、 命令提示词、 还有 agent 定义。 下面每一处都引用真实行号。</span></p>
+
+  <div class="callout">
+    <div class="label"><span lang="en">How to read this</span><span lang="zh">怎么读这篇</span></div>
+    <p><span lang="en">Filenames are clickable and point at the pinned commit on GitHub with line fragments. If a claim has a number in it (&ldquo;2,221 lines,&rdquo; &ldquo;blocks at 3 consecutive stalls&rdquo;), it came from the file, not from memory. The toggle in the top-right switches the whole page between English and Chinese.</span><span lang="zh">文件名都可点， 指向 GitHub 上钉死的那个提交， 带行号片段。 凡是带数字的论断（&ldquo;2221 行&rdquo;、&ldquo;连续停滞 3 次就熔断&rdquo;）都来自文件本身， 不是凭记忆。 右上角的开关把整页在中英文之间切换。</span></p>
+  </div>
+</section>
+
+<!-- ============ MACHINE ============ -->
+<section id="machine">
+  <div class="sec-num"><span lang="en">§ 01 — Architecture</span><span lang="zh">§ 01 — 架构</span></div>
+  <h2><span lang="en">One agent, seven hooks, zero daemons</span><span lang="zh">一个 agent， 七个钩子， 零个常驻进程</span></h2>
+
+  <p><span lang="en">Start from the question that decides the whole design: <em>how do you make a stateless agent run a multi-round loop without a process to hold the loop?</em> Claude Code runs one turn at a time. When the model decides it is finished, the turn ends. There is no &ldquo;while&rdquo; anywhere for a plugin to hook into.</span><span lang="zh">先从决定整个设计的那个问题出发： <em>在没有进程托管循环的情况下， 你怎么让一个无状态的 agent 跑一个多轮循环？</em> Claude Code 一次只跑一个回合。 模型觉得自己干完了， 回合就结束。 哪里都没有一个 &ldquo;while&rdquo; 让插件去挂。</span></p>
+
+  <p><span lang="en">Humanize's answer is to hijack the one moment the harness gives back control: the <strong>Stop hook</strong>, which fires when the model tries to end its turn. The Stop hook runs Codex, decides whether the work is acceptable, and if not, returns a JSON verdict that <em>blocks the stop and injects the next instruction</em>. The model never gets to leave. The &ldquo;loop&rdquo; is just the same Stop hook firing again and again, each time reading a state file to know where it is.</span><span lang="zh">Humanize 的答案是劫持 harness 唯一交还控制权的那一刻： <strong>Stop 钩子</strong>—— 模型试图结束回合时触发的钩子。 Stop 钩子跑一遍 Codex， 判断产出能不能接受， 不能的话就返回一个 JSON 裁决， <em>挡住这次停止并注入下一条指令</em>。 模型根本走不掉。 所谓 &ldquo;循环&rdquo;， 不过是同一个 Stop 钩子一次又一次地触发， 每次读一个状态文件来知道自己走到哪了。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span class="id">Plate I</span><span><span lang="en">the hook-governed loop</span><span lang="zh">被钩子治理的循环</span></span></div>
+    <div class="plate-body">
+      <svg viewBox="0 0 720 470" role="img" aria-label="Architecture of the RLCR loop">
+        <defs>
+          <marker id="ah-cy-1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#58b7eb"/></marker>
+          <marker id="ah-rd-1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#ff6c49"/></marker>
+          <marker id="ah-ink-1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5f87a6"/></marker>
+        </defs>
+
+        <text x="20" y="26" class="diag-title fill-red">PLATE I · THE MACHINE</text>
+
+        <!-- USER -->
+        <rect class="diag-node" x="34" y="74" width="96" height="42" rx="2"/>
+        <text x="82" y="100" text-anchor="middle" class="diag-label">USER</text>
+
+        <!-- CLAUDE -->
+        <rect class="diag-node-cyan" x="190" y="70" width="194" height="50" rx="2"/>
+        <text x="287" y="92" text-anchor="middle" class="diag-label fill-cyan">CLAUDE</text>
+        <text x="287" y="108" text-anchor="middle" class="diag-label-xs">implements the plan, one turn at a time</text>
+
+        <!-- STOP HOOK -->
+        <rect class="diag-node-red" x="442" y="62" width="172" height="64" rx="2"/>
+        <text x="528" y="86" text-anchor="middle" class="diag-label fill-red">STOP HOOK</text>
+        <text x="528" y="102" text-anchor="middle" class="diag-label-xs">loop-codex-stop-hook.sh</text>
+        <text x="528" y="115" text-anchor="middle" class="diag-label-xs">2,221 lines · the engine</text>
+
+        <!-- edge USER -> CLAUDE -->
+        <line class="diag-edge" x1="130" y1="95" x2="184" y2="95" marker-end="url(#ah-ink-1)"/>
+        <!-- edge CLAUDE -> STOP -->
+        <line class="diag-edge-red" x1="384" y1="95" x2="436" y2="95" marker-end="url(#ah-rd-1)"/>
+        <text x="410" y="86" text-anchor="middle" class="diag-label-xs fill-red">stops?</text>
+
+        <!-- feedback loop over the top -->
+        <path class="diag-edge-cyan" d="M 528 62 C 528 14, 287 14, 287 64" stroke-width="1.8" marker-end="url(#ah-cy-1)"/>
+        <text x="408" y="12" text-anchor="middle" class="diag-label-sm fill-cyan">exit 2 — block &amp; feed the review back in</text>
+
+        <!-- CODEX -->
+        <rect class="diag-node-red" x="470" y="196" width="144" height="58" rx="2"/>
+        <text x="542" y="220" text-anchor="middle" class="diag-label fill-red">CODEX</text>
+        <text x="542" y="236" text-anchor="middle" class="diag-label-xs">codex exec · codex review</text>
+        <text x="542" y="248" text-anchor="middle" class="diag-label-xs">the independent eye</text>
+        <!-- STOP -> CODEX -->
+        <line class="diag-edge-red" x1="528" y1="126" x2="535" y2="190" marker-end="url(#ah-rd-1)"/>
+        <text x="556" y="162" class="diag-label-xs fill-red">spawn</text>
+
+        <!-- HOOK MEMBRANE -->
+        <rect x="190" y="170" width="206" height="60" rx="2" fill="rgba(255,108,73,0.06)" stroke="#ff6c49" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <text x="293" y="190" text-anchor="middle" class="diag-label-sm fill-red">PRE / POST / PROMPT HOOKS</text>
+        <text x="293" y="206" text-anchor="middle" class="diag-label-xs">validators gate every tool call</text>
+        <text x="293" y="220" text-anchor="middle" class="diag-label-xs">Write · Edit · Read · Bash</text>
+        <!-- CLAUDE -> membrane -->
+        <line class="diag-edge-dash" x1="287" y1="120" x2="287" y2="166" marker-end="url(#ah-ink-1)"/>
+
+        <!-- WORKING TREE -->
+        <rect class="diag-node" x="190" y="272" width="206" height="48" rx="2"/>
+        <text x="293" y="292" text-anchor="middle" class="diag-label">WORKING TREE + GIT</text>
+        <text x="293" y="307" text-anchor="middle" class="diag-label-xs">only allowed calls pass through</text>
+        <line class="diag-edge-dash" x1="287" y1="230" x2="287" y2="268" marker-end="url(#ah-ink-1)"/>
+
+        <!-- STATE DIR -->
+        <rect class="diag-node-amber" x="34" y="372" width="580" height="74" rx="2"/>
+        <text x="48" y="396" class="diag-label fill-amber">.humanize/rlcr/&lt;timestamp&gt;/</text>
+        <text x="48" y="416" class="diag-label-xs">state.md · finalize-state.md · complete-state.md  (the phase, encoded as a filename)</text>
+        <text x="48" y="432" class="diag-label-xs">round-N-prompt.md · round-N-summary.md · round-N-review-result.md · goal-tracker.md · plan.md</text>
+
+        <!-- edges into state dir -->
+        <line class="diag-edge-dash" x1="528" y1="126" x2="528" y2="368" marker-end="url(#ah-ink-1)"/>
+        <text x="540" y="320" class="diag-label-xs">read · atomic mv</text>
+        <line class="diag-edge-dash" x1="120" y1="116" x2="120" y2="368" marker-end="url(#ah-ink-1)"/>
+        <text x="92" y="150" class="diag-label-xs" transform="rotate(0)">setup writes</text>
+      </svg>
+    </div>
+    <div class="caption"><span lang="en">The model sits inside a membrane of hooks. Tool calls are filtered on the way out; the exit is intercepted and turned into a Codex review; the verdict either lets the turn end or blocks it and re-prompts. The only durable state is a directory of markdown files named by timestamp.</span><span lang="zh">模型坐在一层钩子膜里面。 工具调用在出门时被过滤； 退出被拦截、 变成一次 Codex 审查； 裁决要么放回合走、 要么挡住它并重新下指令。 唯一持久的状态， 是一个按时间戳命名的 markdown 文件目录。</span></div>
+  </div>
+
+  <p><span lang="en">The hook surface is declared once, in <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/hooks.json"><code>hooks/hooks.json</code></a>. Seven hooks across four lifecycle events. Note the Stop hook's <code>timeout: 7200</code> — two hours — because a single review round can legitimately run a full Codex pass at high reasoning effort.</span><span lang="zh">钩子面只声明一次， 在 <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/hooks.json"><code>hooks/hooks.json</code></a> 里。 四个生命周期事件上挂了七个钩子。 注意 Stop 钩子的 <code>timeout: 7200</code>—— 两小时—— 因为单独一轮审查在高推理强度下跑完一整趟 Codex 是合理的。</span></p>
+
+  <div class="tbl">
+    <table>
+      <thead><tr>
+        <th><span lang="en">Event</span><span lang="zh">事件</span></th>
+        <th><span lang="en">Matcher</span><span lang="zh">匹配</span></th>
+        <th><span lang="en">Script</span><span lang="zh">脚本</span></th>
+        <th><span lang="en">Job</span><span lang="zh">职责</span></th>
+      </tr></thead>
+      <tbody>
+        <tr><td>UserPromptSubmit</td><td>—</td><td><code>loop-plan-file-validator.sh</code></td><td><span lang="en">block prompts that switch branch or dirty the plan</span><span lang="zh">挡住切分支或弄脏计划的提示</span></td></tr>
+        <tr><td>PreToolUse</td><td>Write/Edit/Read</td><td><code>loop-{write,edit,read}-validator.sh</code></td><td><span lang="en">protect state files, enforce round + phase rules</span><span lang="zh">保护状态文件， 强制轮次 + 阶段规则</span></td></tr>
+        <tr><td>PreToolUse</td><td>Bash</td><td><code>loop-bash-validator.sh</code></td><td><span lang="en">the heavyweight: deny dangerous commands, block forged exits</span><span lang="zh">最重的一个： 拦危险命令、 挡伪造的退出</span></td></tr>
+        <tr><td>PostToolUse</td><td>Bash</td><td><code>loop-post-bash-hook.sh</code></td><td><span lang="en">one-shot: record the Claude session_id into state</span><span lang="zh">一次性： 把 Claude 的 session_id 记进状态</span></td></tr>
+        <tr><td class="redmark">Stop</td><td>—</td><td class="redmark"><code>loop-codex-stop-hook.sh</code></td><td><span lang="en">the engine: review, decide, advance or terminate</span><span lang="zh">引擎： 审查、 决断、 推进或终止</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <div class="label"><span lang="en">Why this is the right shape</span><span lang="zh">为什么这个形状是对的</span></div>
+    <p><span lang="en">A daemon would have to track the session, survive crashes, and reconcile with the harness. By putting the whole controller in the Stop hook and the whole state on disk, Humanize gets crash-safety for free: if anything dies, the next Stop just re-reads the files and continues. This is the same reason robust kernel-search harnesses checkpoint every variant to disk instead of holding the search in a long-lived process — the loop should be reconstructable from durable state, not from a process's memory.</span><span lang="zh">常驻进程得跟踪会话、 扛住崩溃、 还要和 harness 对账。 Humanize 把整个控制器塞进 Stop 钩子、 把整个状态放到磁盘上， 于是白捡了崩溃安全性： 任何东西挂了， 下一次 Stop 重新读文件接着跑就行。 这跟稳健的 kernel 搜索 harness 把每个变体都 checkpoint 到磁盘、 而不是把搜索攥在一个长生命周期进程里， 是同一个道理—— 循环应该能从持久状态重建， 而不是从某个进程的内存里。</span></p>
+  </div>
+</section>
+
+<!-- ============ HOOKS ============ -->
+<section id="hooks">
+  <div class="sec-num"><span lang="en">§ 02 — Protocol</span><span lang="zh">§ 02 — 协议</span></div>
+  <h2><span lang="en">How a shell script talks back to the model</span><span lang="zh">一个 shell 脚本怎么回话给模型</span></h2>
+
+  <p><span lang="en">A hook is a program. The harness pipes it a JSON blob on stdin describing the event, and reads two channels back: the process exit code, and anything the process prints. Humanize uses two different reply protocols depending on the event, and the difference matters.</span><span lang="zh">钩子就是个程序。 Harness 从 stdin 把一段描述事件的 JSON 喂给它， 再从两个通道读回结果： 进程退出码， 以及进程打印的任何东西。 Humanize 根据事件用了两种不同的回话协议， 而这个区别很关键。</span></p>
+
+  <p><span lang="en">The <strong>PreToolUse validators</strong> speak in exit codes: <code>exit 0</code> allows the tool call, <code>exit 2</code> blocks it and feeds whatever they printed to stderr back to the model as the block reason, and <code>exit 1</code> is a hard error. The <strong>Stop and UserPromptSubmit hooks</strong> speak in a richer JSON-on-stdout protocol, because they need to inject a multi-paragraph instruction, not just a one-line reason:</span><span lang="zh"><strong>PreToolUse 校验器</strong>用退出码说话： <code>exit 0</code> 放行工具调用， <code>exit 2</code> 拦下它、 并把它打到 stderr 的内容当作拦截理由喂回模型， <code>exit 1</code> 是硬错误。 <strong>Stop 和 UserPromptSubmit 钩子</strong>则用一种更丰富的 stdout-JSON 协议， 因为它们要注入的是一整段多段落指令， 而不只是一行理由：</span></p>
+
+  <div class="code red">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · the block verdict</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L2212-L2221">L2212–2221 ↗</a></div>
+    <pre><span class="c"># block the stop, hand the model its next round of work</span>
+jq -n \
+    --arg reason "$(cat "$NEXT_PROMPT_FILE")" \
+    --arg msg "$SYSTEM_MSG" \
+    '{
+        <span class="r">"decision": "block"</span>,
+        "reason": $reason,
+        "systemMessage": $msg
+    }'
+exit 0</pre>
+  </div>
+
+  <p><span lang="en">Two details repay attention. First, the hook <code>exit 0</code>s even while blocking — the &ldquo;block&rdquo; lives in the JSON <code>decision</code> field, not in the exit code, which is the Stop-hook spec. Second, the entire next-round prompt is loaded from a file with <code>$(cat ...)</code> and passed through <code>jq --arg</code>, so newlines and quotes are escaped correctly. A surprising amount of this codebase is careful JSON escaping, because the &ldquo;reason&rdquo; field is the only wire back to the model and a botched escape would corrupt the instruction.</span><span lang="zh">两个细节值得留意。 第一， 钩子在拦截时仍然 <code>exit 0</code>—— &ldquo;拦截&rdquo; 写在 JSON 的 <code>decision</code> 字段里、 而不在退出码里， 这是 Stop 钩子的规范。 第二， 整段下一轮提示是用 <code>$(cat ...)</code> 从文件读进来、 再经 <code>jq --arg</code> 传递的， 于是换行和引号都被正确转义。 这个代码库里有出奇多的精心 JSON 转义， 因为 &ldquo;reason&rdquo; 字段是回到模型的唯一一根线， 一个搞砸的转义就会把指令弄坏。</span></p>
+
+  <h3><span lang="en">&ldquo;Am I even in a loop?&rdquo;</span><span lang="zh">&ldquo;我到底在不在循环里？&rdquo;</span></h3>
+
+  <p><span lang="en">Every hook fires on <em>every</em> session, loop or not. So the first thing each one does is ask whether an RLCR loop is active for <em>this</em> session, and bail out silently if not. There is no boolean flag for &ldquo;in a loop&rdquo; — the presence of an active state file in a session-matched directory <em>is</em> the flag.</span><span lang="zh">每个钩子在<em>每一个</em>会话上都会触发， 不管在不在循环里。 所以每个钩子做的第一件事， 就是问一句： <em>这个</em>会话现在有没有一个活跃的 RLCR 循环； 没有就悄悄退出。 没有什么 &ldquo;在循环中&rdquo; 的布尔标志—— 在一个会话匹配的目录里存在一个活跃状态文件， <em>本身</em>就是那个标志。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · fail-open when there is no loop</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L62-L69">L62–69 ↗</a></div>
+    <pre><span class="v">HOOK_SESSION_ID</span>=$(extract_session_id "$HOOK_INPUT")
+<span class="v">LOOP_DIR</span>=$(find_active_loop "$LOOP_BASE_DIR" "$HOOK_SESSION_ID" true)
+
+<span class="c"># If no active loop (or session_id mismatch), allow exit</span>
+<span class="k">if</span> [[ -z "$LOOP_DIR" ]]; <span class="k">then</span>
+    <span class="k">exit</span> 0
+<span class="k">fi</span></pre>
+  </div>
+
+  <div class="callout">
+    <div class="label"><span lang="en">Fail-open vs fail-closed, chosen on purpose</span><span lang="zh">故意区分的 fail-open 与 fail-closed</span></div>
+    <p><span lang="en">The split is deliberate and consistent. <em>No active loop</em> → fail <strong>open</strong> (<code>exit 0</code>), so the plugin is completely invisible during normal work. But <em>a malformed state file, a git timeout, an unresolved symlink, or the post-signoff &ldquo;methodology&rdquo; phase</em> → fail <strong>closed</strong> (block). The rule of thumb: when you are not sure you are governing anything, get out of the way; when you know you are governing and something is wrong, stop everything.</span><span lang="zh">这个区分是刻意且一致的。 <em>没有活跃循环</em> → fail <strong>open</strong>（<code>exit 0</code>）， 于是插件在日常工作里完全隐形。 但<em>状态文件损坏、 git 超时、 符号链接解析不了、 或者签收后的 &ldquo;方法论&rdquo; 阶段</em> → fail <strong>closed</strong>（拦截）。 经验法则： 不确定自己在治理什么时， 让开； 确定在治理、 又发现不对劲时， 全停。</span></p>
+  </div>
+</section>
+
+<!-- ============ STATE ============ -->
+<section id="state">
+  <div class="sec-num"><span lang="en">§ 03 — State machine</span><span lang="zh">§ 03 — 状态机</span></div>
+  <h2><span lang="en">The phase is the filename</span><span lang="zh">阶段就是文件名</span></h2>
+
+  <p><span lang="en">Here is the idea I keep coming back to. The loop has phases — implementation, code review, finalize, a post-mortem &ldquo;methodology&rdquo; pass, and several terminal states. You would expect a <code>phase:</code> field somewhere. There isn't one. The phase is encoded in <em>which state file exists</em>, and every phase transition is a single <code>mv</code>.</span><span lang="zh">这就是我反复回味的那个点。 循环有好几个阶段—— 实现、 代码审查、 收尾、 一个事后 &ldquo;方法论&rdquo; 复盘、 还有几个终态。 你会以为某处有个 <code>phase:</code> 字段。 没有。 阶段被编码进<em>哪个状态文件存在</em>， 而每一次阶段转换都是一次 <code>mv</code>。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-common.sh · resolve_active_state_file (the phase decoder)</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/lib/loop-common.sh#L268-L280">L268–280 ↗</a></div>
+    <pre><span class="c"># precedence: most-specific phase wins</span>
+<span class="k">if</span>   [[ -f "$loop_dir/methodology-analysis-state.md" ]]; <span class="k">then</span> <span class="k">echo</span> "…/methodology-analysis-state.md"
+<span class="k">elif</span> [[ -f "$loop_dir/finalize-state.md" ]];            <span class="k">then</span> <span class="k">echo</span> "…/finalize-state.md"
+<span class="k">elif</span> [[ -f "$loop_dir/state.md" ]];                     <span class="k">then</span> <span class="k">echo</span> "…/state.md"
+<span class="k">else</span> <span class="k">echo</span> ""; <span class="k">fi</span></pre>
+  </div>
+
+  <p><span lang="en">Implementation and code review share the same file, <code>state.md</code>; the difference between them is a single boolean field, <code>review_started</code>, flipped in place. Everything coarser — finalize, methodology, and the terminal states <code>complete- / cancel- / maxiter- / stop- / unexpected-state.md</code> — is a rename. The constants are declared once as <code>readonly</code> in <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/lib/loop-common.sh#L24-L76"><code>loop-common.sh:24–76</code></a>.</span><span lang="zh">实现阶段和代码审查阶段共用同一个文件 <code>state.md</code>； 它们的区别只是一个布尔字段 <code>review_started</code>， 就地翻转。 所有更粗粒度的东西—— 收尾、 方法论、 以及终态 <code>complete- / cancel- / maxiter- / stop- / unexpected-state.md</code>—— 都是一次重命名。 这些常量在 <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/lib/loop-common.sh#L24-L76"><code>loop-common.sh:24–76</code></a> 里作为 <code>readonly</code> 声明一次。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span class="id">Plate II</span><span><span lang="en">state transitions = atomic renames</span><span lang="zh">状态转换 = 原子重命名</span></span></div>
+    <div class="plate-body">
+      <svg viewBox="0 0 720 440" role="img" aria-label="State machine of the RLCR loop">
+        <defs>
+          <marker id="ah-cy-2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#58b7eb"/></marker>
+          <marker id="ah-am-2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#f4b24e"/></marker>
+          <marker id="ah-rd-2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#ff6c49"/></marker>
+        </defs>
+        <text x="20" y="26" class="diag-title fill-red">PLATE II · THE FILENAME IS THE PHASE</text>
+
+        <!-- setup -->
+        <rect class="diag-node" x="22" y="56" width="132" height="42" rx="2"/>
+        <text x="88" y="76" text-anchor="middle" class="diag-label-sm">setup-rlcr-loop.sh</text>
+        <text x="88" y="90" text-anchor="middle" class="diag-label-xs">writes round 0</text>
+
+        <!-- IMPL -->
+        <rect class="diag-node-cyan" x="196" y="48" width="190" height="62" rx="2"/>
+        <text x="291" y="72" text-anchor="middle" class="diag-label fill-cyan">state.md</text>
+        <text x="291" y="88" text-anchor="middle" class="diag-label-xs">IMPLEMENTATION</text>
+        <text x="291" y="100" text-anchor="middle" class="diag-label-xs">review_started = false</text>
+        <line class="diag-edge" x1="154" y1="78" x2="190" y2="78" marker-end="url(#ah-cy-2)"/>
+        <!-- impl self loop -->
+        <path class="diag-edge-cyan" d="M 250 48 C 250 18, 332 18, 332 48" marker-end="url(#ah-cy-2)"/>
+        <text x="291" y="14" text-anchor="middle" class="diag-label-xs fill-cyan">issues → current_round++ (sed in place)</text>
+
+        <!-- REVIEW -->
+        <rect class="diag-node-cyan" x="196" y="168" width="190" height="62" rx="2"/>
+        <text x="291" y="192" text-anchor="middle" class="diag-label fill-cyan">state.md</text>
+        <text x="291" y="208" text-anchor="middle" class="diag-label-xs">CODE REVIEW</text>
+        <text x="291" y="220" text-anchor="middle" class="diag-label-xs">review_started = true · same file</text>
+        <line class="diag-edge-cyan" x1="291" y1="110" x2="291" y2="164" marker-end="url(#ah-cy-2)"/>
+        <text x="300" y="142" class="diag-label-xs fill-cyan">Codex ⊢ COMPLETE · field flip</text>
+        <!-- review self loop -->
+        <path class="diag-edge-cyan" d="M 196 184 C 156 184, 156 214, 196 214" marker-end="url(#ah-cy-2)"/>
+        <text x="120" y="200" text-anchor="middle" class="diag-label-xs fill-cyan">[P0-9]<tspan x="120" dy="11">→ round++</tspan></text>
+
+        <!-- finalize -->
+        <rect class="diag-node-amber" x="450" y="168" width="168" height="62" rx="2"/>
+        <text x="534" y="194" text-anchor="middle" class="diag-label fill-amber">finalize-state.md</text>
+        <text x="534" y="212" text-anchor="middle" class="diag-label-xs">simplify · commit · sign off</text>
+        <line class="diag-edge-am-2 diag-edge-amber" x1="386" y1="198" x2="446" y2="198" marker-end="url(#ah-am-2)" stroke="#f4b24e" stroke-width="1.4" fill="none"/>
+        <text x="416" y="190" text-anchor="middle" class="diag-label-xs fill-amber">mv · clean</text>
+
+        <!-- methodology -->
+        <rect x="450" y="50" width="168" height="58" rx="2" fill="rgba(244,178,78,0.06)" stroke="#f4b24e" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <text x="534" y="72" text-anchor="middle" class="diag-label-sm fill-amber">methodology-analysis</text>
+        <text x="534" y="86" text-anchor="middle" class="diag-label-xs">-state.md · optional</text>
+        <text x="534" y="99" text-anchor="middle" class="diag-label-xs">post-mortem retrospective</text>
+        <path class="diag-edge-amber" d="M 534 168 L 534 112" stroke="#f4b24e" stroke-width="1.3" fill="none" stroke-dasharray="5 3" marker-end="url(#ah-am-2)"/>
+        <text x="544" y="142" class="diag-label-xs fill-amber">if enabled</text>
+
+        <!-- complete -->
+        <rect class="diag-node-cyan" x="450" y="288" width="168" height="54" rx="2"/>
+        <text x="534" y="312" text-anchor="middle" class="diag-label fill-cyan">complete-state.md ✓</text>
+        <text x="534" y="328" text-anchor="middle" class="diag-label-xs">terminal · preserved for forensics</text>
+        <line class="diag-edge-cyan" x1="534" y1="230" x2="534" y2="284" marker-end="url(#ah-cy-2)"/>
+        <text x="544" y="262" class="diag-label-xs fill-cyan">mv · done</text>
+        <path class="diag-edge-amber" d="M 618 96 C 672 180, 672 280, 620 312" stroke="#f4b24e" stroke-width="1.2" fill="none" stroke-dasharray="5 3" marker-end="url(#ah-am-2)"/>
+
+        <!-- terminal cluster -->
+        <rect class="diag-node-red" x="22" y="270" width="150" height="120" rx="2"/>
+        <text x="97" y="292" text-anchor="middle" class="diag-label-sm fill-red">TERMINAL (mv)</text>
+        <text x="32" y="312" class="diag-label-xs">cancel-state.md</text>
+        <text x="32" y="328" class="diag-label-xs">maxiter-state.md</text>
+        <text x="32" y="344" class="diag-label-xs">stop-state.md</text>
+        <text x="32" y="360" class="diag-label-xs">unexpected-state.md</text>
+        <text x="32" y="380" class="diag-label-xs fill-red">circuit breaker / cancel / corrupt</text>
+        <path class="diag-edge-red" d="M 196 210 C 140 230, 110 250, 100 266" stroke-dasharray="4 3" marker-end="url(#ah-rd-2)"/>
+      </svg>
+    </div>
+    <div class="caption"><span lang="en">Every edge labeled <code>mv</code> is a single atomic rename; the only in-place edits are the <code>review_started</code> flip and the <code>sed</code> that bumps the round counter. Because a phase change is one rename, it is crash-safe: there is no window where two phase booleans disagree, and a killed process leaves the directory in a valid state.</span><span lang="zh">每一条标着 <code>mv</code> 的边都是一次原子重命名； 唯二的就地修改是 <code>review_started</code> 的翻转、 和把轮次计数器加一的那次 <code>sed</code>。 因为一次阶段变化就是一次重命名， 它是崩溃安全的： 不存在两个阶段布尔量互相矛盾的时间窗， 进程被杀也只会让目录停在一个合法状态上。</span></p></div>
+  </div>
+
+  <p><span lang="en">The atomic-rename discipline shows up everywhere state changes. In-place field updates never write the file directly; they write a PID-suffixed temp and <code>mv</code> over the original, so a concurrent reader can never see a half-written file:</span><span lang="zh">这种原子重命名的纪律出现在每一处状态变化里。 就地更新字段从不直接写文件； 它们写一个带 PID 后缀的临时文件、 再 <code>mv</code> 盖回原文件， 于是并发的读者永远看不到一个写了一半的文件：</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · bump the round counter, atomically</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1502-L1505">L1502–1505 ↗</a></div>
+    <pre><span class="k">local</span> temp_file="${STATE_FILE}.tmp.$$"
+sed "s/^current_round: .*/current_round: $round/" "$STATE_FILE" > "$temp_file"
+mv "$temp_file" "$STATE_FILE"</pre>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr>
+        <th><span lang="en">State file</span><span lang="zh">状态文件</span></th>
+        <th><span lang="en">Meaning</span><span lang="zh">含义</span></th>
+        <th><span lang="en">Created by</span><span lang="zh">由谁创建</span></th>
+      </tr></thead>
+      <tbody>
+        <tr><td><code>state.md</code></td><td><span lang="en">active loop; <code>review_started</code> picks impl vs review</span><span lang="zh">活跃循环； <code>review_started</code> 决定实现还是审查</span></td><td><code>setup-rlcr-loop.sh:880</code></td></tr>
+        <tr><td><code>finalize-state.md</code></td><td><span lang="en">review passed; simplify + sign off</span><span lang="zh">审查通过； 简化 + 签收</span></td><td><code>stop-hook:1325</code></td></tr>
+        <tr><td><code>methodology-…-state.md</code></td><td><span lang="en">optional post-mortem; near-total lockdown</span><span lang="zh">可选事后复盘； 近乎全锁</span></td><td><span lang="en">methodology lib</span><span lang="zh">方法论库</span></td></tr>
+        <tr><td><code>complete-state.md</code></td><td><span lang="en">success, preserved (renamed, not deleted)</span><span lang="zh">成功， 保留（重命名而非删除）</span></td><td><code>stop-hook:988</code></td></tr>
+        <tr><td class="redmark"><code>cancel / maxiter / stop / unexpected</code></td><td><span lang="en">terminal exits; the loop simply vanishes next Stop</span><span lang="zh">终止退出； 下一次 Stop 时循环直接消失</span></td><td><code>end_loop()</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ GAUNTLET ============ -->
+<section id="gauntlet">
+  <div class="sec-num"><span lang="en">§ 04 — The gauntlet</span><span lang="zh">§ 04 — 关卡</span></div>
+  <h2><span lang="en">A dozen cheap gates before one expensive review</span><span lang="zh">一打廉价关卡， 挡在一次昂贵审查前面</span></h2>
+
+  <p><span lang="en">When the model tries to stop, the hook does not call Codex right away. Codex is slow and costs money, so the hook first runs a long ladder of cheap, local checks. Each one can block the stop on its own, and each block carries a <em>specific</em> templated instruction telling the model exactly what to fix. Only if all of them pass does the hook spend a Codex call.</span><span lang="zh">模型试图停下时， 钩子不会立刻叫 Codex。 Codex 又慢又花钱， 所以钩子先跑一长串廉价的本地检查。 每一个都能自己挡下这次停止， 而且每次拦截都带着一条<em>具体的</em>模板化指令， 明确告诉模型该修什么。 只有全部通过， 钩子才会花一次 Codex 调用。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span class="id">Plate III</span><span><span lang="en">the pre-review funnel</span><span lang="zh">审查前的漏斗</span></span></div>
+    <div class="plate-body">
+      <svg viewBox="0 0 720 470" role="img" aria-label="The Stop hook gauntlet of gates">
+        <defs>
+          <marker id="ah-rd-3" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff6c49"/></marker>
+          <marker id="ah-cy-3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#58b7eb"/></marker>
+        </defs>
+        <text x="20" y="26" class="diag-title fill-red">PLATE III · THE STOP-HOOK GAUNTLET</text>
+
+        <!-- gates -->
+        <g class="diag-label-sm">
+          <rect class="diag-node" x="40" y="44" width="330" height="22" rx="1.5"/><text x="50" y="59" class="diag-label-sm">01 · session active &amp; schema current</text>
+          <rect class="diag-node" x="40" y="74" width="330" height="22" rx="1.5"/><text x="50" y="89" class="diag-label-sm">02 · branch == start_branch</text>
+          <rect class="diag-node" x="40" y="104" width="330" height="22" rx="1.5"/><text x="50" y="119" class="diag-label-sm">03 · plan file unchanged vs backup</text>
+          <rect class="diag-node" x="40" y="134" width="330" height="22" rx="1.5"/><text x="50" y="149" class="diag-label-sm">04 · all todos / tasks complete</text>
+          <rect class="diag-node" x="40" y="164" width="330" height="22" rx="1.5"/><text x="50" y="179" class="diag-label-sm">05 · git status readable (else fail-closed)</text>
+          <rect class="diag-node" x="40" y="194" width="330" height="22" rx="1.5"/><text x="50" y="209" class="diag-label-sm">06 · no source file &gt; 2000 lines</text>
+          <rect class="diag-node" x="40" y="224" width="330" height="22" rx="1.5"/><text x="50" y="239" class="diag-label-sm">07 · working tree clean (&amp; pushed)</text>
+          <rect class="diag-node" x="40" y="254" width="330" height="22" rx="1.5"/><text x="50" y="269" class="diag-label-sm">08 · round summary written</text>
+          <rect class="diag-node" x="40" y="284" width="330" height="22" rx="1.5"/><text x="50" y="299" class="diag-label-sm">09 · round contract written (anti-drift)</text>
+          <rect class="diag-node" x="40" y="314" width="330" height="22" rx="1.5"/><text x="50" y="329" class="diag-label-sm">10 · BitLesson Delta present</text>
+          <rect class="diag-node" x="40" y="344" width="330" height="22" rx="1.5"/><text x="50" y="359" class="diag-label-sm">11 · goal tracker filled (round 0)</text>
+          <rect class="diag-node" x="40" y="374" width="330" height="22" rx="1.5"/><text x="50" y="389" class="diag-label-sm">12 · under max iterations</text>
+        </g>
+
+        <!-- block lane -->
+        <rect x="452" y="44" width="244" height="352" rx="2" fill="rgba(255,108,73,0.05)" stroke="#ff6c49" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <text x="574" y="74" text-anchor="middle" class="diag-title fill-red" style="font-size:12px">IF ANY GATE FAILS</text>
+        <text x="466" y="104" class="diag-label-xs">→ exit 0 with</text>
+        <text x="466" y="120" class="diag-label-xs fill-red">{ "decision": "block", "reason": … }</text>
+        <text x="466" y="148" class="diag-label-xs">the model receives ONE specific,</text>
+        <text x="466" y="164" class="diag-label-xs">templated fix instruction</text>
+        <text x="466" y="180" class="diag-label-xs">(rendered from prompt-template/),</text>
+        <text x="466" y="196" class="diag-label-xs">then the turn restarts —</text>
+        <text x="466" y="212" class="diag-label-xs fill-red">no Codex call is spent.</text>
+        <text x="466" y="248" class="diag-label-xs">Cheap, deterministic checks</text>
+        <text x="466" y="264" class="diag-label-xs">catch the easy mistakes so the</text>
+        <text x="466" y="280" class="diag-label-xs">expensive reviewer only sees</text>
+        <text x="466" y="296" class="diag-label-xs">committed, summarized work.</text>
+
+        <!-- gate -> lane arrows -->
+        <g>
+          <line class="diag-edge-red" x1="370" y1="55" x2="448" y2="55" marker-end="url(#ah-rd-3)"/>
+          <line class="diag-edge-red" x1="370" y1="115" x2="448" y2="118" marker-end="url(#ah-rd-3)"/>
+          <line class="diag-edge-red" x1="370" y1="205" x2="448" y2="190" marker-end="url(#ah-rd-3)"/>
+          <line class="diag-edge-red" x1="370" y1="295" x2="448" y2="250" marker-end="url(#ah-rd-3)"/>
+          <line class="diag-edge-red" x1="370" y1="385" x2="448" y2="300" marker-end="url(#ah-rd-3)"/>
+        </g>
+
+        <!-- pass-through spine -->
+        <line class="diag-edge-cyan" x1="205" y1="396" x2="205" y2="424" marker-end="url(#ah-cy-3)"/>
+        <rect class="diag-node-cyan" x="40" y="426" width="330" height="38" rx="2"/>
+        <text x="205" y="450" text-anchor="middle" class="diag-label fill-cyan">ALL PASS → RUN CODEX</text>
+      </svg>
+    </div>
+    <div class="caption"><span lang="en">The order is roughly cheapest-and-most-fundamental first. Notice gate 06: any tracked or new source file over 2,000 lines blocks the loop until it is split. The plugin has opinions, and it enforces them before it ever asks the reviewer.</span><span lang="zh">顺序大致是越便宜越根本的越靠前。 注意第 06 关： 任何被跟踪或新建的源文件超过 2000 行， 都会卡住循环直到它被拆分。 这个插件是有主见的， 而且它在开口问审查者之前就把这些主见强制了。</span></div>
+  </div>
+
+  <p><span lang="en">The large-file gate is a good window into the house style — opinionated, but careful. It walks the cached <code>git status</code>, resolves each path against the project root (the hook may run from a different working directory), skips deleted files, classifies by extension, and only then counts lines:</span><span lang="zh">大文件这道关是观察其代码风格的好窗口—— 有主见， 但很小心。 它遍历缓存下来的 <code>git status</code>， 把每个路径对着项目根解析（钩子可能从别的工作目录运行）， 跳过已删除的文件， 按扩展名分类， 然后才数行数：</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · the &ldquo;split your files&rdquo; gate</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L524-L603">L524–603 ↗</a></div>
+    <pre><span class="v">MAX_LINES</span>=2000
+<span class="c"># … per file in `git status --porcelain`:</span>
+line_count=$(wc -l < "$filename" 2>/dev/null | tr -d ' ') || continue
+[[ "$line_count" =~ ^[0-9]+$ ]] || continue          <span class="c"># numeric guard</span>
+<span class="k">if</span> [ "$line_count" -gt "$MAX_LINES" ]; <span class="k">then</span>
+    LARGE_FILES="...- \`${filename}\`: ${line_count} lines"
+<span class="k">fi</span>
+<span class="c"># … block: "Split these into smaller modules before continuing."</span></pre>
+  </div>
+
+  <div class="callout">
+    <div class="label"><span lang="en">The block <em>is</em> the curriculum</span><span lang="zh">拦截<em>本身</em>就是课程</span></div>
+    <p><span lang="en">Each gate's block message is a small lesson: commit your work, split that file, write your summary, fill the goal tracker. The loop never just says &ldquo;no.&rdquo; It says no <em>and</em> hands over the next correct action. For a kernel-optimization agent this is the template I want — a failed compile or a slow benchmark should not end the turn, it should re-enter with the exact next experiment to try.</span><span lang="zh">每道关的拦截消息都是一节小课： 提交你的工作、 拆掉那个文件、 写你的总结、 填好目标追踪表。 这个循环从不只说 &ldquo;不行&rdquo;。 它说不行、 <em>并且</em>把下一个正确动作递过来。 对一个 kernel 优化 agent， 这正是我想要的模板—— 一次编译失败或一个慢 benchmark 不该结束回合， 而该带着确切的下一个实验重新进来。</span></p>
+  </div>
+</section>
+
+<!-- ============ CODEX ============ -->
+<section id="codex">
+  <div class="sec-num"><span lang="en">§ 05 — The reviewer</span><span lang="zh">§ 05 — 审查者</span></div>
+  <h2><span lang="en">Codex, the outside eye</span><span lang="zh">Codex， 外部之眼</span></h2>
+
+  <p><span lang="en">The whole premise is that an agent reviewing its own work has blind spots, so the reviewer is a <em>different model in a different process</em>: the <code>codex</code> CLI, defaulting to <code>gpt-5.5</code> at high reasoning effort. It runs in two distinct modes depending on phase.</span><span lang="zh">整个前提是： 一个 agent 审查自己的产出会有盲区， 所以审查者是<em>另一个进程里的另一个模型</em>： <code>codex</code> CLI， 默认 <code>gpt-5.5</code>、 高推理强度。 它按阶段分两种模式运行。</span></p>
+
+  <p><span lang="en">In <strong>implementation phase</strong>, <code>codex exec</code> reads Claude's prose <em>summary</em> of the round and decides whether the work is plausibly complete. In <strong>review phase</strong>, <code>codex review --base &lt;commit&gt;</code> reads the actual <em>diff</em> and grades it, tagging findings with severity markers <code>[P0]</code>…<code>[P9]</code>. The loop only finalizes when a review comes back with no <code>[P0-9]</code> markers at all.</span><span lang="zh">在<strong>实现阶段</strong>， <code>codex exec</code> 读 Claude 这一轮的散文<em>总结</em>， 判断活儿是不是大概率干完了。 在<strong>审查阶段</strong>， <code>codex review --base &lt;commit&gt;</code> 读真正的<em>diff</em> 并打分， 给发现标上严重度标记 <code>[P0]</code>…<code>[P9]</code>。 只有当一次审查回来完全没有 <code>[P0-9]</code> 标记时， 循环才收尾。</span></p>
+
+  <h3><span lang="en">Markers on their own line</span><span lang="zh">必须独占一行的标记</span></h3>
+
+  <p><span lang="en">Codex signals &ldquo;done&rdquo; by ending its review with the bare word <code>COMPLETE</code>, or asks to halt with <code>STOP</code>. The parsing is strict on purpose: it takes the last non-empty line, trims it, and requires an exact match — so a sentence like &ldquo;I <em>cannot</em> mark this COMPLETE&rdquo; never trips the completion path.</span><span lang="zh">Codex 用以单独一个词 <code>COMPLETE</code> 结尾来表示 &ldquo;完成&rdquo;， 或用 <code>STOP</code> 请求中止。 解析故意很严： 取最后一个非空行、 trim、 要求精确相等—— 于是像 &ldquo;我<em>不能</em>把它标成 COMPLETE&rdquo; 这样的句子永远不会触发完成路径。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · strict marker match</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1811-L1815">L1811–1815 ↗</a></div>
+    <pre><span class="c"># The word must be on its own line to avoid false positives like "CANNOT COMPLETE"</span>
+LAST_LINE=$(echo "$REVIEW_CONTENT" | grep -v '^[[:space:]]*$' | tail -1)
+LAST_LINE_TRIMMED=$(echo "$LAST_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')</pre>
+  </div>
+
+  <p><span lang="en">A subtle asymmetry: in review phase, a Codex <code>COMPLETE</code> is <em>ignored</em>. Only the absence of <code>[P0-9]</code> issues moves the loop to finalize (<a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1866-L1869"><code>stop-hook:1866</code></a>). The reviewer is allowed to say &ldquo;looks done&rdquo; about a summary, but it is not allowed to talk its way out of a clean diff — the diff has to actually be clean.</span><span lang="zh">一个微妙的不对称： 在审查阶段， Codex 说 <code>COMPLETE</code> 会被<em>忽略</em>。 只有 <code>[P0-9]</code> 问题的消失才把循环推进到收尾（<a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1866-L1869"><code>stop-hook:1866</code></a>）。 审查者可以对一份总结说 &ldquo;看着像完成了&rdquo;， 但它不能靠嘴皮子绕过一个干净的 diff—— diff 必须真的干净。</span></p>
+
+  <h3><span lang="en">Two small but load-bearing tricks</span><span lang="zh">两个不起眼却关键的把戏</span></h3>
+
+  <p><span lang="en"><strong>Pin the base commit, not the branch.</strong> Code review diffs against <code>BASE_COMMIT</code> — a SHA captured at loop start — rather than <code>BASE_BRANCH</code>. If you are working directly on <code>main</code>, the branch ref advances with every commit you make, so diffing against the live branch would show nothing. Freezing the SHA freezes the review baseline.</span><span lang="zh"><strong>钉住基线提交， 而不是分支。</strong> 代码审查是对着 <code>BASE_COMMIT</code> 做 diff—— 一个在循环开始时抓下来的 SHA—— 而不是 <code>BASE_BRANCH</code>。 如果你直接在 <code>main</code> 上干活， 分支 ref 会随你每次提交往前走， 于是对着活分支做 diff 会什么都看不到。 把 SHA 冻住， 就把审查基线冻住了。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · why a fixed SHA</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1214-L1221">L1214–1221 ↗</a></div>
+    <pre><span class="c"># Using the fixed commit SHA prevents comparing a branch to itself when</span>
+<span class="c"># working on main, as the branch ref advances with each commit but the</span>
+<span class="c"># captured SHA stays fixed</span>
+<span class="k">local</span> review_base="${BASE_COMMIT:-$BASE_BRANCH}"</pre>
+  </div>
+
+  <p><span lang="en"><strong>Disable the reviewer's own hooks.</strong> Codex is itself a hooked CLI. If a Codex review triggered Codex's own Stop hook, you could get recursion. Humanize passes <code>--disable codex_hooks</code> — but only after probing <code>codex --help</code> to confirm the flag exists, caching the answer so older Codex builds don't choke on an unknown argument.</span><span lang="zh"><strong>关掉审查者自己的钩子。</strong> Codex 本身也是个带钩子的 CLI。 如果一次 Codex 审查触发了 Codex 自己的 Stop 钩子， 就可能递归。 Humanize 传 <code>--disable codex_hooks</code>—— 但只在探测过 <code>codex --help</code> 确认这个 flag 存在之后才传， 并把结果缓存起来， 免得老版本 Codex 被一个未知参数噎住。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · capability probe, cached per loop</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1172-L1181">L1172–1181 ↗</a></div>
+    <pre><span class="v">CODEX_DISABLE_HOOKS_ARGS</span>=()
+_CODEX_FEATURE_CACHE="$CACHE_DIR/.codex-disable-hooks-supported"
+<span class="k">if</span> [[ -f "$_CODEX_FEATURE_CACHE" ]]; <span class="k">then</span>
+    [[ "$(cat "$_CODEX_FEATURE_CACHE")" == "yes" ]] && CODEX_DISABLE_HOOKS_ARGS=(--disable codex_hooks)
+<span class="k">elif</span> codex --help 2>&1 | grep -q -- '--disable'; <span class="k">then</span>
+    CODEX_DISABLE_HOOKS_ARGS=(--disable codex_hooks)
+    <span class="k">echo</span> "yes" > "$_CODEX_FEATURE_CACHE" 2>/dev/null
+<span class="k">else</span>
+    <span class="k">echo</span> "no" > "$_CODEX_FEATURE_CACHE" 2>/dev/null
+<span class="k">fi</span></pre>
+  </div>
+
+  <p><span lang="en">One more policy worth flagging: a Codex review that <em>fails</em> (non-zero exit, empty output, missing result file) is treated as a <strong>blocking error</strong>, not a reason to skip ahead. The review phase cannot be skipped — the loop must keep retrying until a review actually completes and comes back clean (<a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1586-L1659"><code>block_review_failure</code></a>). The reviewer is not a suggestion; it is a required gate.</span><span lang="zh">还有一条策略值得点出： 一次<em>失败</em>的 Codex 审查（非零退出、 空输出、 结果文件缺失）被当成<strong>阻塞性错误</strong>， 而不是跳过的理由。 审查阶段不能被跳过—— 循环必须一直重试， 直到一次审查真正跑完并干净返回（<a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1586-L1659"><code>block_review_failure</code></a>）。 审查者不是个建议； 它是个必过的关。</span></p>
+</section>
+
+<!-- ============ CONTROL ============ -->
+<section id="control">
+  <div class="sec-num"><span lang="en">§ 06 — The control loop</span><span lang="zh">§ 06 — 控制回路</span></div>
+  <h2><span lang="en">It is a controller, and it has a circuit breaker</span><span lang="zh">它是个控制器， 而且带断路器</span></h2>
+
+  <p class="lede"><span lang="en">Read the comments and the control-systems metaphor is not mine, it is theirs. Line 1035 labels accumulated commit history the &ldquo;Integral component.&rdquo; The usage doc calls the loop &ldquo;an amplifier.&rdquo; There is a function named <code>stop_for_mainline_drift</code> and log lines that print <code>CIRCUIT BREAKER TRIGGERED</code>. Once you see it, the whole engine reads like a feedback controller.</span><span lang="zh">读读注释， 这个控制系统的比喻不是我安的， 是他们自己的。 1035 行把累积的提交历史标成 &ldquo;Integral component&rdquo;。 使用文档把这个循环叫 &ldquo;放大器&rdquo;。 有个函数叫 <code>stop_for_mainline_drift</code>， 还有日志会打 <code>CIRCUIT BREAKER TRIGGERED</code>。 一旦看出来， 整个引擎读起来就是个反馈控制器。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span class="id">Plate IV</span><span><span lang="en">the RLCR loop as a feedback controller</span><span lang="zh">把 RLCR 循环看成反馈控制器</span></span></div>
+    <div class="plate-body">
+      <svg viewBox="0 0 720 440" role="img" aria-label="The RLCR loop drawn as a PID-style feedback controller">
+        <defs>
+          <marker id="ah-cy-4" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#58b7eb"/></marker>
+          <marker id="ah-rd-4" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff6c49"/></marker>
+          <marker id="ah-ink-4" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5f87a6"/></marker>
+        </defs>
+        <text x="20" y="26" class="diag-title fill-red">PLATE IV · THE LOOP IS A CONTROLLER</text>
+
+        <!-- setpoint -->
+        <rect class="diag-node-cyan" x="22" y="68" width="132" height="58" rx="2"/>
+        <text x="88" y="90" text-anchor="middle" class="diag-label-sm fill-cyan">SETPOINT</text>
+        <text x="88" y="105" text-anchor="middle" class="diag-label-xs">all ACs met ·</text>
+        <text x="88" y="118" text-anchor="middle" class="diag-label-xs">zero [P0-9]</text>
+
+        <!-- summing junction -->
+        <circle cx="186" cy="97" r="15" fill="rgba(88,183,235,0.1)" stroke="#58b7eb" stroke-width="1.4"/>
+        <text x="186" y="101" text-anchor="middle" class="diag-label fill-cyan">⊕</text>
+        <line class="diag-edge-cyan" x1="154" y1="97" x2="170" y2="97" marker-end="url(#ah-cy-4)"/>
+
+        <!-- controller -->
+        <rect class="diag-node" x="236" y="46" width="214" height="146" rx="2"/>
+        <text x="343" y="64" text-anchor="middle" class="diag-title fill-ink" style="font-size:11px">CONTROLLER · STOP HOOK</text>
+        <rect x="244" y="74" width="198" height="30" rx="1.5" fill="rgba(88,183,235,0.1)" stroke="#58b7eb" stroke-width="1.1"/>
+        <text x="252" y="93" class="diag-label-xs fill-cyan">P · present — this round's [P0-9]</text>
+        <rect x="244" y="108" width="198" height="30" rx="1.5" fill="rgba(244,178,78,0.1)" stroke="#f4b24e" stroke-width="1.1"/>
+        <text x="252" y="127" class="diag-label-xs fill-amber">I · past — commit history fed back</text>
+        <rect x="244" y="142" width="198" height="30" rx="1.5" fill="rgba(255,108,73,0.1)" stroke="#ff6c49" stroke-width="1.1"/>
+        <text x="252" y="161" class="diag-label-xs fill-red">D · trend — ADVANCED/STALLED/REGRESSED</text>
+        <line class="diag-edge-cyan" x1="201" y1="97" x2="232" y2="97" marker-end="url(#ah-cy-4)"/>
+        <text x="216" y="89" text-anchor="middle" class="diag-label-xs">error</text>
+
+        <!-- plant -->
+        <rect class="diag-node-cyan" x="500" y="58" width="166" height="50" rx="2"/>
+        <text x="583" y="79" text-anchor="middle" class="diag-label fill-cyan">PLANT · CLAUDE</text>
+        <text x="583" y="95" text-anchor="middle" class="diag-label-xs">implements the change</text>
+        <line class="diag-edge-cyan" x1="450" y1="83" x2="496" y2="83" marker-end="url(#ah-cy-4)"/>
+        <text x="473" y="75" text-anchor="middle" class="diag-label-xs fill-cyan">actuate</text>
+
+        <!-- output -->
+        <rect class="diag-node" x="500" y="138" width="166" height="48" rx="2"/>
+        <text x="583" y="159" text-anchor="middle" class="diag-label">OUTPUT · diff</text>
+        <text x="583" y="174" text-anchor="middle" class="diag-label-xs">the working tree</text>
+        <line class="diag-edge" x1="583" y1="108" x2="583" y2="134" marker-end="url(#ah-ink-4)"/>
+
+        <!-- sensor -->
+        <rect class="diag-node-red" x="500" y="216" width="166" height="54" rx="2"/>
+        <text x="583" y="238" text-anchor="middle" class="diag-label fill-red">SENSOR · CODEX</text>
+        <text x="583" y="254" text-anchor="middle" class="diag-label-xs">measures error: [P0-9]</text>
+        <line class="diag-edge" x1="583" y1="186" x2="583" y2="212" marker-end="url(#ah-ink-4)"/>
+
+        <!-- feedback path -->
+        <path class="diag-edge-cyan" d="M 500 243 L 186 243 L 186 114" stroke-dasharray="0" marker-end="url(#ah-cy-4)"/>
+        <text x="330" y="236" text-anchor="middle" class="diag-label-xs fill-cyan">− measured error (remaining [P0-9])</text>
+
+        <!-- circuit breakers -->
+        <rect class="diag-node-red" x="236" y="296" width="266" height="120" rx="2"/>
+        <text x="369" y="316" text-anchor="middle" class="diag-title fill-red" style="font-size:11px">CIRCUIT BREAKERS</text>
+        <text x="248" y="338" class="diag-label-xs">stall ≥ 2 rounds → replan_required (re-anchor)</text>
+        <text x="248" y="356" class="diag-label-xs fill-red">stall ≥ 3 rounds → STOP the loop</text>
+        <text x="248" y="374" class="diag-label-xs">Codex emits STOP (alignment) → STOP</text>
+        <text x="248" y="392" class="diag-label-xs">round &gt; max_iterations → STOP</text>
+        <text x="248" y="408" class="diag-label-xs fill-red">→ terminal mv, the loop opens</text>
+        <path class="diag-edge-red" d="M 343 192 L 343 292" stroke-dasharray="4 3" marker-end="url(#ah-rd-4)"/>
+        <text x="352" y="250" class="diag-label-xs fill-red">trend → drift</text>
+
+        <!-- full alignment note -->
+        <text x="690" y="300" text-anchor="end" class="diag-label-xs fill-amber">every Nth round:</text>
+        <text x="690" y="314" text-anchor="end" class="diag-label-xs fill-amber">Full Alignment Check</text>
+        <text x="690" y="328" text-anchor="end" class="diag-label-xs">(deep recalibration)</text>
+      </svg>
+    </div>
+    <div class="caption"><span lang="en">Setpoint: all acceptance criteria met with zero severity markers. The controller actuates by handing Claude the next prompt; Codex is the sensor measuring how far off we still are; the feedback is negative (remaining issues subtract from &ldquo;done&rdquo;). The three terms are present error, accumulated history, and the trend of progress — and when the trend flattens, breakers open the loop instead of grinding forever.</span><span lang="zh">设定点： 所有验收标准达成、 零严重度标记。 控制器通过把下一条提示交给 Claude 来 &ldquo;施动&rdquo;； Codex 是传感器， 量我们还差多远； 反馈是负的（剩余问题从 &ldquo;完成&rdquo; 里扣）。 三个分量分别是当前误差、 累积历史、 和进展的趋势—— 趋势一旦走平， 断路器就打开回路， 而不是无休止地磨。</span></div>
+  </div>
+
+  <h3><span lang="en">The integral term</span><span lang="zh">积分项</span></h3>
+
+  <p><span lang="en">Every review prompt carries the accumulated commit history since the base commit, plus the last few rounds' summaries and review results. The code calls this the integral component by name. It is what keeps the reviewer from forgetting the trajectory and re-litigating settled decisions each round.</span><span lang="zh">每条审查提示都带上自基线提交以来累积的提交历史， 外加最近几轮的总结和审查结果。 代码里就直接管它叫积分分量。 正是它让审查者不会忘记整条轨迹、 不会每一轮都把已经定下来的决定重新翻一遍。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · the integral context</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1035-L1043">L1035–1043 ↗</a></div>
+    <pre><span class="c"># Integral component: accumulated commit history and recent round references</span>
+<span class="k">if</span> [[ -n "$BASE_COMMIT" ]] && git -C "$PROJECT_ROOT" merge-base --is-ancestor "$BASE_COMMIT" HEAD 2>/dev/null; <span class="k">then</span>
+    COMMIT_HISTORY=$(git log --oneline --no-decorate --reverse "$BASE_COMMIT"..HEAD | tail -80)
+<span class="k">else</span>
+    COMMIT_HISTORY=$(git log --oneline --no-decorate --reverse -30)
+    [[ -n "$COMMIT_HISTORY" ]] && COMMIT_HISTORY="(base commit unavailable, showing recent branch commits)
+${COMMIT_HISTORY}"
+<span class="k">fi</span></pre>
+  </div>
+
+  <h3><span lang="en">The derivative term, and the breaker</span><span lang="zh">微分项， 和那个断路器</span></h3>
+
+  <p><span lang="en">In implementation phase, every Codex review must end with a line: <code>Mainline Progress Verdict: ADVANCED / STALLED / REGRESSED</code>. That verdict is the derivative — it measures whether the <em>main</em> objective moved this round, independent of how many side-issues got cleaned up. If it stalls twice, the loop injects a drift-recovery prompt that forces re-anchoring on the plan. If it stalls a third time, the circuit breaker fires and the loop stops itself.</span><span lang="zh">在实现阶段， 每次 Codex 审查都必须以一行结尾： <code>Mainline Progress Verdict: ADVANCED / STALLED / REGRESSED</code>。 这个裁决就是微分项—— 它衡量这一轮<em>主线</em>目标有没有动， 跟顺手清掉了多少枝节问题无关。 停滞两次， 循环就注入一个漂移恢复提示， 强制重新锚回计划。 停滞第三次， 断路器跳闸， 循环把自己停掉。</span></p>
+
+  <div class="code red">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · stall → replan → stop</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1837-L1848">L1837–1848 ↗</a></div>
+    <pre><span class="s">"$MAINLINE_VERDICT_STALLED"</span>|<span class="s">"$MAINLINE_VERDICT_REGRESSED"</span>)
+    NEXT_MAINLINE_STALL_COUNT=$((MAINLINE_STALL_COUNT + 1))
+    <span class="k">if</span> [[ "$NEXT_MAINLINE_STALL_COUNT" -ge 2 ]]; <span class="k">then</span>
+        NEXT_DRIFT_STATUS="$DRIFT_STATUS_REPLAN_REQUIRED"
+        DRIFT_REPLAN_REQUIRED=true          <span class="c"># inject a re-anchor prompt</span>
+    <span class="k">fi</span>
+    <span class="k">if</span> [[ "$NEXT_MAINLINE_STALL_COUNT" -ge 3 ]]; <span class="k">then</span>
+        MAINLINE_DRIFT_STOP=true             <span class="r"># trip the breaker</span>
+    <span class="k">fi</span>
+    ;;</pre>
+  </div>
+
+  <p><span lang="en">There is also a periodic recalibration. Every Nth round (default 5) the regular review is upgraded to a <strong>Full Alignment Check</strong> against the whole plan and goal tracker, and only during those rounds is Codex permitted to emit <code>STOP</code> to halt a stagnating loop. The arithmetic lands the checks at rounds 4, 9, 14, … :</span><span lang="zh">还有一个周期性的重新校准。 每第 N 轮（默认 5）常规审查会升级成一次<strong>完整对齐检查</strong>， 对着整份计划和目标追踪表来核， 而且只有在这些轮里 Codex 才被允许发 <code>STOP</code> 来中止一个停滞的循环。 算术把这些检查落在第 4、 9、 14… 轮：</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · Full Alignment cadence</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1022-L1024">L1022–1024 ↗</a></div>
+    <pre>FULL_ALIGNMENT_CHECK=false
+<span class="k">if</span> [[ $((CURRENT_ROUND % FULL_REVIEW_ROUND)) -eq $((FULL_REVIEW_ROUND - 1)) ]]; <span class="k">then</span>
+    FULL_ALIGNMENT_CHECK=true
+<span class="k">fi</span></pre>
+  </div>
+
+  <div class="callout red">
+    <div class="label"><span lang="en">Why the derivative term matters most for us</span><span lang="zh">为什么微分项对我们最要紧</span></div>
+    <p><span lang="en">A naive loop measures &ldquo;are there issues left?&rdquo; and happily clears fifty trivial side-issues while the real objective never moves. The mainline verdict separates motion from progress. That is exactly the failure mode of a kernel-optimization agent: it will gladly shave a microsecond off a warm-up path for twenty rounds while the actual GEMM stays 3× off roofline. A separate &ldquo;did the mainline number move?&rdquo; signal — wired to a breaker — is the difference between a search that converges and one that fidgets.</span><span lang="zh">一个朴素的循环只量 &ldquo;还有没有问题？&rdquo;， 然后乐呵呵地清掉五十个琐碎枝节， 而真正的目标一动不动。 主线裁决把 &ldquo;在动&rdquo; 和 &ldquo;在进步&rdquo; 分开。 这恰好是 kernel 优化 agent 的失效模式： 它会高高兴兴地花二十轮给热身路径省下一微秒， 而真正的 GEMM 还差 roofline 三倍。 一个单独的 &ldquo;主线数字动了没？&rdquo; 信号—— 接到断路器上—— 就是一个会收敛的搜索和一个只会原地抖动的搜索之间的区别。</span></p>
+  </div>
+</section>
+
+<!-- ============ QUIZ ============ -->
+<section id="quiz">
+  <div class="sec-num"><span lang="en">§ 07 — The pre-flight</span><span lang="zh">§ 07 — 起飞前检查</span></div>
+  <h2><span lang="en">Begin with the end in mind</span><span lang="zh">以终为始</span></h2>
+
+  <p><span lang="en">Before the loop runs a single round, it tries to verify that <em>you</em> understand the plan. The reasoning in the docs is sharp enough to quote: &ldquo;An RLCR loop is an amplifier: it will faithfully execute whatever plan you give it. If the plan is wrong, the loop makes it wrong faster and at scale.&rdquo; They have a name for the failure they are guarding against — <strong>wishful coding</strong>: tossing a generated plan into the machine and hoping.</span><span lang="zh">在循环跑哪怕一轮之前， 它会试着确认<em>你</em>真的看懂了计划。 文档里的论证够锋利， 值得照引： &ldquo;一个 RLCR 循环是个放大器： 你给它什么计划， 它就忠实地执行什么。 计划要是错的， 循环只会让它错得更快、 更成规模。&rdquo; 他们给要防的这个失效起了名字—— <strong>许愿式编码</strong>： 把一份生成的计划丢进机器， 然后干等。</span></p>
+
+  <p><span lang="en">The mechanism is a two-question multiple-choice quiz, generated by a dedicated <code>opus</code> agent that reads the plan. Question one tests the core mechanism — what changes and how. Question two tests the architecture — how the pieces connect. Opus is the most expensive model in the plugin, used <em>here</em>, because the hard part is writing <em>plausible wrong answers</em> that a skimmer would fall for but a careful reader would not.</span><span lang="zh">机制是一道两题的选择题小测， 由一个专门的 <code>opus</code> agent 读完计划后出题。 第一题考核心机制—— 改什么、 怎么改。 第二题考架构—— 各部分怎么连起来。 Opus 是这个插件里最贵的模型， 偏偏用在<em>这里</em>， 因为难点是写出<em>看着像真的错误选项</em>—— 让略读者上钩、 让细读者一眼识破。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>agents/plan-understanding-quiz.md · the discriminator rule</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/agents/plan-understanding-quiz.md#L40-L42">L40–42 ↗</a></div>
+    <pre><span class="c"># the entire quality bar, in three lines:</span>
+- A user who has carefully read and understood the plan should pick the correct answer
+- A user who just skimmed the title or blindly accepted a generated plan would likely pick wrong
+- Wrong options should be plausible (not obviously absurd) but clearly incorrect to someone who read the plan</pre>
+  </div>
+
+  <p><span lang="en">The output is a fixed 13-field contract (two questions, four options each, two answers, plus a plan summary), and one of the enforcement notes is a small anti-bias trick: <em>randomize the position of the correct answer; do not always put it in A or D</em>. The quiz is <strong>advisory, not a gate</strong> — miss both questions and you are shown what the plan actually does, then offered the choice to proceed anyway or stop and read. The friction is the point, not the blocking.</span><span lang="zh">输出是一个固定的 13 字段契约（两题、 每题四个选项、 两个答案、 外加一段计划摘要）， 而其中一条执行须知是个小小的反偏置技巧： <em>随机化正确答案的位置； 别老把它放在 A 或 D</em>。 这个测验是<strong>建议性的， 不是关卡</strong>—— 两题都答错， 它会给你看计划到底在做什么， 然后让你选： 仍然继续， 还是停下来读。 重点是那点摩擦， 不是拦你。</span></p>
+
+  <div class="callout">
+    <div class="label"><span lang="en">The model-tier ladder is itself a design</span><span lang="zh">模型档位阶梯本身就是设计</span></div>
+    <p><span lang="en">Across the plugin, model choice tracks cognitive difficulty: <code>haiku</code> for the cheap relevance gates, <code>sonnet</code> for the branch-switch compliance check, <code>opus</code> for distractor generation. Cost is spent where the reasoning is genuinely hard. That is a habit worth stealing for any multi-agent system on a budget.</span><span lang="zh">在整个插件里， 模型选择跟着认知难度走： <code>haiku</code> 做廉价的相关性关卡， <code>sonnet</code> 做切分支的合规检查， <code>opus</code> 做干扰项生成。 钱花在推理真正难的地方。 这是任何有预算的多 agent 系统都值得偷的习惯。</span></p>
+  </div>
+</section>
+
+<!-- ============ PLANNING ============ -->
+<section id="planning">
+  <div class="sec-num"><span lang="en">§ 08 — Before the loop</span><span lang="zh">§ 08 — 循环之前</span></div>
+  <h2><span lang="en">The planning pipeline</span><span lang="zh">计划流水线</span></h2>
+
+  <p><span lang="en">The loop is only half the product. The other half is a three-command pipeline that turns a loose thought into a plan good enough to amplify. Each command is pure prompt engineering — markdown with frontmatter — and each forces the model into a parseable, auditable contract.</span><span lang="zh">循环只是产品的一半。 另一半是一条三命令的流水线， 把一个松散的念头变成一份好到值得放大的计划。 每个命令都是纯提示工程—— 带 frontmatter 的 markdown—— 而且每个都把模型逼进一个可解析、 可审计的契约。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span class="id">Plate V</span><span><span lang="en">idea → plan → refined plan → loop</span><span lang="zh">念头 → 计划 → 精修计划 → 循环</span></span></div>
+    <div class="plate-body">
+      <svg viewBox="0 0 720 360" role="img" aria-label="The planning pipeline">
+        <defs>
+          <marker id="ah-cy-5" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#58b7eb"/></marker>
+          <marker id="ah-ink-5" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5f87a6"/></marker>
+        </defs>
+        <text x="20" y="26" class="diag-title fill-red">PLATE V · THE PLANNING PIPELINE</text>
+
+        <!-- stage 1 -->
+        <rect class="diag-node-cyan" x="22" y="52" width="158" height="86" rx="2"/>
+        <text x="101" y="74" text-anchor="middle" class="diag-label fill-cyan">gen-idea</text>
+        <text x="101" y="92" text-anchor="middle" class="diag-label-xs">fan out N=6 Explore</text>
+        <text x="101" y="106" text-anchor="middle" class="diag-label-xs">agents, orthogonal</text>
+        <text x="101" y="124" text-anchor="middle" class="diag-label-xs">→ draft.md</text>
+
+        <!-- stage 2 -->
+        <rect class="diag-node-cyan" x="200" y="52" width="158" height="86" rx="2"/>
+        <text x="279" y="74" text-anchor="middle" class="diag-label fill-cyan">gen-plan</text>
+        <text x="279" y="92" text-anchor="middle" class="diag-label-xs">Codex-first critique,</text>
+        <text x="279" y="106" text-anchor="middle" class="diag-label-xs">converge ≤ 3 rounds</text>
+        <text x="279" y="124" text-anchor="middle" class="diag-label-xs">→ plan.md</text>
+
+        <!-- stage 3 -->
+        <rect class="diag-node-cyan" x="378" y="52" width="158" height="86" rx="2"/>
+        <text x="457" y="74" text-anchor="middle" class="diag-label fill-cyan">refine-plan</text>
+        <text x="457" y="92" text-anchor="middle" class="diag-label-xs">classify comments,</text>
+        <text x="457" y="106" text-anchor="middle" class="diag-label-xs">write QA ledger</text>
+        <text x="457" y="124" text-anchor="middle" class="diag-label-xs">→ refined plan</text>
+
+        <!-- stage 4 -->
+        <rect class="diag-node-red" x="556" y="52" width="142" height="86" rx="2"/>
+        <text x="627" y="74" text-anchor="middle" class="diag-label fill-red">start-rlcr</text>
+        <text x="627" y="92" text-anchor="middle" class="diag-label-xs">quiz gate, then</text>
+        <text x="627" y="106" text-anchor="middle" class="diag-label-xs">hand to the loop</text>
+        <text x="627" y="124" text-anchor="middle" class="diag-label-xs">→ § 01–06</text>
+
+        <line class="diag-edge-cyan" x1="180" y1="95" x2="196" y2="95" marker-end="url(#ah-cy-5)"/>
+        <line class="diag-edge-cyan" x1="358" y1="95" x2="374" y2="95" marker-end="url(#ah-cy-5)"/>
+        <line class="diag-edge-cyan" x1="536" y1="95" x2="552" y2="95" marker-end="url(#ah-cy-5)"/>
+
+        <!-- AC schema inset -->
+        <rect class="diag-node" x="22" y="174" width="336" height="160" rx="2"/>
+        <text x="34" y="194" class="diag-title fill-amber" style="font-size:11px">ACCEPTANCE CRITERION SCHEMA</text>
+        <text x="34" y="216" class="diag-label-xs">- AC-1: &lt;criterion&gt;</text>
+        <text x="46" y="234" class="diag-label-xs fill-cyan">- Positive Tests (expected to PASS):</text>
+        <text x="58" y="250" class="diag-label-xs">- &lt;case that succeeds when met&gt;</text>
+        <text x="46" y="268" class="diag-label-xs fill-red">- Negative Tests (expected to FAIL):</text>
+        <text x="58" y="284" class="diag-label-xs">- &lt;case that is rejected&gt;</text>
+        <text x="46" y="302" class="diag-label-xs">- AC-1.1: &lt;sub-criterion&gt;</text>
+        <text x="34" y="324" class="diag-label-xs fill-soft">TDD baked into the schema — every AC is falsifiable</text>
+
+        <!-- task table inset -->
+        <rect class="diag-node" x="378" y="174" width="320" height="160" rx="2"/>
+        <text x="390" y="194" class="diag-title fill-amber" style="font-size:11px">TASK TABLE — EVERYTHING ROUTED</text>
+        <text x="390" y="218" class="diag-label-xs">| task | Target AC | Tag | Depends On |</text>
+        <text x="390" y="238" class="diag-label-xs">| task1 | AC-1 | coding | - |</text>
+        <text x="390" y="256" class="diag-label-xs">| task2 | AC-2 | analyze | task1 |</text>
+        <text x="390" y="282" class="diag-label-xs fill-cyan">coding → Claude executes</text>
+        <text x="390" y="300" class="diag-label-xs fill-red">analyze → delegate to Codex</text>
+        <text x="390" y="322" class="diag-label-xs fill-soft">every task maps to an AC — nothing forgotten</text>
+
+        <line class="diag-edge-dash" x1="279" y1="138" x2="190" y2="170" marker-end="url(#ah-ink-5)"/>
+        <line class="diag-edge-dash" x1="279" y1="138" x2="520" y2="170" marker-end="url(#ah-ink-5)"/>
+      </svg>
+    </div>
+    <div class="caption"><span lang="en">The pipeline's whole job is to produce a plan the loop can verify mechanically: acceptance criteria with positive and negative tests, and a task table where every task maps to an AC and carries a routing tag. The amplifier only works if the thing being amplified is falsifiable.</span><span lang="zh">这条流水线的全部职责， 是产出一份循环能机械验证的计划： 带正反测试的验收标准， 以及一张每个任务都映射到某条 AC、 还带路由标签的任务表。 放大器只有在被放大的东西可证伪时才管用。</span></div>
+  </div>
+
+  <h3><span lang="en">gen-plan puts the reviewer first</span><span lang="zh">gen-plan 把审查者放在最前面</span></h3>
+
+  <p><span lang="en">The non-obvious move in <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/commands/gen-plan.md"><code>gen-plan.md</code></a> is that Codex critiques the raw draft <em>before</em> Claude writes a plan, returning a fixed six-field contract (<code>CORE_RISKS</code>, <code>MISSING_REQUIREMENTS</code>, <code>TECHNICAL_GAPS</code>, …). The reviewer sees the problem before the implementer commits to a solution, so the plan is not anchored on Claude's first framing. A second Codex pass then challenges the candidate plan across up to three convergence rounds, tracked in a matrix with explicit <code>resolved</code> / <code>needs_user_decision</code> / <code>deferred</code> statuses.</span><span lang="zh"><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/commands/gen-plan.md"><code>gen-plan.md</code></a> 里不显眼的一手是： Codex 在 Claude 动笔写计划<em>之前</em>就先批评原始草稿， 返回一个固定六字段契约（<code>CORE_RISKS</code>、 <code>MISSING_REQUIREMENTS</code>、 <code>TECHNICAL_GAPS</code>…）。 审查者在实现者锚定某个方案之前就看到了问题， 于是计划不会被 Claude 的第一框架带偏。 然后第二趟 Codex 挑战候选计划， 最多三轮收敛， 记录在一张带明确 <code>resolved</code> / <code>needs_user_decision</code> / <code>deferred</code> 状态的矩阵里。</span></p>
+
+  <h3><span lang="en">refine-plan is an auditable comment compiler</span><span lang="zh">refine-plan 是一个可审计的批注编译器</span></h3>
+
+  <p><span lang="en">When reviewers annotate a plan with inline comments (three accepted syntaxes: <code>CMT:…ENDCMT</code>, <code>&lt;cmt&gt;</code>, <code>&lt;comment&gt;</code>), <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/commands/refine-plan.md"><code>refine-plan.md</code></a> classifies each into exactly one of <code>question</code> / <code>change_request</code> / <code>research_request</code>, with a precedence ladder <code>research &gt; change &gt; question</code> for mixed-intent blocks (you must investigate before you can correctly change or answer). It then strips the comments and emits a QA ledger with one row per comment — a provable 1:1 audit, with dispositions <code>answered / applied / researched / deferred / resolved</code>. The instruction is explicit that the parser must be a stateful scanner, not a regex, because comment markers inside fenced code blocks have to be ignored.</span><span lang="zh">当审查者用内联批注标记一份计划（接受三种语法： <code>CMT:…ENDCMT</code>、 <code>&lt;cmt&gt;</code>、 <code>&lt;comment&gt;</code>）， <a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/commands/refine-plan.md"><code>refine-plan.md</code></a> 把每条恰好归为 <code>question</code> / <code>change_request</code> / <code>research_request</code> 之一， 混合意图的块按优先级阶梯 <code>research &gt; change &gt; question</code> 处理（你得先调查， 才能正确地改或答）。 然后它剥掉批注、 产出一份每条批注一行的 QA 账本—— 一个可证的 1:1 审计， 处置值为 <code>answered / applied / researched / deferred / resolved</code>。 指令明确要求解析器必须是个有状态扫描器、 而不是正则， 因为围栏代码块里的批注标记必须被忽略。</span></p>
+</section>
+
+<!-- ============ BITLESSON ============ -->
+<section id="bitlesson">
+  <div class="sec-num"><span lang="en">§ 09 — Memory</span><span lang="zh">§ 09 — 记忆</span></div>
+  <h2><span lang="en">The bitter-lesson notebook</span><span lang="zh">苦涩教训笔记本</span></h2>
+
+  <p><span lang="en">Each project keeps a knowledge base at <code>.humanize/bitlesson.md</code> — a structured log of lessons learned across rounds, named for Rich Sutton's &ldquo;Bitter Lesson.&rdquo; Entries follow a strict template: a dated ID <code>BL-YYYYMMDD-short-name</code>, plus scope, problem description, root cause, solution, constraints, validation evidence, and the source rounds where the problem appeared and was solved.</span><span lang="zh">每个项目在 <code>.humanize/bitlesson.md</code> 维护一个知识库—— 一份跨轮次的经验日志， 名字取自 Rich Sutton 的 &ldquo;苦涩教训&rdquo;。 条目遵循严格模板： 一个带日期的 ID <code>BL-YYYYMMDD-short-name</code>， 外加范围、 问题描述、 根因、 解法、 约束、 验证证据、 以及问题出现并被解决的那些来源轮次。</span></p>
+
+  <p><span lang="en">Two pieces make it work. A <code>haiku</code> selector agent runs before each task and picks which lessons apply, with a hard instruction to prefer precision over recall — return <code>NONE</code> rather than dilute the implementer's context with weakly-related lessons. And every round summary must carry a <code>## BitLesson Delta</code> section, which the stop gate validates strictly:</span><span lang="zh">两块东西让它跑起来。 一个 <code>haiku</code> 选择器 agent 在每个任务前运行、 挑出哪些教训适用， 带一条硬指令： 宁要精确不要召回—— 宁可返回 <code>NONE</code>， 也不用弱相关的教训稀释实现者的上下文。 而每一轮总结都必须带一个 <code>## BitLesson Delta</code> 段， 由 stop gate 严格校验：</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>the BitLesson Delta contract · validated every round</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/docs/bitlesson.md#L36-L51">docs/bitlesson.md ↗</a></div>
+    <pre>## BitLesson Delta
+- Action: none|add|update
+- Lesson ID(s): &lt;IDs or NONE&gt;
+- Notes: &lt;what changed and why&gt;
+
+<span class="c"># strict rules:</span>
+<span class="c">#  Action: none   → Lesson ID(s) must be NONE / empty</span>
+<span class="c">#  add / update   → must reference a real BL-… ID that exists in the file</span></pre>
+  </div>
+
+  <p><span lang="en">Provider routing for the selector is automatic and worth noting: model names matching <code>gpt-*</code> or <code>o[N]-*</code> route to Codex, while <code>claude-*</code>/<code>haiku</code>/<code>sonnet</code>/<code>opus</code> route to Claude. The same agent definition drives either backend. If the configured provider's binary is missing, it falls back to Codex so the loop still proceeds.</span><span lang="zh">选择器的 provider 路由是自动的， 值得一提： 模型名匹配 <code>gpt-*</code> 或 <code>o[N]-*</code> 的走 Codex， 而 <code>claude-*</code>/<code>haiku</code>/<code>sonnet</code>/<code>opus</code> 走 Claude。 同一份 agent 定义驱动任一后端。 配置的 provider 二进制缺失时， 它回退到 Codex， 循环照样往前走。</span></p>
+
+  <div class="callout">
+    <div class="label"><span lang="en">This is the part I would build first</span><span lang="zh">这是我会最先搭的部分</span></div>
+    <p><span lang="en">A per-project, append-only ledger of &ldquo;here is a failure mode and the fix that worked, with the evidence&rdquo; is exactly the performance database a kernel-optimization agent needs. Swap &ldquo;lesson&rdquo; for &ldquo;a tiling/vectorization choice that moved the GEMM toward roofline, with the profiler trace,&rdquo; and the BitLesson schema becomes the training substrate for later RL. The strict, machine-checkable delta contract is what makes it trustworthy enough to learn from.</span><span lang="zh">一个按项目、 只追加的账本， 记着 &ldquo;这是一个失效模式和管用的修法， 附证据&rdquo;—— 这正是 kernel 优化 agent 需要的性能数据库。 把 &ldquo;教训&rdquo; 换成 &ldquo;一个把 GEMM 推向 roofline 的 tiling/向量化选择， 附 profiler trace&rdquo;， BitLesson 的 schema 就成了日后 RL 的训练底料。 那个严格、 机器可校验的 delta 契约， 正是让它可信到能从中学习的东西。</span></p>
+  </div>
+</section>
+
+<!-- ============ DEFENSE ============ -->
+<section id="defense">
+  <div class="sec-num"><span lang="en">§ 10 — Threat model</span><span lang="zh">§ 10 — 威胁模型</span></div>
+  <h2><span lang="en">Why the agent can't cheat its way out</span><span lang="zh">为什么 agent 没法靠作弊脱身</span></h2>
+
+  <p><span lang="en">A loop that re-prompts a model until it succeeds has an obvious attack: the model could just <em>forge an exit</em> — edit the state file, fake a <code>COMPLETE</code>, or run the cancel command itself. Humanize assumes the agent will try, and defends in depth. No single layer is trusted; each one independently makes the cheat harder.</span><span lang="zh">一个不停重提示模型直到它成功的循环， 有个显而易见的攻击： 模型可以干脆<em>伪造一个退出</em>—— 改状态文件、 假装 <code>COMPLETE</code>、 或者自己去跑取消命令。 Humanize 假定 agent 会去试， 然后做纵深防御。 没有任何单层是被信任的； 每一层都独立地把作弊变得更难。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span class="id">Plate VI</span><span><span lang="en">defense in depth against a forged exit</span><span lang="zh">对伪造退出的纵深防御</span></span></div>
+    <div class="plate-body">
+      <svg viewBox="0 0 720 440" role="img" aria-label="Defense in depth layers">
+        <text x="20" y="26" class="diag-title fill-red">PLATE VI · DEFENSE IN DEPTH</text>
+
+        <rect x="24" y="44" width="672" height="382" rx="3" fill="rgba(255,108,73,0.03)" stroke="#ff6c49" stroke-width="1.1"/>
+        <text x="40" y="66" class="diag-label-sm fill-red">LAYER 4 — .review-phase-started marker + per-call state re-validation</text>
+
+        <rect x="78" y="86" width="564" height="298" rx="3" fill="rgba(244,178,78,0.04)" stroke="#f4b24e" stroke-width="1.1"/>
+        <text x="94" y="108" class="diag-label-sm fill-amber">LAYER 3 — is_cancel_authorized: the sanctioned exit needs a .cancel-requested signal</text>
+
+        <rect x="132" y="128" width="456" height="214" rx="3" fill="rgba(88,183,235,0.05)" stroke="#58b7eb" stroke-width="1.1"/>
+        <text x="148" y="150" class="diag-label-sm fill-cyan">LAYER 2 — PreToolUse validators block the writes</text>
+        <text x="148" y="166" class="diag-label-xs">mv state.md · git push · immutable goal-tracker · plan.md</text>
+
+        <rect x="186" y="186" width="348" height="100" rx="3" fill="rgba(88,183,235,0.04)" stroke="#9fbdd6" stroke-width="1.1" stroke-dasharray="4 3"/>
+        <text x="202" y="208" class="diag-label-sm fill-soft">LAYER 1 — the round prompt forbids it</text>
+        <text x="202" y="224" class="diag-label-xs">&ldquo;you MUST NOT exit by lying or edit the loop state&rdquo;</text>
+
+        <rect class="diag-node-red" x="232" y="234" width="256" height="44" rx="2"/>
+        <text x="360" y="252" text-anchor="middle" class="diag-label fill-red">ATTEMPT</text>
+        <text x="360" y="268" text-anchor="middle" class="diag-label-xs">edit state · fake cancel · forge COMPLETE</text>
+
+        <text x="360" y="320" text-anchor="middle" class="diag-label-sm">an exit is real only if it survives all four layers</text>
+        <text x="360" y="338" text-anchor="middle" class="diag-label-xs fill-soft">prompt (soft) → validators (hard) → signed cancel → marker + re-check</text>
+        <text x="360" y="364" text-anchor="middle" class="diag-label-xs">terminal states are renamed, never deleted — every attempt is preserved for forensics</text>
+      </svg>
+    </div>
+    <div class="caption"><span lang="en">The prompt is the only soft layer; everything outside it is enforced by shell. The cancel command isn't blocked outright — instead the one sanctioned <code>mv state.md → cancel-state.md</code> is gated behind a <code>.cancel-requested</code> signal file that only the real cancel command drops, with an injection-hardened parser so the escape hatch can't be turned into an arbitrary move.</span><span lang="zh">提示是唯一的软层； 它外面的一切都由 shell 强制。 取消命令并没有被一刀切地禁掉—— 而是那唯一被认可的 <code>mv state.md → cancel-state.md</code> 被一个 <code>.cancel-requested</code> 信号文件把着关， 只有真正的取消命令才会丢下它， 还配了一个抗注入的解析器， 免得这个逃生口被改造成任意的 move。</span></div>
+  </div>
+
+  <p><span lang="en">Layer 4 is my favorite because it closes a specific hole. The implementation-vs-review distinction is just a boolean in <code>state.md</code>. A model could edit that boolean to <code>true</code> to skip straight to review. So entering review phase also writes a <code>.review-phase-started</code> marker file, and the hook refuses to honor <code>review_started=true</code> unless that marker exists — a hand-edited toggle is detected and rejected as an inconsistency.</span><span lang="zh">第 4 层是我最喜欢的， 因为它堵了一个具体的洞。 实现-还是-审查的区别只是 <code>state.md</code> 里的一个布尔量。 模型可以把它改成 <code>true</code> 直接跳到审查。 所以进入审查阶段时还会写一个 <code>.review-phase-started</code> 标记文件， 钩子拒绝认可 <code>review_started=true</code>， 除非那个标记存在—— 一个手改的开关会被当成不一致检测出来并拒绝。</span></p>
+
+  <div class="code red">
+    <div class="code-head"><span>loop-codex-stop-hook.sh · the anti-toggle check</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/hooks/loop-codex-stop-hook.sh#L1922-L1938">L1922–1938 ↗</a></div>
+    <pre><span class="c"># This prevents manual toggle attacks where someone edits state.md directly</span>
+<span class="k">if</span> [[ ! -f "$LOOP_DIR/.review-phase-started" ]]; <span class="k">then</span>
+    REASON="Review phase state inconsistency detected. …"
+    jq -n --arg reason "$REASON" --arg msg "…" \
+        '{"decision": "block", "reason": $reason, …}'
+    <span class="k">exit</span> 0
+<span class="k">fi</span></pre>
+  </div>
+</section>
+
+<!-- ============ TRICKS ============ -->
+<section id="tricks">
+  <div class="sec-num"><span lang="en">§ 11 — Small cleverness</span><span lang="zh">§ 11 — 小巧思</span></div>
+  <h2><span lang="en">A drawer of small cleverness</span><span lang="zh">一抽屉小巧思</span></h2>
+
+  <p><span lang="en">The reason this codebase rewards a close read is the density of small, correct decisions in plain shell. Here is a drawer of the ones I would not have thought to write until I saw them break without them.</span><span lang="zh">这个代码库值得细读的原因， 是它在朴素 shell 里那一把又一把又小又对的决定。 下面这一抽屉， 都是我没亲眼见过 &ldquo;没有它就会出事&rdquo; 之前不会想到要写的。</span></p>
+
+  <h3><span lang="en">The session-id handshake</span><span lang="zh">session-id 握手</span></h3>
+
+  <p><span lang="en">The setup script writes <code>state.md</code> with <code>session_id:</code> deliberately blank, because it runs <em>inside</em> Claude's Bash tool and cannot see its own session id. It drops a one-shot <code>.pending-session-id</code> signal carrying the setup script's own path as a command signature; the PostToolUse Bash hook fires after the command, confirms the just-run command actually starts with that signature, extracts the session id from the hook's JSON, and atomically patches it in. The comment cites a real bug (issue #67): a trailing slash on <code>CLAUDE_PLUGIN_ROOT</code> produced a <code>//</code> mismatch, so both sides are normalized with <code>tr -s '/'</code> first.</span><span lang="zh">安装脚本写 <code>state.md</code> 时故意把 <code>session_id:</code> 留空， 因为它跑在 Claude 的 Bash 工具<em>里面</em>、 看不到自己的 session id。 它丢下一个一次性的 <code>.pending-session-id</code> 信号， 里头带着安装脚本自己的路径作为命令签名； PostToolUse Bash 钩子在命令之后触发、 确认刚跑的命令确实以那个签名开头、 从钩子的 JSON 里抽出 session id、 再原子地补进去。 注释引用了一个真实 bug（issue #67）： <code>CLAUDE_PLUGIN_ROOT</code> 尾部一个斜杠产生了 <code>//</code> 不匹配， 所以两边先用 <code>tr -s '/'</code> 归一化。</span></p>
+
+  <p><span lang="en">Why bother? Because the session id must be recorded before any Agent Team members spawn, so that only the team leader's session is governed by the hooks. The whole dance exists to make the hooks session-aware in a system that never told the setup script which session it was.</span><span lang="zh">何必费这劲？ 因为 session id 必须在任何 Agent Team 成员生成之前记下来， 这样才只有队长的会话被钩子治理。 这整套舞步的存在， 就是为了在一个从没告诉安装脚本 &ldquo;你是哪个会话&rdquo; 的系统里， 让钩子变得会话感知。</span></p>
+
+  <h3><span lang="en">A flicker-free TUI from two escape codes</span><span lang="zh">两个转义码搭出的无闪烁 TUI</span></h3>
+
+  <p><span lang="en">The monitor dashboard is a live terminal UI with a frozen status bar on top and a scrolling log below — built without any TUI library. It carves the screen with one VT100 sequence (DECSTBM, &ldquo;set top and bottom margins&rdquo;) so output only scrolls below the reserved rows, and redraws the bar in place using erase-to-end-of-line instead of a full clear, so it never flickers.</span><span lang="zh">监控面板是一个实时终端 UI： 顶上冻一条状态栏、 下面滚动日志—— 没用任何 TUI 库搭出来。 它用一个 VT100 序列（DECSTBM， &ldquo;设置上下边距&rdquo;）把屏幕切开， 让输出只在保留行下方滚动； 再用 &ldquo;清到行尾&rdquo; 而不是整屏清除来就地重绘状态栏， 于是从不闪烁。</span></p>
+
+  <div class="code">
+    <div class="code-head"><span>scripts/humanize.sh · split-screen via scroll region</span><a href="https://github.com/PolyArch/humanize/blob/0ec921a36b4365df503511c5567bbd3e02db0df5/scripts/humanize.sh#L652-L659">L652–659 ↗</a></div>
+    <pre>_setup_terminal() {
+    clear
+    <span class="c"># reserve top rows for the status bar; scroll only below</span>
+    printf "\033[${status_bar_height};%dr" $(tput lines)   <span class="c"># DECSTBM</span>
+    tput cup $status_bar_height 0
+}</pre>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr>
+        <th><span lang="en">Trick</span><span lang="zh">巧思</span></th>
+        <th><span lang="en">Where</span><span lang="zh">位置</span></th>
+        <th><span lang="en">Why it's there</span><span lang="zh">为何如此</span></th>
+      </tr></thead>
+      <tbody>
+        <tr><td><span lang="en">Control-char placeholders</span><span lang="zh">控制符占位</span></td><td><code>loop-bash-validator.sh:321</code></td><td><span lang="en"><code>\x01/\x02/\x03</code> stand in for <code>&amp;&gt; &gt;&amp; &amp;&gt;&gt;</code> so splitting a command on <code>&amp;</code> doesn't shred redirections</span><span lang="zh"><code>\x01/\x02/\x03</code> 替身 <code>&amp;&gt; &gt;&amp; &amp;&gt;&gt;</code>， 这样按 <code>&amp;</code> 切命令时不会撕碎重定向</span></td></tr>
+        <tr><td><span lang="en">awk, not sed</span><span lang="zh">用 awk 不用 sed</span></td><td><code>loop-post-bash-hook.sh:127</code></td><td><span lang="en">session ids contain <code>/</code> and <code>&amp;</code>, which are sed-hostile replacement chars</span><span lang="zh">session id 含 <code>/</code> 和 <code>&amp;</code>， 都是 sed 替换里的雷</span></td></tr>
+        <tr><td><span lang="en">Refuse <code>pwd</code></span><span lang="zh">拒用 <code>pwd</code></span></td><td><code>lib/project-root.sh</code></td><td><span lang="en">resolve root via <code>CLAUDE_PROJECT_DIR</code> → git toplevel; <code>pwd</code> drifts as Claude <code>cd</code>s mid-session</span><span lang="zh">用 <code>CLAUDE_PROJECT_DIR</code> → git 顶层解析根； <code>pwd</code> 会随 Claude 中途 <code>cd</code> 漂移</span></td></tr>
+        <tr><td><span lang="en">Zombie-loop guard</span><span lang="zh">僵尸循环防护</span></td><td><code>loop-common.sh:344</code></td><td><span lang="en">only the newest timestamped dir is inspected, so a stale <code>state.md</code> can never be revived</span><span lang="zh">只看最新的时间戳目录， 旧的 <code>state.md</code> 永远复活不了</span></td></tr>
+        <tr><td><span lang="en">Incremental tail</span><span lang="zh">增量 tail</span></td><td><code>scripts/humanize.sh:1079</code></td><td><span lang="en"><code>tail -c +N</code> reads only new bytes each frame; a shrinking file signals rotation</span><span lang="zh"><code>tail -c +N</code> 每帧只读新字节； 文件变小就是轮转信号</span></td></tr>
+        <tr><td><span lang="en">Portable timeout</span><span lang="zh">可移植 timeout</span></td><td><code>scripts/portable-timeout.sh</code></td><td><span lang="en">macOS has no <code>timeout</code>; probe <code>gtimeout</code>→<code>timeout</code>→python, and exit 124 to match GNU</span><span lang="zh">macOS 没有 <code>timeout</code>； 探测 <code>gtimeout</code>→<code>timeout</code>→python， 并以 124 退出对齐 GNU</span></td></tr>
+        <tr><td><span lang="en">Signal sets a flag only</span><span lang="zh">信号只置标志</span></td><td><code>scripts/humanize.sh:780</code></td><td><span lang="en">the SIGWINCH handler does no I/O — that would race the redraw and corrupt arithmetic</span><span lang="zh">SIGWINCH 处理器不做 I/O—— 否则会和重绘竞争、 把算术弄乱</span></td></tr>
+        <tr><td><span lang="en">Late PIPE trap</span><span lang="zh">迟设 PIPE trap</span></td><td><code>setup-rlcr-loop.sh:1447</code></td><td><span lang="en"><code>trap 'exit 0' PIPE</code> set just before the final stdout dump, so an early reader-close exits clean</span><span lang="zh"><code>trap 'exit 0' PIPE</code> 只在最后 stdout 输出前设， 读者提前关管道也能干净退出</span></td></tr>
+        <tr><td><span lang="en">jq empty-collapse guard</span><span lang="zh">jq 空塌缩防护</span></td><td><code>rlcr-stop-gate.sh</code></td><td><span lang="en">explicit ternaries instead of <code>select(length&gt;0)</code>, so an empty <code>session_id</code> doesn't wipe the whole object</span><span lang="zh">用显式三元而非 <code>select(length&gt;0)</code>， 免得空 <code>session_id</code> 抹掉整个对象</span></td></tr>
+        <tr><td><span lang="en">Dual-purpose PENDING</span><span lang="zh">双用 PENDING</span></td><td><code>commands/gen-plan.md</code></td><td><span lang="en"><code>DEC-N · PENDING</code> is both the human to-do list and the machine gate that blocks auto-start</span><span lang="zh"><code>DEC-N · PENDING</code> 既是给人的待办、 也是挡住自动启动的机器关卡</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ AMD ============ -->
+<section id="amd">
+  <div class="sec-num"><span lang="en">§ 12 — Transfer</span><span lang="zh">§ 12 — 迁移</span></div>
+  <h2><span lang="en">What transfers to a kernel agent</span><span lang="zh">什么能迁到 kernel agent 上</span></h2>
+
+  <p><span lang="en">I read this with one project in mind: a multi-agent system that writes high-performance AMD kernels by running long-horizon, parallel optimization loops. Humanize is not about kernels, but its control structure is almost exactly the loop I want, and reading it sharpened a few decisions.</span><span lang="zh">我读它时脑子里装着一个项目： 一个多 agent 系统， 靠跑长周期、 并行的优化循环来写高性能 AMD kernel。 Humanize 跟 kernel 无关， 但它的控制结构几乎正是我想要的循环， 读它让我把几个决定想清楚了。</span></p>
+
+  <div class="tbl">
+    <table>
+      <thead><tr>
+        <th><span lang="en">Humanize</span><span lang="zh">Humanize</span></th>
+        <th><span lang="en">Kernel agent equivalent</span><span lang="zh">Kernel agent 的对应</span></th>
+      </tr></thead>
+      <tbody>
+        <tr><td><span lang="en">Codex review (the sensor)</span><span lang="zh">Codex 审查（传感器）</span></td><td><span lang="en">rocprof / omniperf counters + a correctness check — an external, non-negotiable measurement, not the agent's own opinion</span><span lang="zh">rocprof / omniperf 计数器 + 正确性检查—— 一个外部的、 不容商量的测量， 不是 agent 自己的看法</span></td></tr>
+        <tr><td><span lang="en"><code>[P0-9]</code> severity markers</span><span lang="zh"><code>[P0-9]</code> 严重度标记</span></td><td><span lang="en">distance from roofline + correctness failures, graded by how much performance is left on the table</span><span lang="zh">距 roofline 的差距 + 正确性失败， 按还有多少性能没榨出来分级</span></td></tr>
+        <tr><td><span lang="en">Mainline Progress Verdict</span><span lang="zh">主线进展裁决</span></td><td><span lang="en">&ldquo;did the real GEMM latency move toward roofline?&rdquo; — separate from incidental micro-wins</span><span lang="zh">&ldquo;真正的 GEMM 延迟有没有朝 roofline 动？&rdquo;—— 与顺手的微优化区分开</span></td></tr>
+        <tr><td><span lang="en">Drift circuit breaker</span><span lang="zh">漂移断路器</span></td><td><span lang="en">stop a search that fidgets on warm-up paths while the binding kernel stays 3× off peak</span><span lang="zh">停掉那种在热身路径上原地抖、 而关键 kernel 还差峰值三倍的搜索</span></td></tr>
+        <tr><td><span lang="en">Cheap gates before Codex</span><span lang="zh">Codex 前的廉价关卡</span></td><td><span lang="en">does it compile? does it pass the reference check? — gate before spending a full profiling run</span><span lang="zh">编得过吗？ 过参考检查吗？—— 在花一次完整 profiling 之前先过关</span></td></tr>
+        <tr><td><span lang="en">BitLesson ledger</span><span lang="zh">BitLesson 账本</span></td><td><span lang="en">the performance database: every variant's code + params + profiler trace, the substrate for later RL</span><span lang="zh">性能数据库： 每个变体的代码 + 参数 + profiler trace， 日后 RL 的底料</span></td></tr>
+        <tr><td><span lang="en">State as files in a timestamped dir</span><span lang="zh">状态 = 时间戳目录里的文件</span></td><td><span lang="en">crash-safe, reconstructable parallel search — checkpoint every variant, never hold the search in a process</span><span lang="zh">崩溃安全、 可重建的并行搜索—— 每个变体都 checkpoint， 绝不把搜索攥在进程里</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><span lang="en">The single most useful idea is the separation the mainline verdict makes: <em>motion is not progress</em>. A loop that only asks &ldquo;are there issues left?&rdquo; will clear easy issues forever. A loop that asks &ldquo;did the one number that matters move?&rdquo; — and trips a breaker when it doesn't — converges instead of fidgeting. For kernel search, the one number is the gap to roofline, and wiring it to a breaker is what keeps a 500-variants-per-day agent from spending its budget polishing things that don't bind.</span><span lang="zh">最有用的一个想法， 是主线裁决做出的那个区分： <em>在动不等于在进步</em>。 一个只问 &ldquo;还有没有问题？&rdquo; 的循环会永远清简单问题。 一个问 &ldquo;那个唯一要紧的数字动了没？&rdquo;、 不动就跳闸的循环， 会收敛而不是抖动。 对 kernel 搜索， 那个唯一的数字就是距 roofline 的差距， 把它接到断路器上， 正是让一个每天试 500 个变体的 agent 不至于把预算花在打磨不构成瓶颈的东西上。</span></p>
+
+  <p><span lang="en">The second idea is the funnel: never spend the expensive measurement until the cheap checks pass. Compiling and a correctness check are seconds; a full omniperf pass is minutes. Humanize's ordering — local deterministic gates first, the costly external reviewer last — is the right shape for any agent whose feedback signal is expensive to obtain.</span><span lang="zh">第二个想法是漏斗： 廉价检查没过之前， 绝不花那次昂贵的测量。 编译加一次正确性检查是秒级； 一整趟 omniperf 是分钟级。 Humanize 的排序—— 本地确定性关卡在前、 昂贵的外部审查者在后—— 对任何 &ldquo;反馈信号获取代价高&rdquo; 的 agent 都是对的形状。</span></p>
+</section>
+
+<!-- ============ EPILOGUE ============ -->
+<section id="epilogue">
+  <div class="sec-num"><span lang="en">§ 13 — Epilogue</span><span lang="zh">§ 13 — 尾声</span></div>
+  <h2><span lang="en">The brake is the feature</span><span lang="zh">刹车才是功能</span></h2>
+
+  <p><span lang="en">Most agent tooling adds capability — more tools, more context, more autonomy. Humanize adds a brake, and the brake is the whole value. It takes an eager model that wants to declare victory and wraps it in durable state, an external sensor, and a circuit breaker, until the eagerness becomes something you can actually steer.</span><span lang="zh">大多数 agent 工具加的是能力—— 更多工具、 更多上下文、 更多自主权。 Humanize 加的是一个刹车， 而这个刹车就是它的全部价值。 它拿一个急着宣布胜利的模型， 用持久状态、 一个外部传感器、 和一个断路器把它裹起来， 直到那份急切变成你真能驾驭的东西。</span></p>
+
+  <p><span lang="en">None of it requires a framework. Seven shell hooks, a directory of markdown, an independent reviewer, and a controller that knows the difference between motion and progress. That the most interesting agent-orchestration code I read this month is written in Bash is itself the lesson: the hard part was never the runtime, it was knowing where to put the gates.</span><span lang="zh">这些都不需要框架。 七个 shell 钩子、 一个 markdown 目录、 一个独立审查者、 还有一个分得清 &ldquo;在动&rdquo; 和 &ldquo;在进步&rdquo; 的控制器。 我这个月读到的最有意思的 agent 编排代码竟是用 Bash 写的， 这本身就是教训： 难的从来不是运行时， 而是知道把关卡放在哪。</span></p>
+
+  <div class="callout">
+    <div class="label"><span lang="en">Read next</span><span lang="zh">接着读</span></div>
+    <p><span lang="en">If the agent-orchestration angle is what hooked you, the companion reading is <a href="/sources/codex-goal.html">Codex's goal-tracking source</a> and <a href="/sources/kernel-design-agents.html">Kernel-Design Agents</a> on the paper shelf. Everything is indexed at <a href="/sources/">the library</a>.</span><span lang="zh">如果是 agent 编排这个角度勾住了你， 配套阅读是 <a href="/sources/codex-goal.html">Codex 的目标追踪源码</a>， 以及论文架上的 <a href="/sources/kernel-design-agents.html">Kernel-Design Agents</a>。 一切都索引在 <a href="/sources/">文库</a> 里。</span></p>
+  </div>
+</section>
+</main>
+
+<footer class="colophon">
+  <div class="row"><div class="ck"><span lang="en">Source</span><span lang="zh">来源</span></div><div class="cv"><a href="https://github.com/PolyArch/humanize">PolyArch/humanize</a> · v1.16.0 · MIT · <span lang="en">read at commit 0ec921a</span><span lang="zh">读于提交 0ec921a</span></div></div>
+  <div class="row"><div class="ck"><span lang="en">Typography</span><span lang="zh">字体</span></div><div class="cv">Oswald · Chivo · B612 Mono · Noto Sans SC</div></div>
+  <div class="row"><div class="ck"><span lang="en">Palette</span><span lang="zh">配色</span></div><div class="cv"><span lang="en">cyanotype blueprint + redline review pencil</span><span lang="zh">蓝晒图纸 + 红线审稿铅笔</span></div></div>
+  <div class="row"><div class="ck"><span lang="en">Compiled for</span><span lang="zh">写给</span></div><div class="cv"><span lang="en">jinnpan.com · the library</span><span lang="zh">jinnpan.com · 文库</span></div></div>
+</footer>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+(function() {
+  var KEY = 'humanize-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+  // active section tracking in rail
+  var links = Array.prototype.slice.call(document.querySelectorAll('.rail ol li a'));
+  var map = {};
+  links.forEach(function(a) { var id = a.getAttribute('href').slice(1); map[id] = a; });
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        links.forEach(function(a) { a.classList.remove('active'); });
+        if (map[e.target.id]) map[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+  document.querySelectorAll('.article section[id]').forEach(function(s) { obs.observe(s); });
+})();
+</script>
+
+</body>
+</html>
