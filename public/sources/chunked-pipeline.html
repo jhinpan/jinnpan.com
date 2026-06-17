@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..700&family=Azeret+Mono:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
 <style>
 :root {
   /* Signal-flow oscilloscope — near-black instrument panel, warm bone trace, teal signal */
@@ -365,9 +366,19 @@ body::after {
   overflow-x: auto;
 }
 .formula .big { font-size: 17px; color: var(--teal-soft); }
-.formula .note { display: block; margin-top: 8px; font-family: var(--sans); font-size: 12.5px; color: var(--fg-mute); font-style: italic; }
+.formula .note { display: block; margin-top: 10px; font-family: var(--sans); font-size: 12.5px; color: var(--fg-mute); font-style: italic; }
 .formula .hl { color: var(--amber); }
 .formula .bad { color: var(--crimson); }
+
+/* ============ KATEX MATH ============ */
+.formula .katex-display { margin: 4px 0; color: var(--teal-soft); }
+.formula .katex-display + .katex-display { margin-top: 10px; }
+.formula .katex { font-size: 1.18em; }
+.katex { color: var(--fg); }
+.article .katex { font-size: 1.04em; }
+/* keep long display math scrollable on narrow screens instead of overflowing */
+.formula .katex-display > .katex { white-space: normal; }
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 
 /* ============ TABLES ============ */
 .tbl { width: 100%; border-collapse: collapse; margin: 26px 0; font-size: 14px; }
@@ -718,19 +729,19 @@ section { scroll-margin-top: 30px; }
 <p lang="zh">博客给了三条通信量公式。 与其照抄， 不如从一颗种子把它们长出来。 对于一个跨 <code>N</code> 张 GPU、 张量总大小为 <code>K</code> 字节的环形集合通信， 带宽最优的<em>每卡</em>代价是： <code>AllReduce</code> 为 <code>2(N−1)/N·K</code>， <code>AllGather</code> 为 <code>(N−1)/N·K</code>。 当 <code>N</code> 增大， 这两个系数分别<strong>饱和</strong>到 <strong>2</strong> 和 <strong>1</strong> —— 注意是<em>饱和</em>， 它们不会随 <code>N</code> 一直往上爬。 这一个事实， 就是全部三个常数的种子。</p>
 
 <div class="formula">
-<span class="big">Vol(TP) = 2·(TP−1)·(B·S·H / TP)·<span class="hl">2</span>·L  ≈  <span class="hl">4</span>·B·S·H·L</span>
+\[ \mathrm{Vol}(\mathrm{TP}) = 2\,(\mathrm{TP}-1)\cdot\frac{B\,S\,H}{\mathrm{TP}}\cdot\textcolor{#e8b54e}{2}\cdot L \;\approx\; \textcolor{#e8b54e}{4}\,B\,S\,H\,L \]
 <span class="note" lang="en">ring factor 2 × <span class="hl">two AllReduces per layer</span> = 4; the full activation B·S·H must be reconciled, once per layer (×L)</span>
 <span class="note" lang="zh">环形系数 2 × <span class="hl">每层两次 AllReduce</span> = 4； 完整激活 B·S·H 必须被重新合并， 每层一次（×L）</span>
 </div>
 
 <div class="formula">
-<span class="big">Vol(CP) = (CP−1)·(B·S/CP · <span class="hl">2</span>·H_KV)·L  ≈  <span class="hl">2</span>·B·S·H_KV·L</span>
+\[ \mathrm{Vol}(\mathrm{CP}) = (\mathrm{CP}-1)\cdot\frac{B\,S}{\mathrm{CP}}\cdot\textcolor{#e8b54e}{2}\,H_{KV}\cdot L \;\approx\; \textcolor{#e8b54e}{2}\,B\,S\,H_{KV}\,L \]
 <span class="note" lang="en">the 2 is K and V; H_KV (not H) because only KV crosses — with GQA/MLA, H_KV ≪ H makes CP cheap</span>
 <span class="note" lang="zh">这个 2 是 K 和 V； 用 H_KV 而非 H， 因为只有 KV 过线 —— 在 GQA / MLA 下 H_KV ≪ H， 所以 CP 便宜</span>
 </div>
 
 <div class="formula">
-<span class="big">Vol(PP) = M·(B/M · S·H)·(P−1)  =  B·S·H·<span class="hl">(P−1)</span></span>
+\[ \mathrm{Vol}(\mathrm{PP}) = M\cdot\frac{B}{M}\,S\,H\cdot(P-1) \;=\; B\,S\,H\,\textcolor{#e8b54e}{(P-1)} \]
 <span class="note" lang="en">the micro-batch count M cancels — more sends, each proportionally smaller; volume scales with <span class="hl">P (stages)</span>, not L (layers)</span>
 <span class="note" lang="zh">微批数 M 被约掉 —— 发送次数更多， 但每次按比例更小； 量随 <span class="hl">P（stage 数）</span>缩放， 而非 L（层数）</span>
 </div>
@@ -986,7 +997,7 @@ section { scroll-margin-top: 30px; }
 <p lang="zh">用一个微批在单个 stage 上的时间作为单位。 第一个微批在第 1 个时隙进入 stage 1， 第 2 个时隙到 stage 2， …… 第 <code>P</code> 个时隙到 stage <code>P</code> —— 所以在最后一个 stage 干任何有用活儿之前， 已经过去了 <code>P−1</code> 个时隙。 这就是<strong>填充</strong>。 一旦流水线填满， 把全部 <code>M</code> 个微批推完需要 <code>M</code> 个时隙的有用、 零浪费的工作 —— 这是<strong>稳态</strong>。 stage 1 消费完最后一个微批后就闲下来， 等那一块流过剩下的 stage —— 又是 <code>P−1</code> 个时隙， 即<strong>排空</strong>， 与填充对称。 按 Megatron-LM 的记账方式， 有用时间是 <code>M</code>， 气泡开销是 <code>P−1</code>， 于是：</p>
 
 <div class="formula">
-<span class="big">Bubble Ratio  =  (P−1) / ((P−1) + M)</span>
+\[ \text{Bubble Ratio} \;=\; \frac{P-1}{(P-1) + M} \]
 <span class="note" lang="en">wasted ÷ total. P=4, M=4 → 3/7 = 43% (terrible). P=4, M=64 → 4.5%. P=4, M=250 → 1.2%.</span>
 <span class="note" lang="zh">浪费 ÷ 总量。 P=4, M=4 → 3/7 = 43%（很糟）。 P=4, M=64 → 4.5%。 P=4, M=250 → 1.2%。</span>
 </div>
@@ -1209,30 +1220,30 @@ section { scroll-margin-top: 30px; }
 <h3 lang="en">Why <em>Runtime(L)</em> is quadratic</h3>
 <h3 lang="zh">为什么 <em>Runtime(L)</em> 是二次的</h3>
 
-<p lang="en">To do this at runtime you need a model of how runtime grows with prefix length, and the shape is not a guess — it falls out of attention. Take a chunk of <code>ΔL</code> new query tokens appended after a prefix of <code>L</code> cached tokens. Two cost terms. The attention term: each of the <code>ΔL</code> queries scores against ~<code>L</code> cached keys, so attention ≈ <code>ΔL·L</code> — this is the term that depends on the prefix. The linear term: each new token does a fixed amount of projection and MLP matmul, independent of prefix, so ≈ <code>ΔL</code>. The per-token marginal cost at position <code>L</code> is therefore <code>α·L + b</code>. Integrate that from 0 to <code>S</code> and you get the cumulative runtime — a clean quadratic:</p>
+<p lang="en">To do this at runtime you need a model of how runtime grows with prefix length, and the shape is not a guess — it falls out of attention. Take a chunk of <code>ΔL</code> new query tokens appended after a prefix of <code>L</code> cached tokens. Two cost terms. The attention term: each of the <code>ΔL</code> queries scores against ~<code>L</code> cached keys, so attention ≈ \(\Delta L \cdot L\) — this is the term that depends on the prefix. The linear term: each new token does a fixed amount of projection and MLP matmul, independent of prefix, so ≈ <code>ΔL</code>. The per-token marginal cost at position <code>L</code> is therefore \(\alpha L + b\). Integrate that from 0 to <code>S</code> and you get the cumulative runtime — a clean quadratic:</p>
 
-<p lang="zh">要在运行时做到这点， 你需要一个"运行时间如何随前缀长度增长"的模型， 而它的形状不是猜的 —— 它从注意力里掉出来。 取一个 <code>ΔL</code> 个新 query token 的 chunk， 接在 <code>L</code> 个已缓存 token 的前缀之后。 两个代价项。 注意力项： <code>ΔL</code> 个 query 中每一个都要对约 <code>L</code> 个已缓存 key 算分， 所以注意力 ≈ <code>ΔL·L</code> —— 这是依赖前缀的那一项。 线性项： 每个新 token 做固定量的投影和 MLP 矩阵乘， 与前缀无关， 所以 ≈ <code>ΔL</code>。 因此位置 <code>L</code> 处的每 token 边际代价是 <code>α·L + b</code>。 把它从 0 积到 <code>S</code>， 你得到累计运行时间 —— 一个干净的二次式：</p>
+<p lang="zh">要在运行时做到这点， 你需要一个"运行时间如何随前缀长度增长"的模型， 而它的形状不是猜的 —— 它从注意力里掉出来。 取一个 <code>ΔL</code> 个新 query token 的 chunk， 接在 <code>L</code> 个已缓存 token 的前缀之后。 两个代价项。 注意力项： <code>ΔL</code> 个 query 中每一个都要对约 <code>L</code> 个已缓存 key 算分， 所以注意力 ≈ \(\Delta L \cdot L\) —— 这是依赖前缀的那一项。 线性项： 每个新 token 做固定量的投影和 MLP 矩阵乘， 与前缀无关， 所以 ≈ <code>ΔL</code>。 因此位置 <code>L</code> 处的每 token 边际代价是 \(\alpha L + b\)。 把它从 0 积到 <code>S</code>， 你得到累计运行时间 —— 一个干净的二次式：</p>
 
 <div class="formula">
-<span class="big">Runtime(L)  =  ∫₀ᴸ (α·ℓ + b) dℓ  =  <span class="hl">a·L²</span> + b·L</span>
+\[ \mathrm{Runtime}(L) \;=\; \int_0^{L} (\alpha\,\ell + b)\,d\ell \;=\; \textcolor{#e8b54e}{a\,L^2} + b\,L \]
 <span class="note" lang="en">define a := α/2 once, to avoid a 2× slip. The L² term is full attention's quadratic cost; b·L is everything else. Per-chunk time is the increment, not the derivative.</span>
 <span class="note" lang="zh">把 a := α/2 一次性定义清楚， 免得差个 2×。 L² 项是完整注意力的二次代价； b·L 是其余一切。 每 chunk 时间是增量， 不是导数。</span>
 </div>
 
-<p lang="en">This is exactly the quadratic SGLang fits — by profiling requests at a range of input token lengths (ITLs) it recovers <code>a</code> and <code>b</code>. One symbol-hygiene warning the verifier flagged: keep the per-query attention coefficient <code>α</code> distinct from the cumulative coefficient <code>a = α/2</code>; conflate them and your <code>ΔL</code> comes out a factor of two wrong.</p>
+<p lang="en">This is exactly the quadratic SGLang fits — by profiling requests at a range of input token lengths (ITLs) it recovers <code>a</code> and <code>b</code>. One symbol-hygiene warning the verifier flagged: keep the per-query attention coefficient <code>α</code> distinct from the cumulative coefficient \(a = \alpha/2\); conflate them and your <code>ΔL</code> comes out a factor of two wrong.</p>
 
-<p lang="zh">这正是 SGLang 拟合的那个二次式 —— 通过在一系列输入 token 长度（ITL）上 profile 请求， 它把 <code>a</code> 和 <code>b</code> 找回来。 一个被审校者点出的符号卫生警告： 把每 query 的注意力系数 <code>α</code> 和累计系数 <code>a = α/2</code> 区分开； 混为一谈， 你解出的 <code>ΔL</code> 就会差两倍。</p>
+<p lang="zh">这正是 SGLang 拟合的那个二次式 —— 通过在一系列输入 token 长度（ITL）上 profile 请求， 它把 <code>a</code> 和 <code>b</code> 找回来。 一个被审校者点出的符号卫生警告： 把每 query 的注意力系数 <code>α</code> 和累计系数 \(a = \alpha/2\) 区分开； 混为一谈， 你解出的 <code>ΔL</code> 就会差两倍。</p>
 
 <h3 lang="en">Solving for the next chunk size</h3>
 <h3 lang="zh">解出下一个 chunk 的大小</h3>
 
-<p lang="en">Now the payoff. We want each chunk to take the same time as the cheap first chunk, of size <code>C₀</code>: target <code>T = Runtime(C₀) = a·C₀² + b·C₀</code>. For the next chunk of unknown size <code>ΔL</code> appended at current prefix <code>L</code>, its time is the <em>increment</em> <code>Runtime(L+ΔL) − Runtime(L)</code>. Expand and set equal to <code>T</code> — that is the post's stated condition <code>Runtime(L+ΔL) − Runtime(L) = Runtime(InitialChunkSize)</code> — and you get a quadratic in the unknown <code>ΔL</code>:</p>
+<p lang="en">Now the payoff. We want each chunk to take the same time as the cheap first chunk, of size <code>C₀</code>: target \(T = \mathrm{Runtime}(C_0) = a\,C_0^2 + b\,C_0\). For the next chunk of unknown size <code>ΔL</code> appended at current prefix <code>L</code>, its time is the <em>increment</em> \(\mathrm{Runtime}(L{+}\Delta L) - \mathrm{Runtime}(L)\). Expand and set equal to <code>T</code> — that is the post's stated condition \(\mathrm{Runtime}(L{+}\Delta L) - \mathrm{Runtime}(L) = \mathrm{Runtime}(\text{InitialChunkSize})\) — and you get a quadratic in the unknown <code>ΔL</code>:</p>
 
-<p lang="zh">现在是回报。 我们要每个 chunk 都花和便宜的第一个 chunk（大小 <code>C₀</code>）一样的时间： 目标 <code>T = Runtime(C₀) = a·C₀² + b·C₀</code>。 对接在当前前缀 <code>L</code> 之后、 大小未知 <code>ΔL</code> 的下一个 chunk， 它的时间是<em>增量</em> <code>Runtime(L+ΔL) − Runtime(L)</code>。 展开并令其等于 <code>T</code> —— 这就是博客给出的条件 <code>Runtime(L+ΔL) − Runtime(L) = Runtime(InitialChunkSize)</code> —— 你得到一个关于未知量 <code>ΔL</code> 的二次方程：</p>
+<p lang="zh">现在是回报。 我们要每个 chunk 都花和便宜的第一个 chunk（大小 <code>C₀</code>）一样的时间： 目标 \(T = \mathrm{Runtime}(C_0) = a\,C_0^2 + b\,C_0\)。 对接在当前前缀 <code>L</code> 之后、 大小未知 <code>ΔL</code> 的下一个 chunk， 它的时间是<em>增量</em> \(\mathrm{Runtime}(L{+}\Delta L) - \mathrm{Runtime}(L)\)。 展开并令其等于 <code>T</code> —— 这就是博客给出的条件 \(\mathrm{Runtime}(L{+}\Delta L) - \mathrm{Runtime}(L) = \mathrm{Runtime}(\text{InitialChunkSize})\) —— 你得到一个关于未知量 <code>ΔL</code> 的二次方程：</p>
 
 <div class="formula">
-<span class="big">a·ΔL² + (2a·L + b)·ΔL − T = 0</span><br>
-<span class="big">ΔL = [ −(2a·L+b) + √((2a·L+b)² + 4aT) ] / (2a)</span>
+\[ a\,\Delta L^2 + (2a\,L + b)\,\Delta L - T = 0 \]
+\[ \Delta L \;=\; \frac{-(2a\,L+b) + \sqrt{(2a\,L+b)^2 + 4aT}}{2a} \]
 <span class="note" lang="en">take the positive root. As L grows, the (2a·L+b) term grows, the root shrinks → later chunks get smaller. Big-early, small-late, by construction.</span>
 <span class="note" lang="zh">取正根。 L 增大时， (2a·L+b) 项增大， 根缩小 → 后面的 chunk 更小。 前大后小， 是构造出来的必然。</span>
 </div>
@@ -1741,6 +1752,23 @@ python3 -m sglang.launch_server \
     });
   });
 })();
+</script>
+
+<!-- KaTeX: typeset the math. Ignores <code> so flags/function names stay literal. -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    if (typeof renderMathInElement !== 'function') return;
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '\\[', right: '\\]', display: true },
+        { left: '\\(', right: '\\)', display: false }
+      ],
+      ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+      throwOnError: false
+    });
+  });
 </script>
 
 </body>
