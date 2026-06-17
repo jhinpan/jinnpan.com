@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Chunked Pipeline — Pipeline Parallelism in SGLang · Paper Reading No.004</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..700&family=Azeret+Mono:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Signal-flow oscilloscope — near-black instrument panel, warm bone trace, teal signal */
+  --bg: #0a0e15;
+  --panel: #111824;
+  --panel-2: #0d131d;
+  --tint: #131c2a;
+  --tint-soft: #0f1722;
+
+  --fg: #ece8db;
+  --fg-soft: #b6bcc6;
+  --fg-mute: #828c9a;
+  --fg-faint: #59616f;
+
+  --line: rgba(150,182,210,0.13);
+  --line-soft: rgba(150,182,210,0.06);
+  --line-strong: rgba(180,205,228,0.26);
+
+  --teal: #30d6c0;        /* useful compute / flowing hidden state */
+  --teal-deep: #1a9b8c;
+  --teal-soft: #5fe3d2;
+  --amber: #e8b54e;       /* chunk boundary / the knob */
+  --amber-deep: #b98a32;
+  --crimson: #ec6a5f;     /* bubble / idle / waste */
+  --crimson-deep: #c1473d;
+  --blue: #5ba8e8;        /* P2P comm / cross-node link */
+  --blue-deep: #3a78ad;
+
+  --display: 'Bodoni Moda', 'Noto Serif SC', Georgia, 'Times New Roman', serif;
+  --sans: 'Schibsted Grotesk', system-ui, -apple-system, 'Noto Sans SC', sans-serif;
+  --mono: 'Azeret Mono', 'IBM Plex Mono', 'Courier New', monospace;
+
+  --max-content: 720px;
+  --rail-w: 212px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Oscilloscope graticule + soft top glow */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(150,182,210,0.035) 0px, rgba(150,182,210,0.035) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(150,182,210,0.035) 0px, rgba(150,182,210,0.035) 1px, transparent 1px, transparent 40px),
+    radial-gradient(ellipse 70% 48% at 50% -4%, rgba(48,214,192,0.07), transparent 62%),
+    radial-gradient(ellipse 60% 40% at 50% 104%, rgba(91,168,232,0.05), transparent 66%);
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(4,7,12,0.55) 100%);
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 80px 56px 60px;
+  border-bottom: 1px solid var(--line-strong);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin-bottom: 42px;
+}
+.masthead .kicker .tick { width: 26px; height: 1px; background: var(--teal); }
+.masthead .kicker .dot { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; box-shadow: 0 0 8px var(--teal); }
+.masthead .kicker .chip { color: var(--teal); font-weight: 600; }
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(52px, 8.4vw, 112px);
+  line-height: 0.96;
+  margin: 0;
+  letter-spacing: -0.012em;
+  color: var(--fg);
+}
+.masthead h1 .stream {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--teal);
+}
+.masthead .subtitle {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: clamp(18px, 2.1vw, 24px);
+  line-height: 1.45;
+  color: var(--fg-soft);
+  margin: 36px 0 0;
+  max-width: 780px;
+  letter-spacing: -0.002em;
+}
+.masthead .subtitle em { color: var(--amber); font-style: italic; }
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  max-width: 980px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin-bottom: 11px;
+}
+.masthead .meta .item .value {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--fg);
+  line-height: 1.22;
+}
+.masthead .meta .item .value .unit { font-family: var(--mono); font-size: 11px; color: var(--fg-mute); margin-left: 6px; font-weight: 400; }
+.masthead .meta .item .value .accent { color: var(--teal); font-style: italic; }
+
+/* ============ SHELL ============ */
+.shell { position: relative; max-width: 1280px; margin: 0 auto; padding: 0 56px; z-index: 1; }
+.article { position: relative; max-width: var(--max-content); margin: 80px auto; padding: 0; }
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 50px 22px;
+  border-right: 1px solid var(--line-strong);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  background: var(--panel-2);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--line-strong); }
+.rail .rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--fg-mute);
+  text-decoration: none;
+  margin-bottom: 26px;
+  transition: color 0.18s;
+}
+.rail .rail-home:hover { color: var(--teal); }
+.rail .brand {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  margin-bottom: 4px;
+  line-height: 1.18;
+}
+.rail .brand em { font-style: italic; font-weight: 500; color: var(--teal); }
+.rail .ref { color: var(--fg-mute); margin-bottom: 30px; font-size: 10px; font-family: var(--mono); }
+.rail .ref .pin { color: var(--amber); font-weight: 700; }
+.rail ol { list-style: none; padding: 0; margin: 0; counter-reset: nav; }
+.rail ol li { margin-bottom: 13px; counter-increment: nav; position: relative; padding-left: 30px; }
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute; left: 0; top: 1px;
+  color: var(--fg-faint);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.04em;
+}
+.rail ol li a { color: var(--fg-soft); text-decoration: none; transition: color 0.18s; display: block; line-height: 1.32; }
+.rail ol li a:hover { color: var(--teal); }
+.rail .divider { height: 1px; background: var(--line); margin: 18px 0; }
+.rail .trace { display: flex; gap: 4px; margin-top: 18px; align-items: flex-end; height: 18px; }
+.rail .trace span { width: 4px; background: var(--teal-deep); opacity: 0.7; }
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(33px, 4.1vw, 50px);
+  line-height: 1.06;
+  letter-spacing: -0.012em;
+  margin: 110px 0 26px;
+  color: var(--fg);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.26em;
+  color: var(--teal);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+.article h2 em { font-style: italic; font-weight: 500; color: var(--teal); }
+.article h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 23px; line-height: 1.3;
+  margin: 56px 0 14px;
+  color: var(--fg);
+  letter-spacing: -0.006em;
+}
+.article h3 em { font-style: italic; color: var(--amber); font-weight: 500; }
+.article h4 {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin: 32px 0 12px;
+}
+.article p { margin: 0 0 20px; color: var(--fg-soft); font-size: 16.5px; }
+.article p strong { color: var(--fg); font-weight: 600; }
+.article p em { color: var(--amber); font-style: italic; }
+.article ul, .article ol.body-list { margin: 0 0 20px; padding-left: 22px; color: var(--fg-soft); }
+.article li { margin-bottom: 9px; font-size: 16px; }
+.article li strong { color: var(--fg); }
+.article p code, .article li code, .article td code, .article th code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--tint);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--teal-soft);
+  border: 1px solid var(--line);
+}
+.article a { color: var(--teal); text-decoration: none; border-bottom: 1px solid var(--teal-deep); transition: color 0.18s, border-color 0.18s; }
+.article a:hover { color: var(--teal-soft); border-bottom-color: var(--teal-soft); }
+
+.dropcap { display: block; }
+.dropcap::first-letter {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 62px;
+  line-height: 0.86;
+  float: left;
+  margin: 7px 14px 0 0;
+  color: var(--teal);
+}
+
+/* ============ ORNAMENT BREAK ============ */
+.ornament-break { display: flex; justify-content: center; align-items: center; margin: 54px 0; gap: 14px; }
+.ornament-break .line { flex: 0 0 56px; height: 1px; background: var(--line-strong); }
+.ornament-break .pip { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; box-shadow: 0 0 7px var(--teal); }
+.ornament-break .pip.amber { background: var(--amber); box-shadow: 0 0 7px var(--amber); }
+.ornament-break .pip.crimson { background: var(--crimson); box-shadow: 0 0 7px var(--crimson); }
+
+/* ============ CODE BLOCKS ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.66;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  padding: 18px 22px;
+  margin: 24px 0;
+  overflow-x: auto;
+  color: var(--fg-soft);
+  white-space: pre;
+  border-radius: 3px;
+}
+.code .c-key { color: var(--teal); font-weight: 600; }
+.code .c-str { color: var(--amber); }
+.code .c-num { color: var(--blue); }
+.code .c-com { color: var(--fg-faint); font-style: italic; }
+.code .c-flag { color: var(--amber); font-weight: 600; }
+.code .c-fname {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.16em;
+  color: var(--fg-mute); text-transform: uppercase;
+  display: block; margin-bottom: 12px; font-weight: 600;
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 28px 0;
+  padding: 20px 24px;
+  background: var(--panel);
+  border-left: 3px solid var(--teal);
+  border-radius: 3px;
+  border-top: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+.callout.amber { border-left-color: var(--amber); }
+.callout.crimson { border-left-color: var(--crimson); }
+.callout.blue { border-left-color: var(--blue); }
+.callout .ctag {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: 10px; display: block;
+}
+.callout.amber .ctag { color: var(--amber); }
+.callout.crimson .ctag { color: var(--crimson); }
+.callout.blue .ctag { color: var(--blue); }
+.callout p { margin: 0 0 10px; color: var(--fg-soft); font-size: 15.5px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong { color: var(--fg); }
+.callout code { font-family: var(--mono); font-size: 12px; color: var(--teal-soft); background: var(--tint); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--line); }
+
+/* ============ FORMULA ============ */
+.formula {
+  margin: 24px 0;
+  padding: 18px 22px;
+  background: var(--tint-soft);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--fg);
+  text-align: center;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.formula .big { font-size: 17px; color: var(--teal-soft); }
+.formula .note { display: block; margin-top: 8px; font-family: var(--sans); font-size: 12.5px; color: var(--fg-mute); font-style: italic; }
+.formula .hl { color: var(--amber); }
+.formula .bad { color: var(--crimson); }
+
+/* ============ TABLES ============ */
+.tbl { width: 100%; border-collapse: collapse; margin: 26px 0; font-size: 14px; }
+.tbl th, .tbl td { text-align: left; padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--fg-mute); font-weight: 600;
+  border-bottom: 1px solid var(--line-strong); padding-bottom: 11px;
+}
+.tbl td { color: var(--fg-soft); }
+.tbl td code, .tbl th code { font-family: var(--mono); font-size: 12px; color: var(--teal-soft); background: var(--tint); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--line); }
+.tbl td.k { color: var(--fg); font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.tbl td.acc { color: var(--teal); font-weight: 600; }
+.tbl td.warn { color: var(--crimson); }
+.tbl td.num { color: var(--amber); font-variant-numeric: tabular-nums; font-weight: 700; font-family: var(--mono); }
+.tbl td.ok { color: var(--teal); font-weight: 600; }
+.tbl tr.best td { background: rgba(48,214,192,0.05); }
+
+/* ============ PLATES (SVG) ============ */
+.plate { margin: 58px 0; padding: 0; }
+.plate.wide { max-width: 1040px; margin-left: calc(-1 * (1040px - var(--max-content)) / 2); }
+@media (max-width: 1100px) { .plate.wide { max-width: 100%; margin-left: 0; } }
+.plate-meta {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.plate-meta .pnum { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: var(--teal); }
+.plate-meta .pname { font-family: var(--display); font-style: italic; font-size: 17px; color: var(--fg); font-weight: 500; }
+.plate-meta .pscale { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.16em; color: var(--fg-mute); }
+.plate-body {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 24px;
+  position: relative;
+  border-radius: 3px;
+  box-shadow: inset 0 0 60px rgba(48,214,192,0.02);
+}
+.plate-body svg { display: block; width: 100%; height: auto; }
+.plate .caption { margin-top: 14px; font-family: var(--display); font-style: italic; font-size: 14.5px; color: var(--fg-mute); line-height: 1.52; }
+
+/* SVG shared classes */
+.d-text { font-family: var(--sans); font-size: 11px; fill: var(--fg); }
+.d-text.mono { font-family: var(--mono); font-size: 10.5px; }
+.d-text.small { font-size: 9.5px; fill: var(--fg-mute); }
+.d-text.tiny { font-size: 8.5px; fill: var(--fg-faint); }
+.d-text.label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; fill: var(--fg-mute); text-transform: uppercase; font-weight: 600; }
+.d-text.title { font-family: var(--display); font-style: italic; font-size: 13px; fill: var(--fg); }
+.d-text.teal { fill: var(--teal); }
+.d-text.amber { fill: var(--amber); }
+.d-text.crimson { fill: var(--crimson); }
+.d-text.blue { fill: var(--blue); }
+.d-text.dim { fill: var(--fg-mute); }
+.d-text.ink { fill: var(--bg); }
+
+.zone { fill: var(--panel); stroke: var(--line-strong); stroke-width: 1; }
+.zone.tint { fill: var(--tint); }
+.zone.teal { stroke: var(--teal); }
+.zone.amber { stroke: var(--amber); }
+.zone.crimson { stroke: var(--crimson); }
+.zone.blue { stroke: var(--blue); }
+.fill-teal { fill: var(--teal); }
+.fill-teal-d { fill: var(--teal-deep); }
+.fill-amber { fill: var(--amber); }
+.fill-crimson { fill: var(--crimson); }
+.fill-blue { fill: var(--blue); }
+.fill-panel { fill: var(--panel); }
+.op7 { opacity: 0.7; }
+.op5 { opacity: 0.5; }
+.op3 { opacity: 0.32; }
+
+.bp-line { stroke: var(--fg-mute); stroke-width: 1; fill: none; }
+.bp-line.dash { stroke-dasharray: 4 4; }
+.bp-line.teal { stroke: var(--teal); }
+.bp-line.amber { stroke: var(--amber); }
+.bp-line.crimson { stroke: var(--crimson); }
+.bp-line.blue { stroke: var(--blue); }
+.bp-line.thick { stroke-width: 1.7; }
+.bp-line.faint { stroke: var(--line-strong); }
+
+/* ============ FOOTER ============ */
+.colophon {
+  max-width: 1280px;
+  margin: 116px auto 0;
+  padding: 50px 56px 72px;
+  border-top: 1px solid var(--line-strong);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  color: var(--fg-mute);
+  line-height: 1.72;
+}
+.colophon .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 38px; }
+.colophon .field .lbl { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg-soft); margin-bottom: 12px; }
+.colophon .field .val { color: var(--fg-mute); }
+.colophon .field .val a { color: var(--teal); text-decoration: none; border-bottom: 1px solid var(--teal-deep); }
+.colophon .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: middle; border: 1px solid var(--line-strong); border-radius: 2px; }
+.colophon .closing { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); font-family: var(--display); font-style: italic; font-size: 14px; color: var(--fg-mute); text-align: center; }
+
+/* ============ LANGUAGE TOGGLE ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+.lang-toggle {
+  position: fixed; top: 24px; right: 34px; z-index: 150;
+  display: inline-flex; align-items: stretch;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+.lang-toggle button {
+  background: transparent; border: none; color: var(--fg-mute);
+  padding: 9px 14px; font: inherit; letter-spacing: inherit; text-transform: inherit;
+  cursor: pointer; transition: color 0.16s, background 0.16s;
+  border-right: 1px solid var(--line);
+}
+.lang-toggle button:last-child { border-right: none; }
+.lang-toggle button:hover { color: var(--teal); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] { color: var(--bg); background: var(--teal); }
+
+.article > section:first-of-type > p:first-of-type { margin-top: 0; }
+section { scroll-margin-top: 30px; }
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<!-- ================ RAIL ================ -->
+<nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+  <div class="brand">Chunked<br><em>Pipeline</em></div>
+  <div class="ref">No<span class="pin">.004</span> · 2026-06-17</div>
+  <ol>
+    <li><a href="#prologue"><span lang="en">The long-context wall</span><span lang="zh">长上下文之墙</span></a></li>
+    <li><a href="#s1-splits"><span lang="en">Three ways to split a model</span><span lang="zh">切分模型的三种方式</span></a></li>
+    <li><a href="#s2-bubble"><span lang="en">The pipeline bubble</span><span lang="zh">流水线气泡</span></a></li>
+    <li><a href="#s3-chunked"><span lang="en">Chunked pipeline parallelism</span><span lang="zh">分块流水线并行</span></a></li>
+    <li><a href="#s4-async"><span lang="en">Async P2P &amp; three streams</span><span lang="zh">异步 P2P 与三条流</span></a></li>
+    <li><a href="#s5-dynamic"><span lang="en">Dynamic chunking</span><span lang="zh">动态分块</span></a></li>
+    <li><a href="#s6-production"><span lang="en">PD disaggregation &amp; HiCache</span><span lang="zh">PD 分离与 HiCache</span></a></li>
+    <li><a href="#s7-results"><span lang="en">Reading the numbers</span><span lang="zh">读懂这些数字</span></a></li>
+    <li><a href="#s8-reefs"><span lang="en">Reefs</span><span lang="zh">易混淆礁石</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Run it yourself</span><span lang="zh">自己跑一遍</span></a></li>
+  </ol>
+  <div class="divider"></div>
+  <div class="trace">
+    <span style="height:6px"></span><span style="height:12px"></span><span style="height:9px"></span><span style="height:16px"></span><span style="height:7px"></span><span style="height:13px"></span>
+  </div>
+</nav>
+
+<!-- ================ MASTHEAD ================ -->
+<header class="masthead">
+  <div class="kicker" lang="en">
+    <span class="tick"></span>
+    <span>Paper Reading <span class="chip">No.004</span></span>
+    <span class="dot"></span>
+    <span>Long-Context Era</span>
+    <span class="dot"></span>
+    <span>2026-06-17</span>
+  </div>
+  <div class="kicker" lang="zh">
+    <span class="tick"></span>
+    <span>论文精读 <span class="chip">No.004</span></span>
+    <span class="dot"></span>
+    <span>长上下文时代</span>
+    <span class="dot"></span>
+    <span>2026-06-17</span>
+  </div>
+  <h1 lang="en">The Chunked <span class="stream">Pipeline</span></h1>
+  <h1 lang="zh">分块<span class="stream">流水线</span></h1>
+  <p class="subtitle" lang="en">How SGLang serves million-token prompts by slicing one long prefill into a <em>stream of chunks</em> — the bubble math, the async P2P, and the dynamic chunking that make pipeline parallelism the winning multi-node strategy for long context. A close read of the LMSYS post, rebuilt from first principles.</p>
+  <p class="subtitle" lang="zh">SGLang 如何用"把一次长 prefill 切成<em>一串 chunk</em>"的办法来服务百万 token 的 prompt —— 气泡的数学、 异步 P2P、 以及让流水线并行成为长上下文跨节点最优解的动态分块。 这是对 LMSYS 那篇博客的一次精读， 从第一性原理重建。</p>
+  <div class="meta">
+    <div class="item">
+      <div class="label" lang="en">Source</div>
+      <div class="label" lang="zh">原文</div>
+      <div class="value" lang="en">LMSYS <span class="unit">· S. Cai</span></div>
+      <div class="value" lang="zh">LMSYS <span class="unit">· 蔡尚明</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Subject</div>
+      <div class="label" lang="zh">主题</div>
+      <div class="value" lang="en">Pipeline <span class="accent">parallelism</span></div>
+      <div class="value" lang="zh">流水线<span class="accent">并行</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Headline</div>
+      <div class="label" lang="zh">头条结果</div>
+      <div class="value" lang="en"><span class="accent">3.31×</span> prefill</div>
+      <div class="value" lang="zh"><span class="accent">3.31×</span> prefill</div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Best TTFT cut</div>
+      <div class="label" lang="zh">TTFT 最大降幅</div>
+      <div class="value" lang="en"><span class="accent">−81%</span> <span class="unit">@ 1M</span></div>
+      <div class="value" lang="zh"><span class="accent">−81%</span> <span class="unit">@ 1M</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================ MAIN ARTICLE ================ -->
+<div class="shell">
+<main class="article">
+
+<!-- ============ PROLOGUE ============ -->
+<section id="prologue">
+<p class="dropcap" lang="en">A prompt of one million tokens is roughly two full-length novels. Feed that to a model and the first thing you hit is not a clever-algorithm problem — it is a wall. Two walls, actually. The <em>memory wall</em>: holding the intermediate state for a million tokens, across every layer, will not fit on one GPU. And the <em>throughput wall</em>: if you spread the model across many GPUs the naive way, most of them sit idle most of the time, and the user waits the better part of a minute before the first token appears. The LMSYS post this reading is built on takes those two walls head-on, and the answer it arrives at is, on its face, surprising: <strong>pipeline parallelism</strong> — the parallelism strategy that everyone is taught to avoid for inference — turns out to be the best way to serve ultra-long context across machines.</p>
+
+<p class="dropcap" lang="zh">一个一百万 token 的 prompt， 大概是两本长篇小说。 把它喂给模型， 你第一个撞上的不是什么"巧妙算法"问题 —— 是一堵墙。 准确说是两堵。 <em>内存墙</em>： 要为一百万 token、 在每一层都保存中间状态， 单张 GPU 装不下。 还有<em>吞吐墙</em>： 如果你用最朴素的办法把模型摊到很多张卡上， 大多数卡在大多数时间里都在发呆， 用户得等将近一分钟才看到第一个 token。 本篇精读所基于的那篇 LMSYS 博客正面硬刚这两堵墙， 而它给出的答案乍看让人意外： <strong>流水线并行</strong> —— 那个推理场景里人人都被教导要躲开的并行策略 —— 恰恰是跨机器服务超长上下文的最优解。</p>
+
+<p lang="en">Why surprising, and why it still works, is the whole story. This is not a summary of the post — it is a rebuild of it from first principles, so that by the end you can <em>feel</em> why each piece is there. We will earn the three communication-volume formulas instead of quoting them, derive the pipeline bubble from counting idle squares on a clock, watch one long prompt shatter into a stream of chunks, and finish at the subtlest idea in the paper: sizing each chunk so that every one takes the same amount of wall-clock time, even though attention makes later chunks intrinsically more expensive.</p>
+
+<p lang="zh">为什么意外、 又为什么照样成立 —— 这就是全部故事。 本文不是对那篇博客的复述， 而是从第一性原理把它重建一遍， 让你读到最后能<em>真切感到</em>每一块为什么在那儿。 我们会把三条通信量公式一步步挣出来， 而不是照抄； 会通过数时钟上的空格子把流水线气泡推导出来； 会看着一条长 prompt 碎成一串 chunk； 最后落到全篇最微妙的那个想法： 给每个 chunk 定一个尺寸， 让它们花的墙钟时间都一样长 —— 哪怕注意力机制让后面的 chunk 天生更贵。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">How to read this</span>
+  <span class="ctag" lang="zh">怎么读</span>
+  <p lang="en">If you have twenty minutes, read <strong>§ 1</strong> (the three cuts) and <strong>§ 3</strong> (chunked pipelining). Those carry the mental model. <strong>§ 5</strong> (dynamic chunking) is the deepest part — it rewards a second pass. The benchmark reading in <strong>§ 7</strong> is the one section you can hand to someone who only cares whether it works.</p>
+  <p lang="zh">如果你只有二十分钟， 读 <strong>§ 1</strong>（三种切法）和 <strong>§ 3</strong>（分块流水线）。 这两节给出心智模型。 <strong>§ 5</strong>（动态分块）是最深的一段 —— 值得读第二遍。 <strong>§ 7</strong> 那段"读懂数字"， 是你可以直接丢给"只关心它到底行不行"的人的一节。</p>
+</div>
+
+<p lang="en">A note on where I sit. I work on AMD GPU kernels — MI300X, MI355X, ROCm, CK, Triton-for-ROCm — so I read this post through a roofline lens, and I flag throughout where the AMD cross-node story is the <em>same</em> physics as NVIDIA and where it is sharper. Pipeline parallelism is, at heart, a way of choosing which slow link your bottleneck lives on; on a cluster without NVLink between nodes, that choice matters more, not less.</p>
+
+<p lang="zh">说一句我的位置。 我做的是 AMD GPU kernel —— MI300X、 MI355X、 ROCm、 CK、 ROCm 上的 Triton —— 所以我是带着 roofline 的视角读这篇博客的， 全文我都会标出： AMD 的跨节点故事在哪里和 NVIDIA 是<em>同一套</em>物理、 又在哪里更尖锐。 流水线并行本质上是在选"你的瓶颈落在哪条慢链路上"； 在一个节点之间没有 NVLink 的集群上， 这个选择只会更重要， 不会更次要。</p>
+</section>
+
+<!-- ============ S1 · THREE SPLITS ============ -->
+<section id="s1-splits">
+<h2 lang="en"><span class="num">§ 1 · Where do you make the cut?</span>Three ways to <em>split</em> a model</h2>
+<h2 lang="zh"><span class="num">§ 1 · 刀往哪儿切？</span>切分模型的<em>三种</em>方式</h2>
+
+<p lang="en">One fact forces everything that follows: a model too big — or a context too long — to run on a single GPU has to be cut into pieces, and the pieces have to talk across the network. Communication is the tax you pay for cutting. Every named parallelism strategy is just a different answer to <em>where do I make the cut?</em>, and the cut you choose decides what data crosses the wire, how often, and over which link. That is the whole game.</p>
+
+<p lang="zh">有一个事实决定了之后的一切： 一个大到（或者一段上下文长到）单张 GPU 跑不动的模型， 必须被切成块， 而这些块得跨网络通信。 通信， 就是你为"切"付的税。 每一个有名字的并行策略， 不过是对"<em>刀往哪儿切</em>"给出的不同答案； 而你切的位置， 决定了哪些数据要过线、 多频繁地过、 走哪条链路。 这就是全部的博弈。</p>
+
+<p lang="en">Picture the transformer forward pass as a loaf of bread with three axes. <strong>H</strong> is the hidden dimension — the width of every vector (say 8192). <strong>S</strong> is the sequence — the number of tokens (up to a million). <strong>L</strong> is the layer stack — the depth (say 60 stacked blocks). There are exactly three clean ways to slice the loaf, and each named strategy slices along one axis.</p>
+
+<p lang="zh">把 transformer 的前向过程想象成一条有三个轴的面包。 <strong>H</strong> 是 hidden 维度 —— 每个向量的宽度（比如 8192）。 <strong>S</strong> 是序列 —— token 的数量（最多一百万）。 <strong>L</strong> 是层栈 —— 深度（比如 60 个堆叠的块）。 把这条面包切干净， 正好只有三种切法， 而每个有名字的策略都沿着其中一个轴下刀。</p>
+
+<!-- ============ PLATE I ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate I</span>
+  <span class="pname" lang="en">One loaf, three cuts</span>
+  <span class="pname" lang="zh">一条面包， 三种切法</span>
+  <span class="pscale">— scale: conceptual —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--fg-mute)"/>
+    </marker>
+  </defs>
+  <text x="500" y="24" class="d-text title" text-anchor="middle">The transformer forward pass, sliced three ways</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- LEFT: the loaf, isometric -->
+  <text x="160" y="74" class="d-text label" text-anchor="middle">THE LOAF</text>
+  <!-- front face -->
+  <rect x="95" y="150" width="150" height="170" class="zone tint"/>
+  <!-- top face (parallelogram) -->
+  <path d="M 95 150 L 150 110 L 300 110 L 245 150 Z" class="zone" fill="var(--panel)"/>
+  <!-- side face -->
+  <path d="M 245 150 L 300 110 L 300 280 L 245 320 Z" class="zone" fill="var(--panel-2)"/>
+  <!-- axis labels -->
+  <text x="170" y="345" class="d-text small" text-anchor="middle">H · hidden (width)</text>
+  <text x="78" y="240" class="d-text small" text-anchor="middle" transform="rotate(-90,78,240)">L · layers (depth)</text>
+  <text x="290" y="128" class="d-text small" transform="rotate(-36,290,128)">S · sequence</text>
+  <text x="170" y="240" class="d-text small dim" text-anchor="middle">one forward</text>
+  <text x="170" y="256" class="d-text small dim" text-anchor="middle">pass</text>
+
+  <!-- divider -->
+  <line x1="350" y1="60" x2="350" y2="400" class="bp-line faint"/>
+
+  <!-- RIGHT: three cuts, stacked -->
+  <!-- TP: slice H (vertical cuts) -->
+  <text x="400" y="92" class="d-text label teal" text-anchor="start" fill="var(--blue)">TP — TENSOR PARALLEL</text>
+  <rect x="400" y="104" width="150" height="56" class="zone blue"/>
+  <line x1="438" y1="104" x2="438" y2="160" class="bp-line blue"/>
+  <line x1="475" y1="104" x2="475" y2="160" class="bp-line blue"/>
+  <line x1="512" y1="104" x2="512" y2="160" class="bp-line blue"/>
+  <text x="565" y="128" class="d-text small">splits <tspan class="blue" font-weight="700">H</tspan> inside every layer</text>
+  <text x="565" y="144" class="d-text tiny dim">→ AllReduce after attn &amp; MLP, ×L</text>
+
+  <!-- CP: slice S (horizontal cuts across tokens) -->
+  <text x="400" y="200" class="d-text label" text-anchor="start" fill="var(--teal)">CP — CONTEXT PARALLEL</text>
+  <rect x="400" y="212" width="150" height="56" class="zone teal"/>
+  <line x1="400" y1="230" x2="550" y2="230" class="bp-line teal"/>
+  <line x1="400" y1="248" x2="550" y2="248" class="bp-line teal"/>
+  <text x="565" y="236" class="d-text small">splits the <tspan class="teal" font-weight="700">sequence S</tspan></text>
+  <text x="565" y="252" class="d-text tiny dim">→ ring-exchange KV per layer, ×L</text>
+
+  <!-- PP: slice L (the layer stack) -->
+  <text x="400" y="308" class="d-text label" text-anchor="start" fill="var(--amber)">PP — PIPELINE PARALLEL</text>
+  <rect x="400" y="320" width="150" height="56" class="zone amber"/>
+  <line x1="400" y1="339" x2="550" y2="339" class="bp-line amber thick"/>
+  <line x1="400" y1="357" x2="550" y2="357" class="bp-line amber thick"/>
+  <text x="430" y="334" class="d-text tiny dim">layers 0–19</text>
+  <text x="430" y="352" class="d-text tiny dim">layers 20–39</text>
+  <text x="430" y="370" class="d-text tiny dim">layers 40–59</text>
+  <text x="565" y="344" class="d-text small">splits the <tspan class="amber" font-weight="700">layer stack L</tspan></text>
+  <text x="565" y="360" class="d-text tiny dim">→ P2P hand-off at P−1 seams</text>
+
+  <line x1="40" y1="412" x2="960" y2="412" class="bp-line faint"/>
+  <text x="40" y="434" class="d-text tiny dim">Same model, three orthogonal cuts. The axis you slice fixes the communication pattern: cut H and you must re-sum partial results every layer; cut S and</text>
+  <text x="40" y="447" class="d-text tiny dim">attention forces a KV exchange every layer; cut L and a hidden state only ever crosses a wire at the few stage boundaries. That last asymmetry is the entire point.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate I — TP, CP, and PP are not three unrelated tricks; they are one model cut along three different axes. Hold this picture: everything below is a consequence of which axis you chose.</div>
+<div class="caption" lang="zh">Plate I —— TP、 CP、 PP 不是三个互不相干的招数， 而是同一个模型沿三条不同的轴切开。 记住这张图： 下面所有内容， 都是"你选了哪条轴"的后果。</div>
+</div>
+
+<h3 lang="en">Tensor parallelism slices <em>H</em></h3>
+<h3 lang="zh">张量并行切 <em>H</em></h3>
+
+<p lang="en">Inside every layer, the big weight matrices — the QKV projection, the MLP up and down projections — get cut into vertical columns. GPU 0 holds the first <code>H/N</code> columns, GPU 1 the next, and so on. Each GPU computes a partial result for the full sequence but only its slice of the hidden dimension. Here is the catch, and it is not optional: to get the true output of attention or the MLP, you must <strong>sum the partial results back together</strong> across all GPUs. That summation is an <code>AllReduce</code>, and it fires twice per layer — once after attention, once after the MLP — because the math literally does not produce a correct activation until the slices are recombined. So TP couples its GPUs tightly: they synchronize <code>2L</code> times in a single forward pass.</p>
+
+<p lang="zh">在每一层内部， 那些大权重矩阵 —— QKV 投影、 MLP 的上投影和下投影 —— 被切成竖直的列。 GPU 0 拿前 <code>H/N</code> 列， GPU 1 拿下一段， 以此类推。 每张卡都为完整的序列算出一个部分结果， 但只算它那一片 hidden 维度。 关键的坑在这里， 而且不是可选项： 要拿到注意力或 MLP 的真正输出， 你必须把所有卡上的部分结果<strong>加回到一起</strong>。 这个求和就是一次 <code>AllReduce</code>， 每层触发两次 —— 注意力之后一次， MLP 之后一次 —— 因为在切片重新合并之前， 数学上根本就没产出一个正确的激活。 所以 TP 把它的 GPU 绑得很紧： 一次前向里它们要同步 <code>2L</code> 次。</p>
+
+<h3 lang="en">Context parallelism slices <em>S</em></h3>
+<h3 lang="zh">上下文并行切 <em>S</em></h3>
+
+<p lang="en">Each GPU owns a slab of the tokens — GPU 0 holds tokens 0–250k, GPU 1 holds 250k–500k — and keeps the full hidden dimension and the full layer stack. This is the natural answer to "my context is too long," which is exactly the million-token regime. The catch is attention: token <em>i</em> must attend to every earlier token, including ones living on other GPUs. So at every layer the shards exchange their K and V tensors around a ring until each query block has seen every key block. The post calls this an <code>AllGather</code> of KV, which is right for the <em>byte count</em>; the production implementation is ring attention — point-to-point KV passing that never materializes the whole KV at once. Either way the cost lands once per layer (<code>×L</code>), and crucially it moves only KV — not the full hidden state. With GQA or MLA shrinking <code>H_KV</code> far below <code>H</code>, that makes CP cheaper than TP.</p>
+
+<p lang="zh">每张 GPU 拥有一块 token —— GPU 0 拿 token 0–250k， GPU 1 拿 250k–500k —— 同时保留完整的 hidden 维度和完整的层栈。 这是对"我的上下文太长了"最自然的回答， 也正是百万 token 这个场景。 坑在注意力： token <em>i</em> 必须 attend 到每一个更早的 token， 包括住在别的卡上的那些。 于是在每一层， 各分片把自己的 K 和 V 沿着一个环互相传递， 直到每个 query 块都见过每个 key 块。 博客把这叫做对 KV 的 <code>AllGather</code>， 就<em>字节数</em>而言这没错； 但生产实现是 ring attention —— 点对点地传 KV， 从不把整个 KV 一次性物化出来。 无论哪种， 代价都是每层一次（<code>×L</code>）， 而且关键是： 它只搬 KV， 不搬完整的 hidden state。 当 GQA 或 MLA 把 <code>H_KV</code> 压到远小于 <code>H</code> 时， 这就让 CP 比 TP 便宜。</p>
+
+<h3 lang="en">Pipeline parallelism slices <em>L</em></h3>
+<h3 lang="zh">流水线并行切 <em>L</em></h3>
+
+<p lang="en">GPU 0 holds layers 0–14, GPU 1 holds 15–29, and so on. A token's hidden state flows GPU 0 → GPU 1 → … like an assembly line. The only thing that crosses a boundary is the hidden state itself, handed off once at each of the <code>P−1</code> stage seams with a plain point-to-point send — no collective, no summation. That is the cheapest pattern of the three, and it hides the asymmetry that the whole post turns on: <strong>TP and CP pay their tax at every layer (<code>L</code> times); PP pays only at stage seams (<code>P−1</code> times).</strong> Since real clusters have far fewer stages than layers (<code>P ≪ L</code>), PP's total communication is roughly an order of magnitude less. The price it pays instead is the <em>bubble</em> — GPU 1 sits idle until GPU 0 finishes the first piece of work — and the next section is entirely about that bubble.</p>
+
+<p lang="zh">GPU 0 拿第 0–14 层， GPU 1 拿第 15–29 层， 以此类推。 一个 token 的 hidden state 像流水线一样流过 GPU 0 → GPU 1 → …。 跨越边界的只有 hidden state 本身， 在 <code>P−1</code> 个 stage 接缝处各交接一次， 用一个朴素的点对点 send —— 没有集合通信， 没有求和。 这是三者里最便宜的模式， 它也藏着整篇博客的命门： <strong>TP 和 CP 在每一层都交税（共 <code>L</code> 次）； PP 只在 stage 接缝处交（共 <code>P−1</code> 次）。</strong> 由于真实集群的 stage 数远少于层数（<code>P ≪ L</code>）， PP 的总通信量大约小一个数量级。 它转而付出的代价是<em>气泡</em> —— GPU 1 要一直发呆， 直到 GPU 0 做完第一份活儿 —— 下一节就完全在讲这个气泡。</p>
+
+<h4 lang="en">Earning the three formulas</h4>
+<h4 lang="zh">把三条公式挣出来</h4>
+
+<p lang="en">The post states three communication-volume formulas. Rather than quote them, let us build them from one seed. For a ring collective over <code>N</code> GPUs on a tensor of total size <code>K</code> bytes, the bandwidth-optimal cost <em>per GPU</em> is <code>2(N−1)/N·K</code> for an <code>AllReduce</code> and <code>(N−1)/N·K</code> for an <code>AllGather</code>. As <code>N</code> grows these factors saturate at <strong>2</strong> and <strong>1</strong> — note <em>saturate</em>, they do not keep climbing with <code>N</code>. That single fact is the seed of all three constants.</p>
+
+<p lang="zh">博客给了三条通信量公式。 与其照抄， 不如从一颗种子把它们长出来。 对于一个跨 <code>N</code> 张 GPU、 张量总大小为 <code>K</code> 字节的环形集合通信， 带宽最优的<em>每卡</em>代价是： <code>AllReduce</code> 为 <code>2(N−1)/N·K</code>， <code>AllGather</code> 为 <code>(N−1)/N·K</code>。 当 <code>N</code> 增大， 这两个系数分别<strong>饱和</strong>到 <strong>2</strong> 和 <strong>1</strong> —— 注意是<em>饱和</em>， 它们不会随 <code>N</code> 一直往上爬。 这一个事实， 就是全部三个常数的种子。</p>
+
+<div class="formula">
+<span class="big">Vol(TP) = 2·(TP−1)·(B·S·H / TP)·<span class="hl">2</span>·L  ≈  <span class="hl">4</span>·B·S·H·L</span>
+<span class="note" lang="en">ring factor 2 × <span class="hl">two AllReduces per layer</span> = 4; the full activation B·S·H must be reconciled, once per layer (×L)</span>
+<span class="note" lang="zh">环形系数 2 × <span class="hl">每层两次 AllReduce</span> = 4； 完整激活 B·S·H 必须被重新合并， 每层一次（×L）</span>
+</div>
+
+<div class="formula">
+<span class="big">Vol(CP) = (CP−1)·(B·S/CP · <span class="hl">2</span>·H_KV)·L  ≈  <span class="hl">2</span>·B·S·H_KV·L</span>
+<span class="note" lang="en">the 2 is K and V; H_KV (not H) because only KV crosses — with GQA/MLA, H_KV ≪ H makes CP cheap</span>
+<span class="note" lang="zh">这个 2 是 K 和 V； 用 H_KV 而非 H， 因为只有 KV 过线 —— 在 GQA / MLA 下 H_KV ≪ H， 所以 CP 便宜</span>
+</div>
+
+<div class="formula">
+<span class="big">Vol(PP) = M·(B/M · S·H)·(P−1)  =  B·S·H·<span class="hl">(P−1)</span></span>
+<span class="note" lang="en">the micro-batch count M cancels — more sends, each proportionally smaller; volume scales with <span class="hl">P (stages)</span>, not L (layers)</span>
+<span class="note" lang="zh">微批数 M 被约掉 —— 发送次数更多， 但每次按比例更小； 量随 <span class="hl">P（stage 数）</span>缩放， 而非 L（层数）</span>
+</div>
+
+<p lang="en">Now divide. <code>Vol(TP) / Vol(PP) ≈ 4L/(P−1)</code>. For a 60-layer model at <code>P=4</code> that is about <strong>80×</strong> — nearly an order of magnitude. TP and CP synchronize once or twice per layer, so their frequency scales with <code>L</code>; PP synchronizes only at stage seams, so its frequency scales with <code>P</code>. Because <code>P ≪ L</code> on any real cluster, PP slashes the bytes that must cross the slow links. (One unit caveat the post folds away: <code>B·S·H</code> counts tensor <em>elements</em>; multiply by 2 for BF16 to get bytes. It cancels in the ratio, so the comparison is unaffected.)</p>
+
+<p lang="zh">现在做除法。 <code>Vol(TP) / Vol(PP) ≈ 4L/(P−1)</code>。 对一个 60 层的模型、 <code>P=4</code> 时， 大约是 <strong>80×</strong> —— 接近一个数量级。 TP 和 CP 每层同步一两次， 所以频率随 <code>L</code> 缩放； PP 只在 stage 接缝处同步， 所以频率随 <code>P</code> 缩放。 由于任何真实集群上都有 <code>P ≪ L</code>， PP 大幅削减了必须穿过慢链路的字节数。 （博客省掉的一个单位提醒： <code>B·S·H</code> 数的是张量<em>元素</em>个数； 乘以 2 才是 BF16 的字节数。 它在比值里会约掉， 所以不影响比较。）</p>
+
+<!-- ============ PLATE II ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate II</span>
+  <span class="pname" lang="en">Per-layer vs per-seam: where the wire-crossing happens</span>
+  <span class="pname" lang="zh">每层 vs 每接缝： 过线发生在哪里</span>
+  <span class="pscale">— L = 12 layers, P = 4 stages —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Communication frequency, drawn to scale (12 layers, 4 stages)</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- TP track -->
+  <text x="40" y="84" class="d-text label" fill="var(--blue)">TP</text>
+  <text x="40" y="98" class="d-text tiny dim">2L = 24×</text>
+  <!-- 12 layer boxes -->
+  <g>
+    <!-- generate 12 boxes from x=120 step 68 -->
+    <rect x="120" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="188" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="256" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="324" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="392" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="460" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="528" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="596" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="664" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="732" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="800" y="68" width="48" height="34" class="zone tint"/>
+    <rect x="868" y="68" width="48" height="34" class="zone tint"/>
+  </g>
+  <!-- AllReduce bursts: 2 dots inside each box -->
+  <g fill="var(--blue)">
+    <circle cx="138" cy="85" r="3"/><circle cx="150" cy="85" r="3"/>
+    <circle cx="206" cy="85" r="3"/><circle cx="218" cy="85" r="3"/>
+    <circle cx="274" cy="85" r="3"/><circle cx="286" cy="85" r="3"/>
+    <circle cx="342" cy="85" r="3"/><circle cx="354" cy="85" r="3"/>
+    <circle cx="410" cy="85" r="3"/><circle cx="422" cy="85" r="3"/>
+    <circle cx="478" cy="85" r="3"/><circle cx="490" cy="85" r="3"/>
+    <circle cx="546" cy="85" r="3"/><circle cx="558" cy="85" r="3"/>
+    <circle cx="614" cy="85" r="3"/><circle cx="626" cy="85" r="3"/>
+    <circle cx="682" cy="85" r="3"/><circle cx="694" cy="85" r="3"/>
+    <circle cx="750" cy="85" r="3"/><circle cx="762" cy="85" r="3"/>
+    <circle cx="818" cy="85" r="3"/><circle cx="830" cy="85" r="3"/>
+    <circle cx="886" cy="85" r="3"/><circle cx="898" cy="85" r="3"/>
+  </g>
+  <text x="936" y="89" class="d-text tiny" fill="var(--blue)">AllReduce</text>
+
+  <!-- CP track -->
+  <text x="40" y="184" class="d-text label" fill="var(--teal)">CP</text>
+  <text x="40" y="198" class="d-text tiny dim">L = 12×</text>
+  <g>
+    <rect x="120" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="188" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="256" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="324" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="392" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="460" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="528" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="596" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="664" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="732" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="800" y="168" width="48" height="34" class="zone tint"/>
+    <rect x="868" y="168" width="48" height="34" class="zone tint"/>
+  </g>
+  <g fill="var(--teal)">
+    <circle cx="144" cy="185" r="3.4"/><circle cx="212" cy="185" r="3.4"/><circle cx="280" cy="185" r="3.4"/>
+    <circle cx="348" cy="185" r="3.4"/><circle cx="416" cy="185" r="3.4"/><circle cx="484" cy="185" r="3.4"/>
+    <circle cx="552" cy="185" r="3.4"/><circle cx="620" cy="185" r="3.4"/><circle cx="688" cy="185" r="3.4"/>
+    <circle cx="756" cy="185" r="3.4"/><circle cx="824" cy="185" r="3.4"/><circle cx="892" cy="185" r="3.4"/>
+  </g>
+  <text x="936" y="189" class="d-text tiny" fill="var(--teal)">KV ring</text>
+
+  <!-- PP track -->
+  <text x="40" y="284" class="d-text label" fill="var(--amber)">PP</text>
+  <text x="40" y="298" class="d-text tiny dim">P−1 = 3×</text>
+  <!-- 4 stage groups of 3 layers each -->
+  <g>
+    <rect x="120" y="268" width="184" height="34" class="zone amber" fill="var(--tint)"/>
+    <rect x="324" y="268" width="184" height="34" class="zone amber" fill="var(--tint)"/>
+    <rect x="528" y="268" width="184" height="34" class="zone amber" fill="var(--tint)"/>
+    <rect x="732" y="268" width="184" height="34" class="zone amber" fill="var(--tint)"/>
+  </g>
+  <text x="212" y="289" class="d-text tiny dim" text-anchor="middle">stage 0 · L0–2</text>
+  <text x="416" y="289" class="d-text tiny dim" text-anchor="middle">stage 1 · L3–5</text>
+  <text x="620" y="289" class="d-text tiny dim" text-anchor="middle">stage 2 · L6–8</text>
+  <text x="824" y="289" class="d-text tiny dim" text-anchor="middle">stage 3 · L9–11</text>
+  <!-- 3 P2P sends at seams -->
+  <g stroke="var(--amber)" stroke-width="2" fill="none" marker-end="url(#ah)">
+    <line x1="304" y1="285" x2="322" y2="285"/>
+    <line x1="508" y1="285" x2="526" y2="285"/>
+    <line x1="712" y1="285" x2="730" y2="285"/>
+  </g>
+  <g fill="var(--amber)"><circle cx="313" cy="285" r="4"/><circle cx="517" cy="285" r="4"/><circle cx="721" cy="285" r="4"/></g>
+  <text x="936" y="289" class="d-text tiny" fill="var(--amber)">P2P send</text>
+
+  <line x1="40" y1="334" x2="960" y2="334" class="bp-line faint"/>
+  <text x="40" y="356" class="d-text tiny dim">Count the marks. TP fires 24 collectives, CP fires 12, PP fires 3 — for the SAME model. It is not the size of each transfer that separates them; it is the frequency.</text>
+  <text x="40" y="369" class="d-text tiny dim">TP/CP scale with the layer count L; PP scales with the stage count P. On real clusters P ≪ L, which is why PP is the cut you put across slow node boundaries.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate II — the picture behind <code>4L/(P−1)</code>. The red-dense TP and CP tracks vs the near-empty PP track is the order-of-magnitude saving, drawn to scale.</div>
+<div class="caption" lang="zh">Plate II —— <code>4L/(P−1)</code> 背后的画面。 密密麻麻的 TP、 CP 轨道， 对比几乎空白的 PP 轨道， 就是那个"按比例画出来"的数量级节省。</div>
+</div>
+
+<h3 lang="en">The hierarchy that falls out</h3>
+<h3 lang="zh">由此自然得出的层级</h3>
+
+<p lang="en">Put the four properties side by side and the deployment recipe writes itself. TP and CP are <em>bubble-free</em> — every device computes at once — but they are communication-heavy, firing a collective on every layer. PP is the inverse: almost no communication, but it pays a pipeline bubble. So you do not pick one; you nest them. <strong>TP or CP inside a node</strong>, where NVLink-class bandwidth can absorb the frequent collectives, and <strong>PP across nodes</strong>, where the slow inter-node link can only afford PP's rare, small point-to-point sends. The post's headline configs — <code>PP4 TP8</code> for DeepSeek, <code>PP8 TP4</code> for Qwen — are exactly this: tensor-parallel within each 8- or 4-GPU node, pipeline-parallel across the nodes.</p>
+
+<p lang="zh">把四条性质并排放在一起， 部署配方就自己写出来了。 TP 和 CP 是<em>无气泡</em>的 —— 所有设备同时计算 —— 但它们通信很重， 每一层都要发一次集合通信。 PP 正相反： 几乎不通信， 但要付一个流水线气泡。 所以你不是择其一， 而是把它们嵌套： <strong>节点内用 TP 或 CP</strong>， 让 NVLink 级别的带宽去吸收那些频繁的集合通信； <strong>节点间用 PP</strong>， 让慢速的跨节点链路只需承担 PP 那些稀疏、 小巧的点对点 send。 博客里的头条配置 —— DeepSeek 的 <code>PP4 TP8</code>、 Qwen 的 <code>PP8 TP4</code> —— 正是这个意思： 每个 8 卡或 4 卡节点内部做张量并行， 节点之间做流水线并行。</p>
+
+<table class="tbl">
+  <thead>
+    <tr>
+      <th lang="en">Property</th><th lang="en">TP</th><th lang="en">CP</th><th lang="en">PP</th>
+      <th lang="zh">性质</th><th lang="zh">TP</th><th lang="zh">CP</th><th lang="zh">PP</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td lang="en">Splits</td><td lang="zh">切分</td>
+      <td class="k">hidden H</td><td class="k">sequence S</td><td class="k">layers L</td>
+    </tr>
+    <tr>
+      <td lang="en">Pattern</td><td lang="zh">通信模式</td>
+      <td>AllReduce ×L</td><td>KV ring ×L</td><td class="acc">P2P × (P−1)</td>
+    </tr>
+    <tr>
+      <td lang="en">Volume</td><td lang="zh">通信量</td>
+      <td class="warn">high · 4BSHL</td><td>medium · 2BS·H_KV·L</td><td class="ok">low · BSH(P−1)</td>
+    </tr>
+    <tr>
+      <td lang="en">Bubble</td><td lang="zh">气泡</td>
+      <td class="ok">0</td><td class="ok">0</td><td class="warn">(P−1)/(P−1+M)</td>
+    </tr>
+    <tr>
+      <td lang="en">Best link</td><td lang="zh">最适链路</td>
+      <td>NVLink (intra-node)</td><td>NVLink (intra-node)</td><td class="acc">Ethernet/IB (cross-node)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout blue">
+  <span class="ctag" lang="en">The reef to avoid</span>
+  <span class="ctag" lang="zh">要绕开的礁石</span>
+  <p lang="en">It is tempting to think PP communicates less because each send is smaller. It is not the packet size — it is the <strong>frequency</strong>. PP sends at <code>P−1</code> seams; TP and CP synchronize at every one of <code>L</code> layers. And do not expect per-GPU TP cost to keep climbing as you add ranks: the ring factor <code>2(N−1)/N</code> saturates near 2. What actually worsens with TP degree is latency (more ring steps) and the moment a TP group is forced to span nodes — then its frequent collectives hit the slow link, which is exactly the situation PP exists to avoid.</p>
+  <p lang="zh">人们很容易以为 PP 通信更少是因为每次 send 更小。 不是包的大小 —— 是<strong>频率</strong>。 PP 在 <code>P−1</code> 个接缝处 send； TP 和 CP 在 <code>L</code> 层的每一层都同步。 另外别指望每卡 TP 代价会随 rank 增加一直上涨： 环形系数 <code>2(N−1)/N</code> 在 2 附近就饱和了。 真正随 TP degree 变糟的是延迟（更多环步）， 以及一个 TP 组被迫跨节点的那一刻 —— 那时它频繁的集合通信会打到慢链路上， 而这恰恰是 PP 存在的目的所在。</p>
+</div>
+</section>
+
+<!-- ============ S2 · THE BUBBLE ============ -->
+<section id="s2-bubble">
+<h2 lang="en"><span class="num">§ 2 · The cost of slicing by layer</span>The pipeline <em>bubble</em></h2>
+<h2 lang="zh"><span class="num">§ 2 · 按层切的代价</span>流水线<em>气泡</em></h2>
+
+<p lang="en">PP buys cheap communication, but it borrows against a different account: data dependency. Stage 2 cannot start until stage 1 has produced something for it to consume. Feed the pipeline one monolithic batch and watch the clock. At <code>t=1</code>, stage 1 computes the whole batch while stages 2…P sit idle. At <code>t=2</code>, stage 2 computes while stage 1 — already finished, nothing new to do — goes idle. The single batch walks the pipe one stage at a time, and only one of your <code>P</code> GPUs is ever busy. You bought <code>P</code> GPUs and got the throughput of one. That dead time is the <em>bubble</em>.</p>
+
+<p lang="zh">PP 换来了便宜的通信， 但它是从另一个账户上借的： 数据依赖。 Stage 2 没法开工， 除非 stage 1 先产出点东西给它消费。 给流水线喂一个整块的 batch， 盯着时钟看。 <code>t=1</code> 时， stage 1 在算整个 batch， 而 stage 2…P 都在发呆。 <code>t=2</code> 时， stage 2 在算， 而 stage 1 —— 已经算完、 没有新活儿 —— 闲下来了。 这一个 batch 一次走一个 stage， 任何时刻都只有 <code>P</code> 张卡里的一张在忙。 你买了 <code>P</code> 张卡， 拿到的是一张卡的吞吐。 这段死时间就是<em>气泡</em>。</p>
+
+<p lang="en">The fix is micro-batching, introduced by <a href="https://arxiv.org/abs/1811.06965">GPipe</a> (Huang et al., NeurIPS 2019). Chop the batch into <code>M</code> smaller micro-batches and stream them. Now stage 1 finishes micro-batch 1 and immediately starts micro-batch 2, while stage 2 picks up micro-batch 1. Once the pipeline <em>fills</em>, every stage works on a different micro-batch at once — full utilization. <a href="https://arxiv.org/abs/1806.03377">PipeDream</a> (Narayanan et al., SOSP 2019) pushed this further with the 1F1B schedule that interleaves forward and backward; for inference prefill we only care about the forward half, but the bubble intuition is identical.</p>
+
+<p lang="zh">解法是微批（micro-batching）， 由 <a href="https://arxiv.org/abs/1811.06965">GPipe</a>（Huang 等， NeurIPS 2019）提出。 把 batch 切成 <code>M</code> 个更小的微批， 流式地喂进去。 现在 stage 1 做完微批 1 就立刻开始微批 2， 而 stage 2 接手微批 1。 一旦流水线<em>填满</em>， 每个 stage 同时在处理不同的微批 —— 满负荷。 <a href="https://arxiv.org/abs/1806.03377">PipeDream</a>（Narayanan 等， SOSP 2019）用 1F1B 调度把这一步推得更远， 交错前向和反向； 推理的 prefill 阶段我们只关心前向那一半， 但气泡的直觉完全一样。</p>
+
+<!-- ============ PLATE III ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate III</span>
+  <span class="pname" lang="en">Fill, steady state, drain — the GPipe chart</span>
+  <span class="pname" lang="zh">填充、 稳态、 排空 —— GPipe 图</span>
+  <span class="pscale">— P = 4 stages, M = 6 micro-batches —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Stage × time: the busy parallelogram and its two idle triangles</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- axes -->
+  <text x="56" y="100" class="d-text label">STAGE</text>
+  <text x="500" y="372" class="d-text label" text-anchor="middle">TIME  →  (one micro-batch slot per column)</text>
+
+  <!-- grid: 4 rows × 9 cols. col width 88, starting x=110; row height 56, starting y=70 -->
+  <!-- We fill cell (stage r, slot c) busy if c-r in [0,5] i.e. mb index = c-r, valid 0..5 -->
+  <!-- Row labels -->
+  <text x="96" y="104" class="d-text small" text-anchor="end">Stage 0</text>
+  <text x="96" y="160" class="d-text small" text-anchor="end">Stage 1</text>
+  <text x="96" y="216" class="d-text small" text-anchor="end">Stage 2</text>
+  <text x="96" y="272" class="d-text small" text-anchor="end">Stage 3</text>
+
+  <!-- background grid cells (light) -->
+  <g class="zone tint" stroke="var(--line)" fill="var(--tint-soft)">
+    <!-- 4 rows × 9 cols -->
+    <rect x="110" y="80" width="86" height="48"/><rect x="198" y="80" width="86" height="48"/><rect x="286" y="80" width="86" height="48"/><rect x="374" y="80" width="86" height="48"/><rect x="462" y="80" width="86" height="48"/><rect x="550" y="80" width="86" height="48"/><rect x="638" y="80" width="86" height="48"/><rect x="726" y="80" width="86" height="48"/><rect x="814" y="80" width="86" height="48"/>
+    <rect x="110" y="136" width="86" height="48"/><rect x="198" y="136" width="86" height="48"/><rect x="286" y="136" width="86" height="48"/><rect x="374" y="136" width="86" height="48"/><rect x="462" y="136" width="86" height="48"/><rect x="550" y="136" width="86" height="48"/><rect x="638" y="136" width="86" height="48"/><rect x="726" y="136" width="86" height="48"/><rect x="814" y="136" width="86" height="48"/>
+    <rect x="110" y="192" width="86" height="48"/><rect x="198" y="192" width="86" height="48"/><rect x="286" y="192" width="86" height="48"/><rect x="374" y="192" width="86" height="48"/><rect x="462" y="192" width="86" height="48"/><rect x="550" y="192" width="86" height="48"/><rect x="638" y="192" width="86" height="48"/><rect x="726" y="192" width="86" height="48"/><rect x="814" y="192" width="86" height="48"/>
+    <rect x="110" y="248" width="86" height="48"/><rect x="198" y="248" width="86" height="48"/><rect x="286" y="248" width="86" height="48"/><rect x="374" y="248" width="86" height="48"/><rect x="462" y="248" width="86" height="48"/><rect x="550" y="248" width="86" height="48"/><rect x="638" y="248" width="86" height="48"/><rect x="726" y="248" width="86" height="48"/><rect x="814" y="248" width="86" height="48"/>
+  </g>
+
+  <!-- busy cells: mb = c - r, for r=0..3, valid mb 0..5 -->
+  <!-- Stage 0 (y=80): slots 0..5 busy with mb 1..6 -->
+  <g fill="var(--teal-deep)" opacity="0.85">
+    <rect x="110" y="80" width="86" height="48"/><rect x="198" y="80" width="86" height="48"/><rect x="286" y="80" width="86" height="48"/><rect x="374" y="80" width="86" height="48"/><rect x="462" y="80" width="86" height="48"/><rect x="550" y="80" width="86" height="48"/>
+    <!-- Stage 1 (y=136): slots 1..6 -->
+    <rect x="198" y="136" width="86" height="48"/><rect x="286" y="136" width="86" height="48"/><rect x="374" y="136" width="86" height="48"/><rect x="462" y="136" width="86" height="48"/><rect x="550" y="136" width="86" height="48"/><rect x="638" y="136" width="86" height="48"/>
+    <!-- Stage 2 (y=192): slots 2..7 -->
+    <rect x="286" y="192" width="86" height="48"/><rect x="374" y="192" width="86" height="48"/><rect x="462" y="192" width="86" height="48"/><rect x="550" y="192" width="86" height="48"/><rect x="638" y="192" width="86" height="48"/><rect x="726" y="192" width="86" height="48"/>
+    <!-- Stage 3 (y=248): slots 3..8 -->
+    <rect x="374" y="248" width="86" height="48"/><rect x="462" y="248" width="86" height="48"/><rect x="550" y="248" width="86" height="48"/><rect x="638" y="248" width="86" height="48"/><rect x="726" y="248" width="86" height="48"/><rect x="814" y="248" width="86" height="48"/>
+  </g>
+  <!-- micro-batch numbers on stage 0 -->
+  <g class="d-text mono ink" text-anchor="middle">
+    <text x="153" y="110">1</text><text x="241" y="110">2</text><text x="329" y="110">3</text><text x="417" y="110">4</text><text x="505" y="110">5</text><text x="593" y="110">6</text>
+  </g>
+
+  <!-- FILL triangle outline (top-left) -->
+  <path d="M 110 128 L 374 128 L 110 296 Z" fill="var(--crimson)" opacity="0.13" stroke="var(--crimson)" stroke-dasharray="4 3"/>
+  <text x="150" y="232" class="d-text small crimson">FILL</text>
+  <text x="150" y="246" class="d-text tiny crimson">P−1 = 3 idle</text>
+
+  <!-- DRAIN triangle (bottom-right) -->
+  <path d="M 550 80 L 902 80 L 902 296 Z" fill="none"/>
+  <path d="M 638 80 L 902 80 L 902 248 Z" fill="var(--crimson)" opacity="0.13" stroke="var(--crimson)" stroke-dasharray="4 3"/>
+  <text x="812" y="150" class="d-text small crimson" text-anchor="middle">DRAIN</text>
+  <text x="812" y="164" class="d-text tiny crimson" text-anchor="middle">P−1 = 3 idle</text>
+
+  <!-- steady state bracket -->
+  <line x1="374" y1="312" x2="550" y2="312" class="bp-line teal thick"/>
+  <text x="462" y="328" class="d-text small teal" text-anchor="middle">steady state · all 4 busy · length M</text>
+
+  <line x1="40" y1="346" x2="960" y2="346" class="bp-line faint"/>
+  <text x="40" y="396" class="d-text tiny dim">The busy cells form a parallelogram sloping down-right. The top-left triangle is the FILL bubble (stages wait for the first micro-batch to arrive: P−1 slots);</text>
+  <text x="40" y="409" class="d-text tiny dim">the bottom-right is the DRAIN bubble (stage 0 ran dry while the last micro-batch finishes: P−1 slots). Total length = (P−1) + M + (P−1); wasted = 2 triangles, fixed by P.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate III — the bubble is two triangles of fixed area set by <code>P</code>, around a steady-state band that grows with <code>M</code>. The whole efficiency game is making <code>M</code> dwarf <code>P</code>.</div>
+<div class="caption" lang="zh">Plate III —— 气泡是两个由 <code>P</code> 决定的、 固定面积的三角形， 夹着一条随 <code>M</code> 增长的稳态带。 整个效率博弈就是让 <code>M</code> 远远盖过 <code>P</code>。</div>
+</div>
+
+<h3 lang="en">Deriving the bubble ratio</h3>
+<h3 lang="zh">推导气泡比</h3>
+
+<p lang="en">Use one micro-batch's per-stage time as the unit. The first micro-batch enters stage 1 at slot 1, reaches stage 2 at slot 2, … reaches stage <code>P</code> at slot <code>P</code> — so <code>P−1</code> slots elapse before the last stage does any useful work. That is the <strong>fill</strong>. Once the pipe is full, pushing all <code>M</code> micro-batches through takes <code>M</code> slots of useful, zero-waste work — the <strong>steady state</strong>. After stage 1 consumes the last micro-batch it idles while that piece drains down the remaining stages — another <code>P−1</code> slots, the <strong>drain</strong>, symmetric to fill. Following Megatron-LM's accounting, the useful time is <code>M</code> and the bubble overhead is <code>P−1</code>, so:</p>
+
+<p lang="zh">用一个微批在单个 stage 上的时间作为单位。 第一个微批在第 1 个时隙进入 stage 1， 第 2 个时隙到 stage 2， …… 第 <code>P</code> 个时隙到 stage <code>P</code> —— 所以在最后一个 stage 干任何有用活儿之前， 已经过去了 <code>P−1</code> 个时隙。 这就是<strong>填充</strong>。 一旦流水线填满， 把全部 <code>M</code> 个微批推完需要 <code>M</code> 个时隙的有用、 零浪费的工作 —— 这是<strong>稳态</strong>。 stage 1 消费完最后一个微批后就闲下来， 等那一块流过剩下的 stage —— 又是 <code>P−1</code> 个时隙， 即<strong>排空</strong>， 与填充对称。 按 Megatron-LM 的记账方式， 有用时间是 <code>M</code>， 气泡开销是 <code>P−1</code>， 于是：</p>
+
+<div class="formula">
+<span class="big">Bubble Ratio  =  (P−1) / ((P−1) + M)</span>
+<span class="note" lang="en">wasted ÷ total. P=4, M=4 → 3/7 = 43% (terrible). P=4, M=64 → 4.5%. P=4, M=250 → 1.2%.</span>
+<span class="note" lang="zh">浪费 ÷ 总量。 P=4, M=4 → 3/7 = 43%（很糟）。 P=4, M=64 → 4.5%。 P=4, M=250 → 1.2%。</span>
+</div>
+
+<p lang="en">As <code>M</code> grows with <code>P</code> fixed, the ratio collapses toward <code>(P−1)/M → 0</code>. The bubble is a fixed cost set by pipeline depth; useful work is amortizable by feeding more micro-batches. GPipe's rule of thumb — keep <code>M ≳ 4P</code> — is the practical reading. But read the inverse too, because it is the warning the post is built around: for a <em>fixed</em> workload <code>M</code>, raising <code>P</code> raises the bubble. Deeper pipelines are strictly worse unless you also grow <code>M</code>. That is why "a pure high-degree PP configuration is generally not recommended."</p>
+
+<p lang="zh">当 <code>M</code> 增大、 <code>P</code> 固定时， 这个比值朝 <code>(P−1)/M → 0</code> 坍缩。 气泡是由流水线深度决定的固定成本； 有用的工作可以靠多喂微批来摊薄。 GPipe 的经验法则 —— 保持 <code>M ≳ 4P</code> —— 就是它的实用读法。 但也要读它的反面， 因为这正是整篇博客所围绕的警告： 对<em>固定</em>的工作量 <code>M</code>， 增大 <code>P</code> 会增大气泡。 更深的流水线严格地更糟， 除非你同时把 <code>M</code> 也做大。 这就是为什么"纯粹的高 degree PP 配置一般不被推荐"。</p>
+
+<div class="callout amber">
+  <span class="ctag" lang="en">The inversion that makes the whole post work</span>
+  <span class="ctag" lang="zh">让整篇博客成立的那个反转</span>
+  <p lang="en">Here is the move. In long-context <strong>prefill</strong>, one long prompt is chopped into chunks, and <em>each chunk is a micro-batch</em>. A million-token prompt at a 4K chunk size is ~244 micro-batches — so <code>M ≫ P</code> for free, and the bubble that normally kills PP vanishes on its own. The workload <em>supplies</em> the huge <code>M</code> that PP needs. That is why PP, the wrong tool for decode (one token at a time, tiny <code>M</code>), is the <em>right</em> tool for million-token prefill. Same hardware, opposite verdict — decided entirely by where <code>M</code> comes from.</p>
+  <p lang="zh">关键的一步在这里。 在长上下文的 <strong>prefill</strong> 阶段， 一条长 prompt 被切成 chunk， 而<em>每个 chunk 就是一个微批</em>。 一条百万 token 的 prompt、 4K 的 chunk 大小， 大约是 244 个微批 —— 于是 <code>M ≫ P</code> 白送给你， 那个平时会要了 PP 命的气泡自己就消失了。 工作量<em>自带</em>了 PP 所需要的那个巨大的 <code>M</code>。 这就是为什么 PP 这个 decode 的错误工具（一次一个 token、 <code>M</code> 极小）， 偏偏是百万 token prefill 的<em>正确</em>工具。 同样的硬件， 相反的判决 —— 完全由 <code>M</code> 从哪儿来决定。</p>
+</div>
+</section>
+
+<!-- ============ S3 · CHUNKED PIPELINE ============ -->
+<section id="s3-chunked">
+<h2 lang="en"><span class="num">§ 3 · The heart of it</span>Chunked <em>pipeline</em> parallelism</h2>
+<h2 lang="zh"><span class="num">§ 3 · 核心所在</span>分块<em>流水线</em>并行</h2>
+
+<p lang="en">With <code>P=8</code> stages, stage 0 holds layers 0–9, stage 1 holds 10–19, and a token's hidden state must flow through all eight before you get a logit. The naive way to run a long prompt is to push the <em>whole</em> prompt through stage 0, send the result to stage 1, push it all through stage 1, and so on. Correct, but it makes your time-to-first-token catastrophic: you wait for stage 0 to finish all million tokens before stage 1 even starts. Startup latency is proportional to <strong>total sequence length</strong>, and seven of eight GPUs idle at any instant.</p>
+
+<p lang="zh">在 <code>P=8</code> 个 stage 下， stage 0 拿第 0–9 层， stage 1 拿第 10–19 层， 一个 token 的 hidden state 要流过全部八个 stage 才能得到一个 logit。 跑一条长 prompt 的朴素办法， 是把<em>整条</em> prompt 推过 stage 0， 把结果送给 stage 1， 再整条推过 stage 1， 如此往复。 这是对的， 但它让你的 time-to-first-token 灾难性地差： 你得等 stage 0 把全部一百万 token 都算完， stage 1 才开始。 启动延迟正比于<strong>总序列长度</strong>， 而任何时刻八张卡里有七张在闲着。</p>
+
+<p lang="en">Chunked pipeline parallelism (CPP) stops treating the prompt as a monolith. Cut it into chunks of a few thousand tokens and treat each chunk like a GPipe micro-batch. Stage 0 processes Chunk 1, fires it downstream, and <em>immediately</em> starts Chunk 2 while stage 1 works on Chunk 1. Now all stages can be busy at once — but the deeper win is the startup. The pipeline produces its first downstream work after just the <em>first chunk</em>, so startup latency becomes proportional to <strong>first-chunk size</strong>, not total length. For a 1M-token prompt at 4K chunks, that is a ~244× smaller fill cost before the pipe is full. This is also why CPP is a <em>prefill</em> story specifically: a long prompt is naturally chunkable along the sequence dimension, and SGLang already had chunked prefill for memory reasons, so PP rides on top of machinery that was already there.</p>
+
+<p lang="zh">分块流水线并行（CPP）不再把 prompt 当成铁板一块。 把它切成几千 token 一块的 chunk， 把每个 chunk 当成一个 GPipe 微批。 stage 0 处理 Chunk 1， 把它发往下游， 然后<em>立刻</em>开始 Chunk 2， 而 stage 1 正在处理 Chunk 1。 现在所有 stage 都能同时忙起来 —— 但更深的胜利在启动上。 流水线只需第<em>一个 chunk</em> 就能产出第一份下游工作， 所以启动延迟变成正比于<strong>首块大小</strong>， 而不是总长度。 对一条 1M token、 4K 分块的 prompt， 这是在流水线填满之前小了约 244× 的填充成本。 这也是为什么 CPP 专门是个 <em>prefill</em> 故事： 一条长 prompt 天然可以沿序列维度分块， 而 SGLang 出于内存原因本就有 chunked prefill， 所以 PP 是搭在一套已经存在的机制之上的。</p>
+
+<!-- ============ PLATE IV ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate IV</span>
+  <span class="pname" lang="en">Monolithic fill vs chunked fill — the TTFT killer, defused</span>
+  <span class="pname" lang="zh">整块填充 vs 分块填充 —— 拆掉 TTFT 这颗雷</span>
+  <span class="pscale">— P = 4 stages —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--blue)"/>
+    </marker>
+  </defs>
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Same 4-stage pipeline, two ways to feed it a long prompt</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- TOP: monolithic -->
+  <text x="40" y="64" class="d-text label crimson">MONOLITHIC PP</text>
+  <text x="40" y="100" class="d-text small" text-anchor="start">S0</text>
+  <text x="40" y="136" class="d-text small" text-anchor="start">S1</text>
+  <text x="40" y="172" class="d-text small" text-anchor="start">S2</text>
+  <text x="40" y="208" class="d-text small" text-anchor="start">S3</text>
+  <!-- each stage one long bar, stair-stepped. bar length 200, step 200 -->
+  <rect x="80" y="84" width="200" height="24" rx="2" fill="var(--teal-deep)" opacity="0.8"/>
+  <rect x="280" y="120" width="200" height="24" rx="2" fill="var(--teal-deep)" opacity="0.8"/>
+  <rect x="480" y="156" width="200" height="24" rx="2" fill="var(--teal-deep)" opacity="0.8"/>
+  <rect x="680" y="192" width="200" height="24" rx="2" fill="var(--teal-deep)" opacity="0.8"/>
+  <text x="180" y="101" class="d-text tiny ink" text-anchor="middle">full prompt L</text>
+  <!-- first-token marker -->
+  <line x1="880" y1="76" x2="880" y2="224" class="bp-line crimson dash"/>
+  <text x="884" y="238" class="d-text tiny crimson">first token: TTFT ∝ total length</text>
+  <!-- idle hatch note -->
+  <text x="80" y="238" class="d-text tiny dim">7/8 GPUs idle at any instant · wait for ALL L before stage 1 starts</text>
+
+  <line x1="40" y1="256" x2="960" y2="256" class="bp-line faint"/>
+
+  <!-- BOTTOM: chunked -->
+  <text x="40" y="282" class="d-text label teal">CHUNKED PP</text>
+  <text x="40" y="316" class="d-text small">S0</text>
+  <text x="40" y="346" class="d-text small">S1</text>
+  <text x="40" y="376" class="d-text small">S2</text>
+  <text x="40" y="406" class="d-text small">S3</text>
+  <!-- 6 chunks per stage, width 34, step 34; stage offset by 34 each -->
+  <!-- Stage 0 row y=302 -->
+  <g>
+    <!-- amber chunk tiles, stair pattern: stage r starts at x = 80 + r*36 -->
+    <!-- S0: chunks 1..6 -->
+    <rect x="80" y="302" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.9"/><rect x="116" y="302" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.9"/><rect x="152" y="302" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.9"/><rect x="188" y="302" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.9"/><rect x="224" y="302" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.9"/><rect x="260" y="302" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.9"/>
+    <!-- S1 y=332, offset +36 -->
+    <rect x="116" y="332" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.78"/><rect x="152" y="332" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.78"/><rect x="188" y="332" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.78"/><rect x="224" y="332" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.78"/><rect x="260" y="332" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.78"/><rect x="296" y="332" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.78"/>
+    <!-- S2 y=362, offset +72 -->
+    <rect x="152" y="362" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.66"/><rect x="188" y="362" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.66"/><rect x="224" y="362" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.66"/><rect x="260" y="362" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.66"/><rect x="296" y="362" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.66"/><rect x="332" y="362" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.66"/>
+    <!-- S3 y=392, offset +108 -->
+    <rect x="188" y="392" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.54"/><rect x="224" y="392" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.54"/><rect x="260" y="392" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.54"/><rect x="296" y="392" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.54"/><rect x="332" y="392" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.54"/><rect x="368" y="392" width="32" height="20" rx="1" fill="var(--amber)" opacity="0.54"/>
+  </g>
+  <!-- tiny send arrows S0->S1 for chunk1 -->
+  <line x1="96" y1="324" x2="130" y2="330" class="bp-line blue" marker-end="url(#ah2)"/>
+  <!-- first token marker much earlier -->
+  <line x1="220" y1="296" x2="220" y2="414" class="bp-line teal dash"/>
+  <text x="228" y="410" class="d-text tiny teal">first token: TTFT ∝ first chunk</text>
+  <text x="430" y="356" class="d-text small dim">…steady state: one chunk retires per stage-time…</text>
+
+  <line x1="40" y1="424" x2="500" y2="424" class="bp-line faint"/>
+</svg>
+</div>
+<div class="caption" lang="en">Plate IV — the only change is granularity, and it moves the red line. Monolithic PP waits for the entire prompt before stage 1 starts; chunked PP starts downstream work after the first ~4K tokens. The tiles tessellate into a tight parallelogram with almost no idle gaps.</div>
+<div class="caption" lang="zh">Plate IV —— 唯一改的是粒度， 而它挪动了那条红线。 整块 PP 要等整条 prompt 才让 stage 1 开工； 分块 PP 在头约 4K token 之后就开始下游工作。 这些小块拼成一个紧凑的平行四边形， 几乎没有空隙。</div>
+</div>
+
+<p lang="en">Make the speedup precise. Let <code>t(n)</code> be one stage's time to forward <code>n</code> tokens, and split the prompt of length <code>L</code> into <code>k</code> chunks of size <code>s = L/k</code>. Naive monolithic PP costs <code>P·t(L)</code> — every stage chews the entire prompt before passing it on. Chunked PP costs <code>P·t(s)</code> to fill the pipe with the first chunk, then <code>(k−1)·t(s)</code> in steady state: <code>(P + k − 1)·t(s)</code>. If <code>t</code> is roughly linear in tokens, <code>t(L) = k·t(s)</code>, and the ratio is <code>P·k / (P + k − 1)</code>. At <code>P=8</code>, <code>k=244</code>, that is ~7.6× — and the <em>fill</em> portion before any output shrank by the full factor of <code>k</code>. (That 7.6× is the speedup over a fully-serialized monolithic-PP strawman; the measured wins later — 81% TTFT cut, 3.31× throughput — are against TP, a much stronger baseline.)</p>
+
+<p lang="zh">把加速比写精确。 设 <code>t(n)</code> 是一个 stage 前向 <code>n</code> 个 token 的时间， 把长度为 <code>L</code> 的 prompt 切成 <code>k</code> 个大小 <code>s = L/k</code> 的 chunk。 朴素整块 PP 的代价是 <code>P·t(L)</code> —— 每个 stage 都要嚼完整条 prompt 才往下传。 分块 PP 的代价是 <code>P·t(s)</code> 把第一个 chunk 填满流水线， 再加稳态的 <code>(k−1)·t(s)</code>： 合计 <code>(P + k − 1)·t(s)</code>。 若 <code>t</code> 大致随 token 线性， 则 <code>t(L) = k·t(s)</code>， 比值为 <code>P·k / (P + k − 1)</code>。 在 <code>P=8</code>、 <code>k=244</code> 时大约是 7.6× —— 而产出第一份输出前的<em>填充</em>部分整整缩小了 <code>k</code> 倍。 （这个 7.6× 是相对"完全串行的整块 PP"这个稻草人的加速比； 后面那些实测胜绩 —— TTFT 降 81%、 吞吐 3.31× —— 是对 TP 这个强得多的基线而言的。）</p>
+</section>
+
+<!-- ============ S4 · ASYNC P2P ============ -->
+<section id="s4-async">
+<h2 lang="en"><span class="num">§ 4 · Keeping the pipe full</span>Async P2P &amp; <em>three streams</em></h2>
+<h2 lang="zh"><span class="num">§ 4 · 让流水线保持满载</span>异步 P2P 与<em>三条流</em></h2>
+
+<p lang="en">Chunking shrinks the fill, but it exposes a new hazard: the boundary between stages is a network send. If stage 0 calls a <em>blocking</em> send after each chunk, it stalls — it cannot start Chunk 2 until Chunk 1's bytes are fully handed off. The pipeline would re-serialize on communication instead of compute, and you would have traded one bubble for another. SGLang's fix is asynchronous P2P: the send returns a handle immediately and the stage keeps working while data is in flight; synchronization is <em>deferred</em> to the last possible moment, right before the buffer must be safe to reuse.</p>
+
+<p lang="zh">分块缩小了填充， 但它暴露出一个新风险： stage 之间的边界是一次网络 send。 如果 stage 0 在每个 chunk 之后调用一个<em>阻塞</em>的 send， 它就卡住了 —— 在 Chunk 1 的字节完全交接出去之前， 它没法开始 Chunk 2。 这样流水线会从"按算力串行"变成"按通信串行"， 等于用一个气泡换了另一个气泡。 SGLang 的解法是异步 P2P： send 立刻返回一个句柄， stage 在数据还在飞的时候继续干活； 同步被<em>推迟</em>到最后一刻 —— 就在缓冲区必须可以安全复用之前。</p>
+
+<p lang="en">The mechanism lives in <code>scheduler_pp_mixin.py</code>, and the symbols are worth seeing because they make the design concrete. The send path is <code>_pp_send_pyobj_to_next_stage(self, data, async_send=False)</code>; when <code>async_send=True</code> it issues a non-blocking <code>torch.distributed.isend</code> and returns a list of <code>P2PWork</code> handles instead of blocking. Each handle is a tiny dataclass — <code>P2PWork(work, payload)</code> — bundling the <code>torch.distributed.Work</code> object you will <code>wait()</code> on <em>with</em> the tensor <code>payload</code>. Bundling the payload is not incidental: keeping a reference alive stops the buffer from being freed while <code>isend</code> is still reading it, the classic async-comm correctness trap. Synchronization is deferred to <code>_pp_commit_comm_work(self, work)</code>, which loops <code>for p2p_work in work: p2p_work.work.wait()</code> and clears the list — the "sync later" half of the design.</p>
+
+<p lang="zh">这套机制就在 <code>scheduler_pp_mixin.py</code> 里， 它的符号值得一看， 因为它们把设计落到了实处。 send 路径是 <code>_pp_send_pyobj_to_next_stage(self, data, async_send=False)</code>； 当 <code>async_send=True</code> 时， 它发起一个非阻塞的 <code>torch.distributed.isend</code>， 返回一组 <code>P2PWork</code> 句柄而不是阻塞。 每个句柄是一个小 dataclass —— <code>P2PWork(work, payload)</code> —— 把你将要 <code>wait()</code> 的那个 <code>torch.distributed.Work</code> 对象， <em>连同</em>张量 <code>payload</code> 一起打包。 打包 payload 不是顺手为之： 保住一份引用， 才能防止缓冲区在 <code>isend</code> 还在读它的时候被释放 —— 这是异步通信里经典的正确性陷阱。 同步被推迟到 <code>_pp_commit_comm_work(self, work)</code>， 它循环 <code>for p2p_work in work: p2p_work.work.wait()</code> 然后清空列表 —— 这是设计里"晚点再同步"的那一半。</p>
+
+<p lang="en">The third idea is overlap via separate CUDA streams. A stream is an ordered queue of GPU work; separate streams run concurrently. SGLang runs a <code>forward_stream</code> for the current micro-batch's matmuls, a <code>copy_stream</code> for device-to-host transfers of a previous micro-batch's results, and the default stream plus a <code>launch_event</code> to enforce the few real cross-stream dependencies. So while the GPU grinds on micro-batch <code>N</code>'s forward pass, the CPU is already building micro-batch <code>N+1</code> (<code>self.mbs[mb_id] = self.get_next_batch_to_run()</code>) and the copy stream is moving micro-batch <code>N−1</code>'s output off the device. Compute, communication, and CPU bookkeeping all happen at once instead of in a sad serial line — the difference between a pipeline that idles between chunks and one that stays saturated.</p>
+
+<p lang="zh">第三个想法是用不同的 CUDA stream 做重叠。 一条 stream 是一个有序的 GPU 工作队列； 不同的 stream 可以并发运行。 SGLang 跑一条 <code>forward_stream</code> 处理当前微批的矩阵乘， 一条 <code>copy_stream</code> 做上一个微批结果的 device-to-host 传输， 再加默认 stream 和一个 <code>launch_event</code> 来强制那少数几个真正的跨流依赖。 于是当 GPU 在啃微批 <code>N</code> 的前向时， CPU 已经在构建微批 <code>N+1</code>（<code>self.mbs[mb_id] = self.get_next_batch_to_run()</code>）， 而 copy stream 正在把微批 <code>N−1</code> 的输出搬下卡。 计算、 通信、 CPU 记账同时发生， 而不是排成一条可怜的串行队 —— 这就是"chunk 之间会发呆的流水线"和"始终满载的流水线"之间的差别。</p>
+
+<!-- ============ PLATE V ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate V</span>
+  <span class="pname" lang="en">Three streams, one GPU: compute, copy, and CPU prep overlap</span>
+  <span class="pname" lang="zh">三条流、 一张卡： 计算、 拷贝、 CPU 准备相互重叠</span>
+  <span class="pscale">— one stage's timeline —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ev" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5">
+      <path d="M5 0 L10 5 L5 10 L0 5 Z" fill="var(--fg-mute)"/>
+    </marker>
+  </defs>
+  <text x="500" y="24" class="d-text title" text-anchor="middle">While the GPU computes N, the CPU preps N+1 and the copy stream drains N−1</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- time columns: N-1, N, N+1 -->
+  <text x="300" y="62" class="d-text label dim" text-anchor="middle">slot N−1</text>
+  <text x="540" y="62" class="d-text label dim" text-anchor="middle">slot N</text>
+  <text x="780" y="62" class="d-text label dim" text-anchor="middle">slot N+1</text>
+  <line x1="420" y1="72" x2="420" y2="330" class="bp-line faint dash"/>
+  <line x1="660" y1="72" x2="660" y2="330" class="bp-line faint dash"/>
+
+  <!-- lane labels -->
+  <text x="40" y="104" class="d-text small" fill="var(--blue)">CPU</text>
+  <text x="40" y="158" class="d-text small" fill="var(--teal)">forward_stream</text>
+  <text x="40" y="212" class="d-text small" fill="var(--amber)">copy_stream</text>
+  <text x="40" y="266" class="d-text small dim">default + event</text>
+
+  <!-- CPU lane: build batch -->
+  <rect x="180" y="86" width="220" height="30" rx="2" fill="var(--blue)" opacity="0.28" stroke="var(--blue)"/>
+  <text x="290" y="105" class="d-text tiny" text-anchor="middle" fill="var(--blue)">build batch(N)</text>
+  <rect x="420" y="86" width="220" height="30" rx="2" fill="var(--blue)" opacity="0.45" stroke="var(--blue)"/>
+  <text x="530" y="105" class="d-text tiny" text-anchor="middle" fill="var(--blue)">build batch(N+1)</text>
+  <rect x="660" y="86" width="220" height="30" rx="2" fill="var(--blue)" opacity="0.28" stroke="var(--blue)"/>
+  <text x="770" y="105" class="d-text tiny" text-anchor="middle" fill="var(--blue)">build batch(N+2)</text>
+
+  <!-- forward_stream lane -->
+  <rect x="180" y="140" width="220" height="30" rx="2" fill="var(--teal-deep)" opacity="0.7"/>
+  <text x="290" y="159" class="d-text tiny ink" text-anchor="middle">forward(N−1)</text>
+  <rect x="420" y="140" width="220" height="30" rx="2" fill="var(--teal-deep)" opacity="0.85"/>
+  <text x="530" y="159" class="d-text tiny ink" text-anchor="middle">forward(N)</text>
+  <rect x="660" y="140" width="220" height="30" rx="2" fill="var(--teal-deep)" opacity="0.7"/>
+  <text x="770" y="159" class="d-text tiny ink" text-anchor="middle">forward(N+1)</text>
+
+  <!-- copy_stream lane -->
+  <rect x="180" y="194" width="220" height="30" rx="2" fill="var(--amber)" opacity="0.4" stroke="var(--amber)"/>
+  <text x="290" y="213" class="d-text tiny" text-anchor="middle" fill="var(--amber)">D2H copy(N−2)</text>
+  <rect x="420" y="194" width="220" height="30" rx="2" fill="var(--amber)" opacity="0.55" stroke="var(--amber)"/>
+  <text x="530" y="213" class="d-text tiny" text-anchor="middle" fill="var(--amber)">D2H copy(N−1)</text>
+  <rect x="660" y="194" width="220" height="30" rx="2" fill="var(--amber)" opacity="0.4" stroke="var(--amber)"/>
+  <text x="770" y="213" class="d-text tiny" text-anchor="middle" fill="var(--amber)">D2H copy(N)</text>
+
+  <!-- event markers on default lane -->
+  <g fill="var(--fg-mute)">
+    <path d="M420 244 L428 252 L420 260 L412 252 Z"/>
+    <path d="M660 244 L668 252 L660 260 L652 252 Z"/>
+  </g>
+  <text x="420" y="278" class="d-text tiny dim" text-anchor="middle">launch_event</text>
+  <text x="660" y="278" class="d-text tiny dim" text-anchor="middle">launch_event</text>
+
+  <!-- highlight band over slot N -->
+  <rect x="420" y="78" width="240" height="200" fill="var(--teal)" opacity="0.05"/>
+  <text x="540" y="300" class="d-text small teal" text-anchor="middle">three things at once over slot N</text>
+
+  <line x1="40" y1="320" x2="960" y2="320" class="bp-line faint"/>
+  <text x="40" y="344" class="d-text tiny dim">The streams do NOT run three model layers in parallel — they separate KINDS of work (GPU compute vs D2H copy vs CPU scheduling) so they overlap. Layer-level</text>
+  <text x="40" y="357" class="d-text tiny dim">parallelism is what the stages across GPUs give you; stream-level overlap is what hides the copy and the next-chunk prep behind the current chunk's matmuls.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate V — async P2P keeps the network off the critical path; the three streams keep the CPU and the copy engine off it too. Together they convert idle bubble time into useful work.</div>
+<div class="caption" lang="zh">Plate V —— 异步 P2P 把网络从关键路径上挪开； 三条流再把 CPU 和拷贝引擎也挪开。 两者合力， 把闲置的气泡时间变成有用的工作。</div>
+</div>
+
+<div class="callout blue">
+  <span class="ctag" lang="en">Provenance</span>
+  <span class="ctag" lang="zh">来历</span>
+  <p lang="en">Pipeline parallelism landed in SGLang via <a href="https://github.com/sgl-project/sglang/pull/5724">PR #5724</a> ("[PP] Add pipeline parallelism," by Ying1123) and was made compatible with prefill-decode disaggregation in <a href="https://github.com/sgl-project/sglang/pull/8846">PR #8846</a>; the roadmap is tracked in <a href="https://github.com/sgl-project/sglang/issues/11857">issue #11857</a>. It needs SGLang <code>≥ v0.5.7</code>. "Async P2P does not mean no synchronization" — it is deferred, not eliminated; forget to <code>commit</code> before reusing a buffer and you get silent corruption, which is exactly why <code>P2PWork</code> keeps the payload alive.</p>
+  <p lang="zh">流水线并行通过 <a href="https://github.com/sgl-project/sglang/pull/5724">PR #5724</a>（"[PP] Add pipeline parallelism"， 作者 Ying1123）进入 SGLang， 又在 <a href="https://github.com/sgl-project/sglang/pull/8846">PR #8846</a> 中做到了与 prefill-decode 分离兼容； 路线图在 <a href="https://github.com/sgl-project/sglang/issues/11857">issue #11857</a> 跟踪。 它需要 SGLang <code>≥ v0.5.7</code>。 "异步 P2P 不等于不同步" —— 是推迟， 不是取消； 在复用缓冲区之前忘了 <code>commit</code>， 你就会得到静默的数据损坏 —— 这正是 <code>P2PWork</code> 要保住 payload 的原因。</p>
+</div>
+</section>
+
+<!-- ============ S5 · DYNAMIC CHUNKING ============ -->
+<section id="s5-dynamic">
+<h2 lang="en"><span class="num">§ 5 · The subtlest idea in the paper</span>Dynamic <em>chunking</em></h2>
+<h2 lang="zh"><span class="num">§ 5 · 全篇最微妙的想法</span>动态<em>分块</em></h2>
+
+<p lang="en">The assembly line only runs smoothly if every stage takes the same wall-clock time per chunk. If stage <code>k</code> finishes a chunk in 10 ms but the next chunk arriving from stage <code>k−1</code> took 14 ms, stage <code>k</code> idles 4 ms — and that idle does not stay local; it ripples downstream and compounds at the higher PP ranks. A balanced pipeline needs per-chunk time to be <em>constant</em> across chunks. Here is the trap with a fixed chunk size, and it is a good one: you would think "same token count = same work." False. In a transformer each new chunk's tokens must attend to <em>all</em> previously cached tokens. Chunk 1 attends to ~0 prior tokens; chunk 10, sitting at prefix length <code>L</code>, attends to ~<code>L</code>. Same token count, far more attention work. So per-chunk time <strong>rises as the prefix grows</strong> — fixed chunks guarantee a slowly-worsening misalignment, worst at the highest PP ranks.</p>
+
+<p lang="zh">这条流水线只有在"每个 stage 处理每个 chunk 的墙钟时间都一样"时才跑得顺。 如果 stage <code>k</code> 用 10 ms 处理完一个 chunk， 但从 stage <code>k−1</code> 传来的下一个 chunk 花了 14 ms， stage <code>k</code> 就会空转 4 ms —— 而这段空转不会留在原地； 它向下游扩散， 并在更高的 PP rank 上叠加。 一条平衡的流水线需要每 chunk 的时间在各 chunk 之间<em>恒定</em>。 固定 chunk 大小的陷阱在这里， 而且是个漂亮的陷阱： 你会以为"token 数一样 = 工作量一样"。 错。 在 transformer 里， 每个新 chunk 的 token 都必须 attend 到<em>所有</em>已缓存的 token。 Chunk 1 attend 到约 0 个先前 token； chunk 10 处在前缀长度 <code>L</code>， 要 attend 到约 <code>L</code> 个。 token 数一样， 注意力工作量却多得多。 所以每 chunk 时间<strong>随前缀增长而上升</strong> —— 固定分块注定会带来一种缓慢恶化的错位， 在最高的 PP rank 上最糟。</p>
+
+<p lang="en">The fix is conceptually clean: don't hold chunk <em>size</em> constant, hold chunk <em>time</em> constant. The first chunk is cheap (no prefix yet); its runtime becomes the pipeline's target tempo. Every later chunk should be sized so it takes exactly that same wall-clock time — and since each later chunk is more expensive per token, you give it <em>fewer</em> tokens. Big chunks early, shrinking chunks late. Deep in a million-token prompt a chunk might be a quarter the size of the first but still take the same time, because each of its tokens does four times the attention work.</p>
+
+<p lang="zh">解法在概念上很干净： 别让 chunk 的<em>大小</em>恒定， 让 chunk 的<em>时间</em>恒定。 第一个 chunk 便宜（还没有前缀）； 它的运行时间成为流水线的目标节拍。 之后每个 chunk 都应被定成花同样的墙钟时间 —— 而既然越往后每 token 越贵， 你就给它<em>更少</em>的 token。 前面 chunk 大， 后面 chunk 缩。 深入到百万 token prompt 的后段， 一个 chunk 可能只有第一个的四分之一大， 却仍花同样的时间， 因为它的每个 token 要做四倍的注意力工作。</p>
+
+<h3 lang="en">Why <em>Runtime(L)</em> is quadratic</h3>
+<h3 lang="zh">为什么 <em>Runtime(L)</em> 是二次的</h3>
+
+<p lang="en">To do this at runtime you need a model of how runtime grows with prefix length, and the shape is not a guess — it falls out of attention. Take a chunk of <code>ΔL</code> new query tokens appended after a prefix of <code>L</code> cached tokens. Two cost terms. The attention term: each of the <code>ΔL</code> queries scores against ~<code>L</code> cached keys, so attention ≈ <code>ΔL·L</code> — this is the term that depends on the prefix. The linear term: each new token does a fixed amount of projection and MLP matmul, independent of prefix, so ≈ <code>ΔL</code>. The per-token marginal cost at position <code>L</code> is therefore <code>α·L + b</code>. Integrate that from 0 to <code>S</code> and you get the cumulative runtime — a clean quadratic:</p>
+
+<p lang="zh">要在运行时做到这点， 你需要一个"运行时间如何随前缀长度增长"的模型， 而它的形状不是猜的 —— 它从注意力里掉出来。 取一个 <code>ΔL</code> 个新 query token 的 chunk， 接在 <code>L</code> 个已缓存 token 的前缀之后。 两个代价项。 注意力项： <code>ΔL</code> 个 query 中每一个都要对约 <code>L</code> 个已缓存 key 算分， 所以注意力 ≈ <code>ΔL·L</code> —— 这是依赖前缀的那一项。 线性项： 每个新 token 做固定量的投影和 MLP 矩阵乘， 与前缀无关， 所以 ≈ <code>ΔL</code>。 因此位置 <code>L</code> 处的每 token 边际代价是 <code>α·L + b</code>。 把它从 0 积到 <code>S</code>， 你得到累计运行时间 —— 一个干净的二次式：</p>
+
+<div class="formula">
+<span class="big">Runtime(L)  =  ∫₀ᴸ (α·ℓ + b) dℓ  =  <span class="hl">a·L²</span> + b·L</span>
+<span class="note" lang="en">define a := α/2 once, to avoid a 2× slip. The L² term is full attention's quadratic cost; b·L is everything else. Per-chunk time is the increment, not the derivative.</span>
+<span class="note" lang="zh">把 a := α/2 一次性定义清楚， 免得差个 2×。 L² 项是完整注意力的二次代价； b·L 是其余一切。 每 chunk 时间是增量， 不是导数。</span>
+</div>
+
+<p lang="en">This is exactly the quadratic SGLang fits — by profiling requests at a range of input token lengths (ITLs) it recovers <code>a</code> and <code>b</code>. One symbol-hygiene warning the verifier flagged: keep the per-query attention coefficient <code>α</code> distinct from the cumulative coefficient <code>a = α/2</code>; conflate them and your <code>ΔL</code> comes out a factor of two wrong.</p>
+
+<p lang="zh">这正是 SGLang 拟合的那个二次式 —— 通过在一系列输入 token 长度（ITL）上 profile 请求， 它把 <code>a</code> 和 <code>b</code> 找回来。 一个被审校者点出的符号卫生警告： 把每 query 的注意力系数 <code>α</code> 和累计系数 <code>a = α/2</code> 区分开； 混为一谈， 你解出的 <code>ΔL</code> 就会差两倍。</p>
+
+<h3 lang="en">Solving for the next chunk size</h3>
+<h3 lang="zh">解出下一个 chunk 的大小</h3>
+
+<p lang="en">Now the payoff. We want each chunk to take the same time as the cheap first chunk, of size <code>C₀</code>: target <code>T = Runtime(C₀) = a·C₀² + b·C₀</code>. For the next chunk of unknown size <code>ΔL</code> appended at current prefix <code>L</code>, its time is the <em>increment</em> <code>Runtime(L+ΔL) − Runtime(L)</code>. Expand and set equal to <code>T</code> — that is the post's stated condition <code>Runtime(L+ΔL) − Runtime(L) = Runtime(InitialChunkSize)</code> — and you get a quadratic in the unknown <code>ΔL</code>:</p>
+
+<p lang="zh">现在是回报。 我们要每个 chunk 都花和便宜的第一个 chunk（大小 <code>C₀</code>）一样的时间： 目标 <code>T = Runtime(C₀) = a·C₀² + b·C₀</code>。 对接在当前前缀 <code>L</code> 之后、 大小未知 <code>ΔL</code> 的下一个 chunk， 它的时间是<em>增量</em> <code>Runtime(L+ΔL) − Runtime(L)</code>。 展开并令其等于 <code>T</code> —— 这就是博客给出的条件 <code>Runtime(L+ΔL) − Runtime(L) = Runtime(InitialChunkSize)</code> —— 你得到一个关于未知量 <code>ΔL</code> 的二次方程：</p>
+
+<div class="formula">
+<span class="big">a·ΔL² + (2a·L + b)·ΔL − T = 0</span><br>
+<span class="big">ΔL = [ −(2a·L+b) + √((2a·L+b)² + 4aT) ] / (2a)</span>
+<span class="note" lang="en">take the positive root. As L grows, the (2a·L+b) term grows, the root shrinks → later chunks get smaller. Big-early, small-late, by construction.</span>
+<span class="note" lang="zh">取正根。 L 增大时， (2a·L+b) 项增大， 根缩小 → 后面的 chunk 更小。 前大后小， 是构造出来的必然。</span>
+</div>
+
+<p lang="en">One quadratic solve per chunk, at runtime. Then three engineering clamps the post specifies, in order: scale by <code>SGLANG_DYNAMIC_CHUNKING_SMOOTH_FACTOR</code> (default 0.75) to damp overshoot from an imperfect fit; align the result <em>downward</em> to a multiple of <code>max(--page-size, 64)</code> so chunk boundaries respect KV-cache paging and land on efficient kernel-tile shapes; and floor it so later chunks stay at least <code>1/4</code> of the initial size, keeping kernels out of inefficient tiny-shape territory.</p>
+
+<p lang="zh">每个 chunk 在运行时解一次二次方程。 然后是博客规定的三道工程夹紧， 按顺序： 乘上 <code>SGLANG_DYNAMIC_CHUNKING_SMOOTH_FACTOR</code>（默认 0.75）来抑制拟合不完美带来的过冲； 把结果<em>向下</em>对齐到 <code>max(--page-size, 64)</code> 的倍数， 让 chunk 边界尊重 KV 缓存的分页、 并落在高效的 kernel tile 形状上； 再加一个下限， 让后面的 chunk 至少保持初始大小的 <code>1/4</code>， 把 kernel 挡在低效的小形状区之外。</p>
+
+<!-- ============ PLATE VI ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate VI</span>
+  <span class="pname" lang="en">Fixed vs dynamic: equalize TIME, not SIZE</span>
+  <span class="pname" lang="zh">固定 vs 动态： 让时间相等， 而非大小相等</span>
+  <span class="pscale">— 4 PP stages —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 430" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Why uniform chunks drift, and how resizing flattens the bubble</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- LEFT: fixed -->
+  <text x="60" y="64" class="d-text label crimson">FIXED SIZE — time grows →</text>
+  <!-- 4 stage rows, chunks same token-width but growing time-width -->
+  <!-- We'll show stage rows as stacked; chunk blocks widen left to right -->
+  <text x="48" y="98" class="d-text tiny dim">S0</text><text x="48" y="128" class="d-text tiny dim">S1</text><text x="48" y="158" class="d-text tiny dim">S2</text><text x="48" y="188" class="d-text tiny dim">S3</text>
+  <!-- widening blocks; widths 34,42,52,64,78 -->
+  <g fill="var(--teal-deep)" opacity="0.8">
+    <rect x="70" y="86" width="34" height="20" rx="1"/><rect x="108" y="86" width="42" height="20" rx="1"/><rect x="154" y="86" width="52" height="20" rx="1"/><rect x="210" y="86" width="64" height="20" rx="1"/><rect x="278" y="86" width="78" height="20" rx="1"/>
+  </g>
+  <g fill="var(--teal-deep)" opacity="0.7">
+    <rect x="108" y="116" width="34" height="20" rx="1"/><rect x="146" y="116" width="42" height="20" rx="1"/><rect x="192" y="116" width="52" height="20" rx="1"/><rect x="248" y="116" width="64" height="20" rx="1"/><rect x="316" y="116" width="78" height="20" rx="1"/>
+  </g>
+  <g fill="var(--teal-deep)" opacity="0.6">
+    <rect x="146" y="146" width="34" height="20" rx="1"/><rect x="184" y="146" width="42" height="20" rx="1"/><rect x="230" y="146" width="52" height="20" rx="1"/><rect x="286" y="146" width="64" height="20" rx="1"/><rect x="354" y="146" width="78" height="20" rx="1"/>
+  </g>
+  <g fill="var(--teal-deep)" opacity="0.5">
+    <rect x="184" y="176" width="34" height="20" rx="1"/><rect x="222" y="176" width="42" height="20" rx="1"/><rect x="268" y="176" width="52" height="20" rx="1"/><rect x="324" y="176" width="64" height="20" rx="1"/><rect x="392" y="176" width="78" height="20" rx="1"/>
+  </g>
+  <!-- bubble gaps in crimson between mismatched arrivals (widening) -->
+  <g fill="var(--crimson)" opacity="0.3">
+    <rect x="142" y="116" width="4" height="20"/><rect x="226" y="146" width="4" height="20"/><rect x="310" y="176" width="14" height="20"/>
+  </g>
+  <text x="250" y="214" class="d-text tiny crimson" text-anchor="middle">bubbles widen ↑ rank →</text>
+
+  <!-- divider -->
+  <line x1="500" y1="56" x2="500" y2="300" class="bp-line faint"/>
+
+  <!-- RIGHT: dynamic -->
+  <text x="540" y="64" class="d-text label teal">DYNAMIC — time held constant</text>
+  <text x="524" y="98" class="d-text tiny dim">S0</text><text x="524" y="128" class="d-text tiny dim">S1</text><text x="524" y="158" class="d-text tiny dim">S2</text><text x="524" y="188" class="d-text tiny dim">S3</text>
+  <!-- metronome grid -->
+  <g class="bp-line teal dash" opacity="0.5">
+    <line x1="600" y1="80" x2="600" y2="200"/><line x1="654" y1="80" x2="654" y2="200"/><line x1="708" y1="80" x2="708" y2="200"/><line x1="762" y1="80" x2="762" y2="200"/><line x1="816" y1="80" x2="816" y2="200"/><line x1="870" y1="80" x2="870" y2="200"/>
+  </g>
+  <!-- equal time-width blocks (all 50 wide), labeled shrinking tokens, color cool->warm -->
+  <g>
+    <rect x="546" y="86" width="50" height="20" rx="1" fill="#3a78ad" opacity="0.85"/><rect x="600" y="86" width="50" height="20" rx="1" fill="#3f8fb0" opacity="0.85"/><rect x="654" y="86" width="50" height="20" rx="1" fill="#48a39c" opacity="0.85"/><rect x="708" y="86" width="50" height="20" rx="1" fill="#7ba85a" opacity="0.85"/><rect x="762" y="86" width="50" height="20" rx="1" fill="#c79a3e" opacity="0.85"/><rect x="816" y="86" width="50" height="20" rx="1" fill="#ec6a5f" opacity="0.85"/>
+    <rect x="600" y="116" width="50" height="20" rx="1" fill="#3a78ad" opacity="0.75"/><rect x="654" y="116" width="50" height="20" rx="1" fill="#3f8fb0" opacity="0.75"/><rect x="708" y="116" width="50" height="20" rx="1" fill="#48a39c" opacity="0.75"/><rect x="762" y="116" width="50" height="20" rx="1" fill="#7ba85a" opacity="0.75"/><rect x="816" y="116" width="50" height="20" rx="1" fill="#c79a3e" opacity="0.75"/><rect x="870" y="116" width="50" height="20" rx="1" fill="#ec6a5f" opacity="0.75"/>
+    <rect x="654" y="146" width="50" height="20" rx="1" fill="#3a78ad" opacity="0.65"/><rect x="708" y="146" width="50" height="20" rx="1" fill="#3f8fb0" opacity="0.65"/><rect x="762" y="146" width="50" height="20" rx="1" fill="#48a39c" opacity="0.65"/><rect x="816" y="146" width="50" height="20" rx="1" fill="#7ba85a" opacity="0.65"/><rect x="870" y="146" width="50" height="20" rx="1" fill="#c79a3e" opacity="0.65"/>
+    <rect x="708" y="176" width="50" height="20" rx="1" fill="#3a78ad" opacity="0.55"/><rect x="762" y="176" width="50" height="20" rx="1" fill="#3f8fb0" opacity="0.55"/><rect x="816" y="176" width="50" height="20" rx="1" fill="#48a39c" opacity="0.55"/><rect x="870" y="176" width="50" height="20" rx="1" fill="#7ba85a" opacity="0.55"/>
+  </g>
+  <!-- token labels shrinking -->
+  <g class="d-text tiny ink" text-anchor="middle">
+    <text x="571" y="100">12K</text><text x="625" y="100">9K</text><text x="679" y="100">7K</text><text x="733" y="100">5K</text><text x="787" y="100">4K</text><text x="841" y="100">3K</text>
+  </g>
+  <text x="730" y="214" class="d-text tiny teal" text-anchor="middle">equal time-width · bubbles vanish</text>
+
+  <line x1="40" y1="238" x2="960" y2="238" class="bp-line faint"/>
+
+  <!-- the cost curve construction -->
+  <text x="60" y="266" class="d-text label">SOLVING FOR ΔL</text>
+  <!-- axes -->
+  <line x1="120" y1="400" x2="120" y2="280" class="bp-line"/>
+  <line x1="120" y1="400" x2="470" y2="400" class="bp-line"/>
+  <text x="295" y="420" class="d-text tiny dim" text-anchor="middle">prefix length L</text>
+  <text x="108" y="296" class="d-text tiny dim" text-anchor="end">time</text>
+  <!-- quadratic curve Runtime(L)=aL^2+bL -->
+  <path d="M 120 400 Q 320 396 470 286" fill="none" stroke="var(--amber)" stroke-width="2"/>
+  <text x="450" y="300" class="d-text tiny amber">Runtime(L)=aL²+bL</text>
+  <!-- target band at small L (wide dL) -->
+  <line x1="150" y1="395" x2="240" y2="395" class="bp-line teal thick"/>
+  <line x1="150" y1="395" x2="150" y2="405" class="bp-line teal"/><line x1="240" y1="390" x2="240" y2="405" class="bp-line teal"/>
+  <text x="195" y="416" class="d-text tiny teal" text-anchor="middle">ΔL big</text>
+  <!-- target band at large L (narrow dL) -->
+  <line x1="392" y1="330" x2="430" y2="330" class="bp-line teal thick"/>
+  <line x1="392" y1="325" x2="392" y2="340" class="bp-line teal"/><line x1="430" y1="318" x2="430" y2="340" class="bp-line teal"/>
+  <text x="411" y="356" class="d-text tiny teal" text-anchor="middle">ΔL small</text>
+  <text x="150" y="276" class="d-text tiny dim">same vertical rise T at every L → horizontal width ΔL shrinks as the curve steepens</text>
+
+  <!-- the clamp pipeline -->
+  <text x="560" y="266" class="d-text label">THEN CLAMP</text>
+  <g>
+    <rect x="560" y="278" width="360" height="26" rx="2" class="zone tint"/>
+    <text x="572" y="295" class="d-text tiny">① solve  a·ΔL² + (2aL+b)·ΔL − T = 0</text>
+    <rect x="560" y="310" width="360" height="26" rx="2" class="zone tint"/>
+    <text x="572" y="327" class="d-text tiny">② × SMOOTH_FACTOR (0.75) — damp shrink aggressiveness</text>
+    <rect x="560" y="342" width="360" height="26" rx="2" class="zone tint"/>
+    <text x="572" y="359" class="d-text tiny">③ align ↓ to multiple of max(page-size, 64)</text>
+    <rect x="560" y="374" width="360" height="26" rx="2" class="zone tint"/>
+    <text x="572" y="391" class="d-text tiny">④ floor at ¼ × initial size</text>
+  </g>
+</svg>
+</div>
+<div class="caption" lang="en">Plate VI — the whole idea in one image. The cost curve steepens with <code>L</code>, so a constant time-rise <code>T</code> covers an ever-shorter span of tokens; that span <em>is</em> the next chunk. Fixed chunks (left) drift slower and leak bubbles; dynamic chunks (right) hold the beat.</div>
+<div class="caption" lang="zh">Plate VI —— 整个想法浓缩成一张图。 代价曲线随 <code>L</code> 变陡， 所以一个恒定的时间升幅 <code>T</code> 覆盖的 token 跨度越来越短； 那段跨度<em>就是</em>下一个 chunk。 固定 chunk（左）越拖越慢、 漏出气泡； 动态 chunk（右）踩住了节拍。</div>
+</div>
+
+<div class="callout crimson">
+  <span class="ctag" lang="en">Three reefs in this section</span>
+  <span class="ctag" lang="zh">这一节的三处礁石</span>
+  <p lang="en"><strong>Dynamic chunking equalizes TIME, not SIZE</strong> — sizes deliberately shrink so times stay flat. <strong><code>SMOOTH_FACTOR=1.0</code> is not "maximum smoothing"</strong> — it means follow the raw model strictly (no damping); lower values (0.6–0.85) are <em>more</em> conservative; <code>0</code> disables dynamic chunking entirely. And <strong>ITL here is input token length</strong> (the profiling x-axis), not inter-token latency. One more, easy to miss: when layers don't divide evenly, put the larger slice on the <em>highest</em> PP rank (<code>SGLANG_PP_LAYER_PARTITION=15,15,15,16</code> beats <code>16,15,15,15</code>) — the last stage idles most, so give it more work.</p>
+  <p lang="zh"><strong>动态分块让时间相等， 不是大小相等</strong> —— 大小故意收缩， 是为了让时间保持平。 <strong><code>SMOOTH_FACTOR=1.0</code> 不是"最大平滑"</strong> —— 它表示严格follow原始模型（不阻尼）； 更小的值（0.6–0.85）<em>更</em>保守； <code>0</code> 则彻底关掉动态分块。 还有， <strong>这里的 ITL 是输入 token 长度</strong>（profile 的横轴）， 不是 inter-token latency。 再补一个容易漏的： 当层数除不尽时， 把更大的那片放到<em>最高</em>的 PP rank 上（<code>SGLANG_PP_LAYER_PARTITION=15,15,15,16</code> 优于 <code>16,15,15,15</code>）—— 最后一个 stage 闲得最多， 就该给它更多活儿。</p>
+</div>
+</section>
+
+<!-- ============ S6 · PRODUCTION ============ -->
+<section id="s6-production">
+<h2 lang="en"><span class="num">§ 6 · Two phases, two machines</span>PD disaggregation &amp; <em>HiCache</em></h2>
+<h2 lang="zh"><span class="num">§ 6 · 两个阶段， 两套机器</span>PD 分离与 <em>HiCache</em></h2>
+
+<p lang="en">One observation explains the production architecture: a transformer serving a request does two completely different jobs that stress the hardware in opposite ways. <strong>Prefill</strong> ingests the prompt — push all <code>N</code> tokens through at once, every matmul is large, attention is <code>N</code>-attends-to-<code>N</code>, lots of arithmetic per byte of weights loaded. Prefill is <em>compute-bound</em>. <strong>Decode</strong> generates output one token at a time — to make a single token you load the per-token weight set from HBM and do arithmetic for just that one token, so the arithmetic-per-byte ratio collapses. Decode is <em>memory-bandwidth-bound</em>. (For the MoE models here — DeepSeek-V3.1, Qwen3-235B-A22B — decode loads the <em>active</em> experts plus attention and shared weights, not the full parameter count; the bandwidth-bound conclusion is unchanged.)</p>
+
+<p lang="zh">有一个观察解释了整个生产架构： 一个 transformer 在服务一个请求时， 做的是两件完全不同的工作， 它们以相反的方式压榨硬件。 <strong>Prefill</strong> 吞入 prompt —— 一次性把全部 <code>N</code> 个 token 推进去， 每个矩阵乘都很大， 注意力是 <code>N</code> attend <code>N</code>， 每加载一字节权重就做大量算术。 Prefill 是<em>计算受限</em>的。 <strong>Decode</strong> 一次生成一个 token —— 为产出单个 token， 你要从 HBM 加载每 token 的权重集， 却只为这一个 token 做算术， 于是算术 / 字节比塌缩。 Decode 是<em>访存带宽受限</em>的。 （对这里的 MoE 模型 —— DeepSeek-V3.1、 Qwen3-235B-A22B —— decode 加载的是<em>激活</em>的专家加上注意力和共享权重， 不是全部参数； 带宽受限的结论不变。）</p>
+
+<p lang="en">This is the roofline picture, applied to a whole serving phase: prefill sits to the right (high arithmetic intensity, hits the FLOPS ceiling), decode sits to the left (low intensity, hits the bandwidth ceiling). Same silicon, two ceilings. Two phases with opposite bottlenecks should not share one node pool, because tuning that helps one hurts the other — that is the whole motivation for <strong>Prefill-Decode disaggregation</strong>. Run prefill on one pool (here: high-degree PP over the long context) and decode on a separate pool tuned purely for token-generation throughput. The pools talk by shipping the KV cache, and the clever part is they don't wait: as each prompt chunk finishes prefill, its KV is streamed to the decode node (the <code>mooncake</code> backend does chunk-by-chunk transfer), so the network cost hides behind ongoing compute instead of landing as a serial tax.</p>
+
+<p lang="zh">这就是 roofline 的画面， 应用到整个服务阶段： prefill 在右边（高算术强度， 撞 FLOPS 天花板）， decode 在左边（低强度， 撞带宽天花板）。 同一块硅， 两条天花板。 两个瓶颈相反的阶段不该共用一个节点池， 因为对一个有利的调优会害了另一个 —— 这就是 <strong>Prefill-Decode 分离</strong>的全部动机。 prefill 跑在一个池上（这里是： 在长上下文上做高 degree 的 PP）， decode 跑在另一个纯粹为 token 生成吞吐调优的池上。 两个池靠搬运 KV 缓存通信， 而精妙之处在于它们不等： 每个 prompt chunk 一 prefill 完， 它的 KV 就被流式送往 decode 节点（<code>mooncake</code> 后端做逐块传输）， 于是网络成本藏在持续的计算之后， 而不是作为一笔串行的税砸下来。</p>
+
+<p lang="en">Two latency numbers to keep straight. <strong>TTFT</strong> (time to first token) is the wait before the first output appears — dominated by prefill, since the model must read the whole prompt before it can emit anything. For a 1M-token prompt, TTFT is tens of seconds, and shrinking it is what all of this is for. <strong>ITL / TPOT</strong> (inter-token latency) is the gap <em>between</em> successive output tokens once generation is rolling — a decode-phase number, governed by memory bandwidth. Disaggregation lets you attack each on its own pool.</p>
+
+<p lang="zh">两个延迟数字要分清。 <strong>TTFT</strong>（time to first token）是第一个输出出现前的等待 —— 由 prefill 主导， 因为模型必须读完整条 prompt 才能吐出任何东西。 对一条 1M token 的 prompt， TTFT 是几十秒， 而把它缩小正是这一切的目的。 <strong>ITL / TPOT</strong>（inter-token latency）是生成滚动起来后， 相邻输出 token <em>之间</em>的间隔 —— 一个 decode 阶段的数字， 由访存带宽决定。 分离让你能在各自的池上分别攻击它们。</p>
+
+<p lang="en"><strong>HiCache</strong> attacks TTFT from a different angle: don't recompute prefill you have already done. It is a radix tree (prefix tree) over KV-cache chunks. Two requests that share a prefix — the same system prompt, or the same conversation history in a multi-turn / agentic loop — share a path down the tree. If a prefix chunk was already prefilled and its KV is still resident across the memory hierarchy HiCache manages (GPU → CPU → disk), the new request reuses it and <em>skips that chunk's prefill entirely</em>. In agentic workloads where every turn re-sends a growing history, this is the difference between re-prefilling 100K tokens each turn and prefilling only the new tokens — a direct TTFT cut. The one caveat: it only helps when requests actually share prefixes; for all-unique prompts the tree has nothing to reuse.</p>
+
+<p lang="zh"><strong>HiCache</strong> 从另一个角度攻击 TTFT： 别重算你已经算过的 prefill。 它是一棵架在 KV 缓存 chunk 上的 radix tree（前缀树）。 两个共享前缀的请求 —— 同一个 system prompt， 或多轮 / agentic 循环里同一段对话历史 —— 共享树上一条向下的路径。 如果某个前缀 chunk 已经 prefill 过、 它的 KV 还驻留在 HiCache 管理的内存层级里（GPU → CPU → 磁盘）， 新请求就复用它， <em>完全跳过那个 chunk 的 prefill</em>。 在每一轮都重发一段不断增长的历史的 agentic 工作里， 这是"每轮重 prefill 10 万 token"和"只 prefill 新 token"之间的差别 —— 直接砍 TTFT。 唯一的提醒： 它只在请求确实共享前缀时有用； 对全都互不相同的 prompt， 树上没有东西可复用。</p>
+
+<!-- ============ PLATE VII ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate VII</span>
+  <span class="pname" lang="en">Two rooflines, two pools, KV streaming between them</span>
+  <span class="pname" lang="zh">两条 roofline、 两个池、 之间流动的 KV</span>
+  <span class="pscale">— prefill vs decode —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--amber)"/>
+    </marker>
+  </defs>
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Opposite bottlenecks → separate node pools</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- LEFT: roofline -->
+  <text x="60" y="68" class="d-text label">THE ROOFLINE</text>
+  <!-- axes -->
+  <line x1="90" y1="300" x2="90" y2="90" class="bp-line"/>
+  <line x1="90" y1="300" x2="400" y2="300" class="bp-line"/>
+  <text x="245" y="322" class="d-text tiny dim" text-anchor="middle">arithmetic intensity (FLOP/byte) →</text>
+  <text x="78" y="195" class="d-text tiny dim" text-anchor="middle" transform="rotate(-90,78,195)">throughput →</text>
+  <!-- bandwidth diagonal + compute ceiling -->
+  <line x1="90" y1="300" x2="240" y2="120" class="bp-line teal thick"/>
+  <line x1="240" y1="120" x2="400" y2="120" class="bp-line teal thick"/>
+  <text x="320" y="112" class="d-text tiny teal" text-anchor="middle">compute ceiling (peak FLOPS)</text>
+  <text x="150" y="200" class="d-text tiny teal" transform="rotate(-50,150,200)">BW ceiling</text>
+  <!-- ridge -->
+  <line x1="240" y1="120" x2="240" y2="300" class="bp-line faint dash"/>
+  <!-- decode dot (left) -->
+  <circle cx="150" cy="232" r="7" fill="var(--blue)"/>
+  <text x="150" y="252" class="d-text tiny blue" text-anchor="middle">DECODE</text>
+  <text x="150" y="265" class="d-text tiny dim" text-anchor="middle">BW-bound</text>
+  <!-- prefill dot (right) -->
+  <circle cx="330" cy="120" r="7" fill="var(--amber)"/>
+  <text x="330" y="140" class="d-text tiny amber" text-anchor="middle">PREFILL</text>
+  <text x="330" y="153" class="d-text tiny dim" text-anchor="middle">compute-bound</text>
+
+  <!-- divider -->
+  <line x1="450" y1="60" x2="450" y2="340" class="bp-line faint"/>
+
+  <!-- RIGHT: PD pools -->
+  <text x="500" y="68" class="d-text label">PD DISAGGREGATION</text>
+  <!-- prefill pool -->
+  <rect x="500" y="84" width="180" height="150" rx="3" class="zone amber" fill="var(--tint)"/>
+  <text x="590" y="104" class="d-text tiny amber" text-anchor="middle">PREFILL POOL · high-degree PP</text>
+  <rect x="520" y="116" width="140" height="20" rx="1" fill="var(--amber)" opacity="0.5"/><text x="590" y="130" class="d-text tiny ink" text-anchor="middle">PP0 · L0–14</text>
+  <rect x="520" y="142" width="140" height="20" rx="1" fill="var(--amber)" opacity="0.5"/><text x="590" y="156" class="d-text tiny ink" text-anchor="middle">PP1 · L15–29</text>
+  <rect x="520" y="168" width="140" height="20" rx="1" fill="var(--amber)" opacity="0.5"/><text x="590" y="182" class="d-text tiny ink" text-anchor="middle">PP2 · L30–44</text>
+  <rect x="520" y="194" width="140" height="20" rx="1" fill="var(--amber)" opacity="0.5"/><text x="590" y="208" class="d-text tiny ink" text-anchor="middle">PP3 · L45–59</text>
+  <!-- decode pool -->
+  <rect x="780" y="84" width="160" height="150" rx="3" class="zone blue" fill="var(--tint)"/>
+  <text x="860" y="104" class="d-text tiny blue" text-anchor="middle">DECODE POOL</text>
+  <text x="860" y="120" class="d-text tiny dim" text-anchor="middle">throughput-tuned</text>
+  <text x="860" y="160" class="d-text tiny dim" text-anchor="middle">low ITL / TPOT</text>
+  <text x="860" y="176" class="d-text tiny dim" text-anchor="middle">one token / step</text>
+  <!-- KV transfer arrows chunk by chunk -->
+  <g stroke="var(--amber)" stroke-width="1.6" fill="none" marker-end="url(#ah3)">
+    <line x1="664" y1="126" x2="778" y2="120"/>
+    <line x1="664" y1="152" x2="778" y2="150"/>
+    <line x1="664" y1="178" x2="778" y2="180"/>
+  </g>
+  <text x="722" y="206" class="d-text tiny amber" text-anchor="middle">mooncake</text>
+  <text x="722" y="218" class="d-text tiny dim" text-anchor="middle">KV, chunk by chunk</text>
+
+  <text x="500" y="262" class="d-text small">TTFT lives on the prefill side · ITL/TPOT on the decode side</text>
+  <text x="500" y="280" class="d-text tiny dim">each chunk's KV streams across as it finishes — transfer hidden behind compute, not paid after</text>
+
+  <line x1="40" y1="320" x2="960" y2="320" class="bp-line faint"/>
+  <text x="40" y="344" class="d-text tiny dim">The same chunked-prefill boundary that PP exploits is also where the KV handoff happens. Prefill can run aggressive high-degree PP because it is compute-bound and</text>
+  <text x="40" y="357" class="d-text tiny dim">cross-node activation passing is cheap; decode is tuned independently for bandwidth. On AMD clusters without NVLink between nodes, this separation matters even more.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate VII — disaggregation is the roofline drawn as deployment. Two phases that fight for opposite resources stop sharing a pool; the chunk boundary that powers chunked PP doubles as the KV-streaming boundary.</div>
+<div class="caption" lang="zh">Plate VII —— 分离就是把 roofline 画成部署。 两个争夺相反资源的阶段不再共用一个池； 驱动分块 PP 的那个 chunk 边界， 同时也是 KV 流动的边界。</div>
+</div>
+</section>
+
+<!-- ============ S7 · RESULTS ============ -->
+<section id="s7-results">
+<h2 lang="en"><span class="num">§ 7 · The one section for skeptics</span>Reading the <em>numbers</em></h2>
+<h2 lang="zh"><span class="num">§ 7 · 给怀疑者的一节</span>读懂这些<em>数字</em></h2>
+
+<p lang="en">The benchmarks run on 6 H20 nodes (8 × 96 GB each), on DeepSeek-V3.1 and Qwen3-235B-A22B-FP8, averaged over 16 consecutive requests. Before quoting the headline number, learn the one mental move that keeps you honest: <strong>always divide the speedup by the GPU-count multiple.</strong> "3.31× throughput vs TP8" used <code>PP4-TP8 = 32</code> GPUs against a <code>TP8 = 8</code>-GPU baseline — that is 4× the hardware. So the real figure is <code>3.31 / 4 = 82.8%</code> of perfect linear scaling. The speedup and the "82.8% strong-scaling efficiency" the post reports are the same fact stated twice.</p>
+
+<p lang="zh">基准测试跑在 6 个 H20 节点上（每节点 8 × 96 GB）， 模型是 DeepSeek-V3.1 和 Qwen3-235B-A22B-FP8， 取 16 个连续请求的平均。 在引用那个头条数字之前， 先学会一个让你保持诚实的心算动作： <strong>永远把加速比除以 GPU 数的倍数。</strong> "对 TP8 的 3.31× 吞吐"用的是 <code>PP4-TP8 = 32</code> 张 GPU， 对的是 <code>TP8 = 8</code> 张的基线 —— 也就是 4 倍的硬件。 所以真实数字是 <code>3.31 / 4 = 82.8%</code> 的完美线性缩放。 加速比和博客报告的"82.8% 强缩放效率"， 是同一个事实说了两遍。</p>
+
+<table class="tbl">
+  <thead>
+    <tr>
+      <th lang="en">Config</th><th lang="en">vs baseline</th><th lang="en">GPU multiple</th><th lang="en">Efficiency</th>
+      <th lang="zh">配置</th><th lang="zh">相对基线</th><th lang="zh">GPU 倍数</th><th lang="zh">效率</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="best">
+      <td class="k">DeepSeek PP4-TP8 · DCK 12K</td>
+      <td class="num">3.31×</td><td>4× (vs TP8)</td><td class="ok">82.8%</td>
+    </tr>
+    <tr>
+      <td class="k">DeepSeek PP4-TP8 vs TP32</td>
+      <td class="num">+30.5%</td><td>1× (equal 32 GPU)</td><td class="acc">PP &gt; deep TP</td>
+    </tr>
+    <tr>
+      <td class="k">DeepSeek worst fixed-12K vs TP32</td>
+      <td class="num">+18.4%</td><td>1× (equal 32 GPU)</td><td>axis &gt; tuning</td>
+    </tr>
+    <tr class="best">
+      <td class="k">Qwen PP8-TP4 · DCK 18K</td>
+      <td class="num">6.14×</td><td>8× (vs PP1)</td><td class="ok">76.9%</td>
+    </tr>
+    <tr>
+      <td class="k">Qwen PP8-TP4 · static 6K</td>
+      <td class="num">—</td><td>8× (vs PP1)</td><td class="warn">69.6%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p lang="en">Three readings fall out of that table. First, the <em>fair</em> comparison is equal-GPU: <code>PP4-TP8</code> vs <code>TP32</code>, both 32 GPUs — and PP wins by 30.5%. Why? <code>TP32</code> splits every matmul 32 ways and fires an AllReduce across all 32 GPUs every layer; across nodes, without NVLink, that frequent collective on the slow link crushes you. <code>PP4-TP8</code> only passes activations at 4 stage seams. Second, even the <em>worst</em> fixed-chunk PP config still beats <code>TP32</code> by 18.4% — meaning the parallelism-axis choice (PP over deep TP for long context) dominates the chunk-tuning choice. Pick the right axis first, then tune. Third, dynamic chunking buys ~7 efficiency points (76.9% vs 69.6% for Qwen at PP8) purely by flattening pipeline bubbles — same hardware, better schedule.</p>
+
+<p lang="zh">这张表里掉出三条读法。 其一， <em>公平</em>的比较是等 GPU 的： <code>PP4-TP8</code> 对 <code>TP32</code>， 都是 32 张卡 —— PP 赢 30.5%。 为什么？ <code>TP32</code> 把每个矩阵乘切成 32 份， 每层在全部 32 张卡上发一次 AllReduce； 跨节点、 没有 NVLink 时， 这种频繁的集合通信打在慢链路上会把你压垮。 <code>PP4-TP8</code> 只在 4 个 stage 接缝处传激活。 其二， 即便是<em>最差</em>的固定分块 PP 配置， 仍比 <code>TP32</code> 快 18.4% —— 这意味着并行轴的选择（长上下文用 PP 而非深 TP）压倒了分块调优的选择。 先选对轴， 再调参。 其三， 动态分块纯靠拉平流水线气泡就买来约 7 个效率点（Qwen 在 PP8 时 76.9% 对 69.6%）—— 同样的硬件， 更好的调度。</p>
+
+<p lang="en">Efficiency decaying as PP grows is not a regression — it is physics. The bubble fraction <code>(P−1)/(P−1+M)</code> grows with stage count, and per-boundary cross-node cost does not shrink as you add stages, so <code>E(PP)</code> slopes downward. DeepSeek's 82.8% at PP4 being higher than Qwen's 76.9% at PP8 is exactly what you should expect. A learner who reads flat-or-rising efficiency into more stages is misreading the bubble.</p>
+
+<p lang="zh">效率随 PP 增大而衰减， 不是退步 —— 是物理。 气泡占比 <code>(P−1)/(P−1+M)</code> 随 stage 数增长， 而每接缝的跨节点代价不会因为加了 stage 就变小， 所以 <code>E(PP)</code> 向下倾。 DeepSeek 在 PP4 的 82.8% 高于 Qwen 在 PP8 的 76.9%， 正是你该预期的。 一个把"stage 越多效率越平甚至越高"读进去的人， 是读错了气泡。</p>
+
+<!-- ============ PLATE VIII ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate VIII</span>
+  <span class="pname" lang="en">TTFT is quadratic in context length</span>
+  <span class="pname" lang="zh">TTFT 对上下文长度是二次的</span>
+  <span class="pscale">— Qwen3-235B PP8-TP4 —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Each length-doubling more than triples the time — the O(N²) attention signature</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- chart axes -->
+  <line x1="110" y1="300" x2="110" y2="70" class="bp-line"/>
+  <line x1="110" y1="300" x2="640" y2="300" class="bp-line"/>
+  <text x="375" y="326" class="d-text tiny dim" text-anchor="middle">context length (log-spaced)</text>
+  <text x="96" y="185" class="d-text tiny dim" text-anchor="middle" transform="rotate(-90,96,185)">TTFT (s)</text>
+  <!-- x ticks at 128K,256K,512K,1M evenly spaced (log) -->
+  <text x="180" y="316" class="d-text tiny dim" text-anchor="middle">128K</text>
+  <text x="320" y="316" class="d-text tiny dim" text-anchor="middle">256K</text>
+  <text x="460" y="316" class="d-text tiny dim" text-anchor="middle">512K</text>
+  <text x="600" y="316" class="d-text tiny dim" text-anchor="middle">1M</text>
+  <!-- data points: 10.54, 32.68, 114.33, 420.91 -> scale to y (max 421 -> y 80, min 0 -> y300). y = 300 - val/421*220 -->
+  <!-- 10.54 -> 294.5 ; 32.68 -> 282.9 ; 114.33 -> 240.3 ; 420.91 -> 80.05 -->
+  <!-- actual curve -->
+  <polyline points="180,294.5 320,282.9 460,240.3 600,80" fill="none" stroke="var(--amber)" stroke-width="2.4"/>
+  <g fill="var(--amber)">
+    <circle cx="180" cy="294.5" r="5"/><circle cx="320" cy="282.9" r="5"/><circle cx="460" cy="240.3" r="5"/><circle cx="600" cy="80" r="5"/>
+  </g>
+  <!-- linear prediction dashed from 128K point -->
+  <line x1="180" y1="294.5" x2="600" y2="227" class="bp-line dash" stroke="var(--fg-mute)"/>
+  <text x="540" y="222" class="d-text tiny dim">what linear would predict</text>
+  <!-- value + multiplier labels -->
+  <text x="180" y="288" class="d-text tiny amber" text-anchor="middle">10.5s</text>
+  <text x="330" y="276" class="d-text tiny amber">32.7s</text>
+  <text x="470" y="234" class="d-text tiny amber">114s</text>
+  <text x="600" y="72" class="d-text tiny amber" text-anchor="middle">421s</text>
+  <text x="250" y="262" class="d-text tiny crimson" text-anchor="middle">×3.10</text>
+  <text x="390" y="245" class="d-text tiny crimson" text-anchor="middle">×3.50</text>
+  <text x="530" y="150" class="d-text tiny crimson" text-anchor="middle">×3.68</text>
+
+  <!-- right: takeaway -->
+  <line x1="700" y1="70" x2="700" y2="300" class="bp-line faint"/>
+  <text x="724" y="96" class="d-text small">Double the tokens →</text>
+  <text x="724" y="118" class="d-text small amber">~4× the attention work.</text>
+  <text x="724" y="150" class="d-text tiny dim">The multiplier itself rises (3.10 →</text>
+  <text x="724" y="164" class="d-text tiny dim">3.50 → 3.68): the quadratic term</text>
+  <text x="724" y="178" class="d-text tiny dim">is taking over from the linear one.</text>
+  <text x="724" y="208" class="d-text tiny dim">You cannot brute-force a cost that</text>
+  <text x="724" y="222" class="d-text tiny dim">grows faster than the input — you</text>
+  <text x="724" y="236" class="d-text tiny dim">must parallelize and schedule it.</text>
+  <text x="724" y="266" class="d-text tiny teal">This is the SAME quadratic from § 5</text>
+  <text x="724" y="280" class="d-text tiny teal">that forces dynamic chunking.</text>
+
+  <line x1="40" y1="332" x2="960" y2="332" class="bp-line faint"/>
+</svg>
+</div>
+<div class="caption" lang="en">Plate VIII — the production latency table and the dynamic-chunking math are the same fact. Prefill cost grows super-linearly, which is why you fight it with parallelism and chunk scheduling rather than raw hardware.</div>
+<div class="caption" lang="zh">Plate VIII —— 生产延迟表和动态分块的数学是同一个事实。 Prefill 成本超线性增长， 所以你用并行和分块调度去对抗它， 而不是靠堆硬件。</div>
+</div>
+
+<p lang="en">And the TTFT cuts that all of this is for: on a fixed 1M-token prompt, DeepSeek drops from 48.5s (PP1-TP8) to 15.5s (PP4-TP8), a 67.9% cut; Qwen drops from 55.5s (PP1-TP4) to 10.5s (PP8-TP4), 81.1%. Those are the user-facing payoff of every formula above — the minute-long wait turned into ten seconds.</p>
+
+<p lang="zh">还有这一切所为的 TTFT 降幅： 在固定的 1M token prompt 上， DeepSeek 从 48.5s（PP1-TP8）降到 15.5s（PP4-TP8）， 降 67.9%； Qwen 从 55.5s（PP1-TP4）降到 10.5s（PP8-TP4）， 降 81.1%。 这些是上面每一条公式面向用户的回报 —— 把将近一分钟的等待变成了十秒。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">The AMD lens</span>
+  <span class="ctag" lang="zh">AMD 视角</span>
+  <p lang="en">Read through the roofline I use for MI300X / MI355X kernels: PP does not change the per-GPU work — each stage's attention and GEMMs are still bound by the same HBM-bandwidth and peak-FLOPS ceilings, whether the kernels are CK, AITER, or Triton-for-ROCm. What PP does is <em>move the binding constraint</em> to the cross-node link. On an AMD cluster without NVLink between nodes, that link is even more decisive than on an NVLink-DGX fabric — so async P2P and chunk scheduling matter <strong>more</strong> here, not less. The AMD-vs-NVIDIA gap on this workload is link maturity and software, not compute physics, which is precisely the kind of gap systematic search and agent-driven tuning can close.</p>
+  <p lang="zh">用我做 MI300X / MI355X kernel 的 roofline 视角来读： PP 不改变每卡的工作 —— 每个 stage 的注意力和 GEMM 仍受同样的 HBM 带宽和峰值 FLOPS 天花板约束， 无论 kernel 是 CK、 AITER 还是 ROCm 上的 Triton。 PP 做的是把<em>那条起约束作用的瓶颈挪到</em>跨节点链路上。 在一个节点间没有 NVLink 的 AMD 集群上， 那条链路比 NVLink-DGX 架构上更具决定性 —— 所以异步 P2P 和分块调度在这里更<strong>重要</strong>， 而非更次要。 这个工作负载上的 AMD 对 NVIDIA 差距， 是链路成熟度和软件， 不是计算物理 —— 而这恰恰是系统化搜索和 agent 驱动调优能够弥合的那类差距。</p>
+</div>
+</section>
+
+<!-- ============ S8 · REEFS ============ -->
+<section id="s8-reefs">
+<h2 lang="en"><span class="num">§ 8 · Where learners run aground</span>Reefs</h2>
+<h2 lang="zh"><span class="num">§ 8 · 学习者容易触礁的地方</span>易混淆礁石</h2>
+
+<p lang="en">The confusions that cost the most, collected in one place.</p>
+<p lang="zh">最费时间的那些混淆， 收在一处。</p>
+
+<table class="tbl">
+  <thead>
+    <tr><th lang="en">The trap</th><th lang="en">The correction</th><th lang="zh">陷阱</th><th lang="zh">纠正</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td lang="en">"PP communicates less per send"</td>
+      <td lang="en">It's the <em>frequency</em>, not packet size. PP sends at <code>P−1</code> seams; TP/CP at every one of <code>L</code> layers.</td>
+      <td lang="zh">"PP 每次 send 更少"</td>
+      <td lang="zh">是<em>频率</em>， 不是包大小。 PP 在 <code>P−1</code> 个接缝 send； TP / CP 在 <code>L</code> 层的每层都发。</td>
+    </tr>
+    <tr>
+      <td lang="en">"More PP stages = faster"</td>
+      <td lang="en">For fixed <code>M</code>, raising <code>P</code> raises the bubble. Deeper is worse unless <code>M</code> grows too.</td>
+      <td lang="zh">"PP stage 越多越快"</td>
+      <td lang="zh">对固定的 <code>M</code>， 增大 <code>P</code> 会增大气泡。 除非 <code>M</code> 也增大， 否则越深越糟。</td>
+    </tr>
+    <tr>
+      <td lang="en">"3.31× means great scaling"</td>
+      <td lang="en">It used 4× the GPUs. Divide first: 3.31/4 = 82.8% efficiency.</td>
+      <td lang="zh">"3.31× 说明缩放很好"</td>
+      <td lang="zh">它用了 4 倍的 GPU。 先做除法： 3.31/4 = 82.8% 效率。</td>
+    </tr>
+    <tr>
+      <td lang="en">"Dynamic chunking equalizes size"</td>
+      <td lang="en">It equalizes <em>time</em>. Sizes deliberately shrink so each chunk takes the same wall-clock.</td>
+      <td lang="zh">"动态分块让大小相等"</td>
+      <td lang="zh">它让<em>时间</em>相等。 大小故意收缩， 好让每个 chunk 花同样的墙钟时间。</td>
+    </tr>
+    <tr>
+      <td lang="en"><code>SMOOTH_FACTOR=1.0</code> = "max smoothing"</td>
+      <td lang="en">Opposite: 1.0 follows the model strictly. Lower (0.6–0.85) is more conservative; 0 disables it.</td>
+      <td lang="zh"><code>SMOOTH_FACTOR=1.0</code> = "最大平滑"</td>
+      <td lang="zh">恰恰相反： 1.0 严格 follow 模型。 更低（0.6–0.85）更保守； 0 关闭。</td>
+    </tr>
+    <tr>
+      <td lang="en">"Async P2P = no sync"</td>
+      <td lang="en">Deferred, not removed. <code>_pp_commit_comm_work</code> still calls <code>wait()</code>; skip it and you corrupt buffers.</td>
+      <td lang="zh">"异步 P2P = 不同步"</td>
+      <td lang="zh">是推迟， 不是取消。 <code>_pp_commit_comm_work</code> 仍要 <code>wait()</code>； 跳过它就会损坏缓冲区。</td>
+    </tr>
+    <tr>
+      <td lang="en">"TTFT scales linearly with length"</td>
+      <td lang="en">Super-linear: each doubling ×3+. Attention is <code>O(N²)</code>; model prefill as quadratic.</td>
+      <td lang="zh">"TTFT 随长度线性"</td>
+      <td lang="zh">超线性： 每翻倍 ×3 以上。 注意力是 <code>O(N²)</code>； 把 prefill 当二次的来建模。</td>
+    </tr>
+    <tr>
+      <td lang="en">"CP and DP are the same"</td>
+      <td lang="en">DP runs independent sequences; CP splits one sequence, so attention forces a KV ring every layer.</td>
+      <td lang="zh">"CP 和 DP 一样"</td>
+      <td lang="zh">DP 跑互相独立的序列； CP 切一条序列， 所以注意力每层都强制一次 KV 环传递。</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ EPILOGUE ============ -->
+<section id="epilogue">
+<h2 lang="en"><span class="num">§ 9 · From reading to running</span>Run it <em>yourself</em></h2>
+<h2 lang="zh"><span class="num">§ 9 · 从读到跑</span>自己<em>跑一遍</em></h2>
+
+<p lang="en">The fastest way to make any of this stick is to launch a server and watch the TTFT move. You need SGLang <code>≥ v0.5.7</code>. Start with fixed chunking to get a baseline, then turn on dynamic chunking and compare. The two knobs that matter most are <code>--chunked-prefill-size</code> (the initial chunk = the pipeline's target tempo) and <code>SGLANG_DYNAMIC_CHUNKING_SMOOTH_FACTOR</code> (how hard it damps the shrink).</p>
+
+<p lang="zh">让这一切真正记住的最快办法， 是启一个 server， 盯着 TTFT 动。 你需要 SGLang <code>≥ v0.5.7</code>。 先用固定分块拿个基线， 再打开动态分块对比。 最要紧的两个旋钮是 <code>--chunked-prefill-size</code>（初始 chunk = 流水线的目标节拍）和 <code>SGLANG_DYNAMIC_CHUNKING_SMOOTH_FACTOR</code>（它把收缩阻尼得多狠）。</p>
+
+<div class="code"><span class="c-fname">DeepSeek-V3.1 · 4 nodes · PP4 TP8 · dynamic chunking</span><span class="c-com"># initial chunk = 12K → target tempo; smooth 0.65 for this model</span>
+<span class="c-key">export</span> SGLANG_DYNAMIC_CHUNKING_SMOOTH_FACTOR=<span class="c-num">0.65</span>
+python3 -m sglang.launch_server \
+  --model-path deepseek-ai/DeepSeek-V3.1 --trust-remote-code \
+  --nnodes <span class="c-num">4</span> --node-rank <span class="c-num">0</span> <span class="c-flag">--tp 8 --pp-size 4</span> \
+  --dist-init-addr &lt;MASTER_IP&gt; --attention-backend fa3 \
+  --mem-fraction-static <span class="c-num">0.8</span> --max-running-requests <span class="c-num">128</span> \
+  <span class="c-flag">--chunked-prefill-size 12288 --enable-dynamic-chunking</span></div>
+
+<div class="code"><span class="c-fname">Qwen3-235B-A22B-FP8 · PP8 TP4 · dynamic chunking</span><span class="c-com"># initial chunk = 18K; smooth 0.8; deeper pipeline (PP8) over 4-GPU TP nodes</span>
+<span class="c-key">export</span> SGLANG_DYNAMIC_CHUNKING_SMOOTH_FACTOR=<span class="c-num">0.8</span>
+python3 -m sglang.launch_server \
+  --model-path Qwen/Qwen3-235B-A22B-FP8 --trust-remote-code \
+  --nnodes <span class="c-num">4</span> --node-rank <span class="c-num">0</span> <span class="c-flag">--tp 4 --pp-size 8</span> \
+  --dist-init-addr &lt;MASTER_IP&gt; --attention-backend fa3 \
+  --mem-fraction-static <span class="c-num">0.8</span> --max-running-requests <span class="c-num">128</span> \
+  <span class="c-flag">--chunked-prefill-size 18432 --enable-dynamic-chunking</span></div>
+
+<p lang="en">A tuning path that respects the bubble math: first find the best <em>fixed</em> <code>--chunked-prefill-size</code> for your target PP, then set the dynamic initial size to 2–3× that (4× for extremely long inputs), then sweep the smooth factor in 0.6–0.85. If layers don't divide evenly across ranks, set <code>SGLANG_PP_LAYER_PARTITION</code> with the larger slice on the highest rank. Watch TTFT and the per-stage profile; the win shows up as the higher PP ranks filling in instead of waiting.</p>
+
+<p lang="zh">一条尊重气泡数学的调优路径： 先为你的目标 PP 找到最好的<em>固定</em> <code>--chunked-prefill-size</code>， 再把动态初始大小设成它的 2–3 倍（极长输入用 4 倍）， 然后在 0.6–0.85 之间扫 smooth factor。 如果层数在各 rank 上除不尽， 用 <code>SGLANG_PP_LAYER_PARTITION</code> 把更大的片放到最高 rank 上。 盯着 TTFT 和每 stage 的 profile； 胜利的样子是更高的 PP rank 被填满， 而不是在等。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">The one sentence to keep</span>
+  <span class="ctag" lang="zh">值得留下的一句话</span>
+  <p lang="en">Pipeline parallelism is the parallelism strategy that communicates the least but bubbles the most — and long-context prefill is the one workload that supplies, for free, the enormous micro-batch count that makes the bubble vanish. Chunk the prompt to fill the pipe, send asynchronously so the network never blocks compute, and size each chunk by time rather than tokens so every stage keeps the beat. That is the whole post, and it is why the strategy everyone avoids for inference is the right one at a million tokens.</p>
+  <p lang="zh">流水线并行是通信最少、 气泡最多的那种并行策略 —— 而长上下文 prefill 恰好是那个会免费提供巨量微批、 让气泡自行消失的工作负载。 把 prompt 分块来填满流水线， 异步地 send 好让网络永不阻塞计算， 再按时间而非 token 数给每个 chunk 定大小， 让每个 stage 都踩住节拍。 这就是整篇博客 —— 也是为什么那个推理场景里人人躲开的策略， 在一百万 token 上反而是对的。</p>
+</div>
+
+<div class="ornament-break"><span class="line"></span><span class="pip"></span><span class="pip amber"></span><span class="pip crimson"></span><span class="line"></span></div>
+
+<p lang="en"><em>Source:</em> Shangming Cai, <a href="https://www.lmsys.org/blog/2026-01-15-chunked-pipeline/">"Pipeline Parallelism in SGLang: Scaling to Million-Token Contexts and Beyond"</a> (LMSYS, 2026-01-15). Code paths verified against <code>sglang/srt/managers/scheduler_pp_mixin.py</code> and <code>distributed/parallel_state.py</code> on main; provenance <a href="https://github.com/sgl-project/sglang/pull/5724">#5724</a>, <a href="https://github.com/sgl-project/sglang/pull/8846">#8846</a>, <a href="https://github.com/sgl-project/sglang/issues/11857">#11857</a>. Companion readings in this <a href="/sources/">Library</a>: SGLang and mini-SGLang (the engine), the AMD kernel-design and rocprof entries (the per-GPU roofline this post sits on top of).</p>
+<p lang="zh"><em>原文：</em> 蔡尚明， <a href="https://www.lmsys.org/blog/2026-01-15-chunked-pipeline/">《Pipeline Parallelism in SGLang: Scaling to Million-Token Contexts and Beyond》</a>（LMSYS， 2026-01-15）。 代码路径已对照 main 分支的 <code>sglang/srt/managers/scheduler_pp_mixin.py</code> 和 <code>distributed/parallel_state.py</code> 核验； 来历见 <a href="https://github.com/sgl-project/sglang/pull/5724">#5724</a>、 <a href="https://github.com/sgl-project/sglang/pull/8846">#8846</a>、 <a href="https://github.com/sgl-project/sglang/issues/11857">#11857</a>。 本<a href="/sources/">文库</a>里的同伴： SGLang 与 mini-SGLang（引擎本体）、 AMD kernel 设计与 rocprof 两篇（这篇博客所立足的每卡 roofline）。</p>
+</section>
+
+</main>
+</div>
+
+<!-- ================ FOOTER ================ -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl" lang="en">Source</div>
+      <div class="lbl" lang="zh">来源</div>
+      <div class="val" lang="en">Shangming Cai, <a href="https://www.lmsys.org/blog/2026-01-15-chunked-pipeline/">“Pipeline Parallelism in SGLang”</a>, LMSYS Blog, 2026-01-15. Code: <code>sglang/srt/managers/scheduler_pp_mixin.py</code>.</div>
+      <div class="val" lang="zh">蔡尚明， <a href="https://www.lmsys.org/blog/2026-01-15-chunked-pipeline/">《Pipeline Parallelism in SGLang》</a>， LMSYS 博客， 2026-01-15。 代码： <code>sglang/srt/managers/scheduler_pp_mixin.py</code>。</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Typography</div>
+      <div class="lbl" lang="zh">字体</div>
+      <div class="val">Bodoni Moda · Schibsted Grotesk · Azeret Mono · Noto Serif SC</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Palette</div>
+      <div class="lbl" lang="zh">色板</div>
+      <div class="val">
+        <span class="swatch" style="background:#0a0e15"></span>panel
+        <span class="swatch" style="background:#30d6c0"></span>signal
+        <span class="swatch" style="background:#e8b54e"></span>chunk
+        <span class="swatch" style="background:#ec6a5f"></span>bubble
+        <span class="swatch" style="background:#5ba8e8"></span>P2P
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Compiled for</div>
+      <div class="lbl" lang="zh">编译为</div>
+      <div class="val" lang="en">anyone who wants to feel why PP wins at a million tokens.</div>
+      <div class="val" lang="zh">想真正理解"为什么百万 token 下 PP 会赢"的人。</div>
+    </div>
+  </div>
+  <div class="closing" lang="en">No.004 · Paper reading · jinnpan.com · 2026 · one long prompt, drawn as a stream.</div>
+  <div class="closing" lang="zh">No.004 · 论文精读 · jinnpan.com · 2026 · 一条长 prompt， 画成一道流。</div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'chunked-pipeline-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
