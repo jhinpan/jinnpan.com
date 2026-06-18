@@ -350,13 +350,13 @@
           <rect x="40" y="152" width="16" height="30" fill="#315d92" /><rect x="60" y="148" width="15" height="34" fill="#315d92" /><rect x="79" y="154" width="17" height="28" fill="#315d92" /><rect x="100" y="150" width="14" height="32" fill="#315d92" /><rect x="118" y="156" width="16" height="26" fill="#315d92" /><rect x="138" y="150" width="15" height="32" fill="#315d92" />
           <!-- shelf 4 blog (green) -->
           <line x1="30" y1="226" x2="290" y2="226" stroke="#22231f" stroke-width="3" />
-          <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" />
+          <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" />
         </g>
         <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
           <text x="214" y="74">CODE · 11</text>
           <text x="214" y="122">PAPER · 4</text>
           <text x="214" y="170">TUTORIAL · 6</text>
-          <text x="214" y="218">BLOG · 4</text>
+          <text x="214" y="218">BLOG · 5</text>
         </g>
       </svg>
     </figure>
@@ -377,7 +377,7 @@
     <div class="stat" data-c="code"><span class="num">11</span><span class="label">code readings</span></div>
     <div class="stat" data-c="paper"><span class="num">4</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">6</span><span class="label">tutorials</span></div>
-    <div class="stat" data-c="blog"><span class="num">4</span><span class="label">blog posts</span></div>
+    <div class="stat" data-c="blog"><span class="num">5</span><span class="label">blog posts</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -641,7 +641,7 @@
         <h2>Blog</h2>
         <div class="sub"><span class="zh">博客</span> · original writing — benchmarks, framework comparisons, and project notes</div>
       </div>
-      <div class="shelf-count">4 posts</div>
+      <div class="shelf-count">5 posts</div>
     </div>
     <div class="grid">
       <article class="entry" data-kind="blog" data-search="benchmark qwen3 coder eagle3 speculative decoding sglang code generation speedup">
@@ -682,6 +682,16 @@
           <div class="tags"><span class="tag">FlyDSL</span><span class="tag">MLIR</span><span class="tag">layout</span></div>
         </div>
         <div class="links"><a class="link primary" href="/en/blog/flydsl-layout-basis/">EN</a><a class="link" href="/zh/blog/flydsl-layout-basis/">中文</a></div>
+      </article>
+
+      <article class="entry" data-kind="blog" data-search="long sequence moe rl training 128k context qwen3.5 35b path a path b recompute activation linear cross entropy fused liger cut cross-entropy fsdp2 dtensor devicemesh chunked expert parallel ep all-to-all overlap rccl nccl context parallel cp roofline mfu tflops mi300x mi355x h100 yan bai iseekyan slime megatron">
+        <div class="entry-top"><span class="entry-kind">Analysis</span><span>MoE RL · long-context</span></div>
+        <div class="entry-body">
+          <h3>Long-Sequence MoE RL</h3>
+          <p>A first-principles read of Yan Bai's 128K-context MoE RL recipe — Path B recompute, linear cross-entropy, FSDP2, chunked EP overlap — re-derived, fact-checked, and mapped onto MI300X / MI355X.</p>
+          <div class="tags"><span class="tag">RL</span><span class="tag">MoE</span><span class="tag">AMD</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/long-sequence-moe-rl/">EN</a><a class="link" href="/zh/blog/long-sequence-moe-rl/">中文</a></div>
       </article>
     </div>
   </section>
