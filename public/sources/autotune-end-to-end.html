@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autotune, end to end — from Triton to FlyDSL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Besley:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Piazzolla:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Sometype+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Oscilloscope / 1990s scientific-viz palette — phosphor on near-black */
+  --bg: #0b0e0c;            /* CRT near-black */
+  --bg-elev: #11150f;
+  --bg-deep: #161b13;
+  --rule: #2c3a26;
+  --rule-soft: #1f2a1a;
+  --grid: rgba(158, 240, 26, 0.035);
+
+  /* Phosphor inks */
+  --bone: #eaf0e2;          /* primary text — warm bone */
+  --bone-dim: #c2cbb6;
+  --bone-soft: #8f9c80;
+  --bone-mute: #67735a;
+  --bone-faint: #424c39;
+
+  /* Trace accents */
+  --lime: #9ef01a;          /* phosphor lime — primary trace */
+  --lime-deep: #6fae12;
+  --amber: #ffb627;         /* amber trace / annotation */
+  --amber-deep: #c0851a;
+  --magenta: #ff4d80;       /* magenta trace / warnings */
+  --magenta-deep: #c0335c;
+  --cyan: #3fd6d0;          /* secondary cool trace */
+  --cyan-deep: #2a9b97;
+
+  --serif: 'Piazzolla', 'Iowan Old Style', Georgia, serif;
+  --display: 'Besley', 'Roboto Slab', Georgia, serif;
+  --mono: 'Sometype Mono', ui-monospace, 'Courier New', monospace;
+
+  --max-content: 720px;
+  --rail-w: 200px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--bg);
+  color: var(--bone);
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* CRT grid + scanline vignette */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(158, 240, 26, 0.04), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(255, 77, 128, 0.02), transparent 70%);
+  background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  background-image: radial-gradient(ellipse at center, transparent 42%, rgba(5, 8, 4, 0.5) 100%);
+  opacity: 0.7;
+}
+
+/* ============ LANGUAGE TOGGLE ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+.lang-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 300;
+  display: flex;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(11, 14, 12, 0.85);
+  backdrop-filter: blur(6px);
+}
+.lang-toggle button {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--rule);
+  color: var(--bone-soft);
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.lang-toggle button:last-child { border-right: none; }
+.lang-toggle button:hover { color: var(--bone); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+  background: var(--lime);
+  color: #0b0e0c;
+  font-weight: 600;
+}
+
+/* ============ NAV RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  overflow-y: auto;
+  padding: 30px 20px 40px;
+  border-right: 1px solid var(--rule);
+  background: var(--bg-elev);
+  z-index: 5;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--rule-soft); }
+.rail .rail-home {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bone-mute);
+  text-decoration: none;
+  margin-bottom: 26px;
+}
+.rail .rail-home:hover { color: var(--lime); }
+.rail .brand {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--bone);
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+.rail .brand em { color: var(--lime); font-style: normal; }
+.rail .ref {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--bone-mute);
+  margin-bottom: 24px;
+}
+.rail .ref .pin { color: var(--amber); }
+.rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: rail;
+}
+.rail ol li {
+  position: relative;
+  padding: 5px 0 5px 22px;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.rail ol li::before {
+  counter-increment: rail;
+  content: counter(rail, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--bone-faint);
+}
+.rail ol li a {
+  color: var(--bone-soft);
+  text-decoration: none;
+}
+.rail ol li a:hover { color: var(--lime); }
+.rail ol li a em { color: var(--amber); font-style: italic; }
+.rail .divider {
+  height: 1px;
+  background: var(--rule-soft);
+  margin: 12px 0 12px 22px;
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 70px 48px 54px;
+  border-bottom: 1px solid var(--rule);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--bone-soft);
+  margin-bottom: 36px;
+}
+.masthead .kicker::before {
+  content: '';
+  width: 34px;
+  height: 1px;
+  background: var(--lime);
+  box-shadow: 0 0 5px rgba(158, 240, 26, 0.6);
+}
+.masthead .kicker .dot {
+  width: 5px; height: 5px;
+  background: var(--lime);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(158, 240, 26, 0.7);
+}
+.masthead .kicker .chip { color: var(--bone-mute); }
+.masthead h1 {
+  font-family: var(--display);
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  margin: 0 0 26px;
+  color: var(--bone);
+}
+.masthead h1 em { color: var(--lime); font-style: normal; }
+.masthead .subtitle {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--bone-dim);
+  max-width: 760px;
+  margin: 0 0 38px;
+}
+.masthead .subtitle em { color: var(--amber); font-style: italic; }
+.masthead .subtitle code { font-family: var(--mono); font-size: 0.86em; color: var(--cyan); }
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+.masthead .meta .item {
+  background: var(--bg-elev);
+  padding: 16px 18px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bone-mute);
+  margin-bottom: 8px;
+}
+.masthead .meta .item .value {
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 600;
+  color: var(--bone);
+  line-height: 1;
+}
+.masthead .meta .item .value .unit {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--bone-mute);
+  margin-top: 7px;
+}
+.masthead .meta .item .value .accent { color: var(--lime); }
+
+/* ============ ARTICLE ============ */
+.shell { position: relative; z-index: 1; }
+.article {
+  max-width: var(--max-content);
+  margin: 0 auto;
+  padding: 56px 24px 40px;
+}
+.article section { margin-bottom: 60px; }
+.article h2 {
+  font-family: var(--display);
+  font-size: 31px;
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--bone);
+  margin: 0 0 22px;
+  padding-top: 10px;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lime-deep);
+  margin-bottom: 12px;
+}
+.article h2 em { color: var(--lime); font-style: italic; }
+.article h3 {
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--bone);
+  margin: 38px 0 14px;
+}
+.article h3 em { color: var(--amber); font-style: italic; }
+.article h4 {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin: 28px 0 10px;
+}
+.article p { margin: 0 0 18px; }
+.article p strong { color: var(--bone); font-weight: 600; }
+.article p em { color: var(--amber); font-style: italic; }
+.article p code, .article li code, .article td code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  color: var(--cyan);
+  background: var(--bg-elev);
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid var(--rule-soft);
+}
+.article a {
+  color: var(--lime);
+  text-decoration: none;
+  border-bottom: 1px solid var(--lime-deep);
+}
+.article a:hover { color: var(--amber); border-bottom-color: var(--amber-deep); }
+.article ul, .article ol { margin: 0 0 18px; padding-left: 22px; }
+.article li { margin-bottom: 8px; }
+.dropcap { display: block; }
+.dropcap::first-letter {
+  float: left;
+  font-family: var(--display);
+  font-size: 58px;
+  line-height: 0.82;
+  font-weight: 700;
+  padding: 6px 12px 0 0;
+  color: var(--lime);
+}
+
+/* ============ CODE ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  background: var(--bg-deep);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--lime-deep);
+  border-radius: 2px;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--bone-dim);
+}
+.code .c-key { color: var(--magenta); }
+.code .c-str { color: var(--amber); }
+.code .c-num { color: var(--cyan); }
+.code .c-com { color: var(--bone-mute); font-style: italic; }
+.code .c-cls { color: var(--lime); }
+.code .c-fn  { color: var(--cyan); }
+.code-cap {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--bone-mute);
+  margin: -14px 0 24px;
+  padding-left: 2px;
+}
+.code-cap a { color: var(--bone-soft); }
+
+/* ============ CALLOUT ============ */
+.callout {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--amber);
+  background: var(--bg-elev);
+  padding: 16px 18px 6px;
+  margin: 0 0 24px;
+  border-radius: 2px;
+}
+.callout.lime { border-left-color: var(--lime); }
+.callout.magenta { border-left-color: var(--magenta); }
+.callout.cyan { border-left-color: var(--cyan); }
+.callout .ctag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+.callout.lime .ctag { color: var(--lime); }
+.callout.magenta .ctag { color: var(--magenta); }
+.callout.cyan .ctag { color: var(--cyan); }
+.callout p { font-size: 14px; margin-bottom: 12px; }
+
+/* ============ TABLE ============ */
+.tbl-wrap { overflow-x: auto; margin: 0 0 24px; }
+table.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--rule);
+}
+table.tbl th, table.tbl td {
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid var(--rule-soft);
+  vertical-align: top;
+}
+table.tbl th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lime);
+  background: var(--bg-deep);
+  font-weight: 500;
+}
+table.tbl td { color: var(--bone-dim); }
+table.tbl tr:nth-child(even) td { background: rgba(158, 240, 26, 0.018); }
+table.tbl td strong { color: var(--bone); }
+table.tbl .yes { color: var(--lime); }
+table.tbl .no { color: var(--magenta); }
+table.tbl .mid { color: var(--amber); }
+
+/* ============ PLATES (SVG) ============ */
+.plate {
+  margin: 30px 0 26px;
+  border: 1px solid var(--rule);
+  background: var(--bg-elev);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.plate.wide {
+  max-width: 1040px;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+.plate-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bone-mute);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-deep);
+}
+.plate-meta .pn { color: var(--lime); }
+.plate svg { display: block; width: 100%; height: auto; }
+.caption {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--bone-soft);
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--rule-soft);
+}
+/* shared SVG classes */
+.diag-text { font-family: var(--mono); fill: var(--bone-dim); }
+.diag-title { font-family: var(--mono); fill: var(--bone); font-weight: 600; }
+.diag-edge { stroke: var(--bone-mute); stroke-width: 1.2; fill: none; }
+.diag-node { fill: var(--bg-deep); stroke: var(--rule); stroke-width: 1.2; }
+.zone-box { fill: rgba(158,240,26,0.03); stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
+.zone-label { font-family: var(--mono); fill: var(--bone-mute); letter-spacing: 0.1em; }
+
+/* ============ COLOPHON ============ */
+.colophon {
+  border-top: 1px solid var(--rule);
+  background: var(--bg-elev);
+  padding: 40px 48px;
+  margin-top: 30px;
+}
+.colophon .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.colophon .field .lbl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lime);
+  margin-bottom: 10px;
+}
+.colophon .field .val {
+  font-size: 12px;
+  color: var(--bone-soft);
+  margin-bottom: 5px;
+}
+.colophon .field .val a { color: var(--bone-dim); }
+.colophon .swatch {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 1px;
+  margin-right: 4px;
+  vertical-align: middle;
+  border: 1px solid var(--rule);
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 900px) {
+  body { padding-left: 0; }
+  .rail {
+    position: relative;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .rail ol { display: none; }
+  .masthead h1 { font-size: 42px; }
+  .masthead .meta { grid-template-columns: repeat(2, 1fr); }
+  .colophon .grid { grid-template-columns: 1fr 1fr; }
+  .lang-toggle { top: 14px; right: 14px; font-size: 9.5px; }
+  .plate.wide { max-width: 100%; margin-left: 0; transform: none; }
+}
+</style>
+</head>
+<body data-lang="en">
+
+<!-- ============ LANGUAGE TOGGLE ============ -->
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+  <div class="brand"><em>Auto</em>tune</div>
+  <div class="ref"><span lang="en">GUIDE</span><span lang="zh">教程</span> · <span class="pin">end-to-end</span> · 2026.06</div>
+  <ol>
+    <li><a href="#prologue"><span lang="en">Prologue</span><span lang="zh">序言</span></a></li>
+    <li><a href="#loop"><span lang="en">The autotune loop</span><span lang="zh">autotune 循环</span></a></li>
+    <li><a href="#triton"><span lang="en">Triton · the template</span><span lang="zh">Triton · 范本</span></a></li>
+    <li><a href="#correctness"><span lang="en">The correctness soul</span><span lang="zh">正确性的灵魂</span></a></li>
+    <li><a href="#quack"><span lang="en">quack · two-track</span><span lang="zh">quack · 双轨</span></a></li>
+    <li><a href="#cutedsl"><span lang="en">CuteDSL · <em>autotune_jit</em></span><span lang="zh">CuteDSL · <em>autotune_jit</em></span></a></li>
+    <li><a href="#aiter"><span lang="en">aiter · offline CSV</span><span lang="zh">aiter · 离线 CSV</span></a></li>
+    <li><a href="#online-offline"><span lang="en">Online vs offline</span><span lang="zh">在线 vs 离线</span></a></li>
+    <li><a href="#sglang"><span lang="en">SGLang · the consumer</span><span lang="zh">SGLang · 消费者</span></a></li>
+    <li><a href="#cachekey"><span lang="en">Cache-key anatomy</span><span lang="zh">cache key 解剖</span></a></li>
+    <div class="divider"></div>
+    <li><a href="#flydsl"><span lang="en">Designing FlyDSL autotune</span><span lang="zh">设计 FlyDSL autotune</span></a></li>
+    <li><a href="#guide"><span lang="en">Implementation guide</span><span lang="zh">实现 guide</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    <li><a href="#references"><span lang="en">References</span><span lang="zh">参考资料</span></a></li>
+  </ol>
+</nav>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="kicker">
+    <span lang="en">TUTORIAL · GUIDE</span><span lang="zh">教程 · GUIDE</span>
+    <span class="dot"></span>
+    <span>2026.06</span>
+    <span class="chip">·</span>
+    <span class="chip">Triton / quack / CuteDSL / aiter / SGLang → FlyDSL</span>
+  </div>
+  <h1><em>Auto</em>tune, end to end</h1>
+  <p class="subtitle" lang="en">
+    How kernel autotuning is <em>designed</em> in Triton, <em>used</em> in aiter / quack / CuteDSL,
+    and <em>consumed</em> by inference engines like SGLang — and, from all of that, how to design a
+    real autotune path for <code>FlyDSL</code> with a concrete implementation guide.
+  </p>
+  <p class="subtitle" lang="zh">
+    kernel autotune 在 Triton 里是怎么<em>设计</em>的、 在 aiter / quack / CuteDSL 里怎么<em>使用</em>、
+    又怎么被 SGLang 这类推理引擎<em>消费</em> —— 然后从这一切出发, 给 <code>FlyDSL</code> 设计一条
+    真正的 autotune 路径, 附带可落地的实现 guide。
+  </p>
+  <div class="meta">
+    <div class="item">
+      <div class="label" lang="en">References read</div>
+      <div class="label" lang="zh">精读参考</div>
+      <div class="value"><span class="accent">6</span><span class="unit" lang="en">real codebases</span><span class="unit" lang="zh">真实代码库</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Destination</div>
+      <div class="label" lang="zh">终点</div>
+      <div class="value">FlyDSL<span class="unit" lang="en">design + guide</span><span class="unit" lang="zh">设计 + guide</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Paradigms</div>
+      <div class="label" lang="zh">范式</div>
+      <div class="value"><span class="accent">3</span><span class="unit" lang="en">online / offline / consume</span><span class="unit" lang="zh">在线 / 离线 / 消费</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Reading time</div>
+      <div class="label" lang="zh">阅读时长</div>
+      <div class="value" lang="en">~35<span class="unit">minutes</span></div>
+      <div class="value" lang="zh">~35<span class="unit">分钟</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+<main class="article">
+
+<!-- ============ PROLOGUE ============ -->
+<section id="prologue">
+<h2 lang="en"><span class="num">§ 00 · Why autotune exists</span>Prologue</h2>
+<h2 lang="zh"><span class="num">§ 00 · autotune 为何存在</span>序言</h2>
+
+<p class="dropcap" lang="en">A GPU kernel has knobs that do not change what it computes, only how fast — tile sizes, the number of warps, software-pipeline stages, register limits, cluster width. The fastest setting of those knobs is not a constant. It depends on the input shape (a GEMM at <code>M=1</code> wants a different tile than at <code>M=8192</code>), on the dtype, and on the exact GPU. You cannot read the best config off a datasheet; you have to run the kernel and measure. That measure-and-pick process is autotuning, and every modern kernel DSL has some version of it.</p>
+<p class="dropcap" lang="zh">一个 GPU kernel 有一些旋钮, 拧它们不改变算出来的结果, 只改变快慢 —— tile 大小、 warp 数、 软件流水线级数、 寄存器上限、 cluster 宽度。 这些旋钮的最优值不是常数。 它取决于输入形状 (GEMM 在 <code>M=1</code> 和 <code>M=8192</code> 想要的 tile 完全不同)、 取决于 dtype、 取决于具体那块 GPU。 你没法从数据手册上读出最优配置; 你必须把 kernel 跑一遍、 测出来。 这个"测量再挑选"的过程就是 autotune, 每个现代 kernel DSL 都有它的某种版本。</p>
+
+<p lang="en">This guide reads six real implementations from source — <a href="https://github.com/triton-lang/triton">Triton</a> (the template everyone copies), <a href="https://github.com/Dao-AILab/quack">quack</a> and <a href="https://github.com/NVIDIA/cutlass">CuteDSL</a> (two DSLs that build on the idea), <a href="https://github.com/ROCm/aiter">aiter</a> (offline tuning at a kernel library), <a href="https://github.com/sgl-project/sglang">SGLang</a> (an inference engine that <em>consumes</em> tuned configs), and <a href="https://github.com/ROCm/FlyDSL">FlyDSL</a> (which has the machinery but no adoption) — and uses them to answer one question: <strong>how should FlyDSL's autotune actually be designed?</strong> The five references are evidence; the FlyDSL design and its implementation guide are the destination.</p>
+<p lang="zh">这篇 guide 从源码精读六个真实实现 —— <a href="https://github.com/triton-lang/triton">Triton</a> (大家都在抄的范本)、 <a href="https://github.com/Dao-AILab/quack">quack</a> 和 <a href="https://github.com/NVIDIA/cutlass">CuteDSL</a> (两个在这想法上扩展的 DSL)、 <a href="https://github.com/ROCm/aiter">aiter</a> (kernel 库的离线 tuning)、 <a href="https://github.com/sgl-project/sglang">SGLang</a> (一个<em>消费</em>已 tune 配置的推理引擎)、 以及 <a href="https://github.com/ROCm/FlyDSL">FlyDSL</a> (有机制但没人用) —— 用它们回答一个问题: <strong>FlyDSL 的 autotune 到底应该怎么设计?</strong> 五个参考是论据; FlyDSL 的设计和实现 guide 是终点。</p>
+
+<div class="callout lime">
+  <span class="ctag" lang="en">The one rule</span>
+  <span class="ctag" lang="zh">一条铁律</span>
+  <p lang="en">Autotuning runs the <em>same kernel</em> dozens of times to pick a winner. If the kernel writes its output in place or accumulates, those repeated runs corrupt the data and you measure garbage. Every correct autotuner solves this; most naive ports forget it. Hold this thought — it returns in <strong>§ 03</strong>.</p>
+  <p lang="zh">autotune 会把<em>同一个 kernel</em> 跑几十遍来挑最快的。 如果这个 kernel 原地写输出、 或者做累加, 这些重复运行会污染数据, 你测到的就是垃圾。 每个正确的 autotuner 都解决了这个问题; 大多数草率的移植都忘了它。 记住这一点 —— 它在 <strong>§ 03</strong> 会回来。</p>
+</div>
+</section>
+
+<!-- ============ THE LOOP + PLATE I ============ -->
+<section id="loop">
+<h2 lang="en"><span class="num">§ 01 · The shape of every autotuner</span>The autotune loop</h2>
+<h2 lang="zh"><span class="num">§ 01 · 每个 autotuner 的形状</span>autotune 循环</h2>
+
+<p lang="en">Strip away the framework differences and every autotuner is the same four-step loop, wrapped in a cache. A <strong>search space</strong> of candidate configs is defined; each candidate is <strong>compiled and benchmarked</strong>; the fastest is <strong>selected</strong>; the winner is <strong>cached</strong> under a key so the next call with the same shape skips the search entirely. The interesting engineering is all in the edges: what the key contains, how you avoid the search when you can, how you keep benchmarking from corrupting state, and whether the loop runs online (at first call) or offline (ahead of time).</p>
+<p lang="zh">剥掉框架差异, 每个 autotuner 都是同一个四步循环, 外面套一层缓存。 先定义一个候选配置的<strong>搜索空间</strong>; 每个候选<strong>编译并 benchmark</strong>; 挑出<strong>最快的</strong>; 把赢家按一个 key <strong>缓存</strong>起来, 这样下次同样形状的调用就完全跳过搜索。 有意思的工程全在边角: key 里放什么、 怎么在能省的时候省掉搜索、 怎么让 benchmark 不污染状态、 以及这个循环是在线跑 (首次调用时) 还是离线跑 (提前)。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">I</span> · the autotune loop</span><span lang="zh">图 <span class="pn">I</span> · autotune 循环</span><span>cache-wrapped search</span></div>
+  <svg viewBox="0 0 1000 300" role="img" aria-label="The autotune loop">
+    <defs>
+      <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#67735a"/>
+      </marker>
+      <marker id="ahl" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#9ef01a"/>
+      </marker>
+    </defs>
+    <!-- call in -->
+    <rect class="diag-node" x="20" y="120" width="120" height="56" rx="3"/>
+    <text class="diag-title" x="80" y="143" font-size="13" text-anchor="middle">call(args)</text>
+    <text class="diag-text" x="80" y="161" font-size="10" text-anchor="middle">shape · dtype</text>
+    <!-- cache check diamond -->
+    <path class="diag-node" d="M210,148 L255,118 L300,148 L255,178 z" stroke="#9ef01a"/>
+    <text class="diag-text" x="255" y="145" font-size="10" text-anchor="middle" fill="#9ef01a">key in</text>
+    <text class="diag-text" x="255" y="158" font-size="10" text-anchor="middle" fill="#9ef01a">cache?</text>
+    <!-- hit path -->
+    <path class="diag-edge" d="M300,148 H360 V70 H560" marker-end="url(#ahl)" stroke="#9ef01a"/>
+    <text class="diag-text" x="345" y="62" font-size="10" fill="#9ef01a">hit</text>
+    <rect class="diag-node" x="560" y="44" width="150" height="52" rx="3" stroke="#9ef01a"/>
+    <text class="diag-title" x="635" y="66" font-size="12" text-anchor="middle">run best config</text>
+    <text class="diag-text" x="635" y="83" font-size="10" text-anchor="middle">~0 overhead</text>
+    <!-- miss path: search space -->
+    <text class="diag-text" x="345" y="200" font-size="10" fill="#ffb627">miss</text>
+    <path class="diag-edge" d="M255,178 V210 H360" marker-end="url(#ah)"/>
+    <rect class="diag-node" x="360" y="186" width="130" height="50" rx="3"/>
+    <text class="diag-title" x="425" y="206" font-size="11" text-anchor="middle">prune space</text>
+    <text class="diag-text" x="425" y="222" font-size="9.5" text-anchor="middle">heuristic / top-k</text>
+    <!-- bench -->
+    <path class="diag-edge" d="M490,211 H520" marker-end="url(#ah)"/>
+    <rect class="diag-node" x="520" y="186" width="130" height="50" rx="3"/>
+    <text class="diag-title" x="585" y="206" font-size="11" text-anchor="middle">compile+bench</text>
+    <text class="diag-text" x="585" y="222" font-size="9.5" text-anchor="middle">each candidate ×N</text>
+    <!-- restore loop -->
+    <path class="diag-edge" d="M585,236 V262 H520 V236" marker-end="url(#ah)" stroke="#ff4d80"/>
+    <text class="diag-text" x="540" y="278" font-size="9.5" fill="#ff4d80">restore between reps</text>
+    <!-- select -->
+    <path class="diag-edge" d="M650,211 H680" marker-end="url(#ah)"/>
+    <rect class="diag-node" x="680" y="186" width="120" height="50" rx="3"/>
+    <text class="diag-title" x="740" y="206" font-size="11" text-anchor="middle">select min</text>
+    <text class="diag-text" x="740" y="222" font-size="9.5" text-anchor="middle">fastest wins</text>
+    <!-- write cache -->
+    <path class="diag-edge" d="M800,205 H850 V120 H300" marker-end="url(#ah)"/>
+    <text class="diag-text" x="858" y="160" font-size="10" fill="#ffb627" transform="rotate(90 858 160)">write key→config</text>
+    <!-- key anatomy note -->
+    <rect class="zone-box" x="20" y="220" width="180" height="64"/>
+    <text class="zone-label" x="30" y="240" font-size="9">KEY =</text>
+    <text class="diag-text" x="30" y="256" font-size="9">shape · dtype · arch</text>
+    <text class="diag-text" x="30" y="270" font-size="9">+ src fingerprint</text>
+    <text class="diag-text" x="30" y="282" font-size="8.5" fill="#67735a">(see § 09)</text>
+  </svg>
+  <figcaption class="caption" lang="en">Every autotuner is this loop. The differences between Triton, quack, CuteDSL, aiter, and SGLang are entirely in four places: what goes in the <span style="color:var(--amber)">key</span>, how the <span style="color:var(--bone)">space is pruned</span>, the <span style="color:var(--magenta)">restore between bench reps</span>, and whether the whole loop runs online or offline.</figcaption>
+  <figcaption class="caption" lang="zh">每个 autotuner 都是这个循环。 Triton、 quack、 CuteDSL、 aiter、 SGLang 之间的差别完全在四个地方: <span style="color:var(--amber)">key</span> 里放什么、 <span style="color:var(--bone)">搜索空间怎么剪枝</span>、 <span style="color:var(--magenta)">bench 重复之间怎么 restore</span>、 以及整个循环是在线还是离线跑。</figcaption>
+</figure>
+</section>
+
+<!-- ============ TRITON ============ -->
+<section id="triton">
+<h2 lang="en"><span class="num">§ 02 · The design everyone copies</span>Triton · the template</h2>
+<h2 lang="zh"><span class="num">§ 02 · 大家都在抄的设计</span>Triton · 范本</h2>
+
+<p lang="en">Triton's <code>@triton.autotune</code> is the design quack and FlyDSL both descend from, so it is worth reading first and reading closely. The whole thing lives in one file, <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">python/triton/runtime/autotuner.py</a> (511 lines). The core is <code>Autotuner.run</code>: build a key from the designated key-args plus their dtypes, and if it misses, benchmark the pruned configs and cache the winner.</p>
+<p lang="zh">Triton 的 <code>@triton.autotune</code> 是 quack 和 FlyDSL 共同继承的设计, 所以值得先读、 而且要细读。 整个东西就在一个文件里, <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">python/triton/runtime/autotuner.py</a> (511 行)。 核心是 <code>Autotuner.run</code>: 用指定的 key-arg 加上它们的 dtype 构造一个 key, 如果 miss 就 benchmark 剪枝后的配置、 缓存赢家。</p>
+
+<div class="code"><span class="c-com"># triton/runtime/autotuner.py — Autotuner.run (condensed)</span>
+key = [_args[k] <span class="c-key">for</span> k <span class="c-key">in</span> self.keys <span class="c-key">if</span> k <span class="c-key">in</span> _args]
+<span class="c-key">for</span> _, arg <span class="c-key">in</span> _args.items():
+    <span class="c-key">if</span> hasattr(arg, <span class="c-str">"dtype"</span>):
+        key.append(str(arg.dtype))      <span class="c-com"># dtype is part of the key</span>
+key = tuple(key)
+<span class="c-key">if</span> key <span class="c-key">not in</span> self.cache:
+    pruned = self.prune_configs(kwargs)  <span class="c-com"># perf_model / top_k / early_config_prune</span>
+    timings = {c: self._bench(*args, config=c, **kwargs) <span class="c-key">for</span> c <span class="c-key">in</span> pruned}
+    self.cache[key] = builtins.min(timings, key=timings.get)  <span class="c-com"># fastest wins</span></div>
+<div class="code-cap" lang="en">The loop from Plate I, in ~8 lines. Source: <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">autotuner.py</a> <code>:217</code>.</div>
+<div class="code-cap" lang="zh">图 I 的循环, 大约 8 行。 源码: <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">autotuner.py</a> <code>:217</code>。</div>
+
+<p lang="en">Three things in this file separate a real autotuner from a toy, and all three are worth stealing.</p>
+<p lang="zh">这个文件里有三样东西, 把一个真正的 autotuner 和一个玩具区分开, 三样都值得偷。</p>
+
+<h3 lang="en"><em>@heuristics</em> — the skip-the-search door</h3>
+<h3 lang="zh"><em>@heuristics</em> — 跳过搜索的那扇门</h3>
+<p lang="en">Not every knob needs a search. If a parameter can be computed from the inputs (a block size that should just be the next power of two above <code>N</code>), Triton lets you derive it with <code>@triton.heuristics</code> instead of enumerating it. Autotuning is reserved for the genuinely uncertain knobs. This is the single biggest lever on tuning cost: the cheapest search is the one you never run.</p>
+<p lang="zh">不是每个旋钮都需要搜索。 如果一个参数能从输入算出来 (比如 block size 就该取大于 <code>N</code> 的下一个 2 的幂), Triton 让你用 <code>@triton.heuristics</code> 推导它, 而不是去枚举。 autotune 只留给真正不确定的旋钮。 这是 tuning 成本上最大的杠杆: 最便宜的搜索是你根本没跑的那次。</p>
+
+<h3 lang="en"><em>prune_configs_by</em> — cut before you compile</h3>
+<h3 lang="zh"><em>prune_configs_by</em> — 编译前先砍</h3>
+<p lang="en">Compiling and benchmarking is the expensive part. <code>prune_configs_by</code> takes a <code>perf_model</code> + <code>top_k</code> (keep only the model's predicted-best k) and an <code>early_config_prune</code> (drop configs that can't fit, e.g. too much shared memory) — both run <em>before</em> any compilation. You only pay to benchmark candidates that have a chance.</p>
+<p lang="zh">编译和 benchmark 是最贵的部分。 <code>prune_configs_by</code> 接受一个 <code>perf_model</code> + <code>top_k</code> (只保留模型预测最好的 k 个) 和一个 <code>early_config_prune</code> (砍掉跑不起来的配置, 比如 shared memory 超了) —— 两者都在任何编译<em>之前</em>跑。 你只为有机会的候选付 benchmark 的成本。</p>
+
+<h3 lang="en"><em>The cache key</em> — what makes a config stale</h3>
+<h3 lang="zh"><em>cache key</em> — 什么让一个配置过期</h3>
+<p lang="en">Triton's disk-cache key (<code>check_disk_cache</code>, <code>:175</code>) is the most complete of any reference here. It is a SHA-256 of five things, and each one answers "when should I throw the cached config away?"</p>
+<p lang="zh">Triton 的磁盘缓存 key (<code>check_disk_cache</code>, <code>:175</code>) 是这里所有参考中最完整的。 它是五样东西的 SHA-256, 每一样都回答"我什么时候该把缓存的配置扔掉?"</p>
+
+<div class="code"><span class="c-com"># triton/runtime/autotuner.py:175 — check_disk_cache</span>
+cache_key = [
+    triton_key(),                                  <span class="c-com"># compiler version changed</span>
+    make_backend(driver.active.get_current_target()).hash(),  <span class="c-com"># GPU target changed</span>
+    fn.cache_key,                                  <span class="c-com"># kernel source changed</span>
+    str(sorted(env_vars.items())),                 <span class="c-com"># cache-invalidating env changed</span>
+    str(tuning_key),                               <span class="c-com"># shape / dtype changed</span>
+] + [str(c) <span class="c-key">for</span> c <span class="c-key">in</span> configs]
+cache_key = hashlib.sha256(<span class="c-str">"-"</span>.join(cache_key).encode()).hexdigest()</div>
+<div class="code-cap" lang="en">Five invalidation axes. FlyDSL's key today has only one of them (shape/dtype). Source: <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">autotuner.py</a> <code>:175</code>.</div>
+<div class="code-cap" lang="zh">五个失效维度。 FlyDSL 今天的 key 只有其中一个 (shape/dtype)。 源码: <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">autotuner.py</a> <code>:175</code>。</div>
+</section>
+
+<!-- ============ CORRECTNESS + PLATE II ============ -->
+<section id="correctness">
+<h2 lang="en"><span class="num">§ 03 · restore_value / reset_to_zero</span>The correctness soul</h2>
+<h2 lang="zh"><span class="num">§ 03 · restore_value / reset_to_zero</span>正确性的灵魂</h2>
+
+<p lang="en">Here is the rule from the prologue, made concrete. To benchmark a config, Triton runs the kernel many times back-to-back and takes the median. If the kernel mutates one of its inputs — an in-place accumulate, a fused residual-add that writes back, a softmax-over-self — then run 2 sees the output of run 1 as its input. The numbers drift, the timing is measured on corrupted data, and the "fastest" config you select may simply be the one that diverged fastest. The selection is wrong in a way no unit test on the kernel itself will catch.</p>
+<p lang="zh">把序言里那条铁律说具体。 为了 benchmark 一个配置, Triton 会把 kernel 连续跑很多遍取中位数。 如果这个 kernel 会改写它的某个输入 —— 原地累加、 写回的 fused residual-add、 对自身做的 softmax —— 那么第 2 遍就会把第 1 遍的输出当成自己的输入。 数值开始漂移, 计时是在被污染的数据上测的, 你选出来的"最快"配置可能只是漂移得最快的那个。 这个选择是错的, 而且 kernel 自己的单元测试一个都抓不到。</p>
+
+<p lang="en">Triton's answer is two hooks on the decorator: <code>reset_to_zero</code> (zero the named tensors before each rep) and <code>restore_value</code> (snapshot the named tensors, restore them after each rep). Both run around every benchmarked call, so each config is measured against the same clean inputs.</p>
+<p lang="zh">Triton 的解法是装饰器上的两个钩子: <code>reset_to_zero</code> (每遍之前把指定张量清零) 和 <code>restore_value</code> (把指定张量存档, 每遍之后还原)。 两者都在每次被 benchmark 的调用前后跑, 这样每个配置都是在同样干净的输入上测的。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">II</span> · why in-place kernels corrupt the search</span><span lang="zh">图 <span class="pn">II</span> · 原地 kernel 为何污染搜索</span><span>restore_value</span></div>
+  <svg viewBox="0 0 1000 280" role="img" aria-label="In-place corruption vs restore">
+    <!-- WITHOUT restore -->
+    <text class="diag-title" x="30" y="34" font-size="13" fill="#ff4d80">WITHOUT restore_value</text>
+    <rect class="diag-node" x="30" y="50" width="90" height="44" rx="3"/>
+    <text class="diag-text" x="75" y="70" font-size="10" text-anchor="middle">x₀ clean</text>
+    <text class="diag-text" x="75" y="84" font-size="9" text-anchor="middle" fill="#9ef01a">correct</text>
+    <path class="diag-edge" d="M120,72 H160" marker-end="url(#ah)" stroke="#ff4d80"/>
+    <text class="diag-text" x="140" y="64" font-size="9" fill="#ff4d80">rep1</text>
+    <rect class="diag-node" x="160" y="50" width="90" height="44" rx="3" stroke="#ff4d80"/>
+    <text class="diag-text" x="205" y="70" font-size="10" text-anchor="middle">x₁ dirty</text>
+    <text class="diag-text" x="205" y="84" font-size="9" text-anchor="middle" fill="#ffb627">drifting</text>
+    <path class="diag-edge" d="M250,72 H290" marker-end="url(#ah)" stroke="#ff4d80"/>
+    <text class="diag-text" x="270" y="64" font-size="9" fill="#ff4d80">rep2</text>
+    <rect class="diag-node" x="290" y="50" width="90" height="44" rx="3" stroke="#ff4d80"/>
+    <text class="diag-text" x="335" y="70" font-size="10" text-anchor="middle">x₂ garbage</text>
+    <text class="diag-text" x="335" y="84" font-size="9" text-anchor="middle" fill="#ff4d80">wrong</text>
+    <path class="diag-edge" d="M380,72 H420" marker-end="url(#ah)" stroke="#ff4d80"/>
+    <text class="diag-text" x="430" y="68" font-size="10" fill="#ff4d80">timing on</text>
+    <text class="diag-text" x="430" y="82" font-size="10" fill="#ff4d80">corrupt data</text>
+    <!-- WITH restore -->
+    <text class="diag-title" x="30" y="160" font-size="13" fill="#9ef01a">WITH restore_value</text>
+    <rect class="diag-node" x="30" y="176" width="90" height="44" rx="3"/>
+    <text class="diag-text" x="75" y="196" font-size="10" text-anchor="middle">x₀ clean</text>
+    <text class="diag-text" x="75" y="210" font-size="9" text-anchor="middle" fill="#9ef01a">snapshot</text>
+    <path class="diag-edge" d="M120,198 H160" marker-end="url(#ahl)" stroke="#9ef01a"/>
+    <text class="diag-text" x="140" y="190" font-size="9" fill="#9ef01a">rep1</text>
+    <rect class="diag-node" x="160" y="176" width="90" height="44" rx="3" stroke="#9ef01a"/>
+    <text class="diag-text" x="205" y="196" font-size="10" text-anchor="middle">x₀ restored</text>
+    <path class="diag-edge" d="M250,198 H290" marker-end="url(#ahl)" stroke="#9ef01a"/>
+    <text class="diag-text" x="270" y="190" font-size="9" fill="#9ef01a">rep2</text>
+    <rect class="diag-node" x="290" y="176" width="90" height="44" rx="3" stroke="#9ef01a"/>
+    <text class="diag-text" x="335" y="196" font-size="10" text-anchor="middle">x₀ restored</text>
+    <path class="diag-edge" d="M380,198 H420" marker-end="url(#ahl)" stroke="#9ef01a"/>
+    <text class="diag-text" x="430" y="194" font-size="10" fill="#9ef01a">every rep sees</text>
+    <text class="diag-text" x="430" y="208" font-size="10" fill="#9ef01a">the same clean x₀</text>
+    <!-- divider -->
+    <line x1="600" y1="40" x2="600" y2="240" stroke="#2c3a26" stroke-width="1" stroke-dasharray="3 3"/>
+    <text class="zone-label" x="630" y="60" font-size="10" fill="#ffb627">WHO NEEDS IT</text>
+    <text class="diag-text" x="630" y="86" font-size="11">fused-add rmsnorm (writes residual)</text>
+    <text class="diag-text" x="630" y="108" font-size="11">in-place accumulate / scatter</text>
+    <text class="diag-text" x="630" y="130" font-size="11">any kernel where output ⊆ input</text>
+    <text class="zone-label" x="630" y="166" font-size="10" fill="#9ef01a">WHO HAS IT</text>
+    <text class="diag-text" x="630" y="192" font-size="11">Triton · quack (inherited)</text>
+    <text class="zone-label" x="630" y="218" font-size="10" fill="#ff4d80">WHO LACKS IT</text>
+    <text class="diag-text" x="630" y="244" font-size="11" fill="#ff4d80">FlyDSL — must add before tuning in-place</text>
+  </svg>
+  <figcaption class="caption" lang="en">The correctness soul of autotune. FlyDSL's port has no equivalent of <code>restore_value</code>, so autotuning any in-place kernel today would select on corrupted reruns. This is a prerequisite, not a nice-to-have — it returns in the FlyDSL guide (§ 11).</figcaption>
+  <figcaption class="caption" lang="zh">autotune 正确性的灵魂。 FlyDSL 的移植没有 <code>restore_value</code> 的对应物, 所以今天 autotune 任何原地 kernel 都会在被污染的重跑上做选择。 这是前提, 不是可选项 —— 它在 FlyDSL guide (§ 11) 会回来。</figcaption>
+</figure>
+</section>
+
+<!-- ============ QUACK ============ -->
+<section id="quack">
+<h2 lang="en"><span class="num">§ 04 · Tri Dao's CuTe-based kernels</span>quack · two-track configs</h2>
+<h2 lang="zh"><span class="num">§ 04 · Tri Dao 的 CuTe 系 kernel</span>quack · 双轨配置</h2>
+
+<p lang="en"><a href="https://github.com/Dao-AILab/quack">quack</a> is Tri Dao's kernel library built on CuteDSL. Its autotuner (<a href="https://github.com/Dao-AILab/quack/blob/main/quack/autotuner.py">quack/autotuner.py</a>, 849 lines) is the most production-hardened of the references, and unlike FlyDSL it is actually adopted — <code>rmsnorm</code> and <code>gemm</code> both wear <code>@autotune(configs=[...])</code>. It takes the Triton design and adds three things worth studying.</p>
+<p lang="zh"><a href="https://github.com/Dao-AILab/quack">quack</a> 是 Tri Dao 基于 CuteDSL 的 kernel 库。 它的 autotuner (<a href="https://github.com/Dao-AILab/quack/blob/main/quack/autotuner.py">quack/autotuner.py</a>, 849 行) 是所有参考里最经得起生产考验的, 而且不像 FlyDSL, 它真的被采用了 —— <code>rmsnorm</code> 和 <code>gemm</code> 都戴着 <code>@autotune(configs=[...])</code>。 它拿过 Triton 的设计, 加了三样值得研究的东西。</p>
+
+<h3 lang="en">Two-track configs — heuristic default <em>and</em> exhaustive search</h3>
+<h3 lang="zh">双轨配置 — 启发式默认 <em>和</em> 穷举搜索</h3>
+<p lang="en">Each kernel has a <code>*_config.py</code> (e.g. <a href="https://github.com/Dao-AILab/quack/blob/main/quack/rmsnorm_config.py">quack/rmsnorm_config.py</a>) that exposes <em>both</em> an analytical <code>get_default(N, dtype, arch)</code> — a hand-tuned heuristic that picks a good-enough config with zero search — and <code>get_all_fwd_configs()</code>, the full exhaustive space. Day-to-day runs take the heuristic; you only pay for the exhaustive search when you explicitly autotune. This is the same idea as Triton's <code>@heuristics</code>, made into a per-kernel convention. It is the cure for FlyDSL's current all-or-nothing.</p>
+<p lang="zh">每个 kernel 有一个 <code>*_config.py</code> (比如 <a href="https://github.com/Dao-AILab/quack/blob/main/quack/rmsnorm_config.py">quack/rmsnorm_config.py</a>), <em>同时</em>暴露一个解析式的 <code>get_default(N, dtype, arch)</code> —— 一个手调的启发式, 零搜索就挑出够好的配置 —— 和 <code>get_all_fwd_configs()</code>, 完整的穷举空间。 日常运行走启发式; 只有你显式 autotune 时才付穷举搜索的成本。 这和 Triton 的 <code>@heuristics</code> 是同一个想法, 做成了 per-kernel 的约定。 它正是 FlyDSL 当前"全有或全无"的解药。</p>
+
+<h3 lang="en">Multi-layer cache with a source fingerprint</h3>
+<h3 lang="zh">带源码指纹的多层缓存</h3>
+<p lang="en">quack's caching doc (<a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">AI/caching_and_parallel_compilation.md</a>) describes four layers: an in-memory dict, an on-disk <code>.o</code> keyed by <code>(qualname, *args)</code>, a <strong>source fingerprint</strong> (SHA-256 of every <code>quack/*.py</code> plus CUTLASS / Python versions — any source change invalidates the cache), and an optional autotune-result cache. The tuning key also normalizes <em>stride</em> to <code>{0, 1, other}</code>, so contiguous and broadcast tensors hit the same entry.</p>
+<p lang="zh">quack 的缓存文档 (<a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">AI/caching_and_parallel_compilation.md</a>) 描述了四层: 内存 dict、 按 <code>(qualname, *args)</code> 索引的磁盘 <code>.o</code>、 一个<strong>源码指纹</strong> (每个 <code>quack/*.py</code> 加 CUTLASS / Python 版本的 SHA-256 —— 任何源码改动都让缓存失效)、 和一个可选的 autotune 结果缓存。 tuning key 还把 <em>stride</em> 规整成 <code>{0, 1, other}</code>, 这样连续和广播张量会命中同一条目。</p>
+
+<h3 lang="en">Parallel precompile — kill the first-run cost</h3>
+<h3 lang="zh">并行预编译 — 干掉首跑成本</h3>
+<p lang="en">The main pain of online autotune is the slow first call. quack's <code>_precompile</code> (<a href="https://github.com/Dao-AILab/quack/blob/main/quack/_compile_worker.py">_compile_worker.py</a>) compiles all candidate configs in a subprocess pool to warm the <code>.o</code> cache before benchmarking, with <code>FileLock</code> for cross-process safety. This is the practical answer to the two-phase-compile idea FlyDSL floated and dropped (<a href="https://github.com/ROCm/FlyDSL/pull/266">#266</a>).</p>
+<p lang="zh">在线 autotune 最大的痛点是首次调用慢。 quack 的 <code>_precompile</code> (<a href="https://github.com/Dao-AILab/quack/blob/main/quack/_compile_worker.py">_compile_worker.py</a>) 用子进程池并行编译所有候选配置、 在 benchmark 之前把 <code>.o</code> 缓存焐热, 用 <code>FileLock</code> 做跨进程安全。 这正是 FlyDSL 提过又放掉的两阶段编译想法 (<a href="https://github.com/ROCm/FlyDSL/pull/266">#266</a>) 的实用答案。</p>
+
+<div class="callout cyan">
+  <span class="ctag" lang="en">Why quack matters most here</span>
+  <span class="ctag" lang="zh">为什么 quack 在这里最重要</span>
+  <p lang="en">quack is the FlyDSL → downstream PoC target (RFC <a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a>). Its autotuner is both the closest design analog (DSL, JIT, Triton-descended) and the most mature. If FlyDSL is to back a quack-style library, matching this shape is the bar.</p>
+  <p lang="zh">quack 是 FlyDSL → 下游的 PoC 目标 (RFC <a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a>)。 它的 autotuner 既是最接近的设计类比 (DSL、 JIT、 Triton 血统), 也是最成熟的。 如果 FlyDSL 要给一个 quack 风格的库当后端, 对齐这个形状就是门槛。</p>
+</div>
+</section>
+
+<!-- ============ CUTEDSL ============ -->
+<section id="cutedsl">
+<h2 lang="en"><span class="num">§ 05 · NVIDIA CUTLASS's Python DSL</span>CuteDSL · <em>autotune_jit</em></h2>
+<h2 lang="zh"><span class="num">§ 05 · NVIDIA CUTLASS 的 Python DSL</span>CuteDSL · <em>autotune_jit</em></h2>
+
+<p lang="en">CuteDSL is the layer quack is built on, so it shows the autotune idea one level lower. Its decorator <code>autotune_jit(params_dict, update_on_change)</code> (<a href="https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/cute/testing.py">cutlass/cute/testing.py</a>) takes the parameter grid directly, then on first call for a tuning key it sweeps the Cartesian product, compiles+benches each, and caches the best kernel in <code>func._best_kernel[tuning_key]</code>.</p>
+<p lang="zh">CuteDSL 是 quack 构建其上的那一层, 所以它把 autotune 的想法展示在更低一层。 它的装饰器 <code>autotune_jit(params_dict, update_on_change)</code> (<a href="https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/cute/testing.py">cutlass/cute/testing.py</a>) 直接接受参数网格, 然后在某个 tuning key 的首次调用时遍历笛卡尔积, 对每个编译+bench, 把最优 kernel 缓存在 <code>func._best_kernel[tuning_key]</code> 里。</p>
+
+<div class="code"><span class="c-com"># NVIDIA/cutlass — CuTeDSL usage (docstring example)</span>
+<span class="c-fn">@autotune_jit</span>(params_dict={<span class="c-str">'param1'</span>: [1, 2, 3], <span class="c-str">'param2'</span>: [4, 5, 6]},
+             update_on_change=[<span class="c-str">'param3'</span>])
+<span class="c-key">def</span> <span class="c-fn">user_function</span>(a, b, c): ...
+user_function(a, b, c)   <span class="c-com"># first call sweeps the grid; later calls pull best from cache</span></div>
+<div class="code-cap" lang="en">Source: <a href="https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/cute/testing.py">cute/testing.py</a> <code>:561</code>; docs <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pythonDSL/cute_dsl_general/autotuning_gemm.rst">autotuning_gemm.rst</a>.</div>
+<div class="code-cap" lang="zh">源码: <a href="https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/cute/testing.py">cute/testing.py</a> <code>:561</code>; 文档 <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pythonDSL/cute_dsl_general/autotuning_gemm.rst">autotuning_gemm.rst</a>。</div>
+
+<p lang="en">Two CuteDSL details transfer directly to FlyDSL. First, the GEMM autotuning doc is explicit that compilation is the cost, so you <code>cute.compile()</code> once per config and reuse the JIT executor — exactly FlyDSL's <code>build_*_module</code> situation, where the build is the expensive step. Second, the implicit JIT cache (<a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pythonDSL/cute_dsl_general/dsl_jit_caching.rst">dsl_jit_caching.rst</a>) keys on a hash of the source <em>plus all DSL environment variables</em> — the same "env is part of the key" lesson Triton encodes — and <code>CUTE_DSL_LOG_AUTOTUNE</code> makes the search observable.</p>
+<p lang="zh">两个 CuteDSL 细节可以直接搬到 FlyDSL。 第一, GEMM autotuning 文档明确说编译才是成本所在, 所以每个配置 <code>cute.compile()</code> 一次、 复用 JIT executor —— 这正是 FlyDSL 的 <code>build_*_module</code> 处境, build 是那个昂贵的步骤。 第二, 隐式 JIT 缓存 (<a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pythonDSL/cute_dsl_general/dsl_jit_caching.rst">dsl_jit_caching.rst</a>) 的 key 是源码<em>加上所有 DSL 环境变量</em>的哈希 —— 和 Triton 编码的"env 是 key 的一部分"是同一课 —— 而 <code>CUTE_DSL_LOG_AUTOTUNE</code> 让搜索过程可观测。</p>
+</section>
+
+<!-- ============ AITER ============ -->
+<section id="aiter">
+<h2 lang="en"><span class="num">§ 06 · AMD's kernel library</span>aiter · offline CSV</h2>
+<h2 lang="zh"><span class="num">§ 06 · AMD 的 kernel 库</span>aiter · 离线 CSV</h2>
+
+<p lang="en"><a href="https://github.com/ROCm/aiter">aiter</a> is the opposite paradigm from the JIT autotuners: tuning is <strong>offline and checked in</strong>. A tuner reads an untuned shape list (<code>aiter/configs/*_untuned_gemm.csv</code>), sweeps configs for each shape, and writes the winners to <code>*_tuned_gemm.csv</code> committed to the repo; per-model variants live under <code>aiter/configs/model_configs/</code>. At serving time there is no search — the kernel reads its config from the CSV. A CI guard, <a href="https://github.com/ROCm/aiter/blob/main/.github/scripts/check_tuned_op_regression.sh">check_tuned_op_regression.sh</a>, keeps the committed configs from regressing.</p>
+<p lang="zh"><a href="https://github.com/ROCm/aiter">aiter</a> 是和 JIT autotuner 相反的范式: tuning 是<strong>离线的、 入库的</strong>。 一个 tuner 读取未 tune 的形状列表 (<code>aiter/configs/*_untuned_gemm.csv</code>), 为每个形状扫配置, 把赢家写进提交到仓库的 <code>*_tuned_gemm.csv</code>; per-model 变体放在 <code>aiter/configs/model_configs/</code>。 服务时没有搜索 —— kernel 从 CSV 读它的配置。 一个 CI 守卫 <a href="https://github.com/ROCm/aiter/blob/main/.github/scripts/check_tuned_op_regression.sh">check_tuned_op_regression.sh</a> 防止入库的配置退化。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">aiter already speaks FlyDSL</span>
+  <span class="ctag" lang="zh">aiter 已经会说 FlyDSL</span>
+  <p lang="en">aiter ships a FlyDSL-backed tuning path at <code>aiter/ops/flydsl/gemm_tune/</code> (e.g. <code>gemm_a16w16_tune.py</code> imports flydsl). So the question "how does an external lib expect to tune a FlyDSL kernel?" already has a partial answer in tree — and it is the offline-CSV shape. This ties directly to RFC <a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a>.</p>
+  <p lang="zh">aiter 自带一条 FlyDSL 后端的 tuning 路径, 在 <code>aiter/ops/flydsl/gemm_tune/</code> (比如 <code>gemm_a16w16_tune.py</code> 就 import 了 flydsl)。 所以"外部库期待怎么 tune 一个 FlyDSL kernel?"这个问题在代码里已经有了部分答案 —— 而且是离线 CSV 的形状。 这直接关联到 RFC <a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a>。</p>
+</div>
+</section>
+
+<!-- ============ ONLINE VS OFFLINE + PLATE III ============ -->
+<section id="online-offline">
+<h2 lang="en"><span class="num">§ 07 · Two timelines</span>Online vs offline</h2>
+<h2 lang="zh"><span class="num">§ 07 · 两条时间线</span>在线 vs 离线</h2>
+
+<p lang="en">The JIT autotuners (Triton, quack, CuteDSL, FlyDSL) tune <em>online</em> — at the first call for a shape, in the user's process. aiter and SGLang tune <em>offline</em> — ahead of time, results committed, looked up at serving. Neither is strictly better; they answer different constraints. Online covers any shape that shows up, including ones nobody enumerated, and is friendly to iteration; it pays a slow first call. Offline pays nothing at serving and is reproducible and CI-gateable; but it only covers shapes someone tuned in advance, and every new GPU or kernel change means re-running the offline sweep.</p>
+<p lang="zh">JIT autotuner (Triton、 quack、 CuteDSL、 FlyDSL) <em>在线</em> tune —— 在某个形状首次调用时、 在用户进程里。 aiter 和 SGLang <em>离线</em> tune —— 提前算好、 结果入库、 服务时查表。 没有谁绝对更好; 它们回答不同的约束。 在线覆盖任何冒出来的形状, 包括没人枚举过的, 且对迭代友好; 代价是首次调用慢。 离线服务时零成本、 可复现、 可进 CI; 但它只覆盖有人提前 tune 过的形状, 而且每块新 GPU 或每次 kernel 改动都意味着要重跑离线 sweep。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">III</span> · online vs offline timelines</span><span lang="zh">图 <span class="pn">III</span> · 在线 vs 离线 时间线</span><span>cost moves in time</span></div>
+  <svg viewBox="0 0 1000 260" role="img" aria-label="Online vs offline timelines">
+    <!-- ONLINE -->
+    <text class="diag-title" x="30" y="34" font-size="13" fill="#9ef01a">ONLINE (JIT) — Triton · quack · CuteDSL · FlyDSL</text>
+    <line x1="30" y1="80" x2="800" y2="80" stroke="#67735a" stroke-width="1"/>
+    <text class="diag-text" x="30" y="100" font-size="9" fill="#67735a">dev time</text>
+    <text class="diag-text" x="760" y="100" font-size="9" fill="#67735a">serving</text>
+    <circle cx="430" cy="80" r="6" fill="#ff4d80"/>
+    <text class="diag-text" x="430" y="64" font-size="10" text-anchor="middle" fill="#ff4d80">first call:</text>
+    <text class="diag-text" x="430" y="116" font-size="10" text-anchor="middle" fill="#ff4d80">full search (slow)</text>
+    <circle cx="540" cy="80" r="4" fill="#9ef01a"/><circle cx="620" cy="80" r="4" fill="#9ef01a"/><circle cx="700" cy="80" r="4" fill="#9ef01a"/>
+    <text class="diag-text" x="620" y="64" font-size="9.5" text-anchor="middle" fill="#9ef01a">cached: ~0</text>
+    <text class="diag-text" x="820" y="84" font-size="9.5" fill="#9ef01a">+ any shape</text>
+    <!-- OFFLINE -->
+    <text class="diag-title" x="30" y="166" font-size="13" fill="#ffb627">OFFLINE (CSV/JSON) — aiter · SGLang</text>
+    <line x1="30" y1="212" x2="800" y2="212" stroke="#67735a" stroke-width="1"/>
+    <text class="diag-text" x="30" y="232" font-size="9" fill="#67735a">CI / pre-release</text>
+    <text class="diag-text" x="760" y="232" font-size="9" fill="#67735a">serving</text>
+    <rect x="120" y="196" width="120" height="32" rx="3" fill="rgba(255,182,39,0.12)" stroke="#ffb627"/>
+    <text class="diag-text" x="180" y="216" font-size="9.5" text-anchor="middle" fill="#ffb627">sweep + commit</text>
+    <circle cx="540" cy="212" r="4" fill="#9ef01a"/><circle cx="620" cy="212" r="4" fill="#9ef01a"/><circle cx="700" cy="212" r="4" fill="#9ef01a"/>
+    <text class="diag-text" x="620" y="198" font-size="9.5" text-anchor="middle" fill="#9ef01a">lookup: ~0</text>
+    <text class="diag-text" x="820" y="216" font-size="9.5" fill="#ff4d80">only known shapes</text>
+  </svg>
+  <figcaption class="caption" lang="en">Same loop, different time. Online pays the search at the first serving call; offline moves it to CI. The synthesis FlyDSL wants is both: a heuristic default for zero-cost normal runs, online tuning for the long tail, and an offline artifact for production + CI.</figcaption>
+  <figcaption class="caption" lang="zh">同一个循环, 不同时间。 在线把搜索付在首次服务调用上; 离线把它挪到 CI。 FlyDSL 想要的综合是两者兼有: 启发式默认给零成本的日常运行、 在线 tuning 给长尾、 离线产物给生产 + CI。</figcaption>
+</figure>
+</section>
+
+<!-- ============ SGLANG ============ -->
+<section id="sglang">
+<h2 lang="en"><span class="num">§ 08 · How an engine consumes tuned configs</span>SGLang · the consumer</h2>
+<h2 lang="zh"><span class="num">§ 08 · 引擎怎么消费已 tune 的配置</span>SGLang · 消费者</h2>
+
+<p lang="en">SGLang answers a different question from the others. It is not a kernel DSL and does not write an autotuner; it is an inference engine that <em>consumes</em> tuned configs. It is on this map because it is a real downstream FlyDSL consumer, and it shows exactly what the offline artifact should look like at scale — which is a direct design input for FlyDSL.</p>
+<p lang="zh">SGLang 回答的是和别人不同的问题。 它不是 kernel DSL, 也不写 autotuner; 它是一个<em>消费</em>已 tune 配置的推理引擎。 它在这张图上, 是因为它是 FlyDSL 真实的下游消费者, 而且它精确地展示了离线产物在规模上应该长什么样 —— 这对 FlyDSL 是直接的设计输入。</p>
+
+<p lang="en">SGLang's fused-MoE configs are committed JSON whose <em>filename</em> is the lookup key: <code>E=8,N=14336,device_name=NVIDIA_A100-SXM4-80GB,dtype=int8_w8a16.json</code>, under a triton-version directory, with AMD <code>gfx950</code> variants alongside the NVIDIA ones. At runtime <code>get_moe_configs</code> (<a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/layers/moe/moe_runner/triton_utils/fused_moe_triton_config.py">fused_moe_triton_config.py</a>) looks up by device + shape; on a miss it falls back to <code>get_default_config</code> — the heuristic-default idea again, this time as the safety net for an unseen shape.</p>
+<p lang="zh">SGLang 的 fused-MoE 配置是入库的 JSON, <em>文件名</em>就是查找 key: <code>E=8,N=14336,device_name=NVIDIA_A100-SXM4-80GB,dtype=int8_w8a16.json</code>, 放在按 triton 版本分的目录下, NVIDIA 的旁边就是 AMD <code>gfx950</code> 变体。 运行时 <code>get_moe_configs</code> (<a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/layers/moe/moe_runner/triton_utils/fused_moe_triton_config.py">fused_moe_triton_config.py</a>) 按设备 + 形状查; miss 时 fallback 到 <code>get_default_config</code> —— 又是启发式默认的想法, 这次是给没见过的形状当安全网。</p>
+
+<div class="callout cyan">
+  <span class="ctag" lang="en">The lesson FlyDSL takes</span>
+  <span class="ctag" lang="zh">FlyDSL 要取的一课</span>
+  <p lang="en">If FlyDSL kernels are to be tuned-and-consumed by an engine, the tuned-config artifact should be keyed by <em>device + shape + dtype</em>, discoverable as a file, and paired with a heuristic default for misses. SGLang shows the exact contract a downstream expects — the offline half of FlyDSL's design should target it.</p>
+  <p lang="zh">如果 FlyDSL 的 kernel 要被一个引擎 tune-then-consume, 那么 tuned-config 产物应该按 <em>设备 + 形状 + dtype</em> 建 key、 可以作为文件被发现、 并配一个启发式默认兜底 miss。 SGLang 展示了下游期待的确切契约 —— FlyDSL 设计的离线那一半应该瞄准它。</p>
+</div>
+
+<h3 lang="en">Training vs inference — the cost tolerance differs</h3>
+<h3 lang="zh">训练 vs 推理 — 成本容忍度不同</h3>
+<p lang="en">One nuance the consumer side reveals: training and inference tolerate first-run cost differently. A training run is long; a one-time online autotune at startup amortizes over millions of steps, so JIT tuning is fine. Inference serving is latency-sensitive and elastic; a slow first request per new shape is a visible regression, which is why engines like SGLang lean on committed offline configs with a default fallback. FlyDSL's design should let the <em>same</em> kernel be tuned online during a training/dev session and shipped as an offline config for inference.</p>
+<p lang="zh">消费侧揭示的一个微妙点: 训练和推理对首跑成本的容忍度不同。 训练跑得久; 启动时一次性的在线 autotune 会摊薄到几百万步上, 所以 JIT tuning 没问题。 推理服务对延迟敏感且弹性伸缩; 每个新形状的首个请求慢就是看得见的退化, 这正是 SGLang 这类引擎倚重入库的离线配置 + 默认兜底的原因。 FlyDSL 的设计应该让<em>同一个</em> kernel 既能在训练/开发 session 里在线 tune, 又能作为离线配置发给推理。</p>
+</section>
+
+<!-- ============ CACHE KEY ANATOMY + PLATE IV ============ -->
+<section id="cachekey">
+<h2 lang="en"><span class="num">§ 09 · What goes in the key</span>Cache-key anatomy</h2>
+<h2 lang="zh"><span class="num">§ 09 · key 里到底放什么</span>cache key 解剖</h2>
+
+<p lang="en">A cache key is a contract: "two calls with the same key may reuse the same tuned config." Get it too narrow and you reuse a stale or wrong config; too wide and you never hit the cache. Every reference's key is a different answer to "what, if it changed, should force a re-tune?" — and FlyDSL's current key answers the least.</p>
+<p lang="zh">cache key 是一份契约: "两个 key 相同的调用可以复用同一份 tuned 配置。" 太窄, 你会复用过期或错误的配置; 太宽, 你永远命不中缓存。 每个参考的 key 都是对"什么东西一改就该强制重 tune?"的不同回答 —— 而 FlyDSL 当前的 key 回答得最少。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">IV</span> · cache-key anatomy across references</span><span lang="zh">图 <span class="pn">IV</span> · 各参考的 cache-key 解剖</span><span>invalidation axes</span></div>
+  <svg viewBox="0 0 1000 290" role="img" aria-label="Cache key anatomy">
+    <!-- column headers -->
+    <text class="diag-title" x="250" y="28" font-size="11" text-anchor="middle">shape/dtype</text>
+    <text class="diag-title" x="370" y="28" font-size="11" text-anchor="middle">stride</text>
+    <text class="diag-title" x="480" y="28" font-size="11" text-anchor="middle">arch/target</text>
+    <text class="diag-title" x="610" y="28" font-size="11" text-anchor="middle">src fingerprint</text>
+    <text class="diag-title" x="740" y="28" font-size="11" text-anchor="middle">compiler ver</text>
+    <text class="diag-title" x="860" y="28" font-size="11" text-anchor="middle">env vars</text>
+    <line x1="120" y1="38" x2="920" y2="38" stroke="#2c3a26"/>
+    <!-- rows -->
+    <!-- Triton -->
+    <text class="diag-text" x="20" y="66" font-size="11" fill="#9ef01a">Triton</text>
+    <circle cx="250" cy="62" r="6" fill="#9ef01a"/><circle cx="370" cy="62" r="6" fill="#67735a"/><circle cx="480" cy="62" r="6" fill="#9ef01a"/><circle cx="610" cy="62" r="6" fill="#9ef01a"/><circle cx="740" cy="62" r="6" fill="#9ef01a"/><circle cx="860" cy="62" r="6" fill="#9ef01a"/>
+    <!-- quack -->
+    <text class="diag-text" x="20" y="104" font-size="11" fill="#9ef01a">quack</text>
+    <circle cx="250" cy="100" r="6" fill="#9ef01a"/><circle cx="370" cy="100" r="6" fill="#9ef01a"/><circle cx="480" cy="100" r="6" fill="#9ef01a"/><circle cx="610" cy="100" r="6" fill="#9ef01a"/><circle cx="740" cy="100" r="6" fill="#9ef01a"/><circle cx="860" cy="100" r="6" fill="#67735a"/>
+    <!-- CuteDSL -->
+    <text class="diag-text" x="20" y="142" font-size="11" fill="#9ef01a">CuteDSL</text>
+    <circle cx="250" cy="138" r="6" fill="#9ef01a"/><circle cx="370" cy="138" r="6" fill="#67735a"/><circle cx="480" cy="138" r="6" fill="#9ef01a"/><circle cx="610" cy="138" r="6" fill="#9ef01a"/><circle cx="740" cy="138" r="6" fill="#9ef01a"/><circle cx="860" cy="138" r="6" fill="#9ef01a"/>
+    <!-- aiter/SGLang -->
+    <text class="diag-text" x="20" y="180" font-size="11" fill="#ffb627">aiter/SGLang</text>
+    <circle cx="250" cy="176" r="6" fill="#9ef01a"/><circle cx="370" cy="176" r="6" fill="#67735a"/><circle cx="480" cy="176" r="6" fill="#9ef01a"/><circle cx="610" cy="176" r="6" fill="#67735a"/><circle cx="740" cy="176" r="6" fill="#ffb627"/><circle cx="860" cy="176" r="6" fill="#67735a"/>
+    <text class="diag-text" x="905" y="180" font-size="8.5" fill="#67735a">(in dir/filename)</text>
+    <!-- FlyDSL now -->
+    <text class="diag-text" x="20" y="218" font-size="11" fill="#ff4d80">FlyDSL now</text>
+    <circle cx="250" cy="214" r="6" fill="#9ef01a"/><circle cx="370" cy="214" r="6" fill="#67735a"/><circle cx="480" cy="214" r="6" fill="#67735a"/><circle cx="610" cy="214" r="6" fill="#67735a"/><circle cx="740" cy="214" r="6" fill="#67735a"/><circle cx="860" cy="214" r="6" fill="#67735a"/>
+    <!-- FlyDSL target -->
+    <text class="diag-text" x="20" y="256" font-size="11" fill="#9ef01a">FlyDSL target</text>
+    <circle cx="250" cy="252" r="6" fill="#9ef01a"/><circle cx="370" cy="252" r="6" fill="#9ef01a"/><circle cx="480" cy="252" r="6" fill="#9ef01a"/><circle cx="610" cy="252" r="6" fill="#9ef01a"/><circle cx="740" cy="252" r="6" fill="#9ef01a"/><circle cx="860" cy="252" r="6" fill="#9ef01a"/>
+    <line x1="120" y1="234" x2="920" y2="234" stroke="#2c3a26" stroke-dasharray="2 2"/>
+    <!-- legend -->
+    <circle cx="150" cy="278" r="5" fill="#9ef01a"/><text class="diag-text" x="162" y="282" font-size="9">in key</text>
+    <circle cx="250" cy="278" r="5" fill="#67735a"/><text class="diag-text" x="262" y="282" font-size="9">absent</text>
+  </svg>
+  <figcaption class="caption" lang="en">Each dot is an invalidation axis present in that reference's cache key. FlyDSL today (<span style="color:var(--magenta)">red row</span>) keys on shape/dtype only — change the kernel source, the compiler, or the GPU and it can silently serve a stale config. The target row matches Triton/quack.</figcaption>
+  <figcaption class="caption" lang="zh">每个点是该参考 cache key 里存在的一个失效维度。 FlyDSL 今天 (<span style="color:var(--magenta)">红行</span>) 只按 shape/dtype 建 key —— 改了 kernel 源码、 编译器、 或 GPU, 它都可能静默地用一份过期配置。 target 行对齐 Triton/quack。</figcaption>
+</figure>
+</section>
+
+<!-- ============ FLYDSL DESIGN + PLATE V ============ -->
+<section id="flydsl">
+<h2 lang="en"><span class="num">§ 10 · The destination</span>Designing FlyDSL's autotune</h2>
+<h2 lang="zh"><span class="num">§ 10 · 终点</span>设计 FlyDSL 的 autotune</h2>
+
+<p lang="en">FlyDSL already has an autotuner — <a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">python/flydsl/autotune.py</a>, 296 lines: a <code>Config</code> (constexpr params + <code>waves_per_eu</code> / <code>maxnreg</code> hints), an <code>Autotuner</code> (benchmark, pick fastest, disk cache under <code>FLYDSL_AUTOTUNE_CACHE_DIR</code>), a <code>_make_key</code>, a <code>_prune</code>, and a public <code>@autotune</code>. The problem is not that it is missing; it is that <strong>no kernel uses it</strong> — a repo-wide search finds only the definition and docs, no adoption, no tests. It is well-built dead code. Reading it against the five references above, here is the gap and the target design.</p>
+<p lang="zh">FlyDSL 已经有一个 autotuner —— <a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">python/flydsl/autotune.py</a>, 296 行: 一个 <code>Config</code> (constexpr 参数 + <code>waves_per_eu</code> / <code>maxnreg</code> hint)、 一个 <code>Autotuner</code> (benchmark、 挑最快、 在 <code>FLYDSL_AUTOTUNE_CACHE_DIR</code> 下磁盘缓存)、 一个 <code>_make_key</code>、 一个 <code>_prune</code>、 和一个公开的 <code>@autotune</code>。 问题不是它缺失; 而是<strong>没有 kernel 用它</strong> —— 全仓搜索只找到定义和文档, 没有采用、 没有测试。 它是构建良好的死代码。 把它对着上面五个参考读, 下面是差距和目标设计。</p>
+
+<div class="tbl-wrap">
+<table class="tbl">
+  <thead><tr>
+    <th lang="en">Capability</th><th lang="zh">能力</th>
+    <th lang="en">FlyDSL today</th><th lang="zh">FlyDSL 今天</th>
+    <th lang="en">Target (from refs)</th><th lang="zh">目标 (取自参考)</th>
+  </tr></thead>
+  <tbody>
+    <tr><td lang="en">Adoption</td><td lang="zh">采用</td><td class="no">none</td><td class="yes">1 kernel + offline config</td></tr>
+    <tr><td lang="en">Avoid-search path</td><td lang="zh">免搜路径</td><td class="no">none</td><td class="yes">heuristic default (quack / Triton @heuristics)</td></tr>
+    <tr><td lang="en">In-place correctness</td><td lang="zh">原地正确性</td><td class="mid">reset_to_zero only</td><td class="yes">+ restore_value snapshot (Triton)</td></tr>
+    <tr><td lang="en">Cache key</td><td lang="zh">cache key</td><td class="no">shape/dtype only</td><td class="yes">+ arch + src fingerprint + compiler + env + stride</td></tr>
+    <tr><td lang="en">Offline artifact</td><td lang="zh">离线产物</td><td class="no">none</td><td class="yes">device+shape config file (SGLang-style)</td></tr>
+    <tr><td lang="en">Parallel precompile</td><td lang="zh">并行预编译</td><td class="no">none</td><td class="mid">subprocess pool (quack, optional)</td></tr>
+    <tr><td lang="en">CI guard</td><td lang="zh">CI 守卫</td><td class="no">none</td><td class="yes">GPU-free unit + regression gate (aiter)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">V</span> · proposed FlyDSL autotune architecture</span><span lang="zh">图 <span class="pn">V</span> · FlyDSL autotune 架构提案</span><span>two-track + online/offline</span></div>
+  <svg viewBox="0 0 1000 320" role="img" aria-label="Proposed FlyDSL autotune architecture">
+    <!-- call -->
+    <rect class="diag-node" x="20" y="140" width="110" height="50" rx="3"/>
+    <text class="diag-title" x="75" y="162" font-size="12" text-anchor="middle">kernel call</text>
+    <text class="diag-text" x="75" y="178" font-size="9" text-anchor="middle">shape · dtype</text>
+    <!-- mode switch -->
+    <path class="diag-node" d="M195,165 L240,135 L285,165 L240,195 z" stroke="#ffb627"/>
+    <text class="diag-text" x="240" y="162" font-size="9" text-anchor="middle" fill="#ffb627">tune</text>
+    <text class="diag-text" x="240" y="174" font-size="9" text-anchor="middle" fill="#ffb627">mode?</text>
+    <path class="diag-edge" d="M130,165 H195" marker-end="url(#ah)"/>
+    <!-- track 1: heuristic default -->
+    <path class="diag-edge" d="M240,135 V70 H360" marker-end="url(#ahl)" stroke="#9ef01a"/>
+    <text class="diag-text" x="300" y="62" font-size="9" fill="#9ef01a">default</text>
+    <rect class="diag-node" x="360" y="46" width="150" height="48" rx="3" stroke="#9ef01a"/>
+    <text class="diag-title" x="435" y="66" font-size="11" text-anchor="middle">get_default()</text>
+    <text class="diag-text" x="435" y="82" font-size="9" text-anchor="middle">analytic · zero search</text>
+    <!-- track 2: offline lookup -->
+    <path class="diag-edge" d="M285,165 H360" marker-end="url(#ah)" stroke="#ffb627"/>
+    <text class="diag-text" x="322" y="158" font-size="9" fill="#ffb627">offline</text>
+    <rect class="diag-node" x="360" y="141" width="150" height="48" rx="3" stroke="#ffb627"/>
+    <text class="diag-title" x="435" y="161" font-size="11" text-anchor="middle">config file lookup</text>
+    <text class="diag-text" x="435" y="177" font-size="9" text-anchor="middle">device+shape · miss→default</text>
+    <!-- track 3: online search -->
+    <path class="diag-edge" d="M240,195 V260 H360" marker-end="url(#ah)" stroke="#ff4d80"/>
+    <text class="diag-text" x="300" y="252" font-size="9" fill="#ff4d80">online</text>
+    <rect class="diag-node" x="360" y="236" width="150" height="58" rx="3" stroke="#ff4d80"/>
+    <text class="diag-title" x="435" y="256" font-size="11" text-anchor="middle">search + restore</text>
+    <text class="diag-text" x="435" y="271" font-size="9" text-anchor="middle">prune→precompile→bench</text>
+    <text class="diag-text" x="435" y="284" font-size="9" text-anchor="middle" fill="#ff4d80">restore_value each rep</text>
+    <!-- cache -->
+    <rect class="diag-node" x="580" y="141" width="120" height="48" rx="3" stroke="#3fd6d0"/>
+    <text class="diag-title" x="640" y="161" font-size="11" text-anchor="middle">cache</text>
+    <text class="diag-text" x="640" y="177" font-size="8.5" text-anchor="middle">full key (Plate IV)</text>
+    <path class="diag-edge" d="M510,70 H640 V141" marker-end="url(#ah)" stroke="#3fd6d0"/>
+    <path class="diag-edge" d="M510,165 H580" marker-end="url(#ah)" stroke="#3fd6d0"/>
+    <path class="diag-edge" d="M510,265 H640 V189" marker-end="url(#ah)" stroke="#3fd6d0"/>
+    <!-- launch -->
+    <rect class="diag-node" x="770" y="141" width="130" height="48" rx="3"/>
+    <text class="diag-title" x="835" y="161" font-size="11" text-anchor="middle">launch_*()</text>
+    <text class="diag-text" x="835" y="177" font-size="9" text-anchor="middle">best config</text>
+    <path class="diag-edge" d="M700,165 H770" marker-end="url(#ah)"/>
+    <!-- offline emit -->
+    <rect class="zone-box" x="580" y="232" width="320" height="66"/>
+    <text class="zone-label" x="592" y="252" font-size="9" fill="#ffb627">OFFLINE EMIT (CI / pre-release)</text>
+    <text class="diag-text" x="592" y="270" font-size="9.5">online search → write device+shape config file</text>
+    <text class="diag-text" x="592" y="286" font-size="9.5">commit · regression-gate in CI · consumed by SGLang/aiter</text>
+  </svg>
+  <figcaption class="caption" lang="en">Three tracks off one switch: <span style="color:var(--lime)">heuristic default</span> (zero-cost normal runs), <span style="color:var(--amber)">offline lookup</span> (production/serving), <span style="color:var(--magenta)">online search</span> (dev/long-tail, with restore). All write one cache keyed by the full Plate-IV key; the online search can emit the offline config file. This unifies every paradigm above onto FlyDSL's <code>build_*_module</code> / <code>launch_*</code> structure.</figcaption>
+  <figcaption class="caption" lang="zh">一个开关引出三条轨: <span style="color:var(--lime)">启发式默认</span> (零成本日常运行)、 <span style="color:var(--amber)">离线查表</span> (生产/服务)、 <span style="color:var(--magenta)">在线搜索</span> (开发/长尾, 带 restore)。 三者都写同一个按图 IV 完整 key 索引的缓存; 在线搜索可以产出离线配置文件。 这把上面每种范式统一到 FlyDSL 的 <code>build_*_module</code> / <code>launch_*</code> 结构上。</figcaption>
+</figure>
+</section>
+
+<!-- ============ IMPLEMENTATION GUIDE + PLATE VI ============ -->
+<section id="guide">
+<h2 lang="en"><span class="num">§ 11 · A concrete path</span>Implementation guide</h2>
+<h2 lang="zh"><span class="num">§ 11 · 一条具体路径</span>实现 guide</h2>
+
+<p lang="en">Sequencing matters: each step is shippable on its own and de-risks the next. Below is the order I would take FlyDSL's autotune from dead code to adopted, mapped to the deliverables in <a href="https://github.com/ROCm/FlyDSL/issues/770">#770</a>.</p>
+<p lang="zh">顺序很重要: 每一步都能单独上线, 并为下一步降风险。 下面是我会采取的顺序, 把 FlyDSL 的 autotune 从死代码带到被采用, 对应 <a href="https://github.com/ROCm/FlyDSL/issues/770">#770</a> 里的交付物。</p>
+
+<h4 lang="en">Step 1 · Harden the key, add restore_value</h4>
+<h4 lang="zh">第 1 步 · 加固 key, 加上 restore_value</h4>
+<p lang="en">Before any kernel adopts autotune, fix the two correctness gaps. Extend <code>_make_key</code> (currently shape/dtype only, <a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">autotune.py:139</a>) with arch, a source fingerprint, the compiler/version, and cache-invalidating env — the Plate-IV target. And add <code>restore_value</code> alongside the existing <code>reset_to_zero</code> (<code>:163</code>): snapshot listed tensors before the bench loop, restore after each rep. Without this, autotuning fused-add rmsnorm is incorrect.</p>
+<p lang="zh">在任何 kernel 采用 autotune 之前, 先修两个正确性缺口。 扩展 <code>_make_key</code> (当前只有 shape/dtype, <a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">autotune.py:139</a>), 加上 arch、 源码指纹、 编译器/版本、 失效性 env —— 即图 IV 的目标。 并在已有的 <code>reset_to_zero</code> (<code>:163</code>) 之外加上 <code>restore_value</code>: 在 bench 循环前存档指定张量, 每遍之后还原。 没有这个, autotune fused-add rmsnorm 就是错的。</p>
+
+<h4 lang="en">Step 2 · Two-track config for one kernel</h4>
+<h4 lang="zh">第 2 步 · 给一个 kernel 做双轨配置</h4>
+<p lang="en">Pick one kernel — softmax or rmsnorm, small bounded space, good for validating the path. Give it a <code>get_default(N, dtype, arch)</code> heuristic and a <code>get_all_configs()</code> exhaustive space, quack-style. Normal callers get the heuristic for free; autotune is opt-in.</p>
+<p lang="zh">挑一个 kernel —— softmax 或 rmsnorm, 空间小而有界, 适合验证路径。 给它一个 <code>get_default(N, dtype, arch)</code> 启发式和一个 <code>get_all_configs()</code> 穷举空间, quack 风格。 普通调用者免费拿启发式; autotune 是 opt-in。</p>
+
+<div class="code"><span class="c-com"># proposed: kernels/softmax_config.py (quack-style two-track)</span>
+<span class="c-key">def</span> <span class="c-fn">get_default</span>(N, dtype, arch):
+    <span class="c-com"># analytic heuristic — zero search, the common path</span>
+    block = 1 << (N - 1).bit_length()
+    <span class="c-key">return</span> Config(BLOCK_N=min(block, 1024),
+                  waves_per_eu=2 <span class="c-key">if</span> dtype == <span class="c-str">"f32"</span> <span class="c-key">else</span> 4)
+
+<span class="c-key">def</span> <span class="c-fn">get_all_configs</span>(N, dtype, arch):
+    <span class="c-com"># exhaustive space — only walked when explicitly autotuning</span>
+    <span class="c-key">return</span> [Config(BLOCK_N=b, waves_per_eu=w)
+            <span class="c-key">for</span> b <span class="c-key">in</span> (256, 512, 1024) <span class="c-key">for</span> w <span class="c-key">in</span> (1, 2, 4)]
+
+<span class="c-fn">@autotune</span>(configs=<span class="c-key">lambda</span> a: get_all_configs(a.N, a.dtype, a.arch),
+           key=[<span class="c-str">"N"</span>, <span class="c-str">"dtype"</span>], restore_value=[<span class="c-str">"Output"</span>],
+           default=get_default)        <span class="c-com"># falls back to heuristic when not tuning</span>
+<span class="c-key">def</span> <span class="c-fn">launch_softmax</span>(A, C, m_in, stream=...): ...
+</div>
+<div class="code-cap" lang="en">Sketch grounded in the real <code>launch_softmax</code> signature (<a href="https://github.com/ROCm/FlyDSL/blob/main/kernels/softmax_kernel.py">kernels/softmax_kernel.py:244</a>) and the existing <code>@autotune</code> (<a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">autotune.py:262</a>). The <code>default=</code> and <code>restore_value=</code> args are the proposed additions.</div>
+<div class="code-cap" lang="zh">草图基于真实的 <code>launch_softmax</code> 签名 (<a href="https://github.com/ROCm/FlyDSL/blob/main/kernels/softmax_kernel.py">kernels/softmax_kernel.py:244</a>) 和已有的 <code>@autotune</code> (<a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">autotune.py:262</a>)。 <code>default=</code> 和 <code>restore_value=</code> 是提议新增的参数。</div>
+
+<h4 lang="en">Step 3 · Offline emit + lookup (SGLang-style)</h4>
+<h4 lang="zh">第 3 步 · 离线产出 + 查表 (SGLang 风格)</h4>
+<p lang="en">Add a mode where the online search, instead of only caching in-process, writes a config file keyed by device + shape + dtype — the SGLang contract. A serving run with tuning off looks that file up and falls back to <code>get_default</code> on a miss. This is what lets aiter's <code>ops/flydsl/gemm_tune/</code> and SGLang consume FlyDSL kernels without paying search at serving.</p>
+<p lang="zh">加一个模式: 在线搜索不只在进程内缓存, 而是写一个按 设备 + 形状 + dtype 建 key 的配置文件 —— 即 SGLang 契约。 一个关掉 tuning 的服务运行查这个文件、 miss 时 fallback 到 <code>get_default</code>。 这正是让 aiter 的 <code>ops/flydsl/gemm_tune/</code> 和 SGLang 能消费 FlyDSL kernel、 且服务时不付搜索成本的东西。</p>
+
+<h4 lang="en">Step 4 · CI guard, GPU-free first</h4>
+<h4 lang="zh">第 4 步 · CI 守卫, 先做无 GPU 的</h4>
+<p lang="en">Add GPU-free unit tests for <code>Config</code> serialization, cache-key construction, and pruning (these need no hardware and catch most regressions), then an opt-in GPU integration test, then a tuned-config regression gate modeled on aiter's <code>check_tuned_op_regression.sh</code>. Tuning must be opt-in via env/marker so normal CI never pays the search.</p>
+<p lang="zh">加无 GPU 的单元测试覆盖 <code>Config</code> 序列化、 cache-key 构造、 剪枝 (这些不需要硬件, 能抓住大部分回归), 然后一个 opt-in 的 GPU 集成测试, 然后一个仿 aiter <code>check_tuned_op_regression.sh</code> 的 tuned-config 回归门。 tuning 必须通过 env/marker opt-in, 这样正常 CI 永远不付搜索成本。</p>
+
+<h4 lang="en">Step 5 · (optional) parallel precompile</h4>
+<h4 lang="zh">第 5 步 · (可选) 并行预编译</h4>
+<p lang="en">If the online search proves too slow on real spaces, add quack-style subprocess precompile to warm the build cache for all candidates before benchmarking — the practical revival of the two-phase-compile idea from <a href="https://github.com/ROCm/FlyDSL/pull/266">#266</a>.</p>
+<p lang="zh">如果在线搜索在真实空间上太慢, 加 quack 风格的子进程预编译, 在 benchmark 前为所有候选焐热 build 缓存 —— 即 <a href="https://github.com/ROCm/FlyDSL/pull/266">#266</a> 两阶段编译想法的实用复活。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">VI</span> · the five steps, sequenced</span><span lang="zh">图 <span class="pn">VI</span> · 五步, 排好序</span><span>each shippable alone</span></div>
+  <svg viewBox="0 0 1000 180" role="img" aria-label="Five implementation steps sequenced">
+    <line x1="40" y1="90" x2="940" y2="90" stroke="#2c3a26" stroke-width="2"/>
+    <circle cx="110" cy="90" r="9" fill="#9ef01a"/><text class="diag-title" x="110" y="55" font-size="11" text-anchor="middle">1</text>
+    <text class="diag-text" x="110" y="120" font-size="9.5" text-anchor="middle">key +</text>
+    <text class="diag-text" x="110" y="133" font-size="9.5" text-anchor="middle">restore_value</text>
+    <text class="diag-text" x="110" y="150" font-size="8.5" text-anchor="middle" fill="#67735a">correctness</text>
+    <circle cx="300" cy="90" r="9" fill="#9ef01a"/><text class="diag-title" x="300" y="55" font-size="11" text-anchor="middle">2</text>
+    <text class="diag-text" x="300" y="120" font-size="9.5" text-anchor="middle">two-track config</text>
+    <text class="diag-text" x="300" y="133" font-size="9.5" text-anchor="middle">on 1 kernel</text>
+    <text class="diag-text" x="300" y="150" font-size="8.5" text-anchor="middle" fill="#67735a">adoption</text>
+    <circle cx="500" cy="90" r="9" fill="#ffb627"/><text class="diag-title" x="500" y="55" font-size="11" text-anchor="middle">3</text>
+    <text class="diag-text" x="500" y="120" font-size="9.5" text-anchor="middle">offline emit</text>
+    <text class="diag-text" x="500" y="133" font-size="9.5" text-anchor="middle">+ lookup</text>
+    <text class="diag-text" x="500" y="150" font-size="8.5" text-anchor="middle" fill="#67735a">serving</text>
+    <circle cx="700" cy="90" r="9" fill="#3fd6d0"/><text class="diag-title" x="700" y="55" font-size="11" text-anchor="middle">4</text>
+    <text class="diag-text" x="700" y="120" font-size="9.5" text-anchor="middle">CI guard</text>
+    <text class="diag-text" x="700" y="133" font-size="9.5" text-anchor="middle">GPU-free first</text>
+    <text class="diag-text" x="700" y="150" font-size="8.5" text-anchor="middle" fill="#67735a">durability</text>
+    <circle cx="890" cy="90" r="9" fill="#67735a"/><text class="diag-title" x="890" y="55" font-size="11" text-anchor="middle">5</text>
+    <text class="diag-text" x="890" y="120" font-size="9.5" text-anchor="middle">parallel</text>
+    <text class="diag-text" x="890" y="133" font-size="9.5" text-anchor="middle">precompile</text>
+    <text class="diag-text" x="890" y="150" font-size="8.5" text-anchor="middle" fill="#67735a">optional</text>
+  </svg>
+  <figcaption class="caption" lang="en">Correctness first (you cannot tune safely without it), then one real adoption, then the offline/serving half, then make it durable in CI; parallel precompile only if the search is too slow. Steps 1–4 map onto the <a href="https://github.com/ROCm/FlyDSL/issues/770">#770</a> deliverables; the bwd-kernel need (<a href="https://github.com/ROCm/FlyDSL/issues/769">#769</a>) and downstream consumption (<a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a>) sit on top.</figcaption>
+  <figcaption class="caption" lang="zh">正确性优先 (没有它无法安全 tune), 然后一个真实采用, 然后离线/服务那一半, 然后在 CI 里把它做持久; 并行预编译只在搜索太慢时才上。 第 1–4 步对应 <a href="https://github.com/ROCm/FlyDSL/issues/770">#770</a> 的交付物; bwd kernel 需求 (<a href="https://github.com/ROCm/FlyDSL/issues/769">#769</a>) 和下游消费 (<a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a>) 叠在上面。</figcaption>
+</figure>
+</section>
+
+<!-- ============ EPILOGUE ============ -->
+<section id="epilogue">
+<h2 lang="en"><span class="num">§ 12 · What to build first</span>Epilogue</h2>
+<h2 lang="zh"><span class="num">§ 12 · 先造什么</span>尾声</h2>
+
+<p lang="en">If you read this for one decision, it is this: do not start FlyDSL's autotune by adding configs. Start by making it <em>correct</em> and <em>cheap to not use</em> — the full cache key and <code>restore_value</code> (so tuning an in-place kernel is sound), and a heuristic default (so the common path pays nothing). Triton, quack, and CuteDSL all earn their autotuners by getting those two things right first; aiter and SGLang show that the payoff — committed, looked-up configs — is what an engine actually consumes. FlyDSL has the loop already. What it needs is the edges: the correctness soul, the skip-the-search door, and an offline artifact a downstream can read.</p>
+<p lang="zh">如果你为一个决定读这篇, 就是这个: 不要从加配置开始做 FlyDSL 的 autotune。 从让它<em>正确</em>且<em>不用它也便宜</em>开始 —— 完整的 cache key 和 <code>restore_value</code> (这样 tune 一个原地 kernel 才是可靠的)、 加一个启发式默认 (这样常见路径零成本)。 Triton、 quack、 CuteDSL 都是先把这两件事做对, 才配得上它们的 autotuner; aiter 和 SGLang 表明回报 —— 入库、 可查的配置 —— 才是一个引擎真正消费的东西。 FlyDSL 已经有那个循环了。 它需要的是边角: 正确性的灵魂、 跳过搜索的那扇门、 和一个下游能读的离线产物。</p>
+</section>
+
+<!-- ============ REFERENCES ============ -->
+<section id="references">
+<h2 lang="en"><span class="num">§ R · Sources read</span>References</h2>
+<h2 lang="zh"><span class="num">§ R · 精读来源</span>参考资料</h2>
+<ul>
+  <li><strong>Triton</strong> — <a href="https://github.com/triton-lang/triton/blob/main/python/triton/runtime/autotuner.py">runtime/autotuner.py</a> (<code>Autotuner.run</code> :217, <code>check_disk_cache</code> :175, <code>restore_value</code> / <code>reset_to_zero</code>, <code>@heuristics</code>, <code>prune_configs_by</code>).</li>
+  <li><strong>quack</strong> — <a href="https://github.com/Dao-AILab/quack/blob/main/quack/autotuner.py">quack/autotuner.py</a>, <a href="https://github.com/Dao-AILab/quack/blob/main/quack/rmsnorm_config.py">rmsnorm_config.py</a> (two-track), <a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">caching_and_parallel_compilation.md</a>, <a href="https://github.com/Dao-AILab/quack/blob/main/quack/_compile_worker.py">_compile_worker.py</a>.</li>
+  <li><strong>CuteDSL</strong> — <a href="https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/cute/testing.py">cute/testing.py</a> (<code>autotune_jit</code> :561), <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pythonDSL/cute_dsl_general/autotuning_gemm.rst">autotuning_gemm.rst</a>, <a href="https://github.com/NVIDIA/cutlass/blob/main/media/docs/pythonDSL/cute_dsl_general/dsl_jit_caching.rst">dsl_jit_caching.rst</a>.</li>
+  <li><strong>aiter</strong> — <code>aiter/configs/*_tuned_gemm.csv</code>, <a href="https://github.com/ROCm/aiter/blob/main/.github/scripts/check_tuned_op_regression.sh">check_tuned_op_regression.sh</a>, <code>aiter/ops/flydsl/gemm_tune/</code>.</li>
+  <li><strong>SGLang</strong> — <a href="https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/layers/moe/moe_runner/triton_utils/fused_moe_triton_config.py">fused_moe_triton_config.py</a> (<code>get_moe_configs</code> / <code>get_default_config</code>), committed JSON configs, <code>.github/workflows/auto-tune.yml</code>.</li>
+  <li><strong>FlyDSL</strong> — <a href="https://github.com/ROCm/FlyDSL/blob/main/python/flydsl/autotune.py">python/flydsl/autotune.py</a> (296 ln); issues <a href="https://github.com/ROCm/FlyDSL/issues/770">#770</a> (autotune), <a href="https://github.com/ROCm/FlyDSL/issues/769">#769</a> (rmsnorm bwd), <a href="https://github.com/ROCm/FlyDSL/issues/749">#749</a> (downstream RFC), <a href="https://github.com/ROCm/FlyDSL/pull/266">#266</a> (two-phase compile).</li>
+</ul>
+</section>
+
+</main>
+</div>
+
+<!-- ============ COLOPHON ============ -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl" lang="en">Sources</div>
+      <div class="lbl" lang="zh">来源</div>
+      <div class="val">Triton · quack · CuteDSL · aiter · SGLang · FlyDSL</div>
+      <div class="val" lang="en">read from source, 2026.06</div>
+      <div class="val" lang="zh">源码精读, 2026.06</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Typography</div>
+      <div class="lbl" lang="zh">字体</div>
+      <div class="val">Besley · Piazzolla · Sometype Mono</div>
+      <div class="val" lang="en">content width 720 px · CRT grid 30 px</div>
+      <div class="val" lang="zh">正文宽 720 px · CRT 网格 30 px</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Palette · oscilloscope</div>
+      <div class="lbl" lang="zh">配色 · 示波器</div>
+      <div class="val">
+        <span class="swatch" style="background:#0b0e0c"></span>crt
+        <span class="swatch" style="background:#9ef01a"></span>lime
+        <span class="swatch" style="background:#ffb627"></span>amber
+      </div>
+      <div class="val">
+        <span class="swatch" style="background:#ff4d80"></span>magenta
+        <span class="swatch" style="background:#3fd6d0"></span>cyan
+        <span class="swatch" style="background:#eaf0e2"></span>bone
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Compiled for</div>
+      <div class="lbl" lang="zh">阅读对象</div>
+      <div class="val" lang="en">anyone designing a kernel autotuner</div>
+      <div class="val" lang="zh">任何在设计 kernel autotuner 的人</div>
+      <div class="val" lang="en">reading ≈ 35 min · written 2026.06</div>
+      <div class="val" lang="zh">阅读约 35 分钟 · 写于 2026.06</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'autotune-end-to-end-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  var buttons = document.querySelectorAll('.lang-toggle button[data-set]');
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
