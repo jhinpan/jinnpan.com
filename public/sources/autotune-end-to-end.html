@@ -792,51 +792,51 @@ cache_key = hashlib.sha256(<span class="c-str">"-"</span>.join(cache_key).encode
 
 <figure class="plate wide">
   <div class="plate-meta"><span lang="en">Plate <span class="pn">II</span> · why in-place kernels corrupt the search</span><span lang="zh">图 <span class="pn">II</span> · 原地 kernel 为何污染搜索</span><span>restore_value</span></div>
-  <svg viewBox="0 0 1000 280" role="img" aria-label="In-place corruption vs restore">
-    <!-- WITHOUT restore -->
-    <text class="diag-title" x="30" y="34" font-size="13" fill="#ff4d80">WITHOUT restore_value</text>
-    <rect class="diag-node" x="30" y="50" width="90" height="44" rx="3"/>
-    <text class="diag-text" x="75" y="70" font-size="10" text-anchor="middle">x₀ clean</text>
-    <text class="diag-text" x="75" y="84" font-size="9" text-anchor="middle" fill="#9ef01a">correct</text>
-    <path class="diag-edge" d="M120,72 H160" marker-end="url(#ah)" stroke="#ff4d80"/>
-    <text class="diag-text" x="140" y="64" font-size="9" fill="#ff4d80">rep1</text>
-    <rect class="diag-node" x="160" y="50" width="90" height="44" rx="3" stroke="#ff4d80"/>
-    <text class="diag-text" x="205" y="70" font-size="10" text-anchor="middle">x₁ dirty</text>
-    <text class="diag-text" x="205" y="84" font-size="9" text-anchor="middle" fill="#ffb627">drifting</text>
-    <path class="diag-edge" d="M250,72 H290" marker-end="url(#ah)" stroke="#ff4d80"/>
-    <text class="diag-text" x="270" y="64" font-size="9" fill="#ff4d80">rep2</text>
-    <rect class="diag-node" x="290" y="50" width="90" height="44" rx="3" stroke="#ff4d80"/>
-    <text class="diag-text" x="335" y="70" font-size="10" text-anchor="middle">x₂ garbage</text>
-    <text class="diag-text" x="335" y="84" font-size="9" text-anchor="middle" fill="#ff4d80">wrong</text>
-    <path class="diag-edge" d="M380,72 H420" marker-end="url(#ah)" stroke="#ff4d80"/>
-    <text class="diag-text" x="430" y="68" font-size="10" fill="#ff4d80">timing on</text>
-    <text class="diag-text" x="430" y="82" font-size="10" fill="#ff4d80">corrupt data</text>
-    <!-- WITH restore -->
-    <text class="diag-title" x="30" y="160" font-size="13" fill="#9ef01a">WITH restore_value</text>
-    <rect class="diag-node" x="30" y="176" width="90" height="44" rx="3"/>
-    <text class="diag-text" x="75" y="196" font-size="10" text-anchor="middle">x₀ clean</text>
-    <text class="diag-text" x="75" y="210" font-size="9" text-anchor="middle" fill="#9ef01a">snapshot</text>
-    <path class="diag-edge" d="M120,198 H160" marker-end="url(#ahl)" stroke="#9ef01a"/>
-    <text class="diag-text" x="140" y="190" font-size="9" fill="#9ef01a">rep1</text>
-    <rect class="diag-node" x="160" y="176" width="90" height="44" rx="3" stroke="#9ef01a"/>
-    <text class="diag-text" x="205" y="196" font-size="10" text-anchor="middle">x₀ restored</text>
-    <path class="diag-edge" d="M250,198 H290" marker-end="url(#ahl)" stroke="#9ef01a"/>
-    <text class="diag-text" x="270" y="190" font-size="9" fill="#9ef01a">rep2</text>
-    <rect class="diag-node" x="290" y="176" width="90" height="44" rx="3" stroke="#9ef01a"/>
-    <text class="diag-text" x="335" y="196" font-size="10" text-anchor="middle">x₀ restored</text>
-    <path class="diag-edge" d="M380,198 H420" marker-end="url(#ahl)" stroke="#9ef01a"/>
-    <text class="diag-text" x="430" y="194" font-size="10" fill="#9ef01a">every rep sees</text>
-    <text class="diag-text" x="430" y="208" font-size="10" fill="#9ef01a">the same clean x₀</text>
-    <!-- divider -->
-    <line x1="600" y1="40" x2="600" y2="240" stroke="#2c3a26" stroke-width="1" stroke-dasharray="3 3"/>
-    <text class="zone-label" x="630" y="60" font-size="10" fill="#ffb627">WHO NEEDS IT</text>
-    <text class="diag-text" x="630" y="86" font-size="11">fused-add rmsnorm (writes residual)</text>
-    <text class="diag-text" x="630" y="108" font-size="11">in-place accumulate / scatter</text>
-    <text class="diag-text" x="630" y="130" font-size="11">any kernel where output ⊆ input</text>
-    <text class="zone-label" x="630" y="166" font-size="10" fill="#9ef01a">WHO HAS IT</text>
-    <text class="diag-text" x="630" y="192" font-size="11">Triton · quack (inherited)</text>
-    <text class="zone-label" x="630" y="218" font-size="10" fill="#ff4d80">WHO LACKS IT</text>
-    <text class="diag-text" x="630" y="244" font-size="11" fill="#ff4d80">FlyDSL — must add before tuning in-place</text>
+  <svg viewBox="0 0 900 440" role="img" aria-label="In-place corruption vs restore">
+    <!-- ===== WITHOUT restore ===== -->
+    <text class="diag-title" x="40" y="46" font-size="15" fill="#ff4d80">WITHOUT restore_value</text>
+    <rect class="diag-node" x="40" y="66" width="130" height="60" rx="3"/>
+    <text class="diag-text" x="105" y="94" font-size="13" text-anchor="middle">x₀ clean</text>
+    <text class="diag-text" x="105" y="113" font-size="12" text-anchor="middle" fill="#9ef01a">correct</text>
+    <path class="diag-edge" d="M170,96 H250" marker-end="url(#ah)" stroke="#ff4d80" stroke-width="1.4"/>
+    <text class="diag-text" x="210" y="86" font-size="12" text-anchor="middle" fill="#ff4d80">rep 1</text>
+    <rect class="diag-node" x="250" y="66" width="130" height="60" rx="3" stroke="#ff4d80" stroke-width="1.4"/>
+    <text class="diag-text" x="315" y="94" font-size="13" text-anchor="middle">x₁ dirty</text>
+    <text class="diag-text" x="315" y="113" font-size="12" text-anchor="middle" fill="#ffb627">drifting</text>
+    <path class="diag-edge" d="M380,96 H460" marker-end="url(#ah)" stroke="#ff4d80" stroke-width="1.4"/>
+    <text class="diag-text" x="420" y="86" font-size="12" text-anchor="middle" fill="#ff4d80">rep 2</text>
+    <rect class="diag-node" x="460" y="66" width="130" height="60" rx="3" stroke="#ff4d80" stroke-width="1.4"/>
+    <text class="diag-text" x="525" y="94" font-size="13" text-anchor="middle">x₂ garbage</text>
+    <text class="diag-text" x="525" y="113" font-size="12" text-anchor="middle" fill="#ff4d80">wrong</text>
+    <path class="diag-edge" d="M590,96 H650" marker-end="url(#ah)" stroke="#ff4d80" stroke-width="1.4"/>
+    <text class="diag-text" x="662" y="90" font-size="12.5" fill="#ff4d80">timing on</text>
+    <text class="diag-text" x="662" y="108" font-size="12.5" fill="#ff4d80">corrupt data</text>
+
+    <!-- ===== WITH restore ===== -->
+    <text class="diag-title" x="40" y="216" font-size="15" fill="#9ef01a">WITH restore_value</text>
+    <rect class="diag-node" x="40" y="236" width="130" height="60" rx="3"/>
+    <text class="diag-text" x="105" y="264" font-size="13" text-anchor="middle">x₀ clean</text>
+    <text class="diag-text" x="105" y="283" font-size="12" text-anchor="middle" fill="#9ef01a">snapshot</text>
+    <path class="diag-edge" d="M170,266 H250" marker-end="url(#ahl)" stroke="#9ef01a" stroke-width="1.4"/>
+    <text class="diag-text" x="210" y="256" font-size="12" text-anchor="middle" fill="#9ef01a">rep 1</text>
+    <rect class="diag-node" x="250" y="236" width="130" height="60" rx="3" stroke="#9ef01a" stroke-width="1.4"/>
+    <text class="diag-text" x="315" y="270" font-size="13" text-anchor="middle">x₀ restored</text>
+    <path class="diag-edge" d="M380,266 H460" marker-end="url(#ahl)" stroke="#9ef01a" stroke-width="1.4"/>
+    <text class="diag-text" x="420" y="256" font-size="12" text-anchor="middle" fill="#9ef01a">rep 2</text>
+    <rect class="diag-node" x="460" y="236" width="130" height="60" rx="3" stroke="#9ef01a" stroke-width="1.4"/>
+    <text class="diag-text" x="525" y="270" font-size="13" text-anchor="middle">x₀ restored</text>
+    <path class="diag-edge" d="M590,266 H650" marker-end="url(#ahl)" stroke="#9ef01a" stroke-width="1.4"/>
+    <text class="diag-text" x="662" y="260" font-size="12.5" fill="#9ef01a">every rep sees</text>
+    <text class="diag-text" x="662" y="278" font-size="12.5" fill="#9ef01a">the same clean x₀</text>
+
+    <!-- ===== who needs / has / lacks — bottom band ===== -->
+    <line x1="40" y1="346" x2="860" y2="346" stroke="#2c3a26" stroke-width="1" stroke-dasharray="4 4"/>
+    <text class="zone-label" x="40" y="374" font-size="12" fill="#ffb627">NEEDS IT</text>
+    <text class="diag-text" x="40" y="396" font-size="12.5">fused-add rmsnorm · in-place accumulate / scatter</text>
+    <text class="diag-text" x="40" y="416" font-size="12.5">any kernel where output ⊆ input</text>
+    <text class="zone-label" x="560" y="374" font-size="12" fill="#9ef01a">HAS IT</text>
+    <text class="diag-text" x="560" y="396" font-size="12.5">Triton · quack</text>
+    <text class="zone-label" x="560" y="416" font-size="12" fill="#ff4d80">LACKS IT&#160;&#160;<tspan fill="#c2cbb6">FlyDSL (must add)</tspan></text>
   </svg>
   <figcaption class="caption" lang="en">The correctness soul of autotune. FlyDSL's port has no equivalent of <code>restore_value</code>, so autotuning any in-place kernel today would select on corrupted reruns. This is a prerequisite, not a nice-to-have — it returns in the FlyDSL guide (§ 11).</figcaption>
   <figcaption class="caption" lang="zh">autotune 正确性的灵魂。 FlyDSL 的移植没有 <code>restore_value</code> 的对应物, 所以今天 autotune 任何原地 kernel 都会在被污染的重跑上做选择。 这是前提, 不是可选项 —— 它在 FlyDSL guide (§ 11) 会回来。</figcaption>
@@ -920,28 +920,27 @@ user_function(a, b, c)   <span class="c-com"># first call sweeps the grid; later
 
 <figure class="plate wide">
   <div class="plate-meta"><span lang="en">Plate <span class="pn">III</span> · online vs offline timelines</span><span lang="zh">图 <span class="pn">III</span> · 在线 vs 离线 时间线</span><span>cost moves in time</span></div>
-  <svg viewBox="0 0 1000 260" role="img" aria-label="Online vs offline timelines">
-    <!-- ONLINE -->
-    <text class="diag-title" x="30" y="34" font-size="13" fill="#9ef01a">ONLINE (JIT) — Triton · quack · CuteDSL · FlyDSL</text>
-    <line x1="30" y1="80" x2="800" y2="80" stroke="#67735a" stroke-width="1"/>
-    <text class="diag-text" x="30" y="100" font-size="9" fill="#67735a">dev time</text>
-    <text class="diag-text" x="760" y="100" font-size="9" fill="#67735a">serving</text>
-    <circle cx="430" cy="80" r="6" fill="#ff4d80"/>
-    <text class="diag-text" x="430" y="64" font-size="10" text-anchor="middle" fill="#ff4d80">first call:</text>
-    <text class="diag-text" x="430" y="116" font-size="10" text-anchor="middle" fill="#ff4d80">full search (slow)</text>
-    <circle cx="540" cy="80" r="4" fill="#9ef01a"/><circle cx="620" cy="80" r="4" fill="#9ef01a"/><circle cx="700" cy="80" r="4" fill="#9ef01a"/>
-    <text class="diag-text" x="620" y="64" font-size="9.5" text-anchor="middle" fill="#9ef01a">cached: ~0</text>
-    <text class="diag-text" x="820" y="84" font-size="9.5" fill="#9ef01a">+ any shape</text>
-    <!-- OFFLINE -->
-    <text class="diag-title" x="30" y="166" font-size="13" fill="#ffb627">OFFLINE (CSV/JSON) — aiter · SGLang</text>
-    <line x1="30" y1="212" x2="800" y2="212" stroke="#67735a" stroke-width="1"/>
-    <text class="diag-text" x="30" y="232" font-size="9" fill="#67735a">CI / pre-release</text>
-    <text class="diag-text" x="760" y="232" font-size="9" fill="#67735a">serving</text>
-    <rect x="120" y="196" width="120" height="32" rx="3" fill="rgba(255,182,39,0.12)" stroke="#ffb627"/>
-    <text class="diag-text" x="180" y="216" font-size="9.5" text-anchor="middle" fill="#ffb627">sweep + commit</text>
-    <circle cx="540" cy="212" r="4" fill="#9ef01a"/><circle cx="620" cy="212" r="4" fill="#9ef01a"/><circle cx="700" cy="212" r="4" fill="#9ef01a"/>
-    <text class="diag-text" x="620" y="198" font-size="9.5" text-anchor="middle" fill="#9ef01a">lookup: ~0</text>
-    <text class="diag-text" x="820" y="216" font-size="9.5" fill="#ff4d80">only known shapes</text>
+  <svg viewBox="0 0 940 300" role="img" aria-label="Online vs offline timelines">
+    <!-- ===== ONLINE ===== -->
+    <text class="diag-title" x="40" y="42" font-size="15" fill="#9ef01a">ONLINE (JIT) — Triton · quack · CuteDSL · FlyDSL</text>
+    <line x1="40" y1="98" x2="770" y2="98" stroke="#8f9c80" stroke-width="1.4"/>
+    <text class="diag-text" x="40" y="120" font-size="12" fill="#8f9c80">dev time</text>
+    <text class="diag-text" x="712" y="120" font-size="12" fill="#8f9c80">serving →</text>
+    <circle cx="400" cy="98" r="8" fill="#ff4d80"/>
+    <text class="diag-text" x="400" y="76" font-size="13" text-anchor="middle" fill="#ff4d80">first call: full search (slow)</text>
+    <circle cx="520" cy="98" r="5" fill="#9ef01a"/><circle cx="600" cy="98" r="5" fill="#9ef01a"/><circle cx="680" cy="98" r="5" fill="#9ef01a"/>
+    <text class="diag-text" x="600" y="130" font-size="12.5" text-anchor="middle" fill="#9ef01a">cached calls: ~0</text>
+    <text class="diag-text" x="790" y="102" font-size="12.5" fill="#9ef01a">+ any shape</text>
+    <!-- ===== OFFLINE ===== -->
+    <text class="diag-title" x="40" y="212" font-size="15" fill="#ffb627">OFFLINE (CSV / JSON) — aiter · SGLang</text>
+    <line x1="40" y1="256" x2="770" y2="256" stroke="#8f9c80" stroke-width="1.4"/>
+    <text class="diag-text" x="40" y="278" font-size="12" fill="#8f9c80">CI / pre-release</text>
+    <text class="diag-text" x="712" y="278" font-size="12" fill="#8f9c80">serving →</text>
+    <rect x="120" y="238" width="150" height="36" rx="3" fill="#3a2f10" stroke="#ffb627" stroke-width="1.4"/>
+    <text class="diag-text" x="195" y="261" font-size="12.5" text-anchor="middle" fill="#eaf0e2">sweep + commit</text>
+    <circle cx="520" cy="256" r="5" fill="#9ef01a"/><circle cx="600" cy="256" r="5" fill="#9ef01a"/><circle cx="680" cy="256" r="5" fill="#9ef01a"/>
+    <text class="diag-text" x="600" y="234" font-size="12.5" text-anchor="middle" fill="#9ef01a">lookup: ~0</text>
+    <text class="diag-text" x="790" y="260" font-size="12.5" fill="#ff4d80">known shapes only</text>
   </svg>
   <figcaption class="caption" lang="en">Same loop, different time. Online pays the search at the first serving call; offline moves it to CI. The synthesis FlyDSL wants is both: a heuristic default for zero-cost normal runs, online tuning for the long tail, and an offline artifact for production + CI.</figcaption>
   <figcaption class="caption" lang="zh">同一个循环, 不同时间。 在线把搜索付在首次服务调用上; 离线把它挪到 CI。 FlyDSL 想要的综合是两者兼有: 启发式默认给零成本的日常运行、 在线 tuning 给长尾、 离线产物给生产 + CI。</figcaption>
@@ -1050,52 +1049,51 @@ user_function(a, b, c)   <span class="c-com"># first call sweeps the grid; later
 
 <figure class="plate wide">
   <div class="plate-meta"><span lang="en">Plate <span class="pn">V</span> · proposed FlyDSL autotune architecture</span><span lang="zh">图 <span class="pn">V</span> · FlyDSL autotune 架构提案</span><span>two-track + online/offline</span></div>
-  <svg viewBox="0 0 1000 320" role="img" aria-label="Proposed FlyDSL autotune architecture">
-    <!-- call -->
-    <rect class="diag-node" x="20" y="140" width="110" height="50" rx="3"/>
-    <text class="diag-title" x="75" y="162" font-size="12" text-anchor="middle">kernel call</text>
-    <text class="diag-text" x="75" y="178" font-size="9" text-anchor="middle">shape · dtype</text>
-    <!-- mode switch -->
-    <path class="diag-node" d="M195,165 L240,135 L285,165 L240,195 z" stroke="#ffb627"/>
-    <text class="diag-text" x="240" y="162" font-size="9" text-anchor="middle" fill="#ffb627">tune</text>
-    <text class="diag-text" x="240" y="174" font-size="9" text-anchor="middle" fill="#ffb627">mode?</text>
-    <path class="diag-edge" d="M130,165 H195" marker-end="url(#ah)"/>
-    <!-- track 1: heuristic default -->
-    <path class="diag-edge" d="M240,135 V70 H360" marker-end="url(#ahl)" stroke="#9ef01a"/>
-    <text class="diag-text" x="300" y="62" font-size="9" fill="#9ef01a">default</text>
-    <rect class="diag-node" x="360" y="46" width="150" height="48" rx="3" stroke="#9ef01a"/>
-    <text class="diag-title" x="435" y="66" font-size="11" text-anchor="middle">get_default()</text>
-    <text class="diag-text" x="435" y="82" font-size="9" text-anchor="middle">analytic · zero search</text>
-    <!-- track 2: offline lookup -->
-    <path class="diag-edge" d="M285,165 H360" marker-end="url(#ah)" stroke="#ffb627"/>
-    <text class="diag-text" x="322" y="158" font-size="9" fill="#ffb627">offline</text>
-    <rect class="diag-node" x="360" y="141" width="150" height="48" rx="3" stroke="#ffb627"/>
-    <text class="diag-title" x="435" y="161" font-size="11" text-anchor="middle">config file lookup</text>
-    <text class="diag-text" x="435" y="177" font-size="9" text-anchor="middle">device+shape · miss→default</text>
-    <!-- track 3: online search -->
-    <path class="diag-edge" d="M240,195 V260 H360" marker-end="url(#ah)" stroke="#ff4d80"/>
-    <text class="diag-text" x="300" y="252" font-size="9" fill="#ff4d80">online</text>
-    <rect class="diag-node" x="360" y="236" width="150" height="58" rx="3" stroke="#ff4d80"/>
-    <text class="diag-title" x="435" y="256" font-size="11" text-anchor="middle">search + restore</text>
-    <text class="diag-text" x="435" y="271" font-size="9" text-anchor="middle">prune→precompile→bench</text>
-    <text class="diag-text" x="435" y="284" font-size="9" text-anchor="middle" fill="#ff4d80">restore_value each rep</text>
-    <!-- cache -->
-    <rect class="diag-node" x="580" y="141" width="120" height="48" rx="3" stroke="#3fd6d0"/>
-    <text class="diag-title" x="640" y="161" font-size="11" text-anchor="middle">cache</text>
-    <text class="diag-text" x="640" y="177" font-size="8.5" text-anchor="middle">full key (Plate IV)</text>
-    <path class="diag-edge" d="M510,70 H640 V141" marker-end="url(#ah)" stroke="#3fd6d0"/>
-    <path class="diag-edge" d="M510,165 H580" marker-end="url(#ah)" stroke="#3fd6d0"/>
-    <path class="diag-edge" d="M510,265 H640 V189" marker-end="url(#ah)" stroke="#3fd6d0"/>
-    <!-- launch -->
-    <rect class="diag-node" x="770" y="141" width="130" height="48" rx="3"/>
-    <text class="diag-title" x="835" y="161" font-size="11" text-anchor="middle">launch_*()</text>
-    <text class="diag-text" x="835" y="177" font-size="9" text-anchor="middle">best config</text>
-    <path class="diag-edge" d="M700,165 H770" marker-end="url(#ah)"/>
-    <!-- offline emit -->
-    <rect class="zone-box" x="580" y="232" width="320" height="66"/>
-    <text class="zone-label" x="592" y="252" font-size="9" fill="#ffb627">OFFLINE EMIT (CI / pre-release)</text>
-    <text class="diag-text" x="592" y="270" font-size="9.5">online search → write device+shape config file</text>
-    <text class="diag-text" x="592" y="286" font-size="9.5">commit · regression-gate in CI · consumed by SGLang/aiter</text>
+  <svg viewBox="0 0 960 420" role="img" aria-label="Proposed FlyDSL autotune architecture">
+    <!-- ===== kernel call ===== -->
+    <rect class="diag-node" x="20" y="176" width="130" height="60" rx="3"/>
+    <text class="diag-title" x="85" y="204" font-size="14" text-anchor="middle">kernel call</text>
+    <text class="diag-text" x="85" y="223" font-size="12" text-anchor="middle">shape · dtype</text>
+    <path class="diag-edge" d="M150,206 H196" marker-end="url(#ah)" stroke-width="1.4"/>
+    <!-- ===== mode switch ===== -->
+    <path class="diag-node" d="M200,206 L255,166 L310,206 L255,246 z" stroke="#ffb627" stroke-width="1.4"/>
+    <text class="diag-text" x="255" y="202" font-size="12" text-anchor="middle" fill="#ffb627">tune</text>
+    <text class="diag-text" x="255" y="219" font-size="12" text-anchor="middle" fill="#ffb627">mode?</text>
+    <!-- track 1: heuristic default (top) -->
+    <path class="diag-edge" d="M255,166 V70 H395" marker-end="url(#ahl)" stroke="#9ef01a" stroke-width="1.5"/>
+    <text class="diag-text" x="330" y="60" font-size="12" fill="#9ef01a">default</text>
+    <rect class="diag-node" x="395" y="44" width="185" height="56" rx="3" stroke="#9ef01a" stroke-width="1.4"/>
+    <text class="diag-title" x="487" y="70" font-size="14" text-anchor="middle">get_default()</text>
+    <text class="diag-text" x="487" y="89" font-size="11.5" text-anchor="middle">analytic · zero search</text>
+    <!-- track 2: offline lookup (mid) -->
+    <path class="diag-edge" d="M310,206 H395" marker-end="url(#aha)" stroke="#ffb627" stroke-width="1.5"/>
+    <text class="diag-text" x="352" y="196" font-size="12" text-anchor="middle" fill="#ffb627">offline</text>
+    <rect class="diag-node" x="395" y="178" width="185" height="56" rx="3" stroke="#ffb627" stroke-width="1.4"/>
+    <text class="diag-title" x="487" y="204" font-size="14" text-anchor="middle">config lookup</text>
+    <text class="diag-text" x="487" y="223" font-size="11.5" text-anchor="middle">device+shape · miss→default</text>
+    <!-- track 3: online search (bottom) -->
+    <path class="diag-edge" d="M255,246 V312 H395" marker-end="url(#ah)" stroke="#ff4d80" stroke-width="1.5"/>
+    <text class="diag-text" x="330" y="302" font-size="12" fill="#ff4d80">online</text>
+    <rect class="diag-node" x="395" y="284" width="185" height="66" rx="3" stroke="#ff4d80" stroke-width="1.4"/>
+    <text class="diag-title" x="487" y="310" font-size="14" text-anchor="middle">search + restore</text>
+    <text class="diag-text" x="487" y="328" font-size="11.5" text-anchor="middle">prune → precompile → bench</text>
+    <text class="diag-text" x="487" y="344" font-size="11.5" text-anchor="middle" fill="#ff4d80">restore_value each rep</text>
+    <!-- ===== cache (center-right) ===== -->
+    <rect class="diag-node" x="660" y="178" width="140" height="56" rx="3" stroke="#3fd6d0" stroke-width="1.4"/>
+    <text class="diag-title" x="730" y="204" font-size="14" text-anchor="middle">cache</text>
+    <text class="diag-text" x="730" y="223" font-size="11.5" text-anchor="middle">full key (Plate IV)</text>
+    <!-- three tracks feed cache -->
+    <path class="diag-edge" d="M580,72 H730 V178" marker-end="url(#ah)" stroke="#3fd6d0" stroke-width="1.4"/>
+    <path class="diag-edge" d="M580,206 H660" marker-end="url(#ah)" stroke="#3fd6d0" stroke-width="1.4"/>
+    <path class="diag-edge" d="M580,317 H730 V234" marker-end="url(#ah)" stroke="#3fd6d0" stroke-width="1.4"/>
+    <!-- ===== launch ===== -->
+    <rect class="diag-node" x="810" y="178" width="130" height="56" rx="3"/>
+    <text class="diag-title" x="875" y="204" font-size="14" text-anchor="middle">launch_*()</text>
+    <text class="diag-text" x="875" y="223" font-size="11.5" text-anchor="middle">best config</text>
+    <path class="diag-edge" d="M800,206 H810" marker-end="url(#ah)" stroke-width="1.4"/>
+    <!-- ===== offline emit — its own band at the very bottom, nothing crosses it ===== -->
+    <rect class="zone-box" x="20" y="378" width="920" height="34"/>
+    <text class="zone-label" x="36" y="399" font-size="12" fill="#ffb627">OFFLINE EMIT (CI)&#160;&#160;<tspan fill="#c2cbb6">online search → write device+shape config file · regression-gate · consumed by SGLang / aiter</tspan></text>
   </svg>
   <figcaption class="caption" lang="en">Three tracks off one switch: <span style="color:var(--lime)">heuristic default</span> (zero-cost normal runs), <span style="color:var(--amber)">offline lookup</span> (production/serving), <span style="color:var(--magenta)">online search</span> (dev/long-tail, with restore). All write one cache keyed by the full Plate-IV key; the online search can emit the offline config file. This unifies every paradigm above onto FlyDSL's <code>build_*_module</code> / <code>launch_*</code> structure.</figcaption>
   <figcaption class="caption" lang="zh">一个开关引出三条轨: <span style="color:var(--lime)">启发式默认</span> (零成本日常运行)、 <span style="color:var(--amber)">离线查表</span> (生产/服务)、 <span style="color:var(--magenta)">在线搜索</span> (开发/长尾, 带 restore)。 三者都写同一个按图 IV 完整 key 索引的缓存; 在线搜索可以产出离线配置文件。 这把上面每种范式统一到 FlyDSL 的 <code>build_*_module</code> / <code>launch_*</code> 结构上。</figcaption>
