@@ -77,7 +77,19 @@ For every non-trivial claim, mechanism, or design choice, make sure the prose an
 - **Why not** the obvious alternative? What breaks if you do the simpler/naive thing? This is often the most illuminating sentence in a section.
 - **What would go wrong without it?** The concrete failure the mechanism prevents.
 
-Litmus test before you ship a paragraph: *if I deleted every proper noun and API name, would a reader still learn a transferable idea?* If the paragraph collapses into name-dropping, it fails.
+### Two thinking tools — apply both
+
+These are complementary, not the same move:
+
+- **First-principles thinking (decompose, then rebuild).** Don't explain a mechanism by analogy to the framework's own vocabulary or by restating its docs. Break it down to the bedrock facts that must be true regardless of this particular library — the physical or logical constraints (compilation costs seconds; GPU occupancy depends on register/shared-memory budget; a cache is only sound if its key covers everything that changes the output) — and rebuild the design up from there. The test: *could the reader re-derive this design themselves from the constraints, without having seen this codebase?* When you find yourself writing "X does A, B, C," stop and ask "what forces A, B, C to exist at all?" — that root cause is the thing worth writing. First-principles is generative: it produces the Why.
+
+- **Occam's razor (cut to the essential).** Once the idea is built up, strip everything that isn't load-bearing. No sentence that only re-labels the previous one; no adjective that adds no information; no third example when two carry the point. The litmus below is the razor in practice. Occam is subtractive: it produces clarity.
+
+Order of operations: reason up from first principles to find the real Why, then take Occam's razor to the prose. Depth first, then economy.
+
+Litmus test (Occam) before you ship a paragraph: *if I deleted every proper noun and API name, would a reader still learn a transferable idea?* If the paragraph collapses into name-dropping, it fails.
+
+First-principles check before you ship a section: *does it bottom out in a constraint that would hold in any implementation, or does it stop at "because this library does it this way"?* If it stops at the library, dig one level deeper.
 
 Anti-pattern (what NOT to do) — a flat list of layers with no causality:
 
@@ -283,7 +295,7 @@ Only report "deployed and verified" once all return 200 with the expected conten
 ## Quality checklist before declaring done
 
 - [ ] **Category decided correctly**, and the output shape matches the table (code/paper = HTML only, no markdown twin; tutorial/blog = markdown, HTML primer only if warranted)
-- [ ] **Why / How / Why-Not, not just What** (Step 1.5) — every non-trivial mechanism explains the problem it solves before naming the solution; no flat feature/layer lists; passes the "delete the proper nouns, does an idea survive?" litmus
+- [ ] **Why / How / Why-Not, not just What** (Step 1.5) — every non-trivial mechanism explains the problem it solves before naming the solution; no flat feature/layer lists. Both thinking tools applied: **first-principles** (each section bottoms out in a constraint true of any implementation, not "because this library does it this way") and **Occam** (passes the "delete the proper nouns, does an idea survive?" litmus)
 - [ ] **Entry registered in `/sources/index.html`** — card in the right shelf, `data-kind` + `data-search` set, counts bumped
 - [ ] (HTML) 4+ inline SVG plates, all hand-coded coordinates
 - [ ] (HTML) Aesthetic distinctly different from all previous entries (fonts AND colors)
