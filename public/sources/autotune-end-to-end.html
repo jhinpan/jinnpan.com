@@ -718,9 +718,9 @@ table.tbl .mid { color: var(--amber); }
     <text class="diag-text" x="400" y="356" font-size="13" text-anchor="middle" fill="#ffb627">write  key → best config  (cache)</text>
 
     <!-- ===== KEY legend, separate box top-right ===== -->
-    <rect class="zone-box" x="600" y="150" width="240" height="52"/>
-    <text class="zone-label" x="616" y="172" font-size="11" fill="#ffb627">KEY  =  shape · dtype · arch</text>
-    <text class="diag-text" x="616" y="190" font-size="11">+ src fingerprint · env  (see § 09)</text>
+    <rect class="zone-box" x="590" y="150" width="270" height="52"/>
+    <text class="zone-label" x="606" y="172" font-size="11" fill="#ffb627">KEY  =  shape · dtype · arch</text>
+    <text class="diag-text" x="606" y="190" font-size="11">+ src fingerprint · env (§ 09)</text>
   </svg>
   <figcaption class="caption" lang="en">Every autotuner is this loop. The differences between Triton, quack, CuteDSL, aiter, and SGLang are entirely in four places: what goes in the <span style="color:var(--amber)">key</span>, how the <span style="color:var(--bone)">space is pruned</span>, the <span style="color:var(--magenta)">restore between bench reps</span>, and whether the whole loop runs online or offline.</figcaption>
   <figcaption class="caption" lang="zh">每个 autotuner 都是这个循环。 Triton、 quack、 CuteDSL、 aiter、 SGLang 之间的差别完全在四个地方: <span style="color:var(--amber)">key</span> 里放什么、 <span style="color:var(--bone)">搜索空间怎么剪枝</span>、 <span style="color:var(--magenta)">bench 重复之间怎么 restore</span>、 以及整个循环是在线还是离线跑。</figcaption>
