@@ -66,6 +66,29 @@ Aim for **6 hours of equivalent reading** condensed into the artifact. Everythin
 
 When naming a concrete file in prose, tables, callouts, captions, or summaries, make the filename itself clickable whenever possible. For external code readings, use commit-pinned source links with line fragments, e.g. `<a href="https://github.com/org/repo/blob/<sha>/path/file.py#L12-L34"><code>path/file.py</code></a>`. For site-local files in final handoff notes, use clickable markdown file links. Jhin often clicks these names to inspect the source directly, so avoid leaving important filenames as inert plain text.
 
+## Step 1.5 · Explain the Why / How / Why-Not, not just the What
+
+**These artifacts are for Jhin to read and think with, not marketing copy.** The bar is technical depth *and* interpretability. The most common failure — and one Jhin will call out — is a paragraph that lists *what* something is (a feature, a set of layers, an API) without explaining *why it exists, how it works, or why the alternative was rejected*. A reader finishes such a paragraph knowing the vocabulary but not understanding anything.
+
+For every non-trivial claim, mechanism, or design choice, make sure the prose answers as many of these as apply:
+
+- **Why** does this exist? What problem or failure mode forced it? State the problem *before* the solution, so the solution has something to attach to.
+- **How** does it actually work? The concrete mechanism — the key, the check, the data flow — not a label for it.
+- **Why not** the obvious alternative? What breaks if you do the simpler/naive thing? This is often the most illuminating sentence in a section.
+- **What would go wrong without it?** The concrete failure the mechanism prevents.
+
+Litmus test before you ship a paragraph: *if I deleted every proper noun and API name, would a reader still learn a transferable idea?* If the paragraph collapses into name-dropping, it fails.
+
+Anti-pattern (what NOT to do) — a flat list of layers with no causality:
+
+> "quack's cache has four layers: an in-memory dict, an on-disk `.o` keyed by `(qualname, *args)`, a source fingerprint, and an optional result cache."
+
+Fixed — problem first, then each layer catches a case the one above can't:
+
+> "Compiling is slow but the same kernel is called thousands of times, so you compile once and reuse — but reuse is only safe if nothing affecting the compiled code changed. **Layer 1** (in-memory dict) is instant but dies with the process. **Layer 2** (on-disk `.o`) survives runs — but here's the trap: if you *edit the kernel source*, the `(name, args)` key is unchanged, so it hands back a stale object. **Layer 3** folds a source fingerprint into the key so an edit invalidates it automatically. That's what makes the disk cache safe to keep."
+
+Same facts, but the second teaches. Apply this to prose, callouts, and plate captions alike. Diagrams should show a mechanism or a causal flow, not just box-and-label taxonomy. Depth beats coverage: better to explain four things with their Why/How/Why-Not than to name twelve.
+
 ## Step 2 · Pick a distinctive aesthetic (HTML entries)
 
 **Critical rule**: never reuse the aesthetic of a previous entry. See what's taken:
@@ -260,6 +283,7 @@ Only report "deployed and verified" once all return 200 with the expected conten
 ## Quality checklist before declaring done
 
 - [ ] **Category decided correctly**, and the output shape matches the table (code/paper = HTML only, no markdown twin; tutorial/blog = markdown, HTML primer only if warranted)
+- [ ] **Why / How / Why-Not, not just What** (Step 1.5) — every non-trivial mechanism explains the problem it solves before naming the solution; no flat feature/layer lists; passes the "delete the proper nouns, does an idea survive?" litmus
 - [ ] **Entry registered in `/sources/index.html`** — card in the right shelf, `data-kind` + `data-search` set, counts bumped
 - [ ] (HTML) 4+ inline SVG plates, all hand-coded coordinates
 - [ ] (HTML) Aesthetic distinctly different from all previous entries (fonts AND colors)
