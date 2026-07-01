@@ -858,8 +858,25 @@ cache_key = hashlib.sha256(<span class="c-str">"-"</span>.join(cache_key).encode
 
 <h3 lang="en">Multi-layer cache with a source fingerprint</h3>
 <h3 lang="zh">带源码指纹的多层缓存</h3>
-<p lang="en">quack's caching doc (<a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">AI/caching_and_parallel_compilation.md</a>) describes four layers: an in-memory dict, an on-disk <code>.o</code> keyed by <code>(qualname, *args)</code>, a <strong>source fingerprint</strong> (SHA-256 of every <code>quack/*.py</code> plus CUTLASS / Python versions — any source change invalidates the cache), and an optional autotune-result cache. The tuning key also normalizes <em>stride</em> to <code>{0, 1, other}</code>, so contiguous and broadcast tensors hit the same entry.</p>
-<p lang="zh">quack 的缓存文档 (<a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">AI/caching_and_parallel_compilation.md</a>) 描述了四层: 内存 dict、 按 <code>(qualname, *args)</code> 索引的磁盘 <code>.o</code>、 一个<strong>源码指纹</strong> (每个 <code>quack/*.py</code> 加 CUTLASS / Python 版本的 SHA-256 —— 任何源码改动都让缓存失效)、 和一个可选的 autotune 结果缓存。 tuning key 还把 <em>stride</em> 规整成 <code>{0, 1, other}</code>, 这样连续和广播张量会命中同一条目。</p>
+<p lang="en">The problem the cache solves: compiling a kernel is slow (seconds), but a program calls the same kernel thousands of times. You want to compile once and reuse — but "reuse" is only safe if nothing that affects the compiled code has changed. quack's caching doc (<a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">AI/caching_and_parallel_compilation.md</a>) layers four caches, each one catching a case the layer above can't.</p>
+<p lang="zh">缓存要解决的问题: 编译一个 kernel 很慢 (秒级), 但一个程序会把同一个 kernel 调用成千上万次。 你想只编译一次、 之后复用 —— 但"复用"只有在"影响编译结果的东西都没变"时才安全。 quack 的缓存文档 (<a href="https://github.com/Dao-AILab/quack/blob/main/AI/caching_and_parallel_compilation.md">AI/caching_and_parallel_compilation.md</a>) 叠了四层缓存, 每一层都兜住上一层兜不住的情况。</p>
+
+<ul>
+  <li lang="en"><strong>Layer 1 — in-memory dict.</strong> Within one running process, the same kernel called twice returns the cached compiled object instantly. Fastest, but it dies when the process exits.</li>
+  <li lang="zh"><strong>第 1 层 —— 内存 dict。</strong> 在同一个运行中的进程里, 同一个 kernel 第二次调用直接返回缓存好的编译产物, 瞬间命中。 最快, 但进程一退出就没了。</li>
+
+  <li lang="en"><strong>Layer 2 — on-disk <code>.o</code> file.</strong> So the next process (a new run, a test worker) doesn't recompile from scratch, the compiled object is written to disk, keyed by <code>(function name, its arguments)</code>. Survives across runs.</li>
+  <li lang="zh"><strong>第 2 层 —— 磁盘上的 <code>.o</code> 文件。</strong> 为了让下一个进程 (新一次运行、 一个测试 worker) 不用从头重编, 编译产物被写到磁盘, 用 <code>(函数名, 它的参数)</code> 作 key。 能跨运行存活。</li>
+
+  <li lang="en"><strong>Layer 3 — a source fingerprint on that disk key.</strong> Here's the trap the first two layers can't catch: if you <em>edit the kernel source</em>, the disk key <code>(name, args)</code> is unchanged, so layer 2 would happily hand back a stale <code>.o</code> compiled from the old code. quack prevents this by folding a <strong>fingerprint</strong> into the key — a SHA-256 of every <code>quack/*.py</code> file plus the CUTLASS and Python versions. Change one line of kernel source, or bump CUTLASS, and the fingerprint changes, so the old cache entry is simply never found and the kernel recompiles. This is what makes the disk cache <em>safe</em> to keep around.</li>
+  <li lang="zh"><strong>第 3 层 —— 给磁盘 key 加一个源码指纹。</strong> 这里是前两层兜不住的坑: 如果你<em>改了 kernel 源码</em>, 磁盘 key <code>(名字, 参数)</code> 并没变, 于是第 2 层会高高兴兴地把一个用旧代码编出来的、 过期的 <code>.o</code> 还给你。 quack 的做法是往 key 里揉进一个<strong>指纹</strong> —— 每个 <code>quack/*.py</code> 文件加上 CUTLASS、 Python 版本的 SHA-256。 改一行 kernel 源码、 或升一次 CUTLASS, 指纹就变了, 于是旧的缓存条目根本查不到、 kernel 自动重编。 正是这一层让磁盘缓存"留着也安全"。</li>
+
+  <li lang="en"><strong>Layer 4 — an optional autotune-result cache.</strong> Layers 1–3 cache the <em>compiled kernel</em>. This one caches the <em>autotune decision</em> — which config won the benchmark for a given shape — so you don't re-run the whole search next time.</li>
+  <li lang="zh"><strong>第 4 层 —— 可选的 autotune 结果缓存。</strong> 第 1–3 层缓存的是<em>编译好的 kernel</em>。 这一层缓存的是 <em>autotune 的决定</em> —— 对某个形状, 哪个配置在 benchmark 里赢了 —— 这样下次不用把整个搜索重跑一遍。</li>
+</ul>
+
+<p lang="en">One more detail worth stealing: when quack builds the tuning key, it doesn't store the raw <em>stride</em> of each tensor — it normalizes it to just <code>{0, 1, other}</code>. Why: a stride of <code>0</code> means a broadcast dimension and <code>1</code> means contiguous, and those are the only distinctions that change which kernel is optimal; the exact stride number (say 4096 vs 8192) doesn't. Collapsing strides this way means a contiguous tensor and a broadcast tensor of the same logical shape land on the right cache entries without exploding the key space with numbers that don't matter.</p>
+<p lang="zh">还有一个细节值得偷: quack 构造 tuning key 时, 不存每个张量的原始 <em>stride</em>, 而是把它规整成只剩 <code>{0, 1, other}</code> 三种。 为什么: stride 为 <code>0</code> 表示这是个广播维度, 为 <code>1</code> 表示连续, 而只有这两种区别会改变"哪个 kernel 最优"; 具体的 stride 数字 (比如 4096 还是 8192) 不会。 这样折叠 stride, 既能让同一逻辑形状下的连续张量和广播张量落到各自正确的缓存条目, 又不会让一堆无所谓的数字把 key 空间炸开。</p>
 
 <h3 lang="en">Parallel precompile — kill the first-run cost</h3>
 <h3 lang="zh">并行预编译 — 干掉首跑成本</h3>
