@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft-OPD — Teaching a Draft Model From Its Own Mistakes · Paper Reading No.005</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Piazzolla:ital,opsz,wght@0,8..30,400..700;1,8..30,400..600&family=Spline+Sans+Mono:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+<style>
+:root {
+  /* Drafting table — pale graph-paper, blueprint ink, a three-colour verdict system */
+  --bg: #f1eee3;
+  --paper: #fbf9f2;
+  --paper-2: #f6f2e8;
+  --tint: #efe9db;
+  --tint-soft: #f4efe3;
+
+  --ink: #23201a;
+  --ink-soft: #4c463d;
+  --ink-mute: #857d6f;
+  --ink-faint: #b1a793;
+
+  --rule: rgba(44,38,28,0.15);
+  --rule-soft: rgba(44,38,28,0.07);
+  --rule-strong: rgba(44,38,28,0.30);
+
+  --blue: #1f4396;       /* the TARGET / teacher / verifier */
+  --blue-deep: #16306e;
+  --blue-soft: #3a63c0;
+  --red: #c0382a;        /* the DRAFT / a rejected proposal / an error */
+  --red-deep: #952519;
+  --green: #38753f;      /* an ACCEPTED token */
+  --green-deep: #275529;
+  --gold: #a3701a;       /* an ANCHOR — where the draft acted */
+  --gold-deep: #7a5210;
+
+  --display: 'Syne', system-ui, 'Noto Sans SC', sans-serif;
+  --serif: 'Piazzolla', Georgia, 'Noto Serif SC', serif;
+  --mono: 'Spline Sans Mono', 'IBM Plex Mono', 'Courier New', monospace;
+
+  --max-content: 720px;
+  --rail-w: 214px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  padding-left: var(--rail-w);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.66;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Graph-paper grid + a soft wash at the top of the sheet */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(44,38,28,0.045) 0px, rgba(44,38,28,0.045) 1px, transparent 1px, transparent 34px),
+    repeating-linear-gradient(90deg, rgba(44,38,28,0.045) 0px, rgba(44,38,28,0.045) 1px, transparent 1px, transparent 34px),
+    radial-gradient(ellipse 66% 44% at 50% -4%, rgba(31,67,150,0.06), transparent 60%);
+}
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  padding: 82px 56px 58px;
+  border-bottom: 2px solid var(--ink);
+  max-width: 1280px;
+  margin: 0 auto;
+  z-index: 1;
+}
+.masthead .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 40px;
+}
+.masthead .kicker .tick { width: 26px; height: 2px; background: var(--red); }
+.masthead .kicker .dot { width: 6px; height: 6px; background: var(--blue); border-radius: 50%; }
+.masthead .kicker .chip { color: var(--red); font-weight: 700; }
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(50px, 8.2vw, 108px);
+  line-height: 0.94;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.masthead h1 .em { color: var(--blue); }
+.masthead h1 .opd { color: var(--red); font-style: normal; }
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(18px, 2.05vw, 23px);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 34px 0 0;
+  max-width: 790px;
+  letter-spacing: -0.001em;
+}
+.masthead .subtitle em { color: var(--red); font-style: italic; }
+.masthead .subtitle strong { color: var(--blue); font-weight: 600; }
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+  margin-top: 52px;
+  padding-top: 30px;
+  border-top: 1px solid var(--rule);
+  max-width: 1000px;
+}
+.masthead .meta .item .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 10px;
+}
+.masthead .meta .item .value {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.masthead .meta .item .value .unit { font-family: var(--mono); font-size: 11px; color: var(--ink-mute); margin-left: 5px; font-weight: 400; }
+.masthead .meta .item .value .accent { color: var(--blue); }
+.masthead .meta .item .value .accent-r { color: var(--red); }
+
+/* ============ SHELL ============ */
+.shell { position: relative; max-width: 1280px; margin: 0 auto; padding: 0 56px; z-index: 1; }
+.article { position: relative; max-width: var(--max-content); margin: 76px auto; padding: 0; }
+
+/* ============ RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  padding: 48px 22px;
+  border-right: 2px solid var(--ink);
+  font-family: var(--serif);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  background: var(--paper-2);
+  z-index: 50;
+  overflow-y: auto;
+}
+.rail::-webkit-scrollbar { width: 4px; }
+.rail::-webkit-scrollbar-thumb { background: var(--rule-strong); }
+.rail .rail-home {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-mute);
+  text-decoration: none;
+  margin-bottom: 24px;
+  transition: color 0.18s;
+}
+.rail .rail-home:hover { color: var(--red); }
+.rail .brand {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.06;
+}
+.rail .brand .opd { color: var(--red); }
+.rail .ref { color: var(--ink-mute); margin-bottom: 28px; font-size: 10px; font-family: var(--mono); }
+.rail .ref .pin { color: var(--blue); font-weight: 700; }
+.rail ol { list-style: none; padding: 0; margin: 0; counter-reset: nav; }
+.rail ol li { margin-bottom: 12px; counter-increment: nav; position: relative; padding-left: 28px; }
+.rail ol li::before {
+  content: counter(nav, decimal-leading-zero);
+  position: absolute; left: 0; top: 1px;
+  color: var(--ink-faint);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.04em;
+}
+.rail ol li a { color: var(--ink-soft); text-decoration: none; transition: color 0.18s; display: block; line-height: 1.32; }
+.rail ol li a:hover { color: var(--blue); }
+.rail .divider { height: 1px; background: var(--rule); margin: 18px 0; }
+.rail .legend { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.08em; color: var(--ink-mute); line-height: 1.9; text-transform: uppercase; }
+.rail .legend .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+
+@media (max-width: 1280px) {
+  body { padding-left: 0; }
+  .rail { display: none; }
+}
+
+/* ============ TYPOGRAPHY ============ */
+.article h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  margin: 108px 0 24px;
+  color: var(--ink);
+  position: relative;
+}
+.article h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--red);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.article h2 em { font-style: italic; font-weight: 600; color: var(--blue); }
+.article h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 22px; line-height: 1.3;
+  margin: 54px 0 14px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.article h3 em { font-style: italic; color: var(--red); font-weight: 600; }
+.article h4 {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin: 32px 0 12px;
+}
+.article p { margin: 0 0 20px; color: var(--ink-soft); font-size: 16.5px; }
+.article p strong { color: var(--ink); font-weight: 600; }
+.article p em { color: var(--red-deep); font-style: italic; }
+.article ul, .article ol.body-list { margin: 0 0 20px; padding-left: 22px; color: var(--ink-soft); }
+.article li { margin-bottom: 9px; font-size: 16px; }
+.article li strong { color: var(--ink); }
+.article p code, .article li code, .article td code, .article th code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--tint);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--blue-deep);
+  border: 1px solid var(--rule);
+}
+.article a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-soft); transition: color 0.18s, border-color 0.18s; }
+.article a:hover { color: var(--red); border-bottom-color: var(--red); }
+
+.dropcap { display: block; }
+.dropcap::first-letter {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 66px;
+  line-height: 0.82;
+  float: left;
+  margin: 8px 14px 0 0;
+  color: var(--red);
+}
+
+/* ============ ORNAMENT BREAK ============ */
+.ornament-break { display: flex; justify-content: center; align-items: center; margin: 52px 0; gap: 13px; }
+.ornament-break .line { flex: 0 0 54px; height: 1px; background: var(--rule-strong); }
+.ornament-break .pip { width: 7px; height: 7px; border-radius: 50%; }
+.ornament-break .pip.b { background: var(--blue); }
+.ornament-break .pip.g { background: var(--green); }
+.ornament-break .pip.r { background: var(--red); }
+
+/* ============ CODE BLOCKS ============ */
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.66;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--blue);
+  padding: 18px 22px;
+  margin: 24px 0;
+  overflow-x: auto;
+  color: var(--ink-soft);
+  white-space: pre;
+  border-radius: 3px;
+}
+.code .c-key { color: var(--blue); font-weight: 600; }
+.code .c-str { color: var(--green-deep); }
+.code .c-num { color: var(--red); }
+.code .c-com { color: var(--ink-faint); font-style: italic; }
+.code .c-acc { color: var(--green); font-weight: 600; }
+.code .c-rej { color: var(--red); font-weight: 600; }
+.code .c-fname {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.14em;
+  color: var(--ink-mute); text-transform: uppercase;
+  display: block; margin-bottom: 12px; font-weight: 600;
+}
+
+/* ============ CALLOUTS ============ */
+.callout {
+  margin: 28px 0;
+  padding: 20px 24px;
+  background: var(--paper);
+  border-left: 3px solid var(--blue);
+  border-radius: 3px;
+  border-top: 1px solid var(--rule-soft);
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+}
+.callout.red { border-left-color: var(--red); }
+.callout.green { border-left-color: var(--green); }
+.callout.gold { border-left-color: var(--gold); }
+.callout .ctag {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--blue); margin-bottom: 10px; display: block;
+}
+.callout.red .ctag { color: var(--red); }
+.callout.green .ctag { color: var(--green); }
+.callout.gold .ctag { color: var(--gold); }
+.callout p { margin: 0 0 10px; color: var(--ink-soft); font-size: 15.5px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout strong { color: var(--ink); }
+.callout code { font-family: var(--mono); font-size: 12px; color: var(--blue-deep); background: var(--tint); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--rule); }
+
+/* ============ FORMULA ============ */
+.formula {
+  margin: 24px 0;
+  padding: 18px 22px;
+  background: var(--tint-soft);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.formula .note { display: block; margin-top: 10px; font-family: var(--serif); font-size: 12.5px; color: var(--ink-mute); font-style: italic; }
+.formula .hl { color: var(--blue); }
+.formula .acc { color: var(--green); }
+.formula .rej { color: var(--red); }
+
+/* ============ KATEX MATH ============ */
+.formula .katex-display { margin: 4px 0; }
+.formula .katex-display + .katex-display { margin-top: 10px; }
+.formula .katex { font-size: 1.16em; }
+.katex { color: var(--ink); }
+.article .katex { font-size: 1.04em; }
+.formula .katex-display > .katex { white-space: normal; }
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+
+/* ============ TABLES ============ */
+.tbl { width: 100%; border-collapse: collapse; margin: 26px 0; font-size: 14px; }
+.tbl th, .tbl td { text-align: left; padding: 11px 14px 11px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.tbl th {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-mute); font-weight: 600;
+  border-bottom: 2px solid var(--ink); padding-bottom: 11px;
+}
+.tbl td { color: var(--ink-soft); }
+.tbl td code, .tbl th code { font-family: var(--mono); font-size: 12px; color: var(--blue-deep); background: var(--tint); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--rule); }
+.tbl td.k { color: var(--ink); font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.tbl td.num { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; font-family: var(--mono); }
+.tbl td.win { color: var(--green-deep); font-weight: 700; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tbl td.lose { color: var(--red); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tbl tr.best td { background: rgba(56,117,63,0.07); }
+
+/* ============ PLATES (SVG) ============ */
+.plate { margin: 56px 0; padding: 0; }
+.plate.wide { max-width: 1040px; margin-left: calc(-1 * (1040px - var(--max-content)) / 2); }
+@media (max-width: 1100px) { .plate.wide { max-width: 100%; margin-left: 0; } }
+.plate-meta {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 2px solid var(--ink);
+}
+.plate-meta .pnum { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--red); }
+.plate-meta .pname { font-family: var(--display); font-style: normal; font-weight: 600; font-size: 16px; color: var(--ink); }
+.plate-meta .pscale { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--ink-mute); }
+.plate-body {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 24px;
+  position: relative;
+  border-radius: 3px;
+}
+.plate-body svg { display: block; width: 100%; height: auto; }
+.plate .caption { margin-top: 14px; font-family: var(--serif); font-style: italic; font-size: 14.5px; color: var(--ink-mute); line-height: 1.55; }
+
+/* SVG shared classes */
+.d-text { font-family: var(--serif); font-size: 12px; fill: var(--ink); }
+.d-text.mono { font-family: var(--mono); font-size: 10.5px; }
+.d-text.small { font-size: 10px; fill: var(--ink-mute); }
+.d-text.tiny { font-size: 8.7px; fill: var(--ink-faint); }
+.d-text.label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; fill: var(--ink-mute); text-transform: uppercase; font-weight: 600; }
+.d-text.title { font-family: var(--display); font-weight: 600; font-size: 13px; fill: var(--ink); }
+.d-text.blue { fill: var(--blue); }
+.d-text.red { fill: var(--red); }
+.d-text.green { fill: var(--green); }
+.d-text.gold { fill: var(--gold); }
+.d-text.dim { fill: var(--ink-mute); }
+.d-text.paper { fill: var(--paper); }
+.d-text.b { font-weight: 700; }
+
+.zone { fill: var(--paper-2); stroke: var(--rule-strong); stroke-width: 1; }
+.zone.tint { fill: var(--tint); }
+.zone.blue { stroke: var(--blue); }
+.zone.red { stroke: var(--red); }
+.zone.green { stroke: var(--green); }
+.zone.gold { stroke: var(--gold); }
+.fill-blue { fill: var(--blue); }
+.fill-red { fill: var(--red); }
+.fill-green { fill: var(--green); }
+.fill-gold { fill: var(--gold); }
+.fill-paper { fill: var(--paper); }
+.fill-blue-w { fill: rgba(31,67,150,0.12); }
+.fill-red-w { fill: rgba(192,56,42,0.13); }
+.fill-green-w { fill: rgba(56,117,63,0.14); }
+.fill-gold-w { fill: rgba(163,112,26,0.14); }
+.op7 { opacity: 0.7; }
+.op5 { opacity: 0.5; }
+.op3 { opacity: 0.3; }
+
+.bp-line { stroke: var(--ink-mute); stroke-width: 1; fill: none; }
+.bp-line.dash { stroke-dasharray: 4 4; }
+.bp-line.blue { stroke: var(--blue); }
+.bp-line.red { stroke: var(--red); }
+.bp-line.green { stroke: var(--green); }
+.bp-line.gold { stroke: var(--gold); }
+.bp-line.thick { stroke-width: 1.8; }
+.bp-line.faint { stroke: var(--rule-strong); }
+
+/* ============ FOOTER ============ */
+.colophon {
+  max-width: 1280px;
+  margin: 112px auto 0;
+  padding: 48px 56px 72px;
+  border-top: 2px solid var(--ink);
+  font-family: var(--serif);
+  font-size: 11.5px;
+  color: var(--ink-mute);
+  line-height: 1.72;
+}
+.colophon .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; }
+.colophon .field .lbl { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 12px; }
+.colophon .field .val { color: var(--ink-mute); }
+.colophon .field .val a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-soft); }
+.colophon .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: middle; border: 1px solid var(--rule-strong); border-radius: 2px; }
+.colophon .closing { margin-top: 32px; padding-top: 22px; border-top: 1px solid var(--rule); font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--ink-mute); text-align: center; }
+
+/* ============ LANGUAGE TOGGLE ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+.lang-toggle {
+  position: fixed; top: 22px; right: 30px; z-index: 150;
+  display: inline-flex; align-items: stretch;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  box-shadow: 0 3px 12px rgba(44,38,28,0.16);
+  overflow: hidden;
+}
+.lang-toggle button {
+  background: transparent; border: none; color: var(--ink-mute);
+  padding: 9px 14px; font: inherit; letter-spacing: inherit; text-transform: inherit;
+  cursor: pointer; transition: color 0.16s, background 0.16s;
+  border-right: 1px solid var(--rule);
+}
+.lang-toggle button:last-child { border-right: none; }
+.lang-toggle button:hover { color: var(--blue); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] { color: var(--paper); background: var(--blue); }
+
+.article > section:first-of-type > p:first-of-type { margin-top: 0; }
+section { scroll-margin-top: 30px; }
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<!-- ================ RAIL ================ -->
+<nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+  <div class="brand">Draft-<span class="opd">OPD</span></div>
+  <div class="ref">No<span class="pin">.005</span> · 2026-07-23</div>
+  <ol>
+    <li><a href="#prologue"><span lang="en">The plateau</span><span lang="zh">停滞的高原</span></a></li>
+    <li><a href="#s1-specdec"><span lang="en">Speculative decoding, one loop</span><span lang="zh">投机解码， 一个循环</span></a></li>
+    <li><a href="#s2-plateau"><span lang="en">Why SFT plateaus</span><span lang="zh">为什么 SFT 会停滞</span></a></li>
+    <li><a href="#s3-opd"><span lang="en">On-policy distillation — and why it breaks</span><span lang="zh">在线蒸馏 —— 以及它为何失灵</span></a></li>
+    <li><a href="#s4-method"><span lang="en">Draft-OPD: the three-stage trick</span><span lang="zh">Draft-OPD： 三段式技巧</span></a></li>
+    <li><a href="#s5-objective"><span lang="en">The acceptance-aware objective</span><span lang="zh">接受度感知的目标函数</span></a></li>
+    <li><a href="#s6-results"><span lang="en">Reading the numbers</span><span lang="zh">读懂这些数字</span></a></li>
+    <li><a href="#s7-ablations"><span lang="en">What actually matters</span><span lang="zh">到底什么在起作用</span></a></li>
+    <li><a href="#s8-amd"><span lang="en">The AMD / MI300X read</span><span lang="zh">AMD / MI300X 视角</span></a></li>
+    <li><a href="#epilogue"><span lang="en">What to take away</span><span lang="zh">该带走什么</span></a></li>
+  </ol>
+  <div class="divider"></div>
+  <div class="legend">
+    <div><span class="sw" style="background:#1f4396"></span>target · verifier</div>
+    <div><span class="sw" style="background:#38753f"></span>accepted token</div>
+    <div><span class="sw" style="background:#c0382a"></span>draft · rejected</div>
+    <div><span class="sw" style="background:#a3701a"></span>anchor</div>
+  </div>
+</nav>
+
+<!-- ================ MASTHEAD ================ -->
+<header class="masthead">
+  <div class="kicker" lang="en">
+    <span class="tick"></span>
+    <span>Paper Reading <span class="chip">No.005</span></span>
+    <span class="dot"></span>
+    <span>Speculative Decoding</span>
+    <span class="dot"></span>
+    <span>2026-07-23</span>
+  </div>
+  <div class="kicker" lang="zh">
+    <span class="tick"></span>
+    <span>论文精读 <span class="chip">No.005</span></span>
+    <span class="dot"></span>
+    <span>投机解码</span>
+    <span class="dot"></span>
+    <span>2026-07-23</span>
+  </div>
+  <h1 lang="en">Draft-<span class="opd">OPD</span></h1>
+  <h1 lang="zh">Draft-<span class="opd">OPD</span></h1>
+  <p class="subtitle" lang="en">A speculative-decoding draft model trained by plain SFT stops getting better — its <strong>acceptance length</strong> hits a wall no amount of extra data can push past. Draft-OPD's answer: stop teaching the drafter from the target's clean trajectories, and start teaching it from <em>its own rejected guesses</em>. A first-principles rebuild of the paper, with every number checked against the source.</p>
+  <p class="subtitle" lang="zh">一个用普通 SFT 训练的投机解码草稿模型会停止进步 —— 它的<strong>接受长度</strong>撞上一堵墙， 再多数据也推不过去。 Draft-OPD 的答案是： 别再拿目标模型干净的轨迹去教草稿模型， 改成拿<em>它自己被拒的猜测</em>去教。 这是对这篇论文从第一性原理的一次重建， 每一个数字都对照原文核过。</p>
+  <div class="meta">
+    <div class="item">
+      <div class="label" lang="en">Source</div>
+      <div class="label" lang="zh">原文</div>
+      <div class="value" lang="en">arXiv 2605.29343 <span class="unit">· Lei et al.</span></div>
+      <div class="value" lang="zh">arXiv 2605.29343 <span class="unit">· Lei 等</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Method</div>
+      <div class="label" lang="zh">方法</div>
+      <div class="value" lang="en">On-policy <span class="accent">distillation</span></div>
+      <div class="value" lang="zh">在线<span class="accent">蒸馏</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Speedup gain</div>
+      <div class="label" lang="zh">加速增益</div>
+      <div class="value" lang="en"><span class="accent-r">+23%</span> / <span class="accent-r">+13%</span></div>
+      <div class="value" lang="zh"><span class="accent-r">+23%</span> / <span class="accent-r">+13%</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Acceptance length τ</div>
+      <div class="label" lang="zh">接受长度 τ</div>
+      <div class="value" lang="en"><span class="accent">5.35 → 5.85</span></div>
+      <div class="value" lang="zh"><span class="accent">5.35 → 5.85</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================ MAIN ARTICLE ================ -->
+<div class="shell">
+<main class="article">
+
+<!-- ============ PROLOGUE ============ -->
+<section id="prologue">
+<p class="dropcap" lang="en">You have trained a draft model. It sits next to a big target model — Qwen3-8B, say — and its whole job is to guess the next handful of tokens so the target can verify a block at a time instead of crawling one token per forward pass. You benchmarked it (I did too, in a <a href="/en/blog/eagle3-qwen3-benchmark/">previous post</a>): a real speedup, tokens flying. So you do the obvious thing to make it better — you train it more. More SFT epochs, more target-generated data. And the curve does something quietly infuriating: it <em>stops</em>. Accuracy on the training objective keeps ticking up, but the number you actually care about — how many guessed tokens the target accepts per round — flattens into a plateau and refuses to move.</p>
+
+<p class="dropcap" lang="zh">你训练好了一个草稿模型。 它挨着一个大目标模型 —— 比如 Qwen3-8B —— 它唯一的活儿就是猜出接下来的几个 token， 好让目标模型一次验证一整块， 而不是一个 forward pass 只吐一个 token 地爬。 你跑过 benchmark（我也跑过， 见<a href="/zh/blog/eagle3-qwen3-benchmark/">之前那篇</a>）： 实打实的加速， token 飞起来。 于是你做了最显然的事去让它更好 —— 多训一会儿。 更多 SFT epoch、 更多目标模型生成的数据。 然后曲线做了一件安静得令人抓狂的事： 它<em>停了</em>。 训练目标上的准确率还在往上走， 可你真正在乎的那个数字 —— 每一轮目标模型接受几个猜测的 token —— 摊成一条高原线， 死活不动。</p>
+
+<p lang="en">This paper — <strong>Draft-OPD: On-Policy Distillation for Speculative Draft Models</strong> (Haodi Lei and ten co-authors from Shanghai Jiao Tong, Shanghai AI Lab, Tsinghua, CUHK, Peking, and Zhejiang) — is about that plateau: what causes it, why more data cannot fix it, and a training recipe that gets past it by teaching the drafter from the exact tokens it gets <em>wrong</em>. The result they report is a draft model that, at matched training compute, beats EAGLE-3 by <strong>23%</strong> and DFlash by <strong>13%</strong> in average decoding speedup on reasoning models. This is not a new draft architecture — it is a new way to <em>train</em> the draft architectures you already have.</p>
+
+<p lang="zh">这篇论文 —— <strong>Draft-OPD： 面向投机草稿模型的在线蒸馏</strong>（Haodi Lei 与十位合作者， 来自上海交大、 上海 AI Lab、 清华、 港中文、 北大、 浙大）—— 讲的就是这个高原： 它由什么造成、 为什么更多数据修不了、 以及一个能越过它的训练配方 —— 拿草稿模型<em>猜错</em>的那些 token 去教它。 他们报告的结果是： 在训练算力相当的前提下， 一个草稿模型在推理模型上的平均解码加速比， 比 EAGLE-3 高 <strong>23%</strong>、 比 DFlash 高 <strong>13%</strong>。 这不是一种新的草稿架构 —— 而是一种训练你已经有的那些草稿架构的新办法。</p>
+
+<div class="callout gold">
+  <span class="ctag" lang="en">How to read this — a teacher's note</span>
+  <span class="ctag" lang="zh">怎么读 —— 一位老师的话</span>
+  <p lang="en">I wrote this to <em>learn</em> the paper, so it is built to be learned from. If you have fifteen minutes, read <strong>§ 2</strong> (the plateau) and <strong>§ 4</strong> (the three-stage trick) — they carry the whole idea. <strong>§ 5</strong> (the objective) is the deep end and rewards a second pass. <strong>§ 6</strong> contains the one number you must read carefully: the paper's abstract says "over 5×," but the honest thinking-mode average is 4.88× — I will show you exactly where the gap lives, because learning to read a headline claim critically is half of reading a paper.</p>
+  <p lang="zh">我写这篇是为了<em>学</em>这篇论文， 所以它是照着"能被学"来搭的。 如果你只有十五分钟， 读 <strong>§ 2</strong>（高原）和 <strong>§ 4</strong>（三段式技巧）—— 整个想法都在里面。 <strong>§ 5</strong>（目标函数）是最深的一段， 值得读第二遍。 <strong>§ 6</strong> 里有一个你必须仔细读的数字： 论文摘要说"超过 5×"， 但诚实的 thinking 模式平均值是 4.88× —— 我会精确指给你看这个落差在哪， 因为学会带着批判去读一句头条结论， 是读论文的一半功夫。</p>
+</div>
+
+<p lang="en">A note on where I sit. I work on AMD GPU kernels — MI300X, MI355X, ROCm, AITER, Triton-for-ROCm — and speculative decoding is one of the largest single levers on decode-time throughput for the models we serve. So I read this paper twice: once as a machine-learning idea, and once through a serving-and-roofline lens, asking "what would this change on an MI300X node?" I flag the second reading in <strong>§ 8</strong>.</p>
+
+<p lang="zh">说一句我的位置。 我做的是 AMD GPU kernel —— MI300X、 MI355X、 ROCm、 AITER、 ROCm 上的 Triton —— 而投机解码是我们服务的模型里， 对 decode 阶段吞吐影响最大的单个杠杆之一。 所以这篇论文我读了两遍： 一遍当成机器学习的想法读， 一遍带着"服务与 roofline"的视角读， 问自己"这东西放到 MI300X 节点上会改变什么？" 第二遍的读法我放在 <strong>§ 8</strong>。</p>
+</section>
+
+<!-- ============ S1 · SPECULATIVE DECODING ============ -->
+<section id="s1-specdec">
+<h2 lang="en"><span class="num">§ 1 · The loop you are accelerating</span>Speculative decoding, in <em>one loop</em></h2>
+<h2 lang="zh"><span class="num">§ 1 · 你在加速的那个循环</span>投机解码， <em>一个循环</em>就讲完</h2>
+
+<p lang="en">Everything in this paper is a consequence of one loop, so we earn it first. Autoregressive decoding is slow for a boring reason: to produce token <em>t+1</em> the big model must read all of tokens up to <em>t</em>, and each token costs one full forward pass over billions of parameters. The pass is <strong>memory-bound</strong> — you spend most of your time streaming weights from HBM, not doing math — so a pass that produces one token wastes almost all of the compute it paid to load those weights.</p>
+
+<p lang="zh">这篇论文里的一切， 都是一个循环的推论， 所以我们先把它挣出来。 自回归解码慢有一个无聊的原因： 要产出第 <em>t+1</em> 个 token， 大模型必须读完到第 <em>t</em> 为止的所有 token， 而每个 token 都要花一整个 forward pass、 扫过几十上百亿参数。 这个 pass 是<strong>访存受限</strong>的 —— 你大部分时间花在从 HBM 里搬权重， 而不是做数学 —— 所以一个只产出一个 token 的 pass， 几乎浪费掉了它为搬那些权重所付的全部算力。</p>
+
+<p lang="en">Speculative decoding exploits that waste. A verifier forward pass can score <em>K</em> tokens for almost the same cost as scoring one, because the weights are already loaded. So: let a small, cheap <strong>draft model</strong> <span class="katex-inline">q</span> guess the next <em>K</em> tokens; then run <em>one</em> <strong>target</strong> <span class="katex-inline">p</span> pass to check all <em>K</em> at once; keep the longest prefix the target agrees with; and — this is the guarantee — because the check uses the target's own probabilities, the output distribution is <em>exactly</em> the target's. Speculative decoding is <strong>lossless</strong>: same text as running the target alone, produced in fewer target passes.</p>
+
+<p lang="zh">投机解码利用的正是这份浪费。 一个 verifier forward pass 可以给 <em>K</em> 个 token 打分， 花的代价和给一个 token 打分几乎一样 —— 因为权重反正已经加载好了。 于是： 让一个小而便宜的<strong>草稿模型</strong> <span class="katex-inline">q</span> 猜出接下来 <em>K</em> 个 token； 再跑<em>一次</em><strong>目标模型</strong> <span class="katex-inline">p</span> 的 pass， 一口气检查全部 <em>K</em> 个； 保留目标模型认可的最长前缀； 而且 —— 这是那条保证 —— 因为检查用的是目标模型自己的概率， 输出分布<em>严格等于</em>目标模型的分布。 投机解码是<strong>无损</strong>的： 和单独跑目标模型产出的文本一模一样， 只是用了更少的目标 pass。</p>
+
+<div class="formula">
+<div class="c-fname" style="text-align:left; font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--ink-mute); text-transform:uppercase; margin-bottom:10px;">Eq. 1 · the draft step</div>
+\[ \hat{y}_{t+k} \sim q_\phi\!\left(\,\cdot \mid x_{<t},\ \hat{y}_{t:t+k-1}\right), \qquad k = 0,\dots,K-1 \]
+<span class="note" lang="en">Each guessed token conditions on the true prefix <em>and the drafter's own earlier guesses in this block</em>. That inner dependence — the drafter standing on its own tokens — is the seed of the entire paper. Remember it.</span>
+<span class="note" lang="zh">每个猜测的 token 都依赖真实前缀 <em>以及草稿模型在这一块里自己更早的猜测</em>。 这个内部依赖 —— 草稿模型踩在自己产出的 token 上 —— 是整篇论文的种子。 记住它。</span>
+</div>
+
+<p lang="en">The metric that governs the whole thing has a name: <strong>acceptance length</strong> <span class="katex-inline">\tau</span> — the number of drafted tokens the target accepts per verification round. If the drafter proposes 16 tokens and the target accepts the first 6, then rejects the 7th, <span class="katex-inline">\tau = 6</span> for that round. Higher <span class="katex-inline">\tau</span> means each expensive target pass "buys" more output tokens, which is the entire source of speedup. The paper reports two numbers side by side, and the difference between them is worth internalizing now:</p>
+
+<p lang="zh">支配这整件事的指标有个名字： <strong>接受长度</strong> <span class="katex-inline">\tau</span> —— 每一轮验证里目标模型接受的草稿 token 数。 如果草稿模型提议 16 个 token， 目标模型接受了前 6 个、 在第 7 个上拒绝， 那这一轮的 <span class="katex-inline">\tau = 6</span>。 <span class="katex-inline">\tau</span> 越大， 每一次昂贵的目标 pass"买到"的输出 token 越多 —— 这就是加速的全部来源。 论文并排报了两个数字， 它俩之间的区别现在就值得刻进脑子里：</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">Two metrics — don't conflate them</span>
+  <span class="ctag" lang="zh">两个指标 —— 别混为一谈</span>
+  <p lang="en"><strong>Acceptance length <span class="katex-inline">\tau</span></strong> is hardware-independent: pure draft–target agreement. <strong>Speedup ratio</strong> is measured wall-clock, relative to running the target alone. They rank methods <em>differently</em>: on Qwen3-8B, EAGLE-3 has a higher <span class="katex-inline">\tau</span> than DFlash (5.64 vs 5.19) yet a <em>lower</em> speedup (4.06× vs 4.34×) — because EAGLE-3's draft head is autoregressive and slower per token, while DFlash proposes its block in parallel. Higher agreement, but the guessing itself costs more. Keep both eyes open.</p>
+  <p lang="zh"><strong>接受长度 <span class="katex-inline">\tau</span></strong> 与硬件无关： 纯粹是草稿与目标的一致程度。 <strong>加速比</strong>是实测墙钟时间， 相对于单独跑目标模型。 它俩给方法排的序<em>不一样</em>： 在 Qwen3-8B 上， EAGLE-3 的 <span class="katex-inline">\tau</span> 比 DFlash 高（5.64 对 5.19）， 加速比却<em>更低</em>（4.06× 对 4.34×）—— 因为 EAGLE-3 的草稿头是自回归的， 每个 token 更慢； 而 DFlash 是并行地提出整块。 一致性更高， 可猜测本身更贵。 两只眼睛都得睁着。</p>
+</div>
+
+<!-- ============ PLATE I ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate I</span>
+  <span class="pname" lang="en">One verification round</span>
+  <span class="pname" lang="zh">一轮验证</span>
+  <span class="pscale">— draft · verify · accept —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-mute)"/>
+    </marker>
+  </defs>
+  <text x="500" y="26" class="d-text title" text-anchor="middle">The draft proposes a block; the target verifies it in one pass; the longest agreeing prefix survives.</text>
+  <line x1="40" y1="40" x2="960" y2="40" class="bp-line faint"/>
+
+  <!-- context prefix -->
+  <text x="60" y="86" class="d-text label">VERIFIED PREFIX</text>
+  <rect x="60" y="94" width="150" height="34" class="zone tint"/>
+  <text x="135" y="116" class="d-text mono dim" text-anchor="middle">… x_&lt;t</text>
+
+  <!-- draft block -->
+  <text x="240" y="86" class="d-text label red">DRAFT PROPOSES K = 16</text>
+  <g font-family="var(--mono)">
+    <!-- accepted run -->
+    <rect x="240" y="94" width="42" height="34" class="fill-green-w zone green"/>
+    <text x="261" y="116" class="d-text mono green b" text-anchor="middle">d₁</text>
+    <rect x="284" y="94" width="42" height="34" class="fill-green-w zone green"/>
+    <text x="305" y="116" class="d-text mono green b" text-anchor="middle">d₂</text>
+    <rect x="328" y="94" width="42" height="34" class="fill-green-w zone green"/>
+    <text x="349" y="116" class="d-text mono green b" text-anchor="middle">…</text>
+    <rect x="372" y="94" width="52" height="34" class="fill-green-w zone green"/>
+    <text x="398" y="116" class="d-text mono green b" text-anchor="middle">d₆</text>
+    <!-- first rejection -->
+    <rect x="426" y="94" width="46" height="34" class="fill-red-w zone red"/>
+    <text x="449" y="116" class="d-text mono red b" text-anchor="middle">d₇</text>
+    <!-- dead tail -->
+    <rect x="474" y="94" width="42" height="34" class="zone" opacity="0.5"/>
+    <text x="495" y="116" class="d-text mono dim" text-anchor="middle">d₈</text>
+    <rect x="518" y="94" width="46" height="34" class="zone" opacity="0.5"/>
+    <text x="541" y="116" class="d-text mono dim" text-anchor="middle">…d₁₆</text>
+  </g>
+
+  <!-- target verify -->
+  <rect x="620" y="80" width="300" height="62" rx="4" class="fill-blue-w zone blue"/>
+  <text x="770" y="106" class="d-text blue b" text-anchor="middle" font-family="var(--mono)" font-size="12">TARGET  p_θ</text>
+  <text x="770" y="126" class="d-text small blue" text-anchor="middle">verifies all 16 in ONE pass</text>
+  <line x1="566" y1="111" x2="614" y2="111" class="bp-line blue thick" marker-end="url(#ah1)"/>
+
+  <!-- verdict row -->
+  <text x="60" y="188" class="d-text label">VERDICT</text>
+  <line x1="60" y1="200" x2="564" y2="200" class="bp-line faint"/>
+  <g>
+    <path d="M 261 150 L 261 210" class="bp-line green dash"/>
+    <path d="M 398 150 L 398 210" class="bp-line green dash"/>
+    <path d="M 449 150 L 449 210" class="bp-line red dash"/>
+  </g>
+  <rect x="240" y="212" width="184" height="30" rx="3" class="fill-green-w zone green"/>
+  <text x="332" y="232" class="d-text green b" text-anchor="middle" font-size="11">6 ACCEPTED  →  τ = 6</text>
+  <rect x="426" y="212" width="46" height="30" rx="3" class="fill-red-w zone red"/>
+  <text x="449" y="232" class="d-text red b" text-anchor="middle" font-size="10">reject</text>
+  <rect x="474" y="212" width="90" height="30" rx="3" class="zone" opacity="0.5"/>
+  <text x="519" y="232" class="d-text dim" text-anchor="middle" font-size="10">discarded</text>
+
+  <!-- key insight -->
+  <text x="620" y="188" class="d-text label red">THE COST STRUCTURE</text>
+  <line x1="620" y1="200" x2="920" y2="200" class="bp-line faint"/>
+  <text x="620" y="220" class="d-text small">One target pass produced <tspan class="green b">7 tokens</tspan> of output</text>
+  <text x="620" y="236" class="d-text small">(6 accepted + 1 corrected) instead of 1.</text>
+  <text x="620" y="256" class="d-text tiny dim">An early reject kills the whole tail — d₈…d₁₆ never</text>
+  <text x="620" y="268" class="d-text tiny dim">had a chance once d₇ failed. Hold that thought for § 5.</text>
+
+  <line x1="40" y1="296" x2="960" y2="296" class="bp-line faint"/>
+  <text x="40" y="318" class="d-text tiny dim">The target substitutes its own token at the first rejection (that is what keeps the output lossless), then the next round starts from the new, longer verified prefix. Speedup ≈ how</text>
+  <text x="40" y="330" class="d-text tiny dim">many tokens each target pass yields on average — i.e. τ + 1 tokens per pass, minus the cost of running the drafter. Everything the paper does is aimed at raising that τ.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate I — the loop in one frame. Green = accepted, red = the first rejection, grey = the dead tail after it. The colour code here holds for the rest of the piece: green is agreement, red is a draft error, blue is the target.</div>
+<div class="caption" lang="zh">Plate I —— 一帧看完这个循环。 绿 = 接受， 红 = 第一个被拒的位置， 灰 = 它之后作废的尾巴。 这套配色贯穿全文： 绿是一致， 红是草稿错误， 蓝是目标模型。</div>
+</div>
+</section>
+
+<!-- ============ S2 · THE PLATEAU ============ -->
+<section id="s2-plateau">
+<h2 lang="en"><span class="num">§ 2 · The train / inference gap</span>Why SFT <em>plateaus</em></h2>
+<h2 lang="zh"><span class="num">§ 2 · 训练 / 推理的裂缝</span>为什么 SFT 会<em>停滞</em></h2>
+
+<p lang="en">Here is the standard way to train a draft model, and it is exactly what plateaus. You take the target model, have it generate a big pile of trajectories, and train the drafter to imitate the target's next-token distribution on every prefix of those trajectories. This is <strong>supervised fine-tuning (SFT)</strong> — offline distillation on a fixed corpus. EAGLE-3 and DFlash are both trained this way, and both are excellent. But the paper's Figure 1 shows the trap: keep running SFT and acceptance length on <em>test</em> data stops improving — it fluctuates around a fixed ceiling. Worse, if you feed the on-policy data back through the SFT objective, <span class="katex-inline">\tau</span> can actually <em>drop</em>. The limitation is not compute. It is <em>which states the drafter trains on.</em></p>
+
+<p lang="zh">这是训练草稿模型的标准做法， 而它恰恰就是那个会停滞的做法。 你拿目标模型生成一大堆轨迹， 然后训练草稿模型， 让它在这些轨迹的每个前缀上模仿目标模型的下一 token 分布。 这就是<strong>监督微调（SFT）</strong> —— 在固定语料上的离线蒸馏。 EAGLE-3 和 DFlash 都是这么训的， 而且都很出色。 但论文的 Figure 1 揭出了陷阱： 继续跑 SFT， <em>测试</em>数据上的接受长度就不再改善 —— 它围着一个固定天花板波动。 更糟的是， 如果你把在线采集的数据再喂回 SFT 目标， <span class="katex-inline">\tau</span> 甚至会<em>下降</em>。 瓶颈不在算力。 在于<em>草稿模型在哪些状态上训练</em>。</p>
+
+<h3 lang="en">The mismatch, said plainly</h3>
+<h3 lang="zh">把这个错配说白</h3>
+
+<p lang="en">Recall Eq. 1: at inference, each drafted token stands on the drafter's <em>own</em> earlier guesses inside the block. So the states that decide acceptance — the prefixes the target is judging — are <strong>draft-induced</strong>. But SFT only ever showed the drafter <strong>target-induced</strong> states: every prefix in the training corpus came from the target. The drafter is trained on one distribution of states and graded on another. Its characteristic errors — the exact moments where it derails and a block gets rejected — <em>never appear in the SFT data</em>. You cannot fix an error the training set never contains, no matter how many epochs you run.</p>
+
+<p lang="zh">回想 Eq. 1： 推理时， 每个草稿 token 都踩在草稿模型<em>自己</em>在这一块里更早的猜测上。 所以决定接受与否的那些状态 —— 目标模型正在评判的那些前缀 —— 是<strong>草稿诱导</strong>的。 而 SFT 只给草稿模型看过<strong>目标诱导</strong>的状态： 训练语料里的每个前缀都来自目标模型。 草稿模型在一种状态分布上训练， 却在另一种上被打分。 它那些特征性的错误 —— 它跑偏、 整块被拒的那些确切时刻 —— <em>从来不出现在 SFT 数据里</em>。 训练集里根本没有的错误， 你训再多 epoch 也修不了。</p>
+
+<div class="callout red">
+  <span class="ctag" lang="en">The name for this — and why it should feel familiar</span>
+  <span class="ctag" lang="zh">这东西的名字 —— 以及它为什么该让你眼熟</span>
+  <p lang="en">This is <strong>exposure bias</strong>, the classic train-on-ground-truth / deploy-on-your-own-output gap. And the fix is conceptually the <em>same move as RL over SFT</em>: stop training on a frozen dataset, start training on the states your policy actually visits. If you have read my <a href="/en/blog/sft-rl-training-guide/">SFT vs RL post</a>, this is that story wearing a speculative-decoding costume. The drafter is a policy; acceptance length is (almost) its reward; SFT is behavior cloning; and the plateau is what behavior cloning always hits.</p>
+  <p lang="zh">这就是<strong>exposure bias（暴露偏差）</strong>， 经典的"在真值上训、 在自己的输出上跑"的裂缝。 而它的修法在概念上和<em>用 RL 取代 SFT 是同一个动作</em>： 别在冻住的数据集上训， 改成在你的策略真正会走到的状态上训。 如果你读过我那篇 <a href="/zh/blog/sft-rl-training-guide/">SFT vs RL</a>， 这就是那个故事换了身投机解码的戏服。 草稿模型是一个策略； 接受长度（几乎）就是它的 reward； SFT 是 behavior cloning； 而这个高原就是 behavior cloning 永远会撞上的那堵墙。</p>
+</div>
+
+<!-- ============ PLATE II ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate II</span>
+  <span class="pname" lang="en">Two state distributions</span>
+  <span class="pname" lang="zh">两种状态分布</span>
+  <span class="pscale">— train ≠ grade —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-mute)"/>
+    </marker>
+  </defs>
+  <text x="500" y="26" class="d-text title" text-anchor="middle">SFT trains on the states the TARGET visits — but acceptance is graded on the states the DRAFT visits.</text>
+  <line x1="40" y1="40" x2="960" y2="40" class="bp-line faint"/>
+
+  <!-- LEFT cloud: target-induced (training) -->
+  <text x="250" y="72" class="d-text label blue" text-anchor="middle">WHAT SFT TRAINS ON</text>
+  <ellipse cx="250" cy="180" rx="180" ry="96" class="fill-blue-w zone blue"/>
+  <text x="250" y="112" class="d-text blue b" text-anchor="middle" font-size="12" font-family="var(--mono)">target-induced states</text>
+  <!-- sample dots -->
+  <circle cx="180" cy="160" r="4" class="fill-blue"/>
+  <circle cx="240" cy="140" r="4" class="fill-blue"/>
+  <circle cx="300" cy="175" r="4" class="fill-blue"/>
+  <circle cx="210" cy="205" r="4" class="fill-blue"/>
+  <circle cx="290" cy="215" r="4" class="fill-blue"/>
+  <circle cx="255" cy="185" r="4" class="fill-blue"/>
+  <text x="250" y="250" class="d-text small blue" text-anchor="middle">every prefix came from the target</text>
+
+  <!-- RIGHT cloud: draft-induced (inference) -->
+  <text x="750" y="72" class="d-text label red" text-anchor="middle">WHAT ACCEPTANCE IS GRADED ON</text>
+  <ellipse cx="750" cy="180" rx="180" ry="96" class="fill-red-w zone red"/>
+  <text x="750" y="112" class="d-text red b" text-anchor="middle" font-size="12" font-family="var(--mono)">draft-induced states</text>
+  <circle cx="690" cy="150" r="4" class="fill-red"/>
+  <circle cx="760" cy="140" r="4" class="fill-red"/>
+  <circle cx="810" cy="175" r="4" class="fill-red"/>
+  <circle cx="700" cy="210" r="4" class="fill-red"/>
+  <circle cx="800" cy="220" r="4" class="fill-red"/>
+  <!-- error star -->
+  <text x="745" y="192" class="d-text red b" text-anchor="middle" font-size="20">✦</text>
+  <text x="750" y="250" class="d-text small red" text-anchor="middle">prefixes contain the draft's own guesses</text>
+
+  <!-- overlap gap -->
+  <path d="M 430 180 Q 500 150 570 180" class="bp-line dash"/>
+  <text x="500" y="150" class="d-text tiny dim" text-anchor="middle">only partial</text>
+  <text x="500" y="300" class="d-text small" text-anchor="middle">The ✦ — the draft's characteristic errors —</text>
+  <text x="500" y="316" class="d-text small red" text-anchor="middle">lives ONLY in the right cloud. SFT never sees it.</text>
+
+  <line x1="40" y1="336" x2="960" y2="336" class="bp-line faint"/>
+</svg>
+</div>
+<div class="caption" lang="en">Plate II — the whole disease in one picture. More SFT makes the blue cloud denser; it does nothing for the red star. Draft-OPD's entire job is to drag training into the red cloud, star included.</div>
+<div class="caption" lang="zh">Plate II —— 一张图看完整个病灶。 更多 SFT 只是把蓝色云团变得更密； 对那颗红星毫无帮助。 Draft-OPD 的全部使命， 就是把训练拽进红色云团 —— 连那颗星一起。</div>
+</div>
+</section>
+
+<!-- ============ S3 · ON-POLICY DISTILLATION ============ -->
+<section id="s3-opd">
+<h2 lang="en"><span class="num">§ 3 · The obvious fix, and its two traps</span>On-policy distillation — and why it <em>breaks</em></h2>
+<h2 lang="zh"><span class="num">§ 3 · 显然的修法， 和它的两个陷阱</span>在线蒸馏 —— 以及它为何<em>失灵</em></h2>
+
+<p lang="en">If the problem is that training and grading use different state distributions, the textbook remedy is <strong>on-policy distillation (OPD)</strong>: sample states from the <em>student's own</em> policy, and have the teacher supervise there. Formally, let the student generate its own trajectory and take its prefixes as the training states:</p>
+
+<p lang="zh">如果问题在于训练和打分用了不同的状态分布， 教科书上的解药就是<strong>在线蒸馏（OPD）</strong>： 从<em>学生自己</em>的策略里采样状态， 让老师在那里做监督。 形式化地说， 让学生生成自己的轨迹， 取它的前缀作为训练状态：</p>
+
+<div class="formula">
+<div class="c-fname" style="text-align:left; font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--ink-mute); text-transform:uppercase; margin-bottom:10px;">Eq. 2–3 · on-policy distillation</div>
+\[ \tilde{y} \sim q_\phi(\cdot \mid x), \qquad s_t = (x,\ \tilde{y}_{<t}) \]
+\[ \mathcal{L}_{\mathrm{OPD}} = \mathbb{E}_{s_t}\big[\, D_{\mathrm{KL}}\!\left(p_\theta^{\,t} \,\|\, q_\phi^{\,t}\right) \big] \]
+<span class="note" lang="en">The states <span class="hl">s_t</span> are prefixes of the <em>student's own</em> sample — that is what makes it "on-policy." At each such state, pull the student's whole next-token distribution toward the teacher's (forward KL, teacher ∥ student). Dense supervision, exactly where the student actually goes.</span>
+<span class="note" lang="zh">状态 <span class="hl">s_t</span> 是<em>学生自己</em>那次采样的前缀 —— 这正是"在线"的含义。 在每个这样的状态上， 把学生的整个下一 token 分布拉向老师的（forward KL， 老师 ∥ 学生）。 稠密的监督， 就落在学生真正会走到的地方。</span>
+</div>
+
+<p lang="en">Beautiful in principle. Now watch it break on a real draft model. Eq. 2 quietly assumes the student can <em>generate a usable trajectory on its own</em>. A model-based drafter — a small model from the same family — can. But the strong modern drafters, EAGLE-3 and DFlash, cannot: they are built to propose <em>short blocks under target guidance</em>, not to run as standalone autoregressive generators. Try to make one roll out a whole sequence alone and you get, in the paper's words, "repetitive or degenerate samples." Garbage states, useless supervision. That is <strong>Trap 1.</strong></p>
+
+<p lang="zh">原理上很漂亮。 现在看它在一个真实草稿模型上怎么崩。 Eq. 2 悄悄假设了学生能<em>自己生成一条可用的轨迹</em>。 一个基于模型的草稿器 —— 同族的一个小模型 —— 能做到。 但强大的现代草稿器， EAGLE-3 和 DFlash， 做不到： 它们生来就是<em>在目标模型引导下提出短块</em>的， 不是拿来当独立自回归生成器用的。 硬让它一个人 rollout 出整条序列， 你得到的是论文原话说的"重复或退化的样本"。 垃圾状态， 无用监督。 这是<strong>陷阱一。</strong></p>
+
+<p lang="en">So you try the other thing: generate the trajectory with <em>actual speculative decoding</em> — draft proposes, target verifies. Now the sequence is fluent and stable. But look what verification did: it kept the accepted tokens and <em>threw away every rejected proposal</em>. The surviving trajectory follows the <strong>target's</strong> distribution, not the draft's. You are back to training on target-induced states — the exact mismatch you were trying to escape — and the tokens you deleted, the rejected ones, were the <em>most valuable signal in the entire process</em>. That is <strong>Trap 2</strong>, and it is the sharper one.</p>
+
+<p lang="zh">于是你试另一条路： 用<em>真正的投机解码</em>去生成轨迹 —— 草稿提议、 目标验证。 现在序列流畅又稳定了。 但看看验证干了什么： 它保留了被接受的 token， 却<em>扔掉了每一个被拒的提议</em>。 幸存下来的轨迹服从<strong>目标模型</strong>的分布， 不是草稿的。 你又回到了在目标诱导状态上训练 —— 正是你想逃开的那个错配 —— 而你删掉的那些 token、 那些被拒的 token， 恰恰是<em>整个过程里最宝贵的信号</em>。 这是<strong>陷阱二</strong>， 而且是更尖锐的那个。</p>
+
+<!-- ============ PLATE III ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate III</span>
+  <span class="pname" lang="en">Two dead ends</span>
+  <span class="pname" lang="zh">两条死路</span>
+  <span class="pscale">— stable XOR on-policy —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-mute)"/>
+    </marker>
+  </defs>
+  <text x="500" y="26" class="d-text title" text-anchor="middle">Each naive rollout gives you ONE of the two things you need — never both.</text>
+  <line x1="40" y1="40" x2="960" y2="40" class="bp-line faint"/>
+
+  <!-- TRAP 1 -->
+  <text x="60" y="72" class="d-text label red">TRAP 1 · DRAFT ROLLS OUT ALONE</text>
+  <rect x="60" y="84" width="400" height="90" rx="4" class="zone red"/>
+  <g font-family="var(--mono)" font-size="10">
+    <rect x="76" y="104" width="40" height="26" class="fill-red-w"/><text x="96" y="121" class="d-text mono red" text-anchor="middle">the</text>
+    <rect x="120" y="104" width="40" height="26" class="fill-red-w"/><text x="140" y="121" class="d-text mono red" text-anchor="middle">the</text>
+    <rect x="164" y="104" width="40" height="26" class="fill-red-w"/><text x="184" y="121" class="d-text mono red" text-anchor="middle">the</text>
+    <rect x="208" y="104" width="40" height="26" class="fill-red-w"/><text x="228" y="121" class="d-text mono red" text-anchor="middle">the</text>
+    <rect x="252" y="104" width="40" height="26" class="fill-red-w"/><text x="272" y="121" class="d-text mono red" text-anchor="middle">the</text>
+  </g>
+  <text x="76" y="152" class="d-text small red b">✓ on-policy states</text>
+  <text x="260" y="152" class="d-text small red b">✗ degenerate / repetitive</text>
+  <text x="76" y="167" class="d-text tiny dim">draft isn't a standalone generator → unusable supervision</text>
+
+  <!-- TRAP 2 -->
+  <text x="540" y="72" class="d-text label red">TRAP 2 · TARGET-ASSISTED ROLLOUT</text>
+  <rect x="540" y="84" width="400" height="90" rx="4" class="zone blue"/>
+  <g font-family="var(--mono)" font-size="10">
+    <rect x="556" y="104" width="44" height="26" class="fill-green-w"/><text x="578" y="121" class="d-text mono green" text-anchor="middle">✓a</text>
+    <rect x="604" y="104" width="44" height="26" class="fill-green-w"/><text x="626" y="121" class="d-text mono green" text-anchor="middle">✓b</text>
+    <rect x="652" y="104" width="44" height="26" class="fill-green-w"/><text x="674" y="121" class="d-text mono green" text-anchor="middle">✓c</text>
+    <rect x="700" y="104" width="44" height="26" class="zone" opacity="0.4" stroke-dasharray="3 3"/><text x="722" y="121" class="d-text mono dim" text-anchor="middle">✗d</text>
+    <rect x="748" y="104" width="44" height="26" class="zone" opacity="0.4" stroke-dasharray="3 3"/><text x="770" y="121" class="d-text mono dim" text-anchor="middle">✗e</text>
+  </g>
+  <text x="726" y="98" class="d-text tiny red" text-anchor="middle">↑ rejected = deleted</text>
+  <text x="556" y="152" class="d-text small green b">✓ stable, fluent text</text>
+  <text x="700" y="152" class="d-text small red b">✗ follows the TARGET, not the draft</text>
+  <text x="556" y="167" class="d-text tiny dim">verification discards the rejected tokens — the very signal you need</text>
+
+  <!-- synthesis arrow -->
+  <line x1="260" y1="184" x2="420" y2="230" class="bp-line thick" marker-end="url(#ah3)"/>
+  <line x1="740" y1="184" x2="580" y2="230" class="bp-line thick" marker-end="url(#ah3)"/>
+  <rect x="330" y="238" width="340" height="66" rx="5" class="fill-gold-w zone gold"/>
+  <text x="500" y="262" class="d-text gold b" text-anchor="middle" font-size="12" font-family="var(--mono)">DRAFT-OPD wants BOTH</text>
+  <text x="500" y="282" class="d-text small" text-anchor="middle">stable trajectory (from target assistance)</text>
+  <text x="500" y="296" class="d-text small" text-anchor="middle">+ the draft's rejected errors, kept as signal</text>
+
+  <line x1="40" y1="318" x2="960" y2="318" class="bp-line faint"/>
+</svg>
+</div>
+<div class="caption" lang="en">Plate III — the dilemma stated as an exclusive-or. Trap 1 has on-policy states but unusable text; Trap 2 has usable text but off-policy states. The next section is entirely about getting both at once.</div>
+<div class="caption" lang="zh">Plate III —— 把两难写成一个异或。 陷阱一有在线状态但文本不可用； 陷阱二有可用文本但状态离线。 下一节讲的完全就是怎么同时拿到两者。</div>
+</div>
+</section>
+
+<!-- ============ S4 · THE METHOD ============ -->
+<section id="s4-method">
+<h2 lang="en"><span class="num">§ 4 · Getting both at once</span>Draft-OPD: the <em>three-stage</em> trick</h2>
+<h2 lang="zh"><span class="num">§ 4 · 同时拿到两者</span>Draft-OPD： <em>三段式</em>技巧</h2>
+
+<p lang="en">The key realization is a decoupling: <strong>generate the trajectory one way, choose the training states another.</strong> The trajectory comes from target-assisted speculative decoding (stable, target-quality — solves Trap 1). The training states are the drafter's <em>actual proposed blocks, including the rejected tail</em>, recovered afterward (on-policy — solves Trap 2). Three stages make that happen.</p>
+
+<p lang="zh">关键的领悟是一次解耦： <strong>用一种方式生成轨迹， 用另一种方式挑训练状态。</strong> 轨迹来自目标辅助的投机解码（稳定、 目标级质量 —— 解决陷阱一）。 训练状态是草稿模型<em>实际提出的那些块、 连被拒的尾巴一起</em>， 事后再恢复出来（在线 —— 解决陷阱二）。 三个阶段把这件事做成。</p>
+
+<h3 lang="en">Stage 1 · Rollout, and record the anchors</h3>
+<h3 lang="zh">阶段一 · Rollout， 并记下 anchor</h3>
+
+<p lang="en">Run ordinary speculative decoding on a prompt. At each step <em>m</em>, note the <strong>anchor</strong> <span class="katex-inline">a_m</span> — the index where this drafted block begins — then let the drafter propose its <em>K</em>-token block (Eq. 4). The target verifies, accepts <span class="katex-inline">r_m</span> tokens, and the next anchor advances: <span class="katex-inline">a_{m+1} = a_m + r_m</span>. What you record is cheap: the anchor list, the proposed blocks, and the accept counts. The paper's own line is the hinge: <em>"Anchors preserve the draft model's local actions without requiring the draft model to generate an entire sequence alone."</em> The <em>global</em> trajectory is target-stabilized; the <em>local</em> action at every anchor is a genuine draft-policy state.</p>
+
+<p lang="zh">在一个 prompt 上跑普通的投机解码。 每一步 <em>m</em>， 记下 <strong>anchor</strong> <span class="katex-inline">a_m</span> —— 这一块草稿从哪个位置开始 —— 然后让草稿模型提出它的 <em>K</em> token 块（Eq. 4）。 目标验证、 接受 <span class="katex-inline">r_m</span> 个 token， 下一个 anchor 前移： <span class="katex-inline">a_{m+1} = a_m + r_m</span>。 你记录的东西很便宜： anchor 列表、 提出的块、 接受计数。 论文自己那句话是枢纽： <em>"Anchor 保留了草稿模型的局部动作， 而不要求草稿模型独自生成整条序列。"</em> <em>全局</em>轨迹由目标模型稳住； 每个 anchor 处的<em>局部</em>动作， 是一个货真价实的草稿策略状态。</p>
+
+<h3 lang="en">Stage 2 · Replay from the anchors</h3>
+<h3 lang="zh">阶段二 · 从 anchor 处回放</h3>
+
+<p lang="en">After the rollout, for each anchor build the <strong>replay context</strong> <span class="katex-inline">c_m = (x,\ y_{\le a_m})</span> — the prompt plus the verified prefix up to that anchor — and teacher-force the <em>exact drafted block</em> <span class="katex-inline">d_m</span> (rejected tokens included) through <em>both</em> models, reading off the full next-token distributions at every position (Eqs. 6–7). This is the move that recovers the discarded signal: you are asking the target to score the draft's actual mistakes, not just the tokens that happened to survive. And it is cheap — the hidden states over those verified prefixes were <em>already computed during the rollout</em>, so replay reuses them and only pays for the <em>K</em>-token block on top; every anchor's block can be scored in parallel.</p>
+
+<p lang="zh">Rollout 之后， 对每个 anchor 构造<strong>回放上下文</strong> <span class="katex-inline">c_m = (x,\ y_{\le a_m})</span> —— prompt 加上到这个 anchor 为止的已验证前缀 —— 然后把<em>那个确切的草稿块</em> <span class="katex-inline">d_m</span>（连被拒的 token 一起）teacher-force 地过<em>两个</em>模型， 在每个位置读出完整的下一 token 分布（Eq. 6–7）。 这一步就是把被丢弃的信号恢复回来的动作： 你在让目标模型给草稿的实际错误打分， 而不只是给那些碰巧幸存的 token 打分。 而且它很便宜 —— 那些已验证前缀上的 hidden state <em>在 rollout 时就已经算过了</em>， 所以回放复用它们， 只为上面那 <em>K</em> token 的块付代价； 每个 anchor 的块都可以并行打分。</p>
+
+<h3 lang="en">Stage 3 · Distill, but treat accepted and rejected tokens differently</h3>
+<h3 lang="zh">阶段三 · 蒸馏， 但对接受和被拒的 token 区别对待</h3>
+
+<p lang="en">Now you have, for every drafted position, both models' distributions — and a label: was this position <em>accepted</em> or <em>rejected</em>? Draft-OPD's objective uses that label to point each token's supervision in the right direction. That is the heart of the paper, and it earns its own section next. But the shape of the whole method is already here: a stable rollout you can trust, replay that resurrects the rejected tokens, and a loss that knows which is which.</p>
+
+<p lang="zh">现在对每个草稿位置， 你都有了两个模型的分布 —— 还有一个标签： 这个位置是<em>被接受</em>还是<em>被拒</em>？ Draft-OPD 的目标函数用这个标签， 把每个 token 的监督指向正确的方向。 这是全篇的心脏， 下一节它值得单独占一节。 但整个方法的形状已经在这儿了： 一条你能信任的稳定 rollout、 让被拒 token 复活的回放、 以及一个知道谁是谁的损失函数。</p>
+
+<!-- ============ PLATE IV ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate IV</span>
+  <span class="pname" lang="en">The three stages</span>
+  <span class="pname" lang="zh">三个阶段</span>
+  <span class="pscale">— rollout · replay · distill —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--gold)"/>
+    </marker>
+  </defs>
+  <text x="500" y="26" class="d-text title" text-anchor="middle">Generate the trajectory with the target's help; recover the draft's own errors from the anchors; distill.</text>
+  <line x1="40" y1="40" x2="960" y2="40" class="bp-line faint"/>
+
+  <!-- STAGE 1 -->
+  <text x="60" y="72" class="d-text label gold">STAGE 1 · ROLLOUT + ANCHORS</text>
+  <rect x="60" y="82" width="880" height="86" rx="4" class="zone"/>
+  <!-- verified sequence bar with anchor marks -->
+  <text x="76" y="104" class="d-text small dim">verified trajectory y (target-quality, stable):</text>
+  <g font-family="var(--mono)" font-size="9">
+    <!-- block m=1 -->
+    <rect x="76" y="112" width="30" height="24" class="fill-green-w"/><rect x="106" y="112" width="30" height="24" class="fill-green-w"/><rect x="136" y="112" width="30" height="24" class="fill-red-w"/>
+    <circle cx="76" cy="112" r="4" class="fill-gold"/><text x="76" y="152" class="d-text tiny gold b" text-anchor="middle">a₁</text>
+    <!-- block m=2 -->
+    <rect x="176" y="112" width="30" height="24" class="fill-green-w"/><rect x="206" y="112" width="30" height="24" class="fill-green-w"/><rect x="236" y="112" width="30" height="24" class="fill-green-w"/><rect x="266" y="112" width="30" height="24" class="fill-red-w"/>
+    <circle cx="176" cy="112" r="4" class="fill-gold"/><text x="176" y="152" class="d-text tiny gold b" text-anchor="middle">a₂</text>
+    <!-- block m=3 -->
+    <rect x="306" y="112" width="30" height="24" class="fill-green-w"/><rect x="336" y="112" width="30" height="24" class="fill-red-w"/>
+    <circle cx="306" cy="112" r="4" class="fill-gold"/><text x="306" y="152" class="d-text tiny gold b" text-anchor="middle">a₃</text>
+  </g>
+  <text x="470" y="128" class="d-text small">record for each block m:</text>
+  <text x="470" y="146" class="d-text tiny dim">anchor aₘ · proposed block dₘ · accept count rₘ</text>
+  <text x="720" y="128" class="d-text small gold b">aₘ₊₁ = aₘ + rₘ</text>
+  <text x="720" y="146" class="d-text tiny dim">green = accepted · red = the rejection that ends the block</text>
+
+  <!-- STAGE 2 -->
+  <line x1="500" y1="170" x2="500" y2="196" class="bp-line gold thick" marker-end="url(#ah4)"/>
+  <text x="60" y="216" class="d-text label gold">STAGE 2 · REPLAY THE BLOCK — INCLUDING REJECTED TOKENS</text>
+  <rect x="60" y="226" width="880" height="80" rx="4" class="zone gold"/>
+  <text x="76" y="248" class="d-text small">from context cₘ = (x, y≤aₘ), teacher-force the EXACT block dₘ through both models:</text>
+  <!-- block re-scored -->
+  <g font-family="var(--mono)" font-size="9">
+    <rect x="240" y="262" width="46" height="30" class="fill-green-w zone green"/><text x="263" y="281" class="d-text mono green" text-anchor="middle">d₁ ✓</text>
+    <rect x="288" y="262" width="46" height="30" class="fill-green-w zone green"/><text x="311" y="281" class="d-text mono green" text-anchor="middle">d₂ ✓</text>
+    <rect x="336" y="262" width="46" height="30" class="fill-red-w zone red"/><text x="359" y="281" class="d-text mono red" text-anchor="middle">d₃ ✗</text>
+    <rect x="384" y="262" width="46" height="30" class="fill-red-w zone red" opacity="0.7"/><text x="407" y="281" class="d-text mono red" text-anchor="middle">d₄ ✗</text>
+  </g>
+  <text x="470" y="272" class="d-text small red b">the ✗ tokens verification threw away</text>
+  <text x="470" y="288" class="d-text tiny dim">are re-scored here — that is the recovered on-policy signal</text>
+  <text x="820" y="280" class="d-text tiny dim" text-anchor="middle">hidden states reused</text>
+  <text x="820" y="292" class="d-text tiny dim" text-anchor="middle">from rollout → cheap</text>
+
+  <!-- STAGE 3 -->
+  <line x1="500" y1="308" x2="500" y2="334" class="bp-line gold thick" marker-end="url(#ah4)"/>
+  <text x="60" y="354" class="d-text label gold">STAGE 3 · ACCEPTANCE-AWARE DISTILLATION</text>
+  <rect x="60" y="364" width="430" height="28" rx="3" class="fill-green-w zone green"/>
+  <text x="275" y="383" class="d-text green b" text-anchor="middle" font-size="10">accepted → forward KL D(p‖q) · cover the target</text>
+  <rect x="510" y="364" width="430" height="28" rx="3" class="fill-red-w zone red"/>
+  <text x="725" y="383" class="d-text red b" text-anchor="middle" font-size="10">rejected → reverse KL D(q‖p) · kill the wrong mode</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate IV — the machine. Gold marks the anchors and the on-policy path; the rejected tokens (red ✗) are the whole point, resurrected in Stage 2 and given a different loss direction in Stage 3.</div>
+<div class="caption" lang="zh">Plate IV —— 这台机器。 金色标出 anchor 和那条在线路径； 被拒的 token（红色 ✗）才是重点， 在阶段二被复活、 在阶段三被给了一个不同的损失方向。</div>
+</div>
+</section>
+
+<!-- ============ S5 · THE OBJECTIVE ============ -->
+<section id="s5-objective">
+<h2 lang="en"><span class="num">§ 5 · The deep end</span>The <em>acceptance-aware</em> objective, up close</h2>
+<h2 lang="zh"><span class="num">§ 5 · 最深的一段</span>近看<em>接受度感知</em>的目标函数</h2>
+
+<p lang="en">Partition every drafted position by the label from Stage 1. For block <em>m</em> with <span class="katex-inline">r_m</span> accepted tokens, positions <span class="katex-inline">1 \le k \le r_m</span> are the <strong>accepted set</strong> <span class="katex-inline">I_{\mathrm{acc}}</span>; positions <span class="katex-inline">r_m < k \le K</span> are the <strong>rejected set</strong> <span class="katex-inline">I_{\mathrm{rej}}</span>. The objective applies <em>opposite KL directions</em> to the two sets — and the reason it does is the single most elegant idea in the paper.</p>
+
+<p lang="zh">按阶段一的标签给每个草稿位置分组。 对于接受了 <span class="katex-inline">r_m</span> 个 token 的块 <em>m</em>， 位置 <span class="katex-inline">1 \le k \le r_m</span> 是<strong>接受集</strong> <span class="katex-inline">I_{\mathrm{acc}}</span>； 位置 <span class="katex-inline">r_m < k \le K</span> 是<strong>拒绝集</strong> <span class="katex-inline">I_{\mathrm{rej}}</span>。 目标函数给这两个集合用了<em>相反的 KL 方向</em> —— 而它这么做的理由， 是全篇最优雅的一个想法。</p>
+
+<div class="formula">
+<div class="c-fname" style="text-align:left; font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--ink-mute); text-transform:uppercase; margin-bottom:10px;">Eq. 10–13 · the objective</div>
+\[ \mathcal{L}_{\mathrm{acc}} = \frac{1}{|I_{\mathrm{acc}}|}\!\!\sum_{(m,k)\in I_{\mathrm{acc}}}\!\! D_{\mathrm{KL}}\!\left(p_{m,k} \,\|\, q_{m,k}\right) \]
+\[ \mathcal{L}_{\mathrm{rej}} = \frac{1}{Z}\!\!\sum_{(m,k)\in I_{\mathrm{rej}}}\!\! w_k\, D_{\mathrm{KL}}\!\left(q_{m,k} \,\|\, p_{m,k}\right),\quad w_k = \gamma^{\,k-1} \]
+\[ \mathcal{L}_{\text{Draft-OPD}} = \frac{\lambda_{\mathrm{acc}}\mathcal{L}_{\mathrm{acc}} + \lambda_{\mathrm{rej}}\mathcal{L}_{\mathrm{rej}}}{\lambda_{\mathrm{acc}} + \lambda_{\mathrm{rej}}} \]
+<span class="note" lang="en"><span class="acc">Accepted → forward KL</span> D(p‖q). <span class="rej">Rejected → reverse KL</span> D(q‖p), decayed by <span class="hl">γ = 0.8</span> in block-position. With <span class="hl">λ_acc = λ_rej = 1</span>, the combined loss is just the average of the two.</span>
+<span class="note" lang="zh"><span class="acc">接受 → forward KL</span> D(p‖q)。 <span class="rej">拒绝 → reverse KL</span> D(q‖p)， 在块内位置上按 <span class="hl">γ = 0.8</span> 衰减。 由于 <span class="hl">λ_acc = λ_rej = 1</span>， 合并损失就是两者的平均。</span>
+</div>
+
+<h3 lang="en">Why forward KL for accepted, reverse KL for rejected</h3>
+<h3 lang="zh">为什么接受用 forward KL、 拒绝用 reverse KL</h3>
+
+<p lang="en">This is worth slowing down for, because it is where the paper turns a bookkeeping distinction into a principle. Appendix B derives it. A <strong>forward KL</strong> <span class="katex-inline">D(p\|q)</span> is what falls out of target-weighted cross-entropy <span class="katex-inline">\mathbb{E}_{y\sim p}[-\log q(y)] = H(p) + D_{\mathrm{KL}}(p\|q)</span> — it is <em>mode-covering</em>: it forces the student to put mass everywhere the teacher does. That is the right thing at accepted positions, because those are verified, target-distributed states where you want the drafter to <em>cover</em> the target and keep agreement high.</p>
+
+<p lang="zh">这里值得慢下来， 因为这正是论文把一个记账上的区分变成一条原则的地方。 Appendix B 推导了它。 <strong>forward KL</strong> <span class="katex-inline">D(p\|q)</span> 是从目标加权的交叉熵 <span class="katex-inline">\mathbb{E}_{y\sim p}[-\log q(y)] = H(p) + D_{\mathrm{KL}}(p\|q)</span> 里掉出来的 —— 它是<em>覆盖模式（mode-covering）</em>的： 它逼学生在老师有质量的地方处处放上质量。 在接受位置上这是对的， 因为那些是已验证、 目标分布的状态， 你想让草稿模型<em>覆盖</em>目标、 把一致性维持得很高。</p>
+
+<p lang="en">A <strong>reverse KL</strong> <span class="katex-inline">D(q\|p)</span> is the opposite: the expectation is under <em>q</em>, so the gradient concentrates on tokens the <em>drafter</em> is confident about but the target is not. It is <em>mode-seeking</em>: it punishes probability mass the drafter puts where the target has little. And that is <em>exactly</em> a rejected token — a place the drafter was confidently wrong, and got caught by verification. Reverse KL directly suppresses the drafter's confident wrong modes, which are the literal cause of rejections. Use forward KL here instead and you would waste the small drafter's capacity trying to cover the teacher's entire distribution at a state it already fails.</p>
+
+<p lang="zh"><strong>reverse KL</strong> <span class="katex-inline">D(q\|p)</span> 是反过来的： 期望取在 <em>q</em> 下， 所以梯度集中在<em>草稿模型</em>很自信、 目标模型却不认可的 token 上。 它是<em>寻找模式（mode-seeking）</em>的： 它惩罚草稿模型放在目标模型几乎没质量处的那些概率质量。 而这<em>恰恰</em>就是一个被拒的 token —— 草稿模型自信地错了、 被验证逮住的地方。 reverse KL 直接压制草稿模型自信的错误模式， 那正是拒绝的字面成因。 这里若改用 forward KL， 你就会浪费小草稿模型的容量， 去在一个它本就失败的状态上覆盖老师的整个分布。</p>
+
+<div class="callout green">
+  <span class="ctag" lang="en">The one-line version worth memorizing</span>
+  <span class="ctag" lang="zh">值得背下来的一句话版本</span>
+  <p lang="en">Forward KL where the supervision is <em>target-sampled</em> (accepted states); reverse KL where the supervision is <em>draft-sampled</em> (error states). Match the KL direction to whose distribution generated the state. The paper's ablation confirms it: all-forward everywhere is a decent default, all-reverse everywhere hurts, and the split beats both.</p>
+  <p lang="zh">监督由<em>目标采样</em>的地方（接受状态）用 forward KL； 监督由<em>草稿采样</em>的地方（错误状态）用 reverse KL。 把 KL 方向匹配到"是谁的分布生成了这个状态"。 论文的消融证实了它： 全用 forward 是个不错的默认， 全用 reverse 有害， 而这个拆分比两者都好。</p>
+</div>
+
+<h3 lang="en">The <span class="katex-inline">\gamma = 0.8</span> position decay</h3>
+<h3 lang="zh"><span class="katex-inline">\gamma = 0.8</span> 位置衰减</h3>
+
+<p lang="en">One more piece. The rejected-token loss weights position <em>k</em> by <span class="katex-inline">w_k = \gamma^{k-1}</span> with <span class="katex-inline">\gamma = 0.8</span> — later positions in the block get exponentially less weight. Why? Go back to Plate I: an early error kills the whole tail. If the drafter fails at position 3, positions 4–16 are dead regardless of what they contained — and worse, in the replay they are conditioned on an already-wrong prefix, so their supervision is noisy. The earliest failure is the one that actually cost you acceptance length, so it gets the most weight. The ablation shows removing this decay costs about 0.4× speedup on MATH-500 — not free.</p>
+
+<p lang="zh">还有一块。 拒绝 token 的损失把位置 <em>k</em> 的权重设为 <span class="katex-inline">w_k = \gamma^{k-1}</span>， <span class="katex-inline">\gamma = 0.8</span> —— 块里越靠后的位置权重指数级越小。 为什么？ 回到 Plate I： 一个早期错误会杀掉整条尾巴。 如果草稿模型在位置 3 失败， 位置 4–16 无论内容如何都作废了 —— 更糟的是， 在回放里它们依赖的是一个已经错了的前缀， 所以它们的监督是有噪声的。 最早的那个失败才是真正让你损失接受长度的那个， 所以它拿到最多权重。 消融显示去掉这个衰减在 MATH-500 上损失约 0.4× 加速 —— 不是白给的。</p>
+
+<!-- ============ PLATE V ============ -->
+<div class="plate">
+<div class="plate-meta">
+  <span class="pnum">Plate V</span>
+  <span class="pname" lang="en">One block, two loss directions</span>
+  <span class="pname" lang="zh">一个块， 两个损失方向</span>
+  <span class="pscale">— γ = 0.8 —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="24" class="d-text title" text-anchor="middle">The drafted block, split by verdict</text>
+  <line x1="30" y1="38" x2="690" y2="38" class="bp-line faint"/>
+
+  <!-- the block -->
+  <text x="30" y="66" class="d-text label">BLOCK  m   (K = 16, accepted rₘ = 6)</text>
+  <g font-family="var(--mono)" font-size="9">
+    <!-- accepted 1..6 -->
+    <rect x="30" y="76" width="44" height="34" class="fill-green-w zone green"/><text x="52" y="98" class="d-text mono green" text-anchor="middle">k1</text>
+    <rect x="76" y="76" width="44" height="34" class="fill-green-w zone green"/><text x="98" y="98" class="d-text mono green" text-anchor="middle">k2</text>
+    <rect x="122" y="76" width="44" height="34" class="fill-green-w zone green"/><text x="144" y="98" class="d-text mono green" text-anchor="middle">…</text>
+    <rect x="168" y="76" width="44" height="34" class="fill-green-w zone green"/><text x="190" y="98" class="d-text mono green" text-anchor="middle">k6</text>
+    <!-- rejected 7..K -->
+    <rect x="214" y="76" width="44" height="34" class="fill-red-w zone red"/><text x="236" y="98" class="d-text mono red" text-anchor="middle">k7</text>
+    <rect x="260" y="76" width="44" height="34" class="fill-red-w zone red" opacity="0.8"/><text x="282" y="98" class="d-text mono red" text-anchor="middle">k8</text>
+    <rect x="306" y="76" width="44" height="34" class="fill-red-w zone red" opacity="0.6"/><text x="328" y="98" class="d-text mono red" text-anchor="middle">k9</text>
+    <rect x="352" y="76" width="60" height="34" class="fill-red-w zone red" opacity="0.4"/><text x="382" y="98" class="d-text mono red" text-anchor="middle">…k16</text>
+  </g>
+  <text x="120" y="128" class="d-text small green b" text-anchor="middle">I_acc → forward KL D(p‖q)</text>
+  <text x="313" y="128" class="d-text small red b" text-anchor="middle">I_rej → reverse KL D(q‖p)</text>
+
+  <!-- forward KL picture -->
+  <text x="30" y="176" class="d-text label green">FORWARD KL · MODE-COVERING (accepted)</text>
+  <rect x="30" y="186" width="300" height="96" class="zone"/>
+  <path d="M 50 270 Q 120 200 190 270 Q 240 230 290 270" class="bp-line blue thick" fill="none"/>
+  <path d="M 50 272 Q 120 214 190 272 Q 240 244 290 272" class="bp-line green dash" fill="none"/>
+  <text x="180" y="205" class="d-text tiny blue" text-anchor="middle">target p</text>
+  <text x="255" y="255" class="d-text tiny green" text-anchor="middle">draft q spreads to COVER p</text>
+  <text x="180" y="298" class="d-text tiny dim" text-anchor="middle">keep agreement where verification already succeeds</text>
+
+  <!-- reverse KL picture -->
+  <text x="390" y="176" class="d-text label red">REVERSE KL · MODE-SEEKING (rejected)</text>
+  <rect x="390" y="186" width="300" height="96" class="zone"/>
+  <path d="M 410 270 Q 480 205 550 270 Q 600 235 650 270" class="bp-line blue thick" fill="none"/>
+  <path d="M 470 272 L 470 220 L 500 220 L 500 272 Z" class="fill-red-w"/>
+  <path d="M 470 220 L 500 220" class="bp-line red thick"/>
+  <text x="640" y="205" class="d-text tiny blue" text-anchor="middle">target p</text>
+  <text x="530" y="212" class="d-text tiny red" text-anchor="middle">draft's confident WRONG mode</text>
+  <text x="530" y="298" class="d-text tiny dim" text-anchor="middle">crush q-mass where p is small → suppress rejections</text>
+
+  <!-- decay bars -->
+  <text x="30" y="326" class="d-text label gold">POSITION DECAY  wₖ = 0.8^(k-1)  ·  early errors cost more</text>
+  <g>
+    <rect x="30" y="352" width="30" height="30" class="fill-gold"/>
+    <rect x="72" y="358" width="30" height="24" class="fill-gold" opacity="0.8"/>
+    <rect x="114" y="363" width="30" height="19" class="fill-gold" opacity="0.64"/>
+    <rect x="156" y="367" width="30" height="15" class="fill-gold" opacity="0.51"/>
+    <rect x="198" y="370" width="30" height="12" class="fill-gold" opacity="0.41"/>
+    <rect x="240" y="373" width="30" height="9" class="fill-gold" opacity="0.33"/>
+    <text x="45" y="396" class="d-text tiny gold" text-anchor="middle">1.00</text>
+    <text x="87" y="396" class="d-text tiny dim" text-anchor="middle">0.80</text>
+    <text x="129" y="396" class="d-text tiny dim" text-anchor="middle">0.64</text>
+    <text x="171" y="396" class="d-text tiny dim" text-anchor="middle">0.51</text>
+    <text x="213" y="396" class="d-text tiny dim" text-anchor="middle">0.41</text>
+    <text x="255" y="396" class="d-text tiny dim" text-anchor="middle">0.33</text>
+  </g>
+  <text x="440" y="372" class="d-text small" text-anchor="start">the first rejected position</text>
+  <text x="440" y="388" class="d-text small" text-anchor="start">carries the real signal — later</text>
+  <text x="632" y="372" class="d-text small dim" text-anchor="start">ones sit</text>
+  <text x="632" y="388" class="d-text small dim" text-anchor="start">on bad prefixes</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate V — the two KL directions drawn as what they do to the draft's curve. Forward KL spreads q to cover p (keep what works); reverse KL crushes q where p is small (kill the confident error). The gold bars are the γ = 0.8 decay: the first rejection matters most.</div>
+<div class="caption" lang="zh">Plate V —— 把两个 KL 方向画成它们对草稿曲线做的事。 forward KL 把 q 摊开去覆盖 p（保住有效的）； reverse KL 在 p 很小处把 q 压碎（杀掉自信的错误）。 金色条是 γ = 0.8 衰减： 第一个拒绝最重要。</div>
+</div>
+</section>
+
+<!-- ============ S6 · RESULTS ============ -->
+<section id="s6-results">
+<h2 lang="en"><span class="num">§ 6 · Reading the numbers honestly</span>What it actually <em>buys</em></h2>
+<h2 lang="zh"><span class="num">§ 6 · 诚实地读数字</span>它到底<em>换来</em>什么</h2>
+
+<p lang="en">Setup, so you can weigh the numbers: targets are <strong>Qwen3-4B, Qwen3-8B, and Qwen3-30B-A3B-Thinking-2507</strong> (a MoE); drafts are DFlash-style, 5 transformer layers for the two dense targets and 8 for the MoE, block size 16. Seven benchmarks — GSM8K, MATH-500, AIME25, MBPP, HumanEval, SWE-bench Lite, MT-Bench. Everything runs on <strong>NVIDIA H200</strong>, batch size 1, thinking mode on unless stated. And the fairness knob that makes the comparison mean something: baselines get <strong>matched FLOPs</strong> — 10 SFT epochs versus Draft-OPD's 6 SFT + 8 OPD — so the gains are from <em>how</em> you train, not <em>how much</em>.</p>
+
+<p lang="zh">先交代设置， 你才好掂量数字： 目标模型是 <strong>Qwen3-4B、 Qwen3-8B、 Qwen3-30B-A3B-Thinking-2507</strong>（一个 MoE）； 草稿是 DFlash 风格， 两个稠密目标用 5 层 transformer、 MoE 用 8 层， 块大小 16。 七个 benchmark —— GSM8K、 MATH-500、 AIME25、 MBPP、 HumanEval、 SWE-bench Lite、 MT-Bench。 全部跑在 <strong>NVIDIA H200</strong> 上， batch size 1， 除非另说都开 thinking 模式。 还有那个让比较有意义的公平旋钮： 基线拿到<strong>相当的 FLOPs</strong> —— 10 个 SFT epoch 对 Draft-OPD 的 6 SFT + 8 OPD —— 所以增益来自<em>怎么</em>训， 不是<em>训多少</em>。</p>
+
+<h3 lang="en">The headline — and the number you must read carefully</h3>
+<h3 lang="zh">头条 —— 以及那个你必须仔细读的数字</h3>
+
+<p lang="en">The abstract says <strong>"over 5× lossless acceleration for thinking models."</strong> That phrasing is verbatim and true — but if you write it down as "Draft-OPD is 5× faster" you have misread it. Here is the actual Table 1, thinking mode, temperature 0, and the honest averages:</p>
+
+<p lang="zh">摘要说<strong>"对 thinking 模型超过 5× 无损加速"</strong>。 这句措辞是原文原话、 也没错 —— 但如果你把它记成"Draft-OPD 快 5 倍"， 你就读错了。 这是真实的 Table 1， thinking 模式、 temperature 0， 以及诚实的平均值：</p>
+
+<table class="tbl">
+<thead><tr>
+<th lang="en">Method (thinking, τ=0)</th><th lang="zh">方法（thinking, τ=0）</th>
+<th>Qwen3-4B τ</th><th>4B speedup</th><th>Qwen3-8B τ</th><th>8B speedup</th>
+</tr></thead>
+<tbody>
+<tr><td>EAGLE-3</td><td class="num">5.33</td><td class="num">3.87×</td><td class="num">5.64</td><td class="num">4.06×</td></tr>
+<tr><td>DFlash</td><td class="num">5.51</td><td class="num">4.33×</td><td class="num">5.19</td><td class="num">4.34×</td></tr>
+<tr class="best"><td>Draft-OPD</td><td class="win">5.96</td><td class="win">4.86×</td><td class="win">5.73</td><td class="win">4.89×</td></tr>
+</tbody>
+</table>
+
+<p lang="en">Two-model average: <span class="katex-inline">\tau</span> rises from <strong>5.35 → 5.85</strong>, and average speedup is <strong>4.88×</strong> across the seven benchmarks — <em>which is below 5×</em>. The "over 5×" is real but selective: it holds on individual thinking-mode benchmarks (MATH-500 hits 5.55× on Qwen3-4B) and as the <em>non-thinking</em> average (5.17×). The clean, defensible claim is the relative one: <strong>+23% over EAGLE-3, +13% over DFlash</strong>, on average speedup, at matched FLOPs. That is the number to quote.</p>
+
+<p lang="zh">两模型平均： <span class="katex-inline">\tau</span> 从 <strong>5.35 升到 5.85</strong>， 七个 benchmark 上的平均加速是 <strong>4.88×</strong> —— <em>低于 5×</em>。 "超过 5×"是真的、 但有选择性： 它在单个 thinking 模式 benchmark 上成立（MATH-500 在 Qwen3-4B 上到 5.55×）， 也作为<em>非 thinking</em> 平均成立（5.17×）。 干净、 站得住的说法是那个相对值： <strong>比 EAGLE-3 高 23%、 比 DFlash 高 13%</strong>， 在相当 FLOPs 下的平均加速。 这才是该引用的数字。</p>
+
+<div class="callout gold">
+  <span class="ctag" lang="en">Teacher's aside — why this matters beyond this paper</span>
+  <span class="ctag" lang="zh">老师插一句 —— 为什么这超出这篇论文本身</span>
+  <p lang="en">Abstracts round toward the best sub-result; that is not dishonest, it is how the genre works. The skill is to always ask "average or peak? which config?" before you carry a number into your own head. Here the peak (5.55×) and the average (4.88×) differ by ~14% — enough to matter if you were sizing a serving deployment on it. The relative gain is more robust because it holds the config fixed across the comparison. When you read the next speculative-decoding paper, do this move automatically.</p>
+  <p lang="zh">摘要会朝最好的子结果四舍五入； 这不算不诚实， 是这个文体的运作方式。 本事在于： 在把一个数字搬进自己脑子之前， 永远先问"是平均还是峰值？ 哪个配置？" 这里峰值（5.55×）和平均（4.88×）差了约 14% —— 如果你拿它去规划一个服务部署， 这个差足以要命。 相对增益更稳健， 因为它在整个比较里把配置固定住了。 下次你读另一篇投机解码论文时， 把这个动作变成自动的。</p>
+</div>
+
+<h3 lang="en">Non-thinking, and the serving test</h3>
+<h3 lang="zh">非 thinking， 以及服务端测试</h3>
+
+<p lang="en">With thinking <em>disabled</em>, everything is easier to draft (less reasoning entropy — more on that in § 7), and Draft-OPD averages <span class="katex-inline">\tau</span> = <strong>6.33</strong> and <strong>5.17×</strong> speedup. But the result I trust most is the SGLang one, because it answers the question a serving engineer actually asks: does a higher <span class="katex-inline">\tau</span> survive a real inference engine, at real concurrency? They serve Draft-OPD vs DFlash on SGLang with the FA3 backend, sweeping concurrency 1 → 32.</p>
+
+<p lang="zh">关掉 thinking 后， 一切都更好草稿（推理熵更少 —— § 7 细说）， Draft-OPD 平均 <span class="katex-inline">\tau</span> = <strong>6.33</strong>、 加速 <strong>5.17×</strong>。 但我最信的结果是 SGLang 那个， 因为它回答了服务工程师真正会问的问题： 更高的 <span class="katex-inline">\tau</span> 能不能在一个真实推理引擎里、 在真实并发下存活？ 他们在 SGLang 上用 FA3 后端服务 Draft-OPD 对 DFlash， 把并发从 1 扫到 32。</p>
+
+<table class="tbl">
+<thead><tr>
+<th lang="en">SGLang · vs DFlash</th><th lang="zh">SGLang · 对比 DFlash</th>
+<th lang="en">τ (DFlash → OPD)</th><th lang="zh">τ (DFlash → OPD)</th>
+<th lang="en">tok/s @ c1</th><th lang="zh">tok/s @ c1</th>
+<th lang="en">tok/s @ c32</th><th lang="zh">tok/s @ c32</th>
+</tr></thead>
+<tbody>
+<tr><td>Qwen3-4B · MATH-500</td><td class="num">6.17 → 6.68</td><td class="num">949 → 1036</td><td class="win">10062 → 10943</td></tr>
+<tr><td>Qwen3-8B · MATH-500</td><td class="num">5.99 → 6.64</td><td class="num">703 → 787</td><td class="win">6991 → 7940</td></tr>
+<tr class="best"><td>Qwen3-30B-A3B · AIME25</td><td class="num">4.54 → 5.32</td><td class="num">421 → 476</td><td class="win">4014 → 4718 (+17%)</td></tr>
+</tbody>
+</table>
+
+<p lang="en">Two things make this the strongest section. First, the <span class="katex-inline">\tau</span> gains translate to throughput gains almost 1:1 — so in SGLang+FA3 the draft overhead is small enough that acceptance length really is the binding variable. Second, and this is the surprising part: <em>the relative gain does not shrink at higher concurrency</em>. Speculative decoding classically loses value as batch grows (verification becomes compute-bound), yet here the average relative gain at concurrency 32 is even higher than at 1 — because the advantage over DFlash comes purely from <span class="katex-inline">\tau</span>, which is batch-independent. The MoE target has the lowest absolute <span class="katex-inline">\tau</span> (hardest to draft) but the largest relative gain (up to +17%): on-policy training helps most exactly where the offline draft was weakest.</p>
+
+<p lang="zh">有两点让这一节最有说服力。 第一， <span class="katex-inline">\tau</span> 的增益几乎 1:1 地转成吞吐增益 —— 所以在 SGLang+FA3 里草稿开销小到足以让接受长度真正成为决定变量。 第二， 也是意外的地方： <em>相对增益在更高并发下并不缩水</em>。 投机解码传统上随 batch 增大而失去价值（验证变成计算受限）， 可这里并发 32 的平均相对增益甚至高于并发 1 —— 因为对 DFlash 的优势纯粹来自 <span class="katex-inline">\tau</span>， 而 <span class="katex-inline">\tau</span> 与 batch 无关。 MoE 目标的绝对 <span class="katex-inline">\tau</span> 最低（最难草稿）却相对增益最大（最高 +17%）： 在线训练恰恰在离线草稿最弱的地方帮助最大。</p>
+</section>
+
+<!-- ============ S7 · ABLATIONS ============ -->
+<section id="s7-ablations">
+<h2 lang="en"><span class="num">§ 7 · What actually matters</span>The ablations, and a <em>ceiling</em></h2>
+<h2 lang="zh"><span class="num">§ 7 · 到底什么在起作用</span>消融实验， 与一个<em>天花板</em></h2>
+
+<p lang="en">The ablations are a clean factorization of the method into four independent knobs (Qwen3-4B, thinking on, τ=0; speedup / τ on MATH-500, HumanEval, MT-Bench). Read them as "how much does each design choice earn?"</p>
+
+<p lang="zh">消融实验把方法干净地拆成四个独立旋钮（Qwen3-4B、 thinking 开、 τ=0； MATH-500、 HumanEval、 MT-Bench 上的加速 / τ）。 把它们读成"每个设计选择赚了多少？"</p>
+
+<table class="tbl">
+<thead><tr>
+<th lang="en">Variant</th><th lang="zh">变体</th>
+<th>MATH-500</th><th>HumanEval</th><th>MT-Bench</th>
+<th lang="en">avg</th><th lang="zh">平均</th>
+</tr></thead>
+<tbody>
+<tr class="best"><td>Full Draft-OPD</td><td class="win">5.55× / 6.57</td><td class="win">5.17× / 6.18</td><td class="win">3.18× / 4.44</td><td class="win">4.63×</td></tr>
+<tr><td lang="en">all-forward KL</td><td lang="zh">全 forward KL</td><td class="num">5.34 / 6.35</td><td class="num">5.01 / 6.09</td><td class="num">3.09 / 4.33</td><td class="num">4.48×</td></tr>
+<tr><td lang="en">all-reverse KL</td><td lang="zh">全 reverse KL</td><td class="num">5.11 / 6.14</td><td class="num">4.94 / 5.98</td><td class="num">3.08 / 4.33</td><td class="num">4.38×</td></tr>
+<tr><td lang="en">random anchors</td><td lang="zh">随机 anchor</td><td class="lose">5.04 / 6.08</td><td class="num">4.99 / 6.07</td><td class="lose">2.96 / 4.24</td><td class="lose">4.33×</td></tr>
+<tr><td lang="en">no weight decay</td><td lang="zh">去掉权重衰减</td><td class="num">5.13 / 6.18</td><td class="num">4.96 / 6.01</td><td class="num">3.07 / 4.29</td><td class="num">4.39×</td></tr>
+</tbody>
+</table>
+
+<p lang="en">The ranking is instructive: full (4.63×) &gt; all-forward (4.48×) &gt; no-decay (4.39×) ≈ all-reverse (4.38×) &gt; random anchors (4.33×). Every knob contributes, and the single largest lever is <strong>where you replay</strong> — random anchors is the worst row. The paper's line: "not all on-policy states are equally useful." Being on-policy is necessary but not sufficient; you have to replay <em>at the errors</em>. Note also that all-forward is a respectable default and all-reverse is the worst KL choice — which is exactly what Plate V predicts, since reverse KL everywhere would treat verified accepted states as if they were errors.</p>
+
+<p lang="zh">这个排序很有教益： full（4.63×）&gt; 全 forward（4.48×）&gt; 去衰减（4.39×）≈ 全 reverse（4.38×）&gt; 随机 anchor（4.33×）。 每个旋钮都有贡献， 而单个最大的杠杆是<strong>你在哪里回放</strong> —— 随机 anchor 是最差的一行。 论文原话： "并非所有在线状态都同等有用。" 在线是必要但不充分的； 你必须<em>在错误处</em>回放。 还要注意全 forward 是个体面的默认、 全 reverse 是最差的 KL 选择 —— 这正是 Plate V 所预测的， 因为处处 reverse KL 会把已验证的接受状态当成错误来对待。</p>
+
+<h3 lang="en">The sharpest single result</h3>
+<h3 lang="zh">最锋利的单个结果</h3>
+
+<p lang="en">Section 5.3 isolates the core thesis in one number. Take Draft-OPD but train <em>only on the verified continuation</em> — i.e. keep the target-assisted rollout for stability but throw the rejected tokens away (this reduces to KL-loss SFT on target-distributed data). Average speedup drops from 4.63× to 4.29× — a <strong>7.3% relative fall</strong>. Same data-collection cost, same target-quality text; the <em>only</em> difference is whether the rejected proposals get rescored and trained on. That 7.3% is the paper's entire argument compressed to a single controlled comparison.</p>
+
+<p lang="zh">Section 5.3 把核心论点浓缩进一个数字。 拿 Draft-OPD、 但<em>只在已验证的续写上</em>训练 —— 也就是为了稳定保留目标辅助 rollout， 却把被拒 token 扔掉（这退化成在目标分布数据上的 KL 损失 SFT）。 平均加速从 4.63× 掉到 4.29× —— <strong>相对下降 7.3%</strong>。 同样的数据采集代价、 同样的目标级文本； <em>唯一</em>的区别是被拒的提议有没有被重新打分、 被拿去训练。 那 7.3% 就是整篇论文的论点压缩成一次受控比较。</p>
+
+<h3 lang="en">The draftability ceiling — a lovely piece of analysis</h3>
+<h3 lang="zh">可草稿性天花板 —— 一段可爱的分析</h3>
+
+<p lang="en">Every method is slower in thinking mode than not (Qwen3-8B Draft-OPD: 4.89× thinking vs 5.60× non-thinking). Why? Appendix C's answer is information-theoretic and, to me, the most quietly interesting result in the paper. During long reasoning the <em>target itself</em> is more uncertain — at each step there are multiple plausible next tokens. The authors measure this directly: the target's own next-token NLL on its own generations is <em>higher</em> in thinking mode across ShareGPT, AoPS, and Nemotron. Less concentrated target mass means less predictable structure for a small drafter to capture. Draftability is upper-bounded by the target's entropy — a ceiling you can measure <em>before</em> training any drafter. Draft-OPD narrows the gap; it cannot repeal the ceiling.</p>
+
+<p lang="zh">每个方法在 thinking 模式下都比不开时慢（Qwen3-8B Draft-OPD： thinking 4.89× 对非 thinking 5.60×）。 为什么？ Appendix C 的答案是信息论式的， 在我看来是全篇最安静有趣的结果。 在长推理过程中， <em>目标模型本身</em>更不确定 —— 每一步都有多个说得通的下一 token。 作者直接测了它： 目标模型在自己生成上的下一 token NLL， 在 thinking 模式下更<em>高</em>， 在 ShareGPT、 AoPS、 Nemotron 上都如此。 目标质量越不集中， 一个小草稿模型能捕捉的可预测结构就越少。 可草稿性被目标模型的熵从上方封顶 —— 这个天花板你在训练任何草稿模型<em>之前</em>就能测出来。 Draft-OPD 缩小了差距； 它废除不了这个天花板。</p>
+
+<!-- ============ PLATE VI ============ -->
+<div class="plate wide">
+<div class="plate-meta">
+  <span class="pnum">Plate VI</span>
+  <span class="pname" lang="en">Speedup, three methods, two modes</span>
+  <span class="pname" lang="zh">加速， 三个方法， 两种模式</span>
+  <span class="pscale">— Qwen3-8B —</span>
+</div>
+<div class="plate-body">
+<svg viewBox="0 0 1000 340" xmlns="http://www.w3.org/2000/svg">
+  <text x="500" y="24" class="d-text title" text-anchor="middle">Draft-OPD leads in both modes — but both are capped below the non-thinking ceiling.</text>
+  <line x1="40" y1="38" x2="960" y2="38" class="bp-line faint"/>
+
+  <!-- axis -->
+  <line x1="120" y1="270" x2="920" y2="270" class="bp-line"/>
+  <line x1="120" y1="70" x2="120" y2="270" class="bp-line"/>
+  <text x="108" y="274" class="d-text tiny dim" text-anchor="end">3×</text>
+  <text x="108" y="204" class="d-text tiny dim" text-anchor="end">4×</text>
+  <text x="108" y="137" class="d-text tiny dim" text-anchor="end">5×</text>
+  <text x="108" y="74" class="d-text tiny dim" text-anchor="end">6×</text>
+  <line x1="120" y1="204" x2="920" y2="204" class="bp-line faint dash"/>
+  <line x1="120" y1="137" x2="920" y2="137" class="bp-line faint dash"/>
+
+  <!-- scale: y = 270 - (val-3)*67 -->
+  <!-- THINKING group -->
+  <text x="300" y="292" class="d-text small" text-anchor="middle">THINKING MODE</text>
+  <!-- EAGLE-3 4.06 -> 270-(1.06*67)=199 -->
+  <rect x="200" y="199" width="52" height="71" class="fill-red-w zone red"/>
+  <text x="226" y="192" class="d-text tiny red b" text-anchor="middle">4.06</text>
+  <text x="226" y="284" class="d-text tiny dim" text-anchor="middle">EAGLE-3</text>
+  <!-- DFlash 4.34 -> 270-(1.34*67)=180 -->
+  <rect x="274" y="180" width="52" height="90" class="fill-gold-w zone gold"/>
+  <text x="300" y="173" class="d-text tiny gold b" text-anchor="middle">4.34</text>
+  <text x="300" y="284" class="d-text tiny dim" text-anchor="middle">DFlash</text>
+  <!-- Draft-OPD 4.89 -> 270-(1.89*67)=143 -->
+  <rect x="348" y="143" width="52" height="127" class="fill-green-w zone green"/>
+  <text x="374" y="136" class="d-text tiny green b" text-anchor="middle">4.89</text>
+  <text x="374" y="284" class="d-text tiny green b" text-anchor="middle">Draft-OPD</text>
+
+  <!-- NON-THINKING group -->
+  <text x="700" y="292" class="d-text small" text-anchor="middle">NON-THINKING MODE</text>
+  <!-- EAGLE-3 4.63 -> 270-(1.63*67)=161 -->
+  <rect x="600" y="161" width="52" height="109" class="fill-red-w zone red"/>
+  <text x="626" y="154" class="d-text tiny red b" text-anchor="middle">4.63</text>
+  <text x="626" y="284" class="d-text tiny dim" text-anchor="middle">EAGLE-3</text>
+  <!-- DFlash 5.11 -> 270-(2.11*67)=129 -->
+  <rect x="674" y="129" width="52" height="141" class="fill-gold-w zone gold"/>
+  <text x="700" y="122" class="d-text tiny gold b" text-anchor="middle">5.11</text>
+  <text x="700" y="284" class="d-text tiny dim" text-anchor="middle">DFlash</text>
+  <!-- Draft-OPD 5.60 -> 270-(2.60*67)=96 -->
+  <rect x="748" y="96" width="52" height="174" class="fill-green-w zone green"/>
+  <text x="774" y="89" class="d-text tiny green b" text-anchor="middle">5.60</text>
+  <text x="774" y="284" class="d-text tiny green b" text-anchor="middle">Draft-OPD</text>
+
+  <!-- gap annotation -->
+  <path d="M 374 143 L 774 96" class="bp-line blue dash"/>
+  <text x="574" y="108" class="d-text tiny blue" text-anchor="middle">the thinking-mode gap is a target-entropy ceiling, not a draft failure</text>
+
+  <line x1="40" y1="312" x2="960" y2="312" class="bp-line faint"/>
+  <text x="40" y="330" class="d-text tiny dim">Wall-clock speedup over vanilla decoding, Qwen3-8B, temperature 0. Every method drops ~0.7× moving into thinking mode — Appendix C attributes this to the target's own higher next-token uncertainty during reasoning.</text>
+</svg>
+</div>
+<div class="caption" lang="en">Plate VI — the same three methods, two modes. Draft-OPD wins each group, but the whole thinking group sits lower: the reasoning-mode entropy of the <em>target</em> is a ceiling no drafter can lift.</div>
+<div class="caption" lang="zh">Plate VI —— 同样三个方法、 两种模式。 Draft-OPD 在每组都赢， 但整个 thinking 组都更低： <em>目标模型</em>推理模式的熵是一个任何草稿模型都抬不动的天花板。</div>
+</div>
+</section>
+
+<!-- ============ S8 · AMD READ ============ -->
+<section id="s8-amd">
+<h2 lang="en"><span class="num">§ 8 · The serving-and-roofline read</span>What this changes on an <em>MI300X</em> node</h2>
+<h2 lang="zh"><span class="num">§ 8 · 服务与 roofline 视角</span>这东西在 <em>MI300X</em> 节点上改变了什么</h2>
+
+<p lang="en">Now the second reading. This paper is NVIDIA-and-Qwen throughout — H200, SGLang+FA3, Qwen3. Nothing in the <em>method</em> is NVIDIA-specific, which is exactly why it is interesting to me: it is a training recipe that produces a better draft checkpoint, and a better draft checkpoint helps any serving stack. Here is how I read it against the two goals I actually work on.</p>
+
+<p lang="zh">现在读第二遍。 这篇论文从头到尾是 NVIDIA 加 Qwen —— H200、 SGLang+FA3、 Qwen3。 但<em>方法</em>里没有任何 NVIDIA 专属的东西， 这恰恰是它吸引我的地方： 它是一个产出更好草稿 checkpoint 的训练配方， 而更好的草稿 checkpoint 对任何服务栈都有帮助。 下面是我对照自己实际在做的两个目标怎么读它。</p>
+
+<h3 lang="en">Why acceptance length is the right target on AMD too</h3>
+<h3 lang="zh">为什么接受长度在 AMD 上也是对的目标</h3>
+
+<p lang="en">The roofline logic that makes speculative decoding win is architecture-agnostic. On MI300X, decode is memory-bound for the same reason it is on H200 — 192 GB of HBM3 to stream weights through, and a single-token forward pass leaves the matrix engines mostly idle. A target pass that verifies a 16-token block amortizes that weight-streaming cost over up to <span class="katex-inline">\tau + 1</span> output tokens. So raising <span class="katex-inline">\tau</span> is a first-order win on our hardware, and the SGLang result — <span class="katex-inline">\tau</span> gains surviving to concurrency 32 — matters more for us, not less, because our production serving runs at batch, not batch-1.</p>
+
+<p lang="zh">让投机解码取胜的 roofline 逻辑是与架构无关的。 在 MI300X 上， decode 是访存受限的， 原因和在 H200 上一样 —— 192 GB HBM3 要把权重流过去， 而单 token 的 forward pass 让矩阵引擎大半闲着。 一个验证 16 token 块的目标 pass， 把这份权重搬运代价摊到最多 <span class="katex-inline">\tau + 1</span> 个输出 token 上。 所以抬高 <span class="katex-inline">\tau</span> 在我们硬件上是一阶的胜利， 而那个 SGLang 结果 —— <span class="katex-inline">\tau</span> 增益存活到并发 32 —— 对我们更重要而非更次要， 因为我们的生产服务跑在 batch 上， 不是 batch-1。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">First-principles check — the five questions</span>
+  <span class="ctag" lang="zh">第一性原理核对 —— 五个问题</span>
+  <p lang="en"><strong>What's the physical limit?</strong> Decode throughput is bounded by HBM bandwidth ÷ bytes-per-token; speculative decoding raises the numerator of "useful tokens per weight-stream." <strong>Where does the gap come from?</strong> Not physics — MI300X and H200 have comparable HBM. It is the maturity of the draft + verification kernels. <strong>What blocks automation?</strong> The draft-training loop. And that is the piece Draft-OPD improves — which is why it maps so cleanly onto our deep goal.</p>
+  <p lang="zh"><strong>物理极限是多少？</strong> Decode 吞吐被 HBM 带宽 ÷ 每 token 字节数封顶； 投机解码抬高的是"每次权重流里有用 token 数"的分子。 <strong>差距从哪来？</strong> 不是物理 —— MI300X 和 H200 的 HBM 相当。 是草稿 + 验证 kernel 的成熟度。 <strong>什么在阻碍自动化？</strong> 草稿训练循环。 而这正是 Draft-OPD 改进的那一块 —— 所以它和我们的深层目标对得这么齐。</p>
+</div>
+
+<h3 lang="en">The part that maps onto multi-agent kernel work</h3>
+<h3 lang="zh">和多智能体 kernel 工作对得上的那部分</h3>
+
+<p lang="en">Strip Draft-OPD to its shape and it is a small student learning from a big teacher's accept/reject signal on the student's own rollouts — generate, verify, keep the informative failures, iterate. That is the same loop I want an agent team running over kernels: generate a variant, benchmark it against roofline, keep the failures as signal (not just the wins), iterate. The paper even makes the case I keep making about iteration speed — its whole "target-assisted rollout" idea exists because you cannot get a usable training signal without a fast, stable generate-verify loop. Two concrete transfers I am filing:</p>
+
+<p lang="zh">把 Draft-OPD 剥到只剩形状， 它就是一个小学生在自己的 rollout 上、 从大老师的接受 / 拒绝信号里学习 —— 生成、 验证、 留住有信息量的失败、 迭代。 这就是我想让一个 agent team 在 kernel 上跑的同一个循环： 生成一个变体、 对着 roofline benchmark、 把失败当信号留住（不只是胜利）、 迭代。 这篇论文甚至印证了我一直在讲的关于迭代速度的话 —— 它整个"目标辅助 rollout"的想法之所以存在， 就是因为没有一个快速稳定的生成-验证循环、 你根本拿不到可用的训练信号。 我记下两个具体的迁移：</p>
+
+<ul>
+<li lang="en"><strong>Keep the rejects.</strong> The single sharpest result (7.3% from rescoring rejected tokens) is a reminder that in any generate-verify search, the failed attempts carry more signal than the successes. A kernel-optimization loop that logs only the fastest variant is throwing away its 7.3%.</li>
+<li lang="zh"><strong>留住被拒的。</strong> 那个最锋利的单个结果（重新打分被拒 token 带来的 7.3%）提醒我们： 在任何生成-验证搜索里， 失败的尝试比成功的携带更多信号。 一个只记录最快变体的 kernel 优化循环， 正在扔掉它自己的那 7.3%。</li>
+<li lang="en"><strong>Match the objective direction to who generated the state.</strong> The forward/reverse-KL split is really "supervise differently depending on whether this data came from the teacher or from the student's own error." That is a transferable design principle for any distillation or RL loop, kernels included.</li>
+<li lang="zh"><strong>让目标方向匹配是谁生成了这个状态。</strong> forward / reverse KL 的拆分本质是"根据这份数据来自老师、 还是来自学生自己的错误， 用不同方式监督"。 这是一条可迁移的设计原则， 适用于任何蒸馏或 RL 循环， kernel 也不例外。</li>
+</ul>
+
+<p lang="en">The honest caveat, which the paper itself flags: it is Qwen3-only, DFlash-architecture-only, and NVIDIA-only in evaluation. Porting the recipe to an AMD-served MoE would mean re-running the rollout-and-replay loop with our own target on our own hardware — the method transfers, but the checkpoints do not. That re-tuning <em>is</em> the broad-goal work: real NV→AMD porting was never just syntax translation, it is re-fitting the training loop to the new target and the new roofline.</p>
+
+<p lang="zh">诚实的告诫， 论文自己也标了： 评估上它只用了 Qwen3、 只用了 DFlash 架构、 只在 NVIDIA 上。 把这个配方移植到一个 AMD 服务的 MoE 上， 意味着要用我们自己的目标、 在我们自己的硬件上重跑 rollout-and-replay 循环 —— 方法可迁移， checkpoint 不行。 而那次重新调优<em>就是</em>广义目标的工作： 真正的 NV→AMD 移植从来不只是语法翻译， 它是把训练循环重新拟合到新目标和新 roofline 上。</p>
+</section>
+
+<!-- ============ EPILOGUE ============ -->
+<section id="epilogue">
+<h2 lang="en"><span class="num">§ 9 · What to take away</span>Three things to <em>keep</em></h2>
+<h2 lang="zh"><span class="num">§ 9 · 该带走什么</span>三件要<em>留下</em>的事</h2>
+
+<p lang="en">If you keep three things from this paper, keep these.</p>
+<p lang="zh">如果你从这篇论文只留三件事， 留这三件。</p>
+
+<div class="ornament-break"><span class="line"></span><span class="pip b"></span><span class="pip g"></span><span class="pip r"></span><span class="line"></span></div>
+
+<p lang="en"><strong>One — the plateau is an exposure-bias problem, and the fix is on-policy training.</strong> A draft model trained on the target's clean trajectories never sees its own mistakes, so it cannot fix them. This is behavior cloning hitting its wall, and the answer is the same as RL-over-SFT: train on the states your policy actually visits.</p>
+
+<p lang="zh"><strong>一 —— 高原是一个 exposure-bias 问题， 而修法是在线训练。</strong> 一个在目标模型干净轨迹上训练的草稿模型， 从没见过自己的错误， 所以修不了它们。 这是 behavior cloning 撞墙， 而答案和"用 RL 取代 SFT"一样： 在你的策略真正走到的状态上训练。</p>
+
+<p lang="en"><strong>Two — the trick is decoupling generation from state selection.</strong> Target-assisted rollout for a stable trajectory; error-position replay to resurrect the drafter's rejected tokens as on-policy signal; an acceptance-aware loss that points forward KL at what works and reverse KL at what fails. The 7.3% from rescoring rejected tokens is the whole thesis in one controlled number.</p>
+
+<p lang="zh"><strong>二 —— 诀窍是把生成和状态选择解耦。</strong> 用目标辅助 rollout 拿到稳定轨迹； 用 error-position replay 把草稿被拒的 token 复活成在线信号； 用一个接受度感知的损失， 让 forward KL 对准有效的、 reverse KL 对准失败的。 重新打分被拒 token 带来的 7.3%， 是整个论点浓缩成的一个受控数字。</p>
+
+<p lang="en"><strong>Three — read the headline critically.</strong> "Over 5×" is the peak; 4.88× is the honest thinking-mode average; +23% / +13% is the robust relative claim. And the draftability ceiling is a genuinely useful idea beyond this paper: speculative-decoding speedup on a reasoning model is upper-bounded by the target's own next-token entropy, which you can measure before you train anything.</p>
+
+<p lang="zh"><strong>三 —— 带着批判读头条。</strong> "超过 5×"是峰值； 4.88× 是诚实的 thinking 模式平均； +23% / +13% 是稳健的相对说法。 而可草稿性天花板是一个超出本文、 真正有用的想法： 推理模型上的投机解码加速， 被目标模型自己的下一 token 熵从上方封顶， 而这个熵你在训练任何东西之前就能测。</p>
+
+<div class="ornament-break"><span class="line"></span><span class="pip r"></span><span class="pip g"></span><span class="pip b"></span><span class="line"></span></div>
+
+<p lang="en"><em>Source:</em> Haodi Lei, Yafu Li, Haoran Zhang, Shunkai Zhang, Qianjia Cheng, Xiaoye Qu, Ganqu Cui, Bowen Zhou, Ning Ding, Yun Luo, Yu Cheng, <a href="https://arxiv.org/abs/2605.29343">"Draft-OPD: On-Policy Distillation for Speculative Draft Models"</a> (arXiv:2605.29343, cs.CL, 28 May 2026). Numbers verified against the arXiv HTML v1: Table 1 (main results), Table 2 (SGLang serving), Tables 3–4 (ablations), and Appendices A–C. Companion reading in this <a href="/sources/">Library</a>: my <a href="/en/blog/eagle3-qwen3-benchmark/">EAGLE-3 on Qwen3-Coder benchmark</a> (the drafter this paper improves) and the <a href="/sources/chunked-pipeline.html">chunked-pipeline</a> reading (the serving engine these numbers run on).</p>
+
+<p lang="zh"><em>原文：</em> Haodi Lei、 Yafu Li、 Haoran Zhang、 Shunkai Zhang、 Qianjia Cheng、 Xiaoye Qu、 Ganqu Cui、 Bowen Zhou、 Ning Ding、 Yun Luo、 Yu Cheng， <a href="https://arxiv.org/abs/2605.29343">《Draft-OPD: On-Policy Distillation for Speculative Draft Models》</a>（arXiv:2605.29343， cs.CL， 2026-05-28）。 数字均对照 arXiv HTML v1 核过： Table 1（主结果）、 Table 2（SGLang 服务）、 Table 3–4（消融）、 附录 A–C。 本<a href="/sources/">文库</a>里的同伴： 我的 <a href="/zh/blog/eagle3-qwen3-benchmark/">EAGLE-3 on Qwen3-Coder benchmark</a>（本文改进的那个草稿器）和 <a href="/sources/chunked-pipeline.html">chunked-pipeline</a> 精读（这些数字运行其上的服务引擎）。</p>
+</section>
+
+</main>
+</div>
+
+<!-- ================ FOOTER ================ -->
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl" lang="en">Source</div>
+      <div class="lbl" lang="zh">来源</div>
+      <div class="val" lang="en">Lei et al., <a href="https://arxiv.org/abs/2605.29343">“Draft-OPD: On-Policy Distillation for Speculative Draft Models”</a>, arXiv:2605.29343, 2026. Verified against arXiv HTML v1.</div>
+      <div class="val" lang="zh">Lei 等， <a href="https://arxiv.org/abs/2605.29343">《Draft-OPD: On-Policy Distillation for Speculative Draft Models》</a>， arXiv:2605.29343， 2026。 对照 arXiv HTML v1 核验。</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Typography</div>
+      <div class="lbl" lang="zh">字体</div>
+      <div class="val">Syne · Piazzolla · Spline Sans Mono · Noto Serif SC</div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Palette</div>
+      <div class="lbl" lang="zh">色板</div>
+      <div class="val">
+        <span class="swatch" style="background:#f1eee3"></span>sheet
+        <span class="swatch" style="background:#1f4396"></span>target
+        <span class="swatch" style="background:#38753f"></span>accept
+        <span class="swatch" style="background:#c0382a"></span>reject
+        <span class="swatch" style="background:#a3701a"></span>anchor
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl" lang="en">Compiled for</div>
+      <div class="lbl" lang="zh">编译为</div>
+      <div class="val" lang="en">anyone who wants to feel why a draft model should learn from its own mistakes.</div>
+      <div class="val" lang="zh">想真正理解"草稿模型为什么该从自己的错误里学"的人。</div>
+    </div>
+  </div>
+  <div class="closing" lang="en">No.005 · Paper reading · jinnpan.com · 2026 · teach the drafter from what it got wrong.</div>
+  <div class="closing" lang="zh">No.005 · 论文精读 · jinnpan.com · 2026 · 拿草稿模型猜错的东西去教它。</div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'draft-opd-source-lang';
+  var body = document.body;
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') {
+    body.setAttribute('data-lang', stored);
+  } else {
+    var nav = (navigator.language || 'en').toLowerCase();
+    body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set');
+      body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+
+<!-- KaTeX: typeset the math. Ignores <code> so flags/function names stay literal. -->
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    // Inline math carried in <span class="katex-inline">…</span> (raw LaTeX, no delimiters).
+    if (typeof katex !== 'undefined') {
+      document.querySelectorAll('span.katex-inline').forEach(function (el) {
+        try { katex.render(el.textContent, el, { throwOnError: false }); } catch (e) {}
+      });
+    }
+    // Display math in \[ … \] blocks.
+    if (typeof renderMathInElement !== 'function') return;
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '\\[', right: '\\]', display: true },
+        { left: '\\(', right: '\\)', display: false }
+      ],
+      ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+      throwOnError: false
+    });
+  });
+</script>
+
+</body>
+</html>
