@@ -43,6 +43,16 @@ and the accept length — that the deployed DSpark recipe would otherwise introd
 `results/*.json` are the unreduced intermediates the CSVs were rolled up from,
 including `name_map_4k.json` (the ground-truth kernel-name → block-type map).
 
+The raw chrome traces are too large to sit in this repo (52 MB for rank TP0 alone,
+440 MB for all eight ranks) and live in a public gist instead:
+<https://gist.github.com/jhinpan/fe0f4eefa9b302d16db77c1414a0dcce>. That gist also
+carries `kernel-inventory.csv` — every distinct kernel, which block launches it, its
+dispatch count per forward pass, and whether two blocks share it — plus
+`overlap_check.py`, which tests whether KDA and full-attention kernels ever execute
+concurrently. They do not, in either phase: layers are serial and each holds exactly
+one attention, which is why `kimi_k3.py:1940` can hand the KDA path and the MLA gate
+path the same alt stream.
+
 ## How a kernel was attributed to a layer type
 
 This is the part that took the work, so the reasoning is recorded rather than just
