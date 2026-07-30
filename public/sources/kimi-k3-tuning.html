@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tuning Kimi-K3 on 8x MI355X — per-step cost versus accepted tokens</title>
+<meta name="description" content="A launch-parameter search and a bsz=1 characterisation of Kimi-K3 with DSpark speculative decoding on 8x MI355X. Every throughput decision reduces to one trade-off."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&amp;family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..600&amp;family=Instrument+Sans:wght@400;500;600&amp;family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f4f1ea; --paper:#faf8f3; --sunk:#ebe6db;
+  --fg:#1c1b19; --fg2:#4a4740; --fg3:#7a756a;
+  --rule:#d8d1c2; --rule2:#c3baa6;
+  --shu:#b23a26;        /* 朱 — vermilion, the single accent */
+  --ai:#2c4a63;         /* 藍 — indigo, secondary data series */
+  --kin:#8a6a1f;        /* 金茶 — warnings */
+  --sumi:#26251f;
+  --display:'Shippori Mincho','Noto Serif SC','Songti SC',serif;
+  --body:'Literata','Noto Serif SC','Songti SC',Georgia,serif;
+  --ui:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  --mono:'DM Mono',ui-monospace,'Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--body); font-size:17px; line-height:1.72;
+  font-optical-sizing:auto;
+  /* The hairline grid is the visual thesis: paper ruled for plotting. */
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px);
+  background-size:100% 32px; background-position:0 -1px;
+}
+a{color:var(--shu); text-decoration:none; border-bottom:1px solid rgba(178,58,38,.34)}
+a:hover{border-bottom-color:var(--shu)}
+code{font-family:var(--mono); font-size:.88em; background:var(--sunk); padding:.08em .32em; border-radius:2px; color:var(--sumi)}
+h1,h2,h3,h4{font-family:var(--display); font-weight:600; line-height:1.28; margin:0}
+strong{font-weight:600; color:var(--sumi)}
+em{font-style:italic; color:var(--fg2)}
+
+/* ---------------------------------------------------------------- shell -- */
+.wrap{display:grid; grid-template-columns:232px minmax(0,1fr); gap:0; max-width:1180px; margin:0 auto}
+.rail{
+  grid-column:1; padding:44px 26px 60px 20px; font-family:var(--ui);
+  font-size:12.5px; line-height:1.5; border-right:1px solid var(--rule);
+  position:sticky; top:0; align-self:start; max-height:100vh; overflow-y:auto;
+}
+.rail-back{display:block; margin-bottom:26px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--fg3); border:0}
+.rail-back:hover{color:var(--shu)}
+.rail-title{font-family:var(--ui); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--fg3); margin:0 0 12px}
+.rail ol{list-style:none; margin:0; padding:0; counter-reset:sec}
+.rail li{counter-increment:sec; margin:0 0 9px; display:flex; gap:9px}
+.rail li::before{content:counter(sec,decimal-leading-zero); color:var(--rule2); font-variant-numeric:tabular-nums; flex:none}
+.rail a{color:var(--fg2); border:0}
+.rail a:hover{color:var(--shu)}
+.main{grid-column:2; padding:0 0 90px}
+
+/* ------------------------------------------------------------- masthead -- */
+.masthead{padding:52px 0 30px; border-bottom:2px solid var(--sumi); margin-bottom:38px; max-width:760px}
+.kicker{font-family:var(--ui); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--shu); margin:0 0 16px}
+.masthead h1{font-size:39px; letter-spacing:-.012em; margin:0 0 14px}
+.masthead .sub{font-size:18.5px; color:var(--fg2); margin:0 0 26px; line-height:1.6}
+.spec{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); font-family:var(--ui)}
+.spec div{background:var(--paper); padding:11px 13px}
+.spec dt{font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--fg3); margin:0 0 4px}
+.spec dd{margin:0; font-size:14px; font-family:var(--mono); color:var(--sumi)}
+
+/* -------------------------------------------------------------- article -- */
+.article{max-width:760px}
+section{margin:0 0 54px; scroll-margin-top:24px}
+section>h2{font-size:27px; margin:0 0 6px; letter-spacing:-.008em}
+.sec-num{font-family:var(--ui); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--shu); display:block; margin-bottom:9px}
+h3{font-size:20px; margin:32px 0 8px}
+h4{font-size:16.5px; margin:24px 0 6px; font-family:var(--ui); font-weight:600; letter-spacing:.01em}
+p{margin:0 0 17px}
+.lede{font-size:19px; color:var(--fg2); line-height:1.66}
+ul,ol{margin:0 0 17px; padding-left:22px}
+li{margin:0 0 7px}
+
+/* ---------------------------------------------------------------- plate -- */
+.plate{margin:30px 0 34px; background:var(--paper); border:1px solid var(--rule); padding:18px 20px 14px}
+.plate.wide{max-width:980px; width:min(980px,calc(100vw - 300px))}
+.plate-meta{font-family:var(--ui); font-size:10.5px; letter-spacing:.15em; text-transform:uppercase; color:var(--fg3); border-bottom:1px solid var(--rule); padding-bottom:8px; margin-bottom:14px; display:flex; justify-content:space-between; gap:12px}
+.plate-meta b{color:var(--shu); font-weight:600}
+.caption{font-family:var(--ui); font-size:13px; font-style:italic; color:var(--fg2); margin:10px 0 0; line-height:1.55}
+.plate-svg{width:100%; height:auto; display:block; overflow:visible}
+
+/* svg shared classes */
+.ax-grid{stroke:var(--rule); stroke-width:1}
+.ax-axis{stroke:var(--rule2); stroke-width:1}
+.ax-tick{font-family:var(--mono); font-size:10.5px; fill:var(--fg3)}
+.ax-label{font-family:var(--ui); font-size:11px; fill:var(--fg2)}
+.ser{fill:none; stroke-width:1.9; stroke-linejoin:round}
+.ser.dashed{stroke-dasharray:5 3.5}
+.ser-tps,.ser-perreq{stroke:var(--shu)} .dot-tps,.dot-perreq{fill:var(--shu)}
+.ser-acc,.ser-ttft{stroke:var(--ai)} .dot-acc,.dot-ttft{fill:var(--ai)}
+.ser-val{font-family:var(--mono); font-size:10px}
+.val-tps,.val-perreq{fill:var(--shu)} .val-acc,.val-ttft{fill:var(--ai)}
+.legend{font-family:var(--ui); font-size:12px; color:var(--fg2); display:flex; flex-wrap:wrap; gap:18px; margin-top:12px}
+.legend-item{display:inline-flex; align-items:center; gap:7px}
+.swatch{width:15px; height:3px; display:inline-block}
+.sw-tps,.sw-perreq{background:var(--shu)} .sw-acc,.sw-ttft{background:var(--ai)}
+.diag-node{fill:var(--paper); stroke:var(--rule2); stroke-width:1}
+.diag-node.hot{stroke:var(--shu); stroke-width:1.6}
+.diag-node.dead{fill:var(--sunk); stroke:var(--rule2); stroke-dasharray:4 3}
+.diag-text{font-family:var(--ui); font-size:12px; fill:var(--sumi)}
+.diag-text.sm{font-size:10.5px; fill:var(--fg3)}
+.diag-text.mono{font-family:var(--mono); font-size:10.5px}
+.diag-edge{stroke:var(--rule2); stroke-width:1.2; fill:none}
+.diag-edge.hot{stroke:var(--shu)}
+.zone-box{fill:none; stroke:var(--rule); stroke-width:1}
+.zone-label{font-family:var(--ui); font-size:10px; letter-spacing:.14em; text-transform:uppercase; fill:var(--fg3)}
+.bar-kv{fill:var(--ai)} .bar-ssm{fill:var(--shu)} .bar-track{fill:var(--sunk)}
+
+/* --------------------------------------------------------------- tables -- */
+.table-wrap{overflow-x:auto; margin:22px 0 8px; border:1px solid var(--rule); background:var(--paper)}
+table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13px}
+th,td{padding:8px 11px; text-align:left; border-bottom:1px solid var(--rule); white-space:nowrap}
+th{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg3); font-weight:600; background:var(--sunk)}
+td.num,th.num{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums}
+th.num{font-family:var(--ui)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--sunk)}
+td code{background:none; padding:0; color:var(--sumi)}
+
+/* -------------------------------------------------------------- callout -- */
+.note{border-left:2.5px solid var(--rule2); padding:2px 0 2px 18px; margin:24px 0}
+.note.key{border-left-color:var(--shu)}
+.note.warn{border-left-color:var(--kin)}
+.note-label{font-family:var(--ui); font-size:10.5px; letter-spacing:.15em; text-transform:uppercase; color:var(--fg3); margin:0 0 5px}
+.note.key .note-label{color:var(--shu)}
+.note.warn .note-label{color:var(--kin)}
+.note p:last-child{margin-bottom:0}
+pre{background:var(--paper); border:1px solid var(--rule); padding:13px 15px; overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.6; margin:20px 0; color:var(--sumi)}
+pre code{background:none; padding:0; font-size:inherit}
+.gen{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+/* ------------------------------------------------------------- colophon -- */
+.colophon{max-width:760px; margin-top:64px; padding-top:22px; border-top:2px solid var(--sumi); font-family:var(--ui); font-size:12.5px; color:var(--fg3); display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:20px}
+.colophon dt{font-size:10px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 4px}
+.colophon dd{margin:0; color:var(--fg2)}
+
+/* ---------------------------------------------------------------- toggle -- */
+.lang-toggle{position:fixed; top:16px; right:18px; z-index:40; display:inline-flex; background:var(--paper); border:1px solid var(--rule2)}
+.lang-toggle button{font-family:var(--ui); font-size:11.5px; letter-spacing:.08em; padding:6px 11px; background:none; border:0; color:var(--fg3); cursor:pointer}
+.lang-toggle button+button{border-left:1px solid var(--rule)}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"]{background:var(--sumi); color:var(--paper)}
+
+@media (max-width:1000px){
+  .wrap{grid-template-columns:1fr; padding:0 22px}
+  .rail{position:static; max-height:none; border-right:0; border-bottom:1px solid var(--rule); padding:22px 0; grid-column:1}
+  .rail ol{columns:2; column-gap:26px}
+  .main{grid-column:1}
+  .plate.wide{width:100%; max-width:100%}
+  .masthead h1{font-size:31px}
+}
+
+/* Language visibility — must stay last so it wins. */
+body[data-lang="en"] [lang="zh"]:not(html){display:none !important}
+body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="wrap">
+<nav class="rail">
+  <a class="rail-back" href="/sources/">← The Library</a>
+  <p class="rail-title"><span lang="en">Contents</span><span lang="zh">目录</span></p>
+  <ol>
+    <li><a href="#prologue"><span lang="en">The one trade-off</span><span lang="zh">唯一的权衡</span></a></li>
+    <li><a href="#search-shape"><span lang="en">Shape of the search</span><span lang="zh">搜索的形状</span></a></li>
+    <li><a href="#memory-wall"><span lang="en">The memory ceiling</span><span lang="zh">显存上限</span></a></li>
+    <li><a href="#two-walls"><span lang="en">Two different walls</span><span lang="zh">两道不同的墙</span></a></li>
+    <li><a href="#knobs"><span lang="en">Which knobs moved</span><span lang="zh">哪些旋钮真的动了</span></a></li>
+    <li><a href="#block-size"><span lang="en">The one big knob</span><span lang="zh">最大的那个旋钮</span></a></li>
+    <li><a href="#gate"><span lang="en">The accuracy gate</span><span lang="zh">精度闸门</span></a></li>
+    <li><a href="#context-not-batch"><span lang="en">Context, not batch</span><span lang="zh">是上下文， 不是批量</span></a></li>
+    <li><a href="#decomposition"><span lang="en">Splitting the loss</span><span lang="zh">拆开损失</span></a></li>
+    <li><a href="#output-length"><span lang="en">Output length barely matters</span><span lang="zh">输出长度几乎不重要</span></a></li>
+    <li><a href="#concurrency"><span lang="en">Scaling and the knee</span><span lang="zh">扩展与拐点</span></a></li>
+    <li><a href="#reefs"><span lang="en">Reefs</span><span lang="zh">暗礁</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">结语</span></a></li>
+  </ol>
+</nav>
+
+<div class="main">
+<header class="masthead">
+  <p class="kicker">Benchmark · Kimi-K3 · 8x MI355X</p>
+  <h1><span lang="en">Per-step cost versus accepted tokens</span><span lang="zh">每步成本， 与每步接受的 token</span></h1>
+  <p class="sub"><span lang="en">A launch-parameter search and a concurrency-1 characterisation of Kimi-K3 under DSpark speculative decoding. Six knobs, three sweeps, one accuracy gate — and every throughput decision in the whole exercise turns out to be the same trade-off wearing different clothes.</span><span lang="zh">一次 Kimi-K3 在 DSpark 投机解码下的启动参数搜索， 加上一组并发 1 的特征曲线。 六个旋钮、三条扫描、一道精度闸门——而整个过程里每一个吞吐决策， 最后都归结为同一个权衡换了件衣服。</span></p>
+  <dl class="spec">
+    <div><dt><span lang="en">Hardware</span><span lang="zh">硬件</span></dt><dd>8x MI355X · TP8</dd></div>
+    <div><dt><span lang="en">Model</span><span lang="zh">模型</span></dt><dd>moonshotai/Kimi-K3</dd></div>
+    <div><dt><span lang="en">Draft</span><span lang="zh">草稿模型</span></dt><dd>Kimi-K3-DSpark</dd></div>
+    <div><dt>sglang</dt><dd>3d35b45f7</dd></div>
+    <div><dt><span lang="en">Search rows</span><span lang="zh">搜索行数</span></dt><dd>53 / 49 OK</dd></div>
+    <div><dt><span lang="en">Sweep points</span><span lang="zh">扫描点数</span></dt><dd><span class="gen" data-gen="f-points">18</span></dd></div>
+  </dl>
+</header>
+
+<main class="article">
+
+<section id="prologue">
+  <span class="sec-num">01</span>
+  <h2><span lang="en">The one trade-off</span><span lang="zh">唯一的权衡</span></h2>
+  <p class="lede"><span lang="en">Speculative decoding replaces one expensive step per token with one expensive step per <em>batch</em> of guessed tokens. Everything that follows is a consequence of that sentence.</span><span lang="zh">投机解码把「每个 token 一次昂贵前向」换成「每一批猜测 token 一次昂贵前向」。 后面所有内容都是这句话的推论。</span></p>
+
+  <p><span lang="en">A draft model proposes <em>k</em> tokens; the target model verifies all of them in a single forward pass and keeps the longest correct prefix. Throughput is therefore not a single number you tune — it is a ratio:</span><span lang="zh">草稿模型提议 <em>k</em> 个 token， 目标模型在一次前向里验证全部， 然后保留最长的正确前缀。 所以吞吐不是一个你去调的单一数字， 它是一个比值：</span></p>
+
+  <pre><code>throughput  =  accepted tokens per step
+               ─────────────────────────
+                    step latency</code></pre>
+
+  <p><span lang="en">Two ways to make that bigger, and they fight each other. Widen the verify window and the draft proposes more tokens per step, so the numerator grows — but the target now attends over a longer speculative suffix, so the denominator grows too. Narrow the window and the reverse happens. There is no setting that improves both, which is exactly why a search is necessary rather than a rule of thumb.</span><span lang="zh">有两种办法把它变大， 而这两种办法互相打架。 把验证窗口加宽， 草稿每步提议更多 token， 分子变大——但目标模型要在更长的投机后缀上做 attention， 分母也跟着变大。 把窗口收窄则相反。 没有哪个设置能同时改善两者， 这正是为什么需要搜索而不是经验法则。</span></p>
+
+  <p><span lang="en">What makes this worth writing down is that the same ratio explains findings that look unrelated. The single largest throughput win in the search — a 1.68x jump from one flag — is a case of trading numerator for a much cheaper denominator. The single largest throughput <em>loss</em> in the sweeps — a 6.35x collapse at long input — is both terms degrading at once. Once you read every number as a fraction, the whole result set stops being a table and becomes one mechanism.</span><span lang="zh">值得把这件事写下来的原因是： 同一个比值能解释一批看起来毫不相干的发现。 搜索里最大的单项吞吐收益——某个 flag 带来的 1.68 倍跳升——是拿分子去换一个便宜得多的分母。 扫描里最大的单项吞吐<em>损失</em>——长输入下 6.35 倍的崩塌——是两项同时恶化。 一旦你把每个数字都读成分数， 整份结果就不再是一张表， 而是一套机制。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">What is measured here</span><span lang="zh">这里测了什么</span></p>
+    <p><span lang="en">Two campaigns. First a 450-minute launch-parameter search over six knobs across two serving lanes (with and without speculative decoding), 53 configurations, 49 of which produced a benchmark point. Then <span class="gen" data-gen="f-points">18</span> points characterising the winning speculative recipe at concurrency 1 and up its scaling curve. All on one node, all reproducible from the archived CSVs.</span><span lang="zh">两轮。 先是一次 450 分钟的启动参数搜索， 覆盖两条服务通道（开与不开投机解码）上的六个旋钮， 共 53 个配置， 其中 49 个产出了 benchmark 数据点。 然后是 <span class="gen" data-gen="f-points">18</span> 个点， 刻画胜出的投机配方在并发 1 及其扩展曲线上的行为。 全部在同一个节点上完成， 全部可从归档的 CSV 复现。</span></p>
+  </div>
+</section>
+
+<section id="search-shape">
+  <span class="sec-num">02</span>
+  <h2><span lang="en">Shape of the search</span><span lang="zh">搜索的形状</span></h2>
+
+  <p><span lang="en">Six knobs, each with several plausible values, times a concurrency axis, is thousands of combinations. One configuration costs about 194 seconds to boot — 1.5 TB of weights — plus minutes to benchmark. A full grid is not slow, it is impossible: at three minutes of boot alone, a thousand configurations is fifty hours of doing nothing but loading weights.</span><span lang="zh">六个旋钮、每个几个可选值， 再乘一条并发轴， 就是几千种组合。 单个配置光启动就要约 194 秒——1.5 TB 权重——再加上几分钟跑 benchmark。 全网格搜索不是慢， 是不可能： 仅按三分钟启动算， 一千个配置就是五十小时纯粹在装权重。</span></p>
+
+  <p><span lang="en">So the search is staged, and the staging order is not arbitrary. The memory fraction goes first because it is a hard constraint that changes the meaning of every other measurement: a knob evaluated at a different memory budget is a knob evaluated at a different batch capacity, and the comparison is worthless. Fix the ceiling, then sweep knobs at one matched concurrency, then take the winner up the concurrency curve, then repeat the winner to separate signal from noise, then gate on accuracy.</span><span lang="zh">所以搜索是分阶段的， 而且阶段顺序不是随意的。 显存占比放在最前面， 因为它是一个硬约束， 会改变其他所有测量的含义： 在不同显存预算下评估的旋钮， 就是在不同 batch 容量下评估的旋钮， 这种对比毫无价值。 先钉住上限， 再在单一匹配并发下扫旋钮， 然后把胜者带上并发曲线， 接着复跑胜者以区分信号与噪声， 最后过精度闸门。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span><b>Plate I</b> · <span lang="en">Search stages and what each one fixes</span><span lang="zh">搜索阶段， 及各阶段钉住的东西</span></span><span class="diag-text sm">450 min budget</span></div>
+    <svg viewBox="0 0 940 300" role="img" class="plate-svg">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9" fill="none" stroke="#c3baa6" stroke-width="1.4"/></marker></defs>
+      <rect class="zone-box" x="16" y="42" width="176" height="200"/>
+      <text class="zone-label" x="24" y="34">P1 · memory ceiling</text>
+      <rect class="diag-node" x="34" y="60" width="140" height="30" rx="2"/>
+      <text class="diag-text mono" x="44" y="79">anchor mf 0.85</text>
+      <path class="diag-edge" d="M104,90 L104,108" marker-end="url(#ah)"/>
+      <rect class="diag-node dead" x="34" y="108" width="140" height="30" rx="2"/>
+      <text class="diag-text mono" x="44" y="122">predict 0.95</text>
+      <text class="diag-text sm" x="44" y="133">OOM · rejected</text>
+      <path class="diag-edge" d="M104,138 L104,156" marker-end="url(#ah)"/>
+      <rect class="diag-node dead" x="34" y="156" width="140" height="24" rx="2"/>
+      <text class="diag-text mono" x="44" y="172">0.94 · OOM</text>
+      <path class="diag-edge hot" d="M104,180 L104,198" marker-end="url(#ah)"/>
+      <rect class="diag-node hot" x="34" y="198" width="140" height="30" rx="2"/>
+      <text class="diag-text mono" x="44" y="217">0.93 nospec · 0.92 spec</text>
+
+      <path class="diag-edge hot" d="M192,140 L232,140" marker-end="url(#ah)"/>
+
+      <rect class="zone-box" x="232" y="42" width="196" height="200"/>
+      <text class="zone-label" x="240" y="34">P2 / P3 · knobs per lane</text>
+      <rect class="diag-node" x="250" y="60" width="160" height="26" rx="2"/>
+      <text class="diag-text mono" x="260" y="77">chunked-prefill</text>
+      <rect class="diag-node" x="250" y="92" width="160" height="26" rx="2"/>
+      <text class="diag-text mono" x="260" y="109">cuda-graph bs</text>
+      <rect class="diag-node" x="250" y="124" width="160" height="26" rx="2"/>
+      <text class="diag-text mono" x="260" y="141">radix strategy</text>
+      <rect class="diag-node" x="250" y="156" width="160" height="26" rx="2"/>
+      <text class="diag-text mono" x="260" y="173">max-running-reqs</text>
+      <rect class="diag-node hot" x="250" y="188" width="160" height="26" rx="2"/>
+      <text class="diag-text mono" x="260" y="205">dspark block-size</text>
+      <text class="diag-text sm" x="250" y="232">matched concurrency</text>
+
+      <path class="diag-edge hot" d="M428,140 L468,140" marker-end="url(#ah)"/>
+
+      <rect class="zone-box" x="468" y="42" width="164" height="200"/>
+      <text class="zone-label" x="476" y="34">P3b / P4 · curve + reps</text>
+      <rect class="diag-node" x="486" y="70" width="128" height="30" rx="2"/>
+      <text class="diag-text mono" x="496" y="89">concurrency curve</text>
+      <path class="diag-edge" d="M550,100 L550,126" marker-end="url(#ah)"/>
+      <rect class="diag-node" x="486" y="126" width="128" height="30" rx="2"/>
+      <text class="diag-text mono" x="496" y="145">repeat x3</text>
+      <path class="diag-edge" d="M550,156 L550,182" marker-end="url(#ah)"/>
+      <rect class="diag-node" x="486" y="182" width="128" height="34" rx="2"/>
+      <text class="diag-text mono" x="496" y="198">interaction test</text>
+      <text class="diag-text sm" x="496" y="211">winner x winner</text>
+
+      <path class="diag-edge hot" d="M632,140 L672,140" marker-end="url(#ah)"/>
+
+      <rect class="zone-box" x="672" y="42" width="252" height="200"/>
+      <text class="zone-label" x="680" y="34">P5 · accuracy gate</text>
+      <rect class="diag-node" x="690" y="66" width="216" height="30" rx="2"/>
+      <text class="diag-text mono" x="700" y="85">GSM8K n=1319 greedy</text>
+      <rect class="diag-node" x="690" y="104" width="216" height="30" rx="2"/>
+      <text class="diag-text mono" x="700" y="123">AIME25 avg-of-8</text>
+      <rect class="diag-node" x="690" y="142" width="216" height="30" rx="2"/>
+      <text class="diag-text mono" x="700" y="161">degeneration probe</text>
+      <rect class="diag-node hot" x="690" y="184" width="216" height="34" rx="2"/>
+      <text class="diag-text mono" x="700" y="200">6 / 6 PASS</text>
+      <text class="diag-text sm" x="700" y="213">one knob dropped on evidence</text>
+    </svg>
+    <p class="caption"><span lang="en">Dashed boxes are configurations the search rejected outright. The memory ceiling is bisected before any knob is touched, because a knob measured at a different memory budget is measured at a different batch capacity.</span><span lang="zh">虚线框是被搜索直接否决的配置。 显存上限在动任何旋钮之前就先二分确定， 因为在不同显存预算下测出的旋钮， 实际是在不同 batch 容量下测的。</span></p>
+  </div>
+</section>
+
+<section id="memory-wall">
+  <span class="sec-num">03</span>
+  <h2><span lang="en">The memory ceiling, and why prediction overshoots</span><span lang="zh">显存上限， 以及为什么预测会过头</span></h2>
+
+  <p><span lang="en">The bisection starts with an anchor probe at <code>--mem-fraction-static 0.85</code>, reads how much device memory is left after the pools are carved, and extrapolates the fraction that would consume it. For the non-speculative lane the anchor left 35.13 GB free, which predicts 0.95. Both 0.95 and 0.94 died with <code>torch.OutOfMemoryError</code> — at 0.95 the allocator had 1.01 GB free on GPU 1 and wanted 1.75 GB. The winner was 0.93, leaving 12.21 GB.</span><span lang="zh">二分从一次 <code>--mem-fraction-static 0.85</code> 的锚点探测开始， 读出各内存池切分完之后设备上还剩多少， 再外推出能把这些吃掉的占比。 非投机通道的锚点剩 35.13 GB， 外推得到 0.95。 结果 0.95 和 0.94 都以 <code>torch.OutOfMemoryError</code> 崩掉——0.95 时分配器在 GPU 1 上只剩 1.01 GB 空闲， 却要申请 1.75 GB。 胜出的是 0.93， 剩 12.21 GB。</span></p>
+
+  <p><span lang="en">Why did a measurement-based prediction overshoot by two whole steps? Because free memory after boot and free memory during work are different quantities. Booting allocates the static pools: weights, KV cache, SSM state. Serving additionally allocates <em>transient activations</em>, and their peak scales with how much work is in flight — the prefill chunk size times the batch. The anchor probe sees the floor of memory use, then the search extrapolates as if that floor were the whole story.</span><span lang="zh">为什么一个基于实测的预测会高出整整两档？ 因为「启动后的空闲显存」和「工作中的空闲显存」是两个不同的量。 启动分配的是静态池： 权重、KV cache、SSM 状态。 服务时还要额外分配<em>瞬时激活</em>， 而它的峰值随在途工作量增长——prefill 分块大小乘以 batch。 锚点探测看到的是显存占用的下界， 搜索却把这个下界当成了全貌来外推。</span></p>
+
+  <p><span lang="en">The consequence is a rule worth carrying to any inference deployment: <strong>a successful boot does not prove a safe memory setting.</strong> The harness therefore gates each candidate with a deliberately hostile probe — input length 16384 to fill an entire prefill chunk, fanned out at the concurrency the lane will actually run at, one wave only. One wave because this is a gate, not a measurement; it must be cheap enough to run on every candidate. Without it the search would happily crown a configuration that boots, benchmarks a small workload, and then dies in production on the first long prompt.</span><span lang="zh">由此得到一条值得带到任何推理部署里的规则：<strong>启动成功并不能证明显存设置是安全的。</strong> 所以 harness 给每个候选都加了一道故意刁难的探测——输入长度 16384 以填满一整个 prefill 分块， 并按该通道实际运行的并发扇出， 只跑一个波次。 只跑一个波次， 因为这是闸门而不是测量， 它必须便宜到每个候选都跑得起。 没有它， 搜索会心满意足地给一个「能启动、在小负载上跑出好成绩、然后在生产环境第一个长 prompt 上暴死」的配置戴上王冠。</span></p>
+
+  <div class="note warn">
+    <p class="note-label"><span lang="en">Why not simply take the highest fraction that boots</span><span lang="zh">为什么不能直接取「能启动的最高占比」</span></p>
+    <p><span lang="en">Because the failure it protects against is invisible at boot and catastrophic later. Static pools are sized once and reported; activation peaks depend on the request mix, which the operator does not control. Trading 12 GB of headroom for a few percent of batch capacity is a bad bet when losing it means the server dies mid-request.</span><span lang="zh">因为它要防的那种失败在启动时看不见， 在之后却是灾难性的。 静态池只在启动时定尺寸并被报告出来；激活峰值取决于请求构成， 而运维方并不控制这一点。 用 12 GB 余量去换几个百分点的 batch 容量是笔糟糕的赌注——输掉的代价是服务在请求中途死掉。</span></p>
+  </div>
+</section>
+
+<section id="two-walls">
+  <span class="sec-num">04</span>
+  <h2><span lang="en">The two lanes hit different walls</span><span lang="zh">两条通道撞的是两道不同的墙</span></h2>
+
+  <p><span lang="en">Kimi-K3 is a hybrid: most layers carry a recurrent SSM state, a minority do full attention. That single architectural fact splits the tuning problem in two, because the two serving lanes exhaust two different pools.</span><span lang="zh">Kimi-K3 是混合架构： 大多数层带一个循环 SSM 状态， 少数层做全 attention。 就这一个架构事实把调参问题劈成了两半， 因为两条服务通道耗尽的是两个不同的池。</span></p>
+
+  <div class="plate">
+    <div class="plate-meta"><span><b>Plate II</b> · <span lang="en">Which pool saturates first, read from the scheduler</span><span lang="zh">哪个池先饱和， 读自调度器</span></span><span class="diag-text sm">ISL 8192 / OSL 1024</span></div>
+    <svg viewBox="0 0 700 232" role="img" class="plate-svg">
+      <text class="zone-label" x="14" y="20">nospec · concurrency 128 · 570 slots</text>
+      <text class="diag-text sm" x="14" y="46">KV cache</text>
+      <rect class="bar-track" x="120" y="34" width="480" height="17"/>
+      <rect class="bar-kv" x="120" y="34" width="441.6" height="17"/>
+      <text class="diag-text mono" x="610" y="47">0.92</text>
+      <text class="diag-text sm" x="14" y="74">SSM state</text>
+      <rect class="bar-track" x="120" y="62" width="480" height="17"/>
+      <rect class="bar-ssm" x="120" y="62" width="57.6" height="17"/>
+      <text class="diag-text mono" x="610" y="75">0.12</text>
+      <text class="diag-text sm" x="120" y="98">queue 0 · the KV pool is the binding constraint</text>
+
+      <line class="ax-grid" x1="14" y1="118" x2="686" y2="118"/>
+
+      <text class="zone-label" x="14" y="146">dspark · concurrency 48 · 48 slots</text>
+      <text class="diag-text sm" x="14" y="172">KV cache</text>
+      <rect class="bar-track" x="120" y="160" width="480" height="17"/>
+      <rect class="bar-kv" x="120" y="160" width="139.2" height="17"/>
+      <text class="diag-text mono" x="610" y="173">0.29</text>
+      <text class="diag-text sm" x="14" y="200">SSM state</text>
+      <rect class="bar-track" x="120" y="188" width="480" height="17"/>
+      <rect class="bar-ssm" x="120" y="188" width="470.4" height="17"/>
+      <text class="diag-text mono" x="610" y="201">0.98</text>
+      <text class="diag-text sm" x="120" y="224">queue 3 · the SSM state pool is the binding constraint</text>
+    </svg>
+    <p class="caption"><span lang="en">Peak pool occupancy at saturation, taken from scheduler telemetry. The non-speculative lane runs out of KV cache with the state pool nearly empty; the speculative lane does the exact opposite.</span><span lang="zh">饱和时各池的峰值占用， 取自调度器遥测。 非投机通道在状态池几乎空着的情况下先耗尽 KV cache；投机通道恰好相反。</span></p>
+  </div>
+
+  <p><span lang="en">The speculative lane is capped at 48 concurrent requests, and the cap is not a policy choice — it is what the state pool affords. Speculation needs somewhere to keep the recurrent state for every token it has guessed but not yet verified, so a speculative request reserves several state slots where a plain request reserves one. At 48 running requests the state pool is 98% full while the KV cache sits at 29%.</span><span lang="zh">投机通道被限制在 48 个并发请求， 而这个上限不是策略选择——它是状态池能供养的数量。 投机需要地方存放每一个已猜测但尚未验证的 token 的循环状态， 所以一个投机请求要预留数个状态槽位， 而普通请求只占一个。 在 48 个运行请求时， 状态池已经 98% 满， 而 KV cache 才 29%。</span></p>
+
+  <p><span lang="en">The obvious move is to raise the cap, and the search tried it four times. It does not work, and the way it fails is instructive: <code>--max-running-requests</code> and <code>max_total_num_tokens</code> trade against each other, because reserving more request slots means reserving more state per slot from the same fixed pool. Raising the cap therefore <em>shrinks</em> the token budget, so requests that do get admitted have less room, and the ones that do not simply queue.</span><span lang="zh">显而易见的动作是把上限提高， 搜索试了四次。 它不管用， 而失败的方式很有教育意义：<code>--max-running-requests</code> 和 <code>max_total_num_tokens</code> 是互相换的， 因为预留更多请求槽位就意味着要从同一个固定池里为每个槽位预留更多状态。 于是提高上限反而<em>缩小</em>了 token 预算， 被放进来的请求空间更少， 没被放进来的就只能排队。</span></p>
+
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th><span lang="en">config</span><span lang="zh">配置</span></th>
+      <th class="num">max_running_requests</th>
+      <th class="num">max_total_num_tokens</th>
+      <th class="num"><span lang="en">TTFT med</span><span lang="zh">TTFT 中位</span></th>
+      <th class="num"><span lang="en">total tok/s</span><span lang="zh">总 tok/s</span></th>
+      <th class="num"><span lang="en">queued</span><span lang="zh">排队</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>p3-mrr16</code></td><td class="num">16</td><td class="num">1,658,855</td><td class="num">96,195 ms</td><td class="num">3,007.01</td><td class="num">34</td></tr>
+      <tr><td><code>p3-mrr24</code></td><td class="num">24</td><td class="num">1,537,796</td><td class="num">70,100 ms</td><td class="num">3,264.52</td><td class="num">27</td></tr>
+      <tr><td><code>p3-mrr32</code></td><td class="num">32</td><td class="num">1,416,737</td><td class="num">56,087 ms</td><td class="num">2,109.45</td><td class="num">19</td></tr>
+      <tr><td><code>p3-mrr40</code></td><td class="num">40</td><td class="num">1,295,677</td><td class="num">24,589 ms</td><td class="num">2,106.59</td><td class="num">11</td></tr>
+      <tr><td><code>p3-g3</code></td><td class="num">48</td><td class="num">1,504,168</td><td class="num">6,569 ms</td><td class="num">3,606.12</td><td class="num">3</td></tr>
+    </tbody>
+  </table></div>
+  <p class="caption"><span lang="en">Lowering the cap raises the token budget and the accept length, and destroys latency: at 16 slots the median first token arrives after 96 seconds because 34 requests are waiting. The default cap with a tuned verify window beats all four.</span><span lang="zh">降低上限会抬高 token 预算和接受长度， 同时毁掉延迟： 16 个槽位时首 token 中位要等 96 秒， 因为有 34 个请求在排队。 默认上限配上一个调好的验证窗口， 胜过全部四者。</span></p>
+</section>
+
+<section id="knobs">
+  <span class="sec-num">05</span>
+  <h2><span lang="en">Which knobs moved anything</span><span lang="zh">哪些旋钮真的动了指标</span></h2>
+
+  <p><span lang="en">Most of them did not, and the null results are worth more than they look — each one retires a hypothesis and narrows what is left to explain.</span><span lang="zh">大多数没有， 而这些空结果比看上去更有价值——每一个都退役掉一个假设， 缩小了还需要解释的范围。</span></p>
+
+  <p><span lang="en">Chunked prefill at 32768 and 65536 produced <em>byte-identical</em> capacity and throughput within noise of the default 16384. Setting it to 8192 was actively worse: 815.79 out tok/s against the default's 875.08, a 6.8% loss. The asymmetry is the tell. Above the default, the knob does nothing because prefill is already compute-saturated at 16K tokens per chunk — more tokens per chunk buys no extra parallelism, only a larger activation peak. Below it, chunks become small enough that per-chunk fixed overhead starts to matter. The knob has a floor, not a slope.</span><span lang="zh">chunked prefill 设成 32768 和 65536 时， 容量与吞吐和默认的 16384 <em>逐字节相同</em>， 差异在噪声内。 设成 8192 反而更差： 输出 815.79 tok/s， 对比默认的 875.08， 损失 6.8%。 这种不对称正是线索所在。 在默认值以上， 这个旋钮什么都不做， 因为 prefill 在每块 16K token 时已经算力饱和——每块更多 token 买不到额外并行度， 只会抬高激活峰值。 在默认值以下， 分块小到每块的固定开销开始占比。 这个旋钮有一个地板， 而不是一条斜坡。</span></p>
+
+  <p><span lang="en">CUDA-graph batch size 384 changed throughput by 0.03% while costing 2.13 GB of headroom; 512 ran out of memory outright. Schedule conservativeness at 0.6 moved nothing, which answered the question it was raised to answer: the scheduler had queued 54 requests without retracting any, so the suspicion was that it was being too cautious about admission. It was not — the queue was the state pool being full, not a conservative admission policy. Right diagnosis to test, wrong hypothesis, and one benchmark settled it.</span><span lang="zh">CUDA-graph batch size 384 让吞吐变化了 0.03%， 代价是 2.13 GB 余量；512 直接 OOM。 schedule conservativeness 设 0.6 什么也没动， 而这恰好回答了它被提出来要回答的问题： 调度器排了 54 个请求却没有回撤任何一个， 所以怀疑它在准入上过于保守。 并非如此——排队是状态池满了， 不是准入策略保守。 值得一测的诊断方向， 错误的假设， 一次 benchmark 就结了案。</span></p>
+
+  <h3><span lang="en">The radix cache costs more than it saves — unless prefixes actually repeat</span><span lang="zh">radix cache 的代价大于收益——除非前缀真的重复</span></h3>
+
+  <p><span lang="en">Enabling the prefix cache on random-prefix traffic dropped throughput from 875.08 to 748.61 out tok/s and cut the runnable batch from 570 slots to 114. The mechanism: with the radix cache on, the hybrid model's state allocation switches to a strategy that reserves several state buffers per request instead of one, because a cached prefix must be able to fork. Pay for forking you never use and you get 20% of the batch capacity for nothing.</span><span lang="zh">在前缀随机的流量上开启前缀缓存， 吞吐从输出 875.08 tok/s 掉到 748.61， 可运行 batch 从 570 个槽位砍到 114。 机制是： radix cache 打开后， 混合模型的状态分配会切到一种每请求预留数个状态缓冲而非一个的策略， 因为被缓存的前缀必须能够分叉。 为你从不使用的分叉付费， 换来的是 20% 的 batch 容量， 且一无所得。</span></p>
+
+  <p><span lang="en">On a workload where prefixes <em>do</em> repeat, the same flag is the single biggest win in the entire search. A shared-prefix workload — 32 groups of 8 prompts behind a 4K system prompt — hit 68.2% prompt-token cache hit rate and 12,560.81 total tok/s, against 8,275.57 with the cache disabled. That is a 1.52x speedup from the flag that cost 14% on random traffic.</span><span lang="zh">而在前缀<em>确实</em>重复的负载上， 同一个 flag 是整场搜索里最大的单项收益。 一个共享前缀负载——32 组、每组 8 条 prompt、共用一个 4K 的系统 prompt——命中率 68.2%， 总吞吐 12,560.81 tok/s， 对比关闭缓存时的 8,275.57。 那个在随机流量上损失 14% 的 flag， 在这里带来 1.52 倍加速。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">The transferable point</span><span lang="zh">可迁移的结论</span></p>
+    <p><span lang="en">A cache is not a feature you enable, it is a bet on your traffic. This one costs a fixed amount of batch capacity up front and pays back only in proportion to how much prefix your requests share. Benchmarking it on synthetic random prompts measures the cost and none of the benefit, which is how a genuinely valuable flag ends up looking like a regression. The recipe below ships with the cache <em>off</em> — correct for the benchmark that selected it, and the first thing to revisit for any real deployment with system prompts.</span><span lang="zh">缓存不是一个你去启用的功能， 它是一场对流量特征的赌注。 这个缓存预先固定收取一笔 batch 容量， 回报则只与请求间共享前缀的多少成正比。 用合成的随机 prompt 去测它， 等于只测了成本、完全没测收益， 一个真正有价值的 flag 就是这样看起来像是性能退化的。 下面的配方是把缓存<em>关掉</em>发布的——对选出它的那个 benchmark 而言是正确的， 而对任何带系统 prompt 的真实部署来说， 这是第一件该重新评估的事。</span></p>
+  </div>
+</section>
+
+<section id="block-size">
+  <span class="sec-num">06</span>
+  <h2><span lang="en">The one big knob, and why it works backwards</span><span lang="zh">最大的那个旋钮， 以及它为何反着起作用</span></h2>
+
+  <p><span lang="en">One flag produced a 1.68x throughput jump — more than every other knob in the search combined. It is <code>--speculative-dspark-block-size</code>, the width of the verify window, and the direction of the win is the interesting part: the value that won proposes <em>fewer</em> tokens per step than the default.</span><span lang="zh">有一个 flag 带来了 1.68 倍的吞吐跳升——比搜索里其他所有旋钮加起来还多。 它是 <code>--speculative-dspark-block-size</code>， 也就是验证窗口的宽度， 而这次收益的方向才是有意思的地方： 胜出的取值每步提议的 token 数比默认<em>更少</em>。</span></p>
+
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th><span lang="en">config</span><span lang="zh">配置</span></th>
+      <th class="num"><span lang="en">block size</span><span lang="zh">窗口宽度</span></th>
+      <th class="num">accept_len</th>
+      <th class="num">TPOT</th>
+      <th class="num"><span lang="en">step latency</span><span lang="zh">每 step 耗时</span></th>
+      <th class="num"><span lang="en">total tok/s</span><span lang="zh">总 tok/s</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>p3-base-mf0.92</code></td><td class="num"><span lang="en">default</span><span lang="zh">默认</span></td><td class="num">2.999</td><td class="num">170.98 ms</td><td class="num">512.7 ms</td><td class="num">2,142.48</td></tr>
+      <tr><td><code>p3b-g2</code></td><td class="num">2</td><td class="num">2.222</td><td class="num">109.06 ms</td><td class="num">242.3 ms</td><td class="num">3,305.43</td></tr>
+      <tr><td><code>p3-g3</code></td><td class="num">3</td><td class="num">2.552</td><td class="num">100.05 ms</td><td class="num">255.3 ms</td><td class="num">3,606.12</td></tr>
+      <tr><td><code>p3-g5</code></td><td class="num">5</td><td class="num">2.893</td><td class="num">174.73 ms</td><td class="num">505.5 ms</td><td class="num">2,117.66</td></tr>
+    </tbody>
+  </table></div>
+  <p class="caption"><span lang="en">Concurrency 48, ISL 8192 / OSL 1024. Step latency is accept_len x TPOT — the wall time of one verify step, which the benchmark does not report directly. Wider windows accept more per step and cost more per step; the product is what ships.</span><span lang="zh">并发 48， ISL 8192 / OSL 1024。 每 step 耗时是 accept_len x TPOT——即一次验证 step 的墙钟时间， benchmark 不直接报告这个量。 窗口越宽， 每步接受得越多， 每步也越贵；最终交付的是两者的乘积。</span></p>
+
+  <p><span lang="en">Read the table as the fraction from section 01 and it resolves cleanly. Going from the default window to 3 gives up 15% of the numerator — accept length falls from 2.999 to 2.552 — and buys a denominator that is 2.01x cheaper, 512.7 ms per step down to 255.3 ms. Net: 1.68x. Widening to 5 does the opposite trade at a bad price, recovering accept length to 2.893 while pushing the step back to 505.5 ms, which lands it within 1.2% of the untuned default.</span><span lang="zh">把这张表当成第 01 节那个分数来读， 一切就清楚了。 从默认窗口调到 3， 放弃了 15% 的分子——接受长度从 2.999 降到 2.552——换来一个便宜 2.01 倍的分母， 每 step 从 512.7 ms 降到 255.3 ms。 净效果 1.68 倍。 加宽到 5 是以糟糕的价格做相反的交换， 把接受长度拉回 2.893， 却把每 step 推回 505.5 ms， 结果落在未调优默认值的 1.2% 以内。</span></p>
+
+  <p><span lang="en">Why is the denominator so sensitive? Because verification is not free parallelism. The target must attend over the speculative suffix, and for a hybrid model it must also advance the recurrent state through every speculated position — work that scales with window width and is discarded for every token the draft got wrong. A wider window multiplies the wasted work by the rejection rate. Accept length grows sub-linearly with the window while cost grows at least linearly, so the optimum is narrow, and it is narrow for reasons that hold for any speculative implementation, not just this one.</span><span lang="zh">为什么分母这么敏感？ 因为验证并不是免费的并行。 目标模型必须在投机后缀上做 attention， 而对混合模型来说， 它还必须把循环状态推进过每一个被投机的位置——这份工作量随窗口宽度增长， 并且对草稿猜错的每个 token 都是白做的。 窗口越宽， 白做的工作量就被拒绝率放大得越多。 接受长度随窗口次线性增长， 而成本至少线性增长， 所以最优点偏窄——而且它偏窄的原因适用于任何投机实现， 不只是这一个。</span></p>
+
+  <div class="note">
+    <p class="note-label"><span lang="en">Why not just maximise accept length</span><span lang="zh">为什么不能只去最大化接受长度</span></p>
+    <p><span lang="en">Because accept length is the metric that is easiest to read off a log and the easiest to be misled by. Every configuration in the table above with a higher accept length than <code>p3-g3</code> is slower than <code>p3-g3</code>. If you tune on accept length you will systematically pick windows that are too wide. The quantity to optimise is the ratio; accept length alone is half a fraction.</span><span lang="zh">因为接受长度是最容易从日志里读到、也最容易被误导的指标。 上表中所有接受长度高于 <code>p3-g3</code> 的配置， 速度都比 <code>p3-g3</code> 慢。 如果你按接受长度调参， 你会系统性地选出过宽的窗口。 该优化的量是那个比值；单看接受长度只是半个分数。</span></p>
+  </div>
+</section>
+<section id="gate">
+  <span class="sec-num">07</span>
+  <h2><span lang="en">The accuracy gate, and the two knobs it exists for</span><span lang="zh">精度闸门， 以及它为之存在的两个旋钮</span></h2>
+
+  <p><span lang="en">Six of the knobs in this search cannot change what the model outputs. Memory fraction, chunked prefill size, CUDA-graph batch size, max running requests, schedule conservativeness, radix strategy — every one of them only decides where tensors live and in what order requests run. The token distribution is untouched by construction, so measuring accuracy after changing them is a formality.</span><span lang="zh">这次搜索里有六个旋钮不可能改变模型的输出。 显存占比、chunked prefill 大小、CUDA-graph batch size、最大运行请求数、schedule conservativeness、radix 策略——它们每一个都只决定张量放在哪里、请求以什么顺序运行。 token 分布在构造上就不受影响， 所以改完它们再测精度只是形式。</span></p>
+
+  <p><span lang="en">Two knobs are different. <code>--mamba-ssm-dtype bfloat16</code> lowers the precision of the recurrent state, which is arithmetic that feeds every subsequent token. <code>--speculative-dspark-block-size</code> changes the verify window, and while the theory says speculation is lossless — the target verifies every token, so accepted tokens are exactly the tokens the target would have produced — a theory is not a measurement. The gate exists for these two.</span><span lang="zh">有两个旋钮不同。 <code>--mamba-ssm-dtype bfloat16</code> 降低了循环状态的精度， 而那是要喂给后续每一个 token 的算术。 <code>--speculative-dspark-block-size</code> 改变验证窗口， 虽然理论上投机是无损的——目标模型验证每一个 token， 所以被接受的 token 恰好就是目标模型本来会产出的 token——但理论不是测量。 闸门就是为这两个而存在的。</span></p>
+
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th><span lang="en">lane / knob</span><span lang="zh">通道 / 旋钮</span></th>
+      <th class="num">GSM8K n=1319</th>
+      <th class="num">AIME25 pass@1 avg-of-8</th>
+      <th class="num">stop_rate</th>
+      <th><span lang="en">verdict</span><span lang="zh">判定</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>dspark</code> · block-size 3</td><td class="num">97.641% <span lang="en">vs</span><span lang="zh">对比</span> 97.64%</td><td class="num">95.42% ±3.54 <span lang="en">vs</span><span lang="zh">对比</span> 94.58%</td><td class="num">100.00%</td><td><strong>PASS</strong></td></tr>
+      <tr><td><code>nospec</code> · ssm-dtype bf16</td><td class="num">97.489% <span lang="en">vs</span><span lang="zh">对比</span> 97.49%</td><td class="num">91.67% ±3.09 <span lang="en">vs</span><span lang="zh">对比</span> 93.33%</td><td class="num">99.17%</td><td><strong>PASS</strong><span lang="en">, dropped</span><span lang="zh">， 但被剔除</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="caption"><span lang="en">Both re-run through exactly the protocol that produced the published day-0 numbers: GSM8K greedy at temperature 0, AIME25 with 8 repeats at temperature 1.0 / top-p 0.95 with thinking enabled.</span><span lang="zh">两者都按产出已发布 day-0 数字的同一套协议重跑： GSM8K 贪心解码、温度 0；AIME25 重复 8 次、温度 1.0 / top-p 0.95、开启思维链。</span></p>
+
+  <p><span lang="en">The speculative window came out clean, and pleasingly so — AIME25 landed 0.84 points <em>above</em> the day-0 speculative baseline with a perfect stop rate. That is what lossless is supposed to look like, and it is the evidence that let the knob ship.</span><span lang="zh">投机窗口的结果是干净的， 而且干净得令人满意——AIME25 落在 day-0 投机基线<em>之上</em> 0.84 个百分点， 停止率完美。 这就是「无损」该有的样子， 也正是让这个旋钮得以发布的证据。</span></p>
+
+  <p><span lang="en">The state-precision knob passed too, and was dropped anyway. It is the only configuration in the gate that lost samples to truncation — 0.83% truncated, 0.83% with no answer, stop rate 99.17% against the baseline's 100% — and it carries a 1.66-point AIME25 deficit. Pooled, that deficit is 0.88 sigma, so it is not a detectable regression; it is also not nothing, and it bought only 1.24% more throughput. A knob that changes numerics, cannot be shown to be safe, and is worth barely more than measurement noise is not a knob worth shipping. It is documented as opt-in for anyone willing to re-run their own gate.</span><span lang="zh">状态精度那个旋钮也过了， 但还是被剔除了。 它是闸门里唯一有样本因截断而丢失的配置——0.83% 被截断、0.83% 没有答案、停止率 99.17%， 对比基线的 100%——而且它背着 1.66 个百分点的 AIME25 缺口。 合并标准误后这个缺口是 0.88 sigma， 所以它不是可检出的性能退化；但它也不是没有， 而它换来的吞吐只多 1.24%。 一个改变数值、无法被证明安全、收益又勉强高于测量噪声的旋钮， 不值得发布。 它被记录为可选项， 留给愿意自己重跑一遍闸门的人。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">What a gate is for</span><span lang="zh">闸门是干什么的</span></p>
+    <p><span lang="en">Not to bless the winners — to make dropping one defensible. Without the gate, <code>--mamba-ssm-dtype bfloat16</code> is a knob that won its lane and would have shipped on that basis. With it, there is a specific number (0.83% truncation) and a specific price (1.24%) to weigh against each other. The gate's output is not PASS; it is the ability to say no with a reason.</span><span lang="zh">不是为了给胜者加冕——是为了让剔除某个胜者站得住脚。 没有闸门，<code>--mamba-ssm-dtype bfloat16</code> 就是一个赢下了自己通道、并会据此发布的旋钮。 有了闸门， 就有了一个具体的数字（0.83% 截断）和一个具体的代价（1.24%）可以互相权衡。 闸门的产出不是 PASS， 而是「有理由地说不」的能力。</span></p>
+  </div>
+</section>
+
+<section id="context-not-batch">
+  <span class="sec-num">08</span>
+  <h2><span lang="en">Speculation degrades with context, not with batch</span><span lang="zh">投机随上下文衰减， 不随批量衰减</span></h2>
+
+  <p><span lang="en">With a recipe chosen and gated, the second campaign asks a different question: not which setting is best, but how the chosen setting behaves as the workload moves. Two sweeps at concurrency 1 — input length, then output length — and one up the concurrency curve. The most useful result comes from putting two of them side by side.</span><span lang="zh">配方选定并过闸之后， 第二轮问的是另一个问题： 不是哪个设置最好， 而是选定的设置在负载变化时表现如何。 两条并发 1 的扫描——先输入长度， 再输出长度——加一条并发曲线。 最有用的结果来自把其中两条并排放。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span><b>Plate III</b> · <span lang="en">Throughput and accept length against input length</span><span lang="zh">吞吐与接受长度 vs 输入长度</span></span><span class="diag-text sm">bsz=1</span></div>
+    <!-- GEN:plate-isl -->
+<svg viewBox="0 0 780 300" role="img" class="plate-svg"><line class="ax-grid" x1="62" y1="254.0" x2="718" y2="254.0"/><text class="ax-tick" x="54" y="257.5" text-anchor="end">0</text><text class="ax-tick" x="726" y="257.5">0.0</text><line class="ax-grid" x1="62" y1="207.6" x2="718" y2="207.6"/><text class="ax-tick" x="54" y="211.1" text-anchor="end">25</text><text class="ax-tick" x="726" y="211.1">0.6</text><line class="ax-grid" x1="62" y1="161.2" x2="718" y2="161.2"/><text class="ax-tick" x="54" y="164.7" text-anchor="end">50</text><text class="ax-tick" x="726" y="164.7">1.2</text><line class="ax-grid" x1="62" y1="114.8" x2="718" y2="114.8"/><text class="ax-tick" x="54" y="118.3" text-anchor="end">75</text><text class="ax-tick" x="726" y="118.3">1.8</text><line class="ax-grid" x1="62" y1="68.4" x2="718" y2="68.4"/><text class="ax-tick" x="54" y="71.9" text-anchor="end">100</text><text class="ax-tick" x="726" y="71.9">2.4</text><line class="ax-grid" x1="62" y1="22.0" x2="718" y2="22.0"/><text class="ax-tick" x="54" y="25.5" text-anchor="end">125</text><text class="ax-tick" x="726" y="25.5">3.0</text><line class="ax-axis" x1="62" y1="254" x2="718" y2="254"/><text class="ax-tick" x="62.0" y="272" text-anchor="middle">128</text><text class="ax-tick" x="171.3" y="272" text-anchor="middle">1K</text><text class="ax-tick" x="280.7" y="272" text-anchor="middle">4K</text><text class="ax-tick" x="390.0" y="272" text-anchor="middle">8K</text><text class="ax-tick" x="499.3" y="272" text-anchor="middle">16K</text><text class="ax-tick" x="608.7" y="272" text-anchor="middle">32K</text><text class="ax-tick" x="718.0" y="272" text-anchor="middle">64K</text><text class="ax-label" x="390.0" y="294" text-anchor="middle"><span lang="en">Input length ISL (tokens; OSL 1024, concurrency 1)</span><span lang="zh">输入长度 ISL（token， OSL 固定 1024， 并发 1）</span></text><text class="ax-label" transform="translate(13,138.0) rotate(-90)" text-anchor="middle"><span lang="en">Output tok/s</span><span lang="zh">输出吞吐 tok/s</span></text><text class="ax-label" transform="translate(772,138.0) rotate(-90)" text-anchor="middle"><span lang="en">Accept length</span><span lang="zh">accept_len</span></text><polyline class="ser ser-tps" points="62.0,72.9 171.3,64.8 280.7,88.3 390.0,116.1 499.3,165.1 608.7,196.4 718.0,224.2"/><circle class="dot dot-tps" cx="62.0" cy="72.9" r="3"/><text class="ser-val val-tps" x="62.0" y="63.9" text-anchor="middle">97.6</text><circle class="dot dot-tps" cx="171.3" cy="64.8" r="3"/><text class="ser-val val-tps" x="171.3" y="55.8" text-anchor="middle">101.9</text><circle class="dot dot-tps" cx="280.7" cy="88.3" r="3"/><text class="ser-val val-tps" x="280.7" y="79.3" text-anchor="middle">89.3</text><circle class="dot dot-tps" cx="390.0" cy="116.1" r="3"/><text class="ser-val val-tps" x="390.0" y="107.1" text-anchor="middle">74.3</text><circle class="dot dot-tps" cx="499.3" cy="165.1" r="3"/><text class="ser-val val-tps" x="499.3" y="156.1" text-anchor="middle">47.9</text><circle class="dot dot-tps" cx="608.7" cy="196.4" r="3"/><text class="ser-val val-tps" x="608.7" y="187.4" text-anchor="middle">31.0</text><circle class="dot dot-tps" cx="718.0" cy="224.2" r="3"/><text class="ser-val val-tps" x="718.0" y="215.2" text-anchor="middle">16.0</text><polyline class="ser ser-acc dashed" points="62.0,74.0 171.3,59.6 280.7,63.3 390.0,73.1 499.3,107.7 608.7,119.4 718.0,142.6"/><circle class="dot dot-acc" cx="62.0" cy="74.0" r="3"/><text class="ser-val val-acc" x="62.0" y="90.0" text-anchor="middle">2.33</text><circle class="dot dot-acc" cx="171.3" cy="59.6" r="3"/><text class="ser-val val-acc" x="171.3" y="75.6" text-anchor="middle">2.51</text><circle class="dot dot-acc" cx="280.7" cy="63.3" r="3"/><text class="ser-val val-acc" x="280.7" y="79.3" text-anchor="middle">2.47</text><circle class="dot dot-acc" cx="390.0" cy="73.1" r="3"/><text class="ser-val val-acc" x="390.0" y="89.1" text-anchor="middle">2.34</text><circle class="dot dot-acc" cx="499.3" cy="107.7" r="3"/><text class="ser-val val-acc" x="499.3" y="123.7" text-anchor="middle">1.89</text><circle class="dot dot-acc" cx="608.7" cy="119.4" r="3"/><text class="ser-val val-acc" x="608.7" y="135.4" text-anchor="middle">1.74</text><circle class="dot dot-acc" cx="718.0" cy="142.6" r="3"/><text class="ser-val val-acc" x="718.0" y="158.6" text-anchor="middle">1.44</text></svg><div class="legend"><span class="legend-item"><span class="swatch sw-tps"></span><span lang="en">Output throughput (left)</span><span lang="zh">输出吞吐（左轴）</span></span><span class="legend-item"><span class="swatch sw-acc"></span><span lang="en">Accept length (right, dashed)</span><span lang="zh">accept_len（右轴， 虚线）</span></span></div>
+<!-- /GEN:plate-isl -->
+    <p class="caption"><span lang="en">Both series fall together. Accept length is not a constant of the recipe — it is a function of how much context the draft model has to predict against.</span><span lang="zh">两条曲线一起下坠。 接受长度不是配方的常量——它是草稿模型需要面对多少上下文的函数。</span></p>
+  </div>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span><b>Plate IV</b> · <span lang="en">The same two quantities against concurrency</span><span lang="zh">同样两个量 vs 并发</span></span><span class="diag-text sm">ISL/OSL 1024</span></div>
+    <!-- GEN:plate-conc -->
+<svg viewBox="0 0 780 300" role="img" class="plate-svg"><line class="ax-grid" x1="62" y1="254.0" x2="718" y2="254.0"/><text class="ax-tick" x="54" y="257.5" text-anchor="end">0</text><text class="ax-tick" x="726" y="257.5">0.0</text><line class="ax-grid" x1="62" y1="207.6" x2="718" y2="207.6"/><text class="ax-tick" x="54" y="211.1" text-anchor="end">250</text><text class="ax-tick" x="726" y="211.1">0.6</text><line class="ax-grid" x1="62" y1="161.2" x2="718" y2="161.2"/><text class="ax-tick" x="54" y="164.7" text-anchor="end">500</text><text class="ax-tick" x="726" y="164.7">1.2</text><line class="ax-grid" x1="62" y1="114.8" x2="718" y2="114.8"/><text class="ax-tick" x="54" y="118.3" text-anchor="end">750</text><text class="ax-tick" x="726" y="118.3">1.8</text><line class="ax-grid" x1="62" y1="68.4" x2="718" y2="68.4"/><text class="ax-tick" x="54" y="71.9" text-anchor="end">1,000</text><text class="ax-tick" x="726" y="71.9">2.4</text><line class="ax-grid" x1="62" y1="22.0" x2="718" y2="22.0"/><text class="ax-tick" x="54" y="25.5" text-anchor="end">1,250</text><text class="ax-tick" x="726" y="25.5">3.0</text><line class="ax-axis" x1="62" y1="254" x2="718" y2="254"/><text class="ax-tick" x="62.0" y="272" text-anchor="middle">1</text><text class="ax-tick" x="171.3" y="272" text-anchor="middle">2</text><text class="ax-tick" x="280.7" y="272" text-anchor="middle">4</text><text class="ax-tick" x="390.0" y="272" text-anchor="middle">8</text><text class="ax-tick" x="499.3" y="272" text-anchor="middle">16</text><text class="ax-tick" x="608.7" y="272" text-anchor="middle">32</text><text class="ax-tick" x="718.0" y="272" text-anchor="middle">48</text><text class="ax-label" x="390.0" y="294" text-anchor="middle"><span lang="en">Client concurrency (ISL/OSL 1024)</span><span lang="zh">客户端并发（ISL/OSL 固定 1024）</span></text><text class="ax-label" transform="translate(13,138.0) rotate(-90)" text-anchor="middle"><span lang="en">Aggregate output tok/s</span><span lang="zh">聚合输出吞吐 tok/s</span></text><text class="ax-label" transform="translate(772,138.0) rotate(-90)" text-anchor="middle"><span lang="en">Accept length</span><span lang="zh">accept_len</span></text><polyline class="ser ser-tps" points="62.0,233.6 171.3,220.5 280.7,205.5 390.0,166.4 499.3,137.2 608.7,77.7 718.0,57.2"/><circle class="dot dot-tps" cx="62.0" cy="233.6" r="3"/><text class="ser-val val-tps" x="62.0" y="224.6" text-anchor="middle">110</text><circle class="dot dot-tps" cx="171.3" cy="220.5" r="3"/><text class="ser-val val-tps" x="171.3" y="211.5" text-anchor="middle">181</text><circle class="dot dot-tps" cx="280.7" cy="205.5" r="3"/><text class="ser-val val-tps" x="280.7" y="196.5" text-anchor="middle">261</text><circle class="dot dot-tps" cx="390.0" cy="166.4" r="3"/><text class="ser-val val-tps" x="390.0" y="157.4" text-anchor="middle">472</text><circle class="dot dot-tps" cx="499.3" cy="137.2" r="3"/><text class="ser-val val-tps" x="499.3" y="128.2" text-anchor="middle">629</text><circle class="dot dot-tps" cx="608.7" cy="77.7" r="3"/><text class="ser-val val-tps" x="608.7" y="68.7" text-anchor="middle">950</text><circle class="dot dot-tps" cx="718.0" cy="57.2" r="3"/><text class="ser-val val-tps" x="718.0" y="48.2" text-anchor="middle">1,061</text><polyline class="ser ser-acc dashed" points="62.0,45.7 171.3,57.3 280.7,62.8 390.0,50.1 499.3,47.4 608.7,42.7 718.0,46.9"/><circle class="dot dot-acc" cx="62.0" cy="45.7" r="3"/><text class="ser-val val-acc" x="62.0" y="61.7" text-anchor="middle">2.69</text><circle class="dot dot-acc" cx="171.3" cy="57.3" r="3"/><text class="ser-val val-acc" x="171.3" y="73.3" text-anchor="middle">2.54</text><circle class="dot dot-acc" cx="280.7" cy="62.8" r="3"/><text class="ser-val val-acc" x="280.7" y="78.8" text-anchor="middle">2.47</text><circle class="dot dot-acc" cx="390.0" cy="50.1" r="3"/><text class="ser-val val-acc" x="390.0" y="66.1" text-anchor="middle">2.64</text><circle class="dot dot-acc" cx="499.3" cy="47.4" r="3"/><text class="ser-val val-acc" x="499.3" y="63.4" text-anchor="middle">2.67</text><circle class="dot dot-acc" cx="608.7" cy="42.7" r="3"/><text class="ser-val val-acc" x="608.7" y="58.7" text-anchor="middle">2.73</text><circle class="dot dot-acc" cx="718.0" cy="46.9" r="3"/><text class="ser-val val-acc" x="718.0" y="62.9" text-anchor="middle">2.68</text></svg><div class="legend"><span class="legend-item"><span class="swatch sw-tps"></span><span lang="en">Aggregate throughput (left)</span><span lang="zh">聚合吞吐（左轴）</span></span><span class="legend-item"><span class="swatch sw-acc"></span><span lang="en">Accept length (right, dashed)</span><span lang="zh">accept_len（右轴， 虚线）</span></span></div>
+<!-- /GEN:plate-conc -->
+    <p class="caption"><span lang="en">Same encoding as Plate III, so the contrast is readable directly: aggregate throughput climbs almost tenfold while accept length stays flat.</span><span lang="zh">编码方式与 Plate III 相同， 所以对比可以直接读出来： 聚合吞吐涨了近十倍， 而接受长度基本不动。</span></p>
+  </div>
+
+  <p><span lang="en">Across concurrency 1 to 48 accept length only jitters between <span class="gen" data-gen="f-acc-lo">2.473</span> and <span class="gen" data-gen="f-acc-hi">2.732</span> — a spread of <span class="gen" data-gen="f-spread-conc">10.5%</span> with no monotone trend, which is the size of the run-to-run noise established in section 12. Across input length 128 to 64K it falls monotonically, a spread of <span class="gen" data-gen="f-spread-isl">74.6%</span>. One of these is noise and the other is a mechanism.</span><span lang="zh">在并发 1 到 48 之间， 接受长度只在 <span class="gen" data-gen="f-acc-lo">2.473</span> 到 <span class="gen" data-gen="f-acc-hi">2.732</span> 之间抖动——幅度 <span class="gen" data-gen="f-spread-conc">10.5%</span>， 且无单调趋势， 这正是第 12 节确定的 run-to-run 噪声量级。 而在输入长度 128 到 64K 之间它单调下降， 幅度 <span class="gen" data-gen="f-spread-isl">74.6%</span>。 一个是噪声， 另一个是机制。</span></p>
+
+  <p><span lang="en">Why should batch size leave acceptance alone? Because acceptance is decided per sequence. The draft proposes for one request, the target verifies that request's tokens, and the accept/reject decision reads only that sequence's own logits. Batching other requests alongside changes how much silicon the step uses and therefore how long it takes, but it does not change what the draft would have guessed. Batch affects the denominator only.</span><span lang="zh">为什么 batch 大小不影响接受率？ 因为接受是按序列决定的。 草稿为某一个请求提议， 目标模型验证该请求的 token， 接受/拒绝的判定只读这条序列自己的 logits。 把其他请求一起打包会改变这一步用掉多少硅、因而改变它耗时多久， 但不会改变草稿本来会猜什么。 batch 只影响分母。</span></p>
+
+  <p><span lang="en">Context is different: it is an input to the draft model's own prediction. A longer prefix is a harder prediction problem, and a small draft model degrades on it faster than the target does. Context affects the numerator <em>and</em>, through attention cost, the denominator. That is why one sweep is flat and the other collapses.</span><span lang="zh">上下文不同： 它是草稿模型自身预测的输入。 更长的前缀是更难的预测问题， 而小草稿模型在这上面的退化比目标模型更快。 上下文既影响分子， 又通过 attention 成本影响分母。 这就是为什么一条扫描是平的， 另一条却在崩塌。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">Operationally</span><span lang="zh">运维含义</span></p>
+    <p><span lang="en">Push concurrency freely; speculative decoding keeps its edge to the state pool's limit. Guard long prompts, because that is the axis along which the technique quietly stops paying. And do not extrapolate an accept length measured on short prompts to a long-context deployment — on this recipe that would overstate throughput by <span class="gen" data-gen="f-loss">6.35x</span>.</span><span lang="zh">可以放心堆并发， 投机解码的优势会一直保持到状态池的上限。 要防的是长 prompt， 因为那才是这项技术悄悄停止获利的那条轴。 另外， 不要把短 prompt 上测到的接受长度外推到长上下文部署——在这个配方上， 那会把吞吐高估 <span class="gen" data-gen="f-loss">6.35x</span>。</span></p>
+  </div>
+
+  <!-- GEN:table-isl -->
+<div class="table-wrap"><table class=""><thead><tr><th>ISL</th><th class="num"><span lang="en">Output tok/s</span><span lang="zh">输出 tok/s</span></th><th class="num"><span lang="en">Total tok/s</span><span lang="zh">总 tok/s</span></th><th class="num"><span lang="en">Median TTFT</span><span lang="zh">TTFT 中位</span></th><th class="num"><span lang="en">Prefill tok/s</span><span lang="zh">prefill tok/s</span></th><th class="num"><span lang="en">Median TPOT</span><span lang="zh">TPOT 中位</span></th><th class="num">accept_len</th><th class="num"><span lang="en">Per-step</span><span lang="zh">每 step 耗时</span></th></tr></thead><tbody><tr><td><code>128</code></td><td class="num">97.60</td><td class="num">109.8</td><td class="num">181 ms</td><td class="num">706</td><td class="num">9.92 ms</td><td class="num">2.328</td><td class="num">23.1 ms</td></tr><tr><td><code>1K</code></td><td class="num">101.92</td><td class="num">203.8</td><td class="num">179 ms</td><td class="num">5,716</td><td class="num">9.05 ms</td><td class="num">2.514</td><td class="num">22.8 ms</td></tr><tr><td><code>4K</code></td><td class="num">89.30</td><td class="num">446.5</td><td class="num">365 ms</td><td class="num">11,213</td><td class="num">10.60 ms</td><td class="num">2.466</td><td class="num">26.1 ms</td></tr><tr><td><code>8K</code></td><td class="num">74.29</td><td class="num">668.6</td><td class="num">636 ms</td><td class="num">12,874</td><td class="num">12.48 ms</td><td class="num">2.339</td><td class="num">29.2 ms</td></tr><tr><td><code>16K</code></td><td class="num">47.92</td><td class="num">814.6</td><td class="num">1,329 ms</td><td class="num">12,327</td><td class="num">19.26 ms</td><td class="num">1.892</td><td class="num">36.4 ms</td></tr><tr><td><code>32K</code></td><td class="num">31.02</td><td class="num">1,023.6</td><td class="num">3,167 ms</td><td class="num">10,348</td><td class="num">29.52 ms</td><td class="num">1.741</td><td class="num">51.4 ms</td></tr><tr><td><code>64K</code></td><td class="num">16.04</td><td class="num">1,042.6</td><td class="num">8,241 ms</td><td class="num">7,953</td><td class="num">55.30 ms</td><td class="num">1.440</td><td class="num">79.6 ms</td></tr></tbody></table></div>
+<!-- /GEN:table-isl -->
+  <p class="caption"><span lang="en">Total tok/s counts input tokens, so it rises with ISL and saturates near 1,040 — the prefill ceiling at concurrency 1. Prefill rate itself peaks at <span class="gen" data-gen="f-prefill-peak">12,874</span> tok/s around ISL 8K–16K and decays to <span class="gen" data-gen="f-prefill-64k">7,953</span> at 64K, which is the quadratic term in attention becoming visible.</span><span lang="zh">总 tok/s 计入输入 token， 所以它随 ISL 上升并在 1,040 附近饱和——那是并发 1 时 prefill 的天花板。 prefill 速率自身在 ISL 8K–16K 附近达到峰值 <span class="gen" data-gen="f-prefill-peak">12,874</span> tok/s， 到 64K 退化到 <span class="gen" data-gen="f-prefill-64k">7,953</span>， 这是 attention 的二次项开始显现。</span></p>
+</section>
+<section id="decomposition">
+  <span class="sec-num">09</span>
+  <h2><span lang="en">Splitting the 6.35x loss</span><span lang="zh">拆开这 6.35 倍损失</span></h2>
+
+  <p><span lang="en">Output throughput at concurrency 1 falls <span class="gen" data-gen="f-loss">6.35x</span> between input length 1K and 64K. A single ratio like that is not actionable — it does not tell you whether to work on the draft model or the attention kernel. Splitting it does.</span><span lang="zh">并发 1 时， 输出吞吐在输入长度 1K 到 64K 之间下降 <span class="gen" data-gen="f-loss">6.35x</span>。 单看这样一个比值没法指导行动——它不告诉你该去改草稿模型还是 attention kernel。 拆开它就可以。</span></p>
+
+  <p><span lang="en">Because throughput is accepted-tokens-per-step over step-latency, and both factors are measurable, the loss factorises exactly:</span><span lang="zh">因为吞吐等于「每步接受 token 数」除以「每步耗时」， 而两个因子都可测， 所以这个损失可以精确因式分解：</span></p>
+
+  <pre><code>step latency   22.8 ms → 79.6 ms      = <span class="gen" data-gen="f-step">3.50x</span>   (attention cost)
+accept length  2.514  → 1.440        = <span class="gen" data-gen="f-acc">1.75x</span>   (draft degradation)
+                                       ─────────
+predicted                              <span class="gen" data-gen="f-product">6.11x</span>
+measured                               <span class="gen" data-gen="f-loss">6.35x</span></code></pre>
+
+  <p><span lang="en">The 4% residual is the model's error bar, and it is small enough that these two terms account for essentially the whole collapse. Neither dominates: roughly 57% of the loss is the step getting more expensive, 43% is the draft getting worse. Median TPOT over the same range goes from <span class="gen" data-gen="f-tpot1k">9.05</span> ms to <span class="gen" data-gen="f-tpot64k">55.30</span> ms.</span><span lang="zh">4% 的残差就是这个模型的误差棒， 小到足以说明这两项解释了几乎全部崩塌。 两者都不占绝对主导： 约 57% 的损失来自每步变贵， 43% 来自草稿变差。 同一区间内 TPOT 中位从 <span class="gen" data-gen="f-tpot1k">9.05</span> ms 变到 <span class="gen" data-gen="f-tpot64k">55.30</span> ms。</span></p>
+
+  <p><span lang="en">That split is the reason to bother computing it. Halving the attention cost at 64K would recover about 1.9x, not 6x — a better kernel alone cannot fix long-context speculation. Getting the draft model to hold its accept length would recover about 1.75x. Neither intervention on its own is close to sufficient, which is worth knowing before spending a quarter on either.</span><span lang="zh">这个分解正是值得费力算它的理由。 把 64K 处的 attention 成本减半只能挽回约 1.9 倍， 而不是 6 倍——单靠更好的 kernel 修不好长上下文投机。 让草稿模型守住它的接受长度能挽回约 1.75 倍。 任何单一介入都远不够， 而这件事值得在为其中任何一个投入一个季度之前先知道。</span></p>
+
+  <div class="note">
+    <p class="note-label"><span lang="en">Why TPOT alone would have misled</span><span lang="zh">为什么单看 TPOT 会误导</span></p>
+    <p><span lang="en">TPOT is time per <em>accepted</em> token, so it already has the draft model's quality baked into it. Reading TPOT's 6.1x growth as "attention got 6x more expensive" double-counts the acceptance term. Recovering the step itself — multiply back by accept length — is what separates the two causes, and the benchmark does not report it.</span><span lang="zh">TPOT 是每个<em>被接受</em> token 的耗时， 所以它里面已经混入了草稿模型的质量。 把 TPOT 增长 6.1 倍读成「attention 贵了 6 倍」， 等于把接受项重复计算了一次。 把每步本身还原出来——乘回接受长度——才能分离这两个原因， 而 benchmark 并不报告这个量。</span></p>
+  </div>
+</section>
+
+<section id="output-length">
+  <span class="sec-num">10</span>
+  <h2><span lang="en">Output length barely matters</span><span lang="zh">输出长度几乎不重要</span></h2>
+
+  <p><span lang="en">A null result, and a useful one: it isolates the previous section's cause. If decode degraded with generation length on its own, the output sweep would fall as steeply as the input sweep. It does not.</span><span lang="zh">一个空结果， 而且是有用的： 它把上一节的原因隔离了出来。 如果 decode 本身会随生成长度退化， 那输出扫描应该和输入扫描一样陡地下坠。 它没有。</span></p>
+
+  <div class="plate">
+    <div class="plate-meta"><span><b>Plate V</b> · <span lang="en">Throughput against output length</span><span lang="zh">吞吐 vs 输出长度</span></span><span class="diag-text sm">bsz=1 · axis zoomed</span></div>
+    <!-- GEN:plate-osl -->
+<svg viewBox="0 0 780 240" role="img" class="plate-svg"><line class="ax-grid" x1="62" y1="194.0" x2="718" y2="194.0"/><text class="ax-tick" x="54" y="197.5" text-anchor="end">0</text><line class="ax-grid" x1="62" y1="151.0" x2="718" y2="151.0"/><text class="ax-tick" x="54" y="154.5" text-anchor="end">31</text><line class="ax-grid" x1="62" y1="108.0" x2="718" y2="108.0"/><text class="ax-tick" x="54" y="111.5" text-anchor="end">63</text><line class="ax-grid" x1="62" y1="65.0" x2="718" y2="65.0"/><text class="ax-tick" x="54" y="68.5" text-anchor="end">94</text><line class="ax-grid" x1="62" y1="22.0" x2="718" y2="22.0"/><text class="ax-tick" x="54" y="25.5" text-anchor="end">125</text><line class="ax-axis" x1="62" y1="194" x2="718" y2="194"/><text class="ax-tick" x="62.0" y="212" text-anchor="middle">128</text><text class="ax-tick" x="226.0" y="212" text-anchor="middle">512</text><text class="ax-tick" x="390.0" y="212" text-anchor="middle">1K</text><text class="ax-tick" x="554.0" y="212" text-anchor="middle">2K</text><text class="ax-tick" x="718.0" y="212" text-anchor="middle">4K</text><text class="ax-label" x="390.0" y="234" text-anchor="middle"><span lang="en">Output length OSL (tokens; ISL 1024, concurrency 1)</span><span lang="zh">输出长度 OSL（token， ISL 固定 1024， 并发 1）</span></text><text class="ax-label" transform="translate(13,108.0) rotate(-90)" text-anchor="middle"><span lang="en">Output tok/s</span><span lang="zh">输出吞吐 tok/s</span></text><polyline class="ser ser-tps" points="62.0,46.7 226.0,46.9 390.0,53.8 554.0,47.3 718.0,65.4"/><circle class="dot dot-tps" cx="62.0" cy="46.7" r="3"/><text class="ser-val val-tps" x="62.0" y="37.7" text-anchor="middle">107.0</text><circle class="dot dot-tps" cx="226.0" cy="46.9" r="3"/><text class="ser-val val-tps" x="226.0" y="37.9" text-anchor="middle">106.9</text><circle class="dot dot-tps" cx="390.0" cy="53.8" r="3"/><text class="ser-val val-tps" x="390.0" y="44.8" text-anchor="middle">101.9</text><circle class="dot dot-tps" cx="554.0" cy="47.3" r="3"/><text class="ser-val val-tps" x="554.0" y="38.3" text-anchor="middle">106.6</text><circle class="dot dot-tps" cx="718.0" cy="65.4" r="3"/><text class="ser-val val-tps" x="718.0" y="56.4" text-anchor="middle">93.5</text></svg><p class="caption"><span lang="en">Throughput barely moves between OSL 128 and 2048 (107.0 down to 101.9 tok/s). The fall to 93.5 at OSL 4096 comes from the context growing during generation — the same effect as the ISL curve.</span><span lang="zh">OSL 128 到 2048 之间吞吐几乎不动（107.0 到 101.9 tok/s）。 OSL 4096 掉到 93.5， 那是上下文自身增长带来的， 与 ISL 曲线同源。</span></p>
+<!-- /GEN:plate-osl -->
+  </div>
+
+  <p><span lang="en">The y-axis is zoomed deliberately — on a zero baseline this plate would be a flat line and the reader would learn nothing about the one real feature, the fall at 4096. That fall is not a new effect. Generating 4096 tokens from a 1024-token prompt means the effective context reaches roughly 5,120 tokens by the end, which is the input sweep's mechanism arriving by a different road. Median TTFT stays pinned between 176 and 180 ms across the whole sweep, exactly as expected: output length cannot affect the time to produce the first token.</span><span lang="zh">纵轴是故意放大的——若以零为基线， 这张图版会是一条平线， 读者就学不到那个唯一的真实特征， 即 4096 处的下降。 那个下降不是新效应。 从 1024 token 的 prompt 生成 4096 个 token， 意味着到末尾时有效上下文已达约 5,120 token， 这是输入扫描的机制换了条路到达。 TTFT 中位在整条扫描上都锁在 176 到 180 ms 之间， 完全符合预期： 输出长度不可能影响产出首个 token 的时间。</span></p>
+
+  <div class="note warn">
+    <p class="note-label"><span lang="en">A floor worth knowing about</span><span lang="zh">一个值得知道的地板</span></p>
+    <p><span lang="en">176 ms of that TTFT is fixed overhead, not prefill. Input length 128 and input length 1024 both land at 179–181 ms — an eightfold increase in input with no movement in TTFT. Expressed as a prefill rate, ISL 128 achieves only 706 tok/s against 12,874 at 8K. For short-prompt, short-output traffic this floor, not the model, is what dominates latency, and no amount of kernel work will move it.</span><span lang="zh">这个 TTFT 里有 176 ms 是固定开销， 不是 prefill。 输入长度 128 和 1024 都落在 179–181 ms——输入涨了八倍， TTFT 没动。 换算成 prefill 速率， ISL 128 只有 706 tok/s， 而 8K 时是 12,874。 对短 prompt、短输出的流量来说， 主导延迟的是这个地板而不是模型， 再多的 kernel 优化也推不动它。</span></p>
+  </div>
+</section>
+
+<section id="concurrency">
+  <span class="sec-num">11</span>
+  <h2><span lang="en">Scaling, and where the knee is</span><span lang="zh">扩展， 以及拐点在哪</span></h2>
+
+  <p><span lang="en">Concurrency 1 to 48 buys <span class="gen" data-gen="f-gain">9.66x</span> aggregate throughput, peaking at <span class="gen" data-gen="f-peak">1,061</span> output tok/s. Forty-eight times the concurrency realising under ten times the throughput is 20% scaling efficiency — which sounds like a failure and is actually the expected shape, because the thing being shared is fixed silicon. What each request loses is direct: per-request throughput falls from <span class="gen" data-gen="f-perreq1">109.8</span> to <span class="gen" data-gen="f-perreq48">24.9</span> tok/s.</span><span lang="zh">并发 1 到 48 换来 <span class="gen" data-gen="f-gain">9.66x</span> 聚合吞吐， 峰值 <span class="gen" data-gen="f-peak">1,061</span> 输出 tok/s。 四十八倍并发只兑现不到十倍吞吐， 即 20% 的线性度——听起来像失败， 其实是应有的形状， 因为被共享的是固定的硅。 每个请求付出的代价是直接的： 单请求吞吐从 <span class="gen" data-gen="f-perreq1">109.8</span> 掉到 <span class="gen" data-gen="f-perreq48">24.9</span> tok/s。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span><b>Plate VI</b> · <span lang="en">What concurrency costs: per-request throughput and first-token latency</span><span lang="zh">并发的代价： 单请求吞吐与首 token 延迟</span></span><span class="diag-text sm">ISL/OSL 1024</span></div>
+    <!-- GEN:plate-cost -->
+<svg viewBox="0 0 780 300" role="img" class="plate-svg"><line class="ax-grid" x1="62" y1="254.0" x2="718" y2="254.0"/><text class="ax-tick" x="54" y="257.5" text-anchor="end">0</text><text class="ax-tick" x="726" y="257.5">0.0</text><line class="ax-grid" x1="62" y1="207.6" x2="718" y2="207.6"/><text class="ax-tick" x="54" y="211.1" text-anchor="end">25</text><text class="ax-tick" x="726" y="211.1">500.0</text><line class="ax-grid" x1="62" y1="161.2" x2="718" y2="161.2"/><text class="ax-tick" x="54" y="164.7" text-anchor="end">50</text><text class="ax-tick" x="726" y="164.7">1,000.0</text><line class="ax-grid" x1="62" y1="114.8" x2="718" y2="114.8"/><text class="ax-tick" x="54" y="118.3" text-anchor="end">75</text><text class="ax-tick" x="726" y="118.3">1,500.0</text><line class="ax-grid" x1="62" y1="68.4" x2="718" y2="68.4"/><text class="ax-tick" x="54" y="71.9" text-anchor="end">100</text><text class="ax-tick" x="726" y="71.9">2,000.0</text><line class="ax-grid" x1="62" y1="22.0" x2="718" y2="22.0"/><text class="ax-tick" x="54" y="25.5" text-anchor="end">125</text><text class="ax-tick" x="726" y="25.5">2,500.0</text><line class="ax-axis" x1="62" y1="254" x2="718" y2="254"/><text class="ax-tick" x="62.0" y="272" text-anchor="middle">1</text><text class="ax-tick" x="171.3" y="272" text-anchor="middle">2</text><text class="ax-tick" x="280.7" y="272" text-anchor="middle">4</text><text class="ax-tick" x="390.0" y="272" text-anchor="middle">8</text><text class="ax-tick" x="499.3" y="272" text-anchor="middle">16</text><text class="ax-tick" x="608.7" y="272" text-anchor="middle">32</text><text class="ax-tick" x="718.0" y="272" text-anchor="middle">48</text><text class="ax-label" x="390.0" y="294" text-anchor="middle"><span lang="en">Client concurrency (ISL/OSL 1024)</span><span lang="zh">客户端并发（ISL/OSL 固定 1024）</span></text><text class="ax-label" transform="translate(13,138.0) rotate(-90)" text-anchor="middle"><span lang="en">tok/s per request</span><span lang="zh">每请求 tok/s</span></text><text class="ax-label" transform="translate(772,138.0) rotate(-90)" text-anchor="middle"><span lang="en">Median TTFT (ms)</span><span lang="zh">TTFT 中位 ms</span></text><polyline class="ser ser-perreq" points="62.0,50.1 171.3,81.1 280.7,110.9 390.0,135.0 499.3,169.5 608.7,194.6 718.0,207.8"/><circle class="dot dot-perreq" cx="62.0" cy="50.1" r="3"/><text class="ser-val val-perreq" x="62.0" y="41.1" text-anchor="middle">109.8</text><circle class="dot dot-perreq" cx="171.3" cy="81.1" r="3"/><text class="ser-val val-perreq" x="171.3" y="72.1" text-anchor="middle">93.2</text><circle class="dot dot-perreq" cx="280.7" cy="110.9" r="3"/><text class="ser-val val-perreq" x="280.7" y="101.9" text-anchor="middle">77.1</text><circle class="dot dot-perreq" cx="390.0" cy="135.0" r="3"/><text class="ser-val val-perreq" x="390.0" y="126.0" text-anchor="middle">64.1</text><circle class="dot dot-perreq" cx="499.3" cy="169.5" r="3"/><text class="ser-val val-perreq" x="499.3" y="160.5" text-anchor="middle">45.5</text><circle class="dot dot-perreq" cx="608.7" cy="194.6" r="3"/><text class="ser-val val-perreq" x="608.7" y="185.6" text-anchor="middle">32.0</text><circle class="dot dot-perreq" cx="718.0" cy="207.8" r="3"/><text class="ser-val val-perreq" x="718.0" y="198.8" text-anchor="middle">24.9</text><polyline class="ser ser-ttft dashed" points="62.0,237.6 171.3,235.3 280.7,223.1 390.0,209.6 499.3,175.2 608.7,171.6 718.0,43.2"/><circle class="dot dot-ttft" cx="62.0" cy="237.6" r="3"/><text class="ser-val val-ttft" x="62.0" y="253.6" text-anchor="middle">176</text><circle class="dot dot-ttft" cx="171.3" cy="235.3" r="3"/><text class="ser-val val-ttft" x="171.3" y="251.3" text-anchor="middle">202</text><circle class="dot dot-ttft" cx="280.7" cy="223.1" r="3"/><text class="ser-val val-ttft" x="280.7" y="239.1" text-anchor="middle">333</text><circle class="dot dot-ttft" cx="390.0" cy="209.6" r="3"/><text class="ser-val val-ttft" x="390.0" y="225.6" text-anchor="middle">478</text><circle class="dot dot-ttft" cx="499.3" cy="175.2" r="3"/><text class="ser-val val-ttft" x="499.3" y="191.2" text-anchor="middle">849</text><circle class="dot dot-ttft" cx="608.7" cy="171.6" r="3"/><text class="ser-val val-ttft" x="608.7" y="187.6" text-anchor="middle">888</text><circle class="dot dot-ttft" cx="718.0" cy="43.2" r="3"/><text class="ser-val val-ttft" x="718.0" y="59.2" text-anchor="middle">2,271</text></svg><div class="legend"><span class="legend-item"><span class="swatch sw-perreq"></span><span lang="en">Per-request throughput (left)</span><span lang="zh">每请求吞吐（左轴）</span></span><span class="legend-item"><span class="swatch sw-ttft"></span><span lang="en">Median TTFT (right, dashed)</span><span lang="zh">TTFT 中位（右轴， 虚线）</span></span></div>
+<!-- /GEN:plate-cost -->
+    <p class="caption"><span lang="en">The aggregate curve in Plate IV hides both of these. Median TTFT is nearly flat from 16 to 32 and then jumps 2.6x on the way to 48.</span><span lang="zh">Plate IV 的聚合曲线把这两者都藏了起来。 TTFT 中位从 16 到 32 几乎是平的， 然后在通往 48 的路上跳了 2.6 倍。</span></p>
+  </div>
+
+  <!-- GEN:table-marginal -->
+<div class="table-wrap"><table class=""><thead><tr><th><span lang="en">Segment</span><span lang="zh">并发区间</span></th><th class="num"><span lang="en">Conc</span><span lang="zh">并发倍数</span></th><th class="num"><span lang="en">Throughput</span><span lang="zh">吞吐倍数</span></th><th class="num"><span lang="en">Efficiency</span><span lang="zh">线性度</span></th><th class="num"><span lang="en">Median TTFT</span><span lang="zh">TTFT 中位变化</span></th></tr></thead><tbody><tr><td><code>1 → 2</code></td><td class="num">2.00x</td><td class="num">1.65x</td><td class="num">82.3%</td><td class="num">176 → 202 ms</td></tr><tr><td><code>2 → 4</code></td><td class="num">2.00x</td><td class="num">1.45x</td><td class="num">72.3%</td><td class="num">202 → 333 ms</td></tr><tr><td><code>4 → 8</code></td><td class="num">2.00x</td><td class="num">1.81x</td><td class="num">90.3%</td><td class="num">333 → 478 ms</td></tr><tr><td><code>8 → 16</code></td><td class="num">2.00x</td><td class="num">1.33x</td><td class="num">66.6%</td><td class="num">478 → 849 ms</td></tr><tr><td><code>16 → 32</code></td><td class="num">2.00x</td><td class="num">1.51x</td><td class="num">75.5%</td><td class="num">849 → 888 ms</td></tr><tr><td><code>32 → 48</code></td><td class="num">1.50x</td><td class="num">1.12x</td><td class="num">74.4%</td><td class="num">888 → 2,271 ms</td></tr></tbody></table></div>
+<!-- /GEN:table-marginal -->
+
+  <p><span lang="en">The knee is at 32. Sixteen to 32 is the best-value segment on the curve: 51% more throughput for a median TTFT that moves from 849 ms to 888 ms. Going on to 48 adds 11.7% throughput while TTFT jumps to 2,271 ms and TPOT rises from 29.67 ms to 38.06 ms. Stop at 32 if latency is a product requirement; go to 48 only when aggregate throughput is the only thing being sold.</span><span lang="zh">拐点在 32。 16 到 32 是曲线上性价比最好的一段： 吞吐多 51%， 而 TTFT 中位只从 849 ms 移到 888 ms。 继续到 48， 吞吐只多 11.7%， TTFT 却跳到 2,271 ms， TPOT 也从 29.67 ms 升到 38.06 ms。 如果延迟是产品要求就停在 32；只有当卖的只是聚合吞吐时才上 48。</span></p>
+
+  <p><span lang="en">Note also what does <em>not</em> break down: the per-step arithmetic holds across the whole range. At concurrency 48 the step costs 101.9 ms and delivers 114.2 tokens, which predicts 1,121 tok/s against 1,061 measured — 5% high, the gap being ramp-up and drain at the edges of the run. The batching win is entirely in the numerator: 42x more tokens per step for 4.25x the step cost.</span><span lang="zh">同时注意什么<em>没有</em>崩： 每步的算术在整个区间都成立。 并发 48 时每步耗时 101.9 ms、产出 114.2 个 token， 预测 1,121 tok/s， 实测 1,061——高了 5%， 差距来自运行两端的爬坡与收尾。 批处理的收益全部落在分子上： 每步多 42 倍的 token， 只付 4.25 倍的每步成本。</span></p>
+
+  <!-- GEN:table-conc -->
+<div class="table-wrap"><table class=""><thead><tr><th><span lang="en">Conc</span><span lang="zh">并发</span></th><th class="num"><span lang="en">Reqs</span><span lang="zh">请求数</span></th><th class="num"><span lang="en">Output tok/s</span><span lang="zh">输出 tok/s</span></th><th class="num"><span lang="en">Achieved</span><span lang="zh">实测并发</span></th><th class="num"><span lang="en">Median TTFT</span><span lang="zh">TTFT 中位</span></th><th class="num"><span lang="en">Median TPOT</span><span lang="zh">TPOT 中位</span></th><th class="num">accept_len</th><th class="num"><span lang="en">Per-step</span><span lang="zh">每 step 耗时</span></th><th class="num"><span lang="en">Tok/step</span><span lang="zh">每 step token</span></th><th class="num"><span lang="en">Per-req tok/s</span><span lang="zh">每请求 tok/s</span></th></tr></thead><tbody><tr><td><code>1</code></td><td class="num">8</td><td class="num"><strong>109.84</strong></td><td class="num">1.00</td><td class="num">176 ms</td><td class="num">8.92 ms</td><td class="num">2.693</td><td class="num">24.0 ms</td><td class="num">2.7</td><td class="num">109.8</td></tr><tr><td><code>2</code></td><td class="num">8</td><td class="num"><strong>180.73</strong></td><td class="num">1.94</td><td class="num">202 ms</td><td class="num">10.28 ms</td><td class="num">2.544</td><td class="num">26.2 ms</td><td class="num">4.9</td><td class="num">93.2</td></tr><tr><td><code>4</code></td><td class="num">8</td><td class="num"><strong>261.33</strong></td><td class="num">3.39</td><td class="num">333 ms</td><td class="num">11.42 ms</td><td class="num">2.473</td><td class="num">28.2 ms</td><td class="num">8.4</td><td class="num">77.1</td></tr><tr><td><code>8</code></td><td class="num">16</td><td class="num"><strong>472.00</strong></td><td class="num">7.36</td><td class="num">478 ms</td><td class="num">15.36 ms</td><td class="num">2.637</td><td class="num">40.5 ms</td><td class="num">19.4</td><td class="num">64.1</td></tr><tr><td><code>16</code></td><td class="num">32</td><td class="num"><strong>629.13</strong></td><td class="num">13.82</td><td class="num">849 ms</td><td class="num">20.85 ms</td><td class="num">2.672</td><td class="num">55.7 ms</td><td class="num">36.9</td><td class="num">45.5</td></tr><tr><td><code>32</code></td><td class="num">64</td><td class="num"><strong>949.73</strong></td><td class="num">29.66</td><td class="num">888 ms</td><td class="num">29.67 ms</td><td class="num">2.732</td><td class="num">81.1 ms</td><td class="num">81.0</td><td class="num">32.0</td></tr><tr><td><code>48</code></td><td class="num">96</td><td class="num"><strong>1,060.58</strong></td><td class="num">42.65</td><td class="num">2,271 ms</td><td class="num">38.06 ms</td><td class="num">2.678</td><td class="num">101.9 ms</td><td class="num">114.2</td><td class="num">24.9</td></tr></tbody></table></div>
+<!-- /GEN:table-conc -->
+</section>
+
+<section id="reefs">
+  <span class="sec-num">12</span>
+  <h2><span lang="en">Reefs</span><span lang="zh">暗礁</span></h2>
+
+  <p><span lang="en">Four ways this measurement campaign nearly reported something false. All four were caught; the reason to write them down is that none of them announce themselves.</span><span lang="zh">这轮测量差点报出错误结论的四种方式。 四个都抓住了；把它们写下来的理由是， 它们没有一个会自我声明。</span></p>
+
+  <h4><span lang="en">A regex that read the command line as a result</span><span lang="zh">一个把命令行当成结果读的正则</span></h4>
+  <p><span lang="en">The gate's first run reported FAIL on five of six checks. Nothing was wrong with the model. The GSM8K scraper scanned forward from the word <code>Score</code> and picked up the <code>64</code> in <code>--max-tokens 64000</code>; the AIME25 scraper read the <code>8</code> out of the label <code>pass@1[avg-of-8]</code>. Both now anchor on the <code>=</code> sign or on the exact metric key. A parser that searches forward for "the next number" will eventually find a number from the invocation rather than the output, and it will do so silently.</span><span lang="zh">闸门第一次运行报告六项检查中五项 FAIL。 模型没有任何问题。 GSM8K 的抓取器从 <code>Score</code> 这个词向前扫描， 抓到了 <code>--max-tokens 64000</code> 里的 <code>64</code>；AIME25 的抓取器从标签 <code>pass@1[avg-of-8]</code> 里读出了那个 <code>8</code>。 现在两者都锚定在 <code>=</code> 号或精确的指标键上。 一个「向前找下一个数字」的解析器， 终究会找到来自调用命令而非输出的数字， 而且它会静默地这么做。</span></p>
+
+  <h4><span lang="en">A degeneration probe that flagged good prose</span><span lang="zh">一个把好文章标为退化的探测器</span></h4>
+  <p><span lang="en">The same run failed one sample at 29.5% 8-gram repetition. Inspecting it showed fluent, correct English — a reasoning trace summarising repetitive source text — with a longest consecutive token run of 1. Repetition alone does not distinguish degenerate looping from legitimately repetitive content. The threshold now requires repetition <em>and</em> consecutive runs together, or one signal far out. No eval was re-run; only the scoring changed, which is the honest way to fix a scorer.</span><span lang="zh">同一次运行里有一个样本因 8-gram 重复率 29.5% 而未通过。 检查后发现那是流畅正确的英文——一段在总结重复性原文的推理轨迹——最长连续 token 串长度为 1。 单看重复率无法区分退化式循环与本就重复的内容。 现在阈值要求重复率<em>与</em>连续串长度同时超标， 或某一个信号远超。 没有重跑任何评测， 只改了打分方式——这才是修一个打分器的诚实做法。</span></p>
+
+  <h4><span lang="en">Random tokens make accept length noisy</span><span lang="zh">随机 token 让接受长度变噪</span></h4>
+  <p><span lang="en">The same ISL/OSL 1024 point measures 101.92 tok/s with four requests and 109.84 with eight — 7.8% apart, and the throughput ratio is almost exactly the accept-length ratio. <code>--dataset-name random</code> emits random token IDs, and the draft model's acceptance is content-sensitive, so low sample counts give a noisy numerator. Every bsz=1 figure here should be read as carrying 8–10% run-to-run variance, and as a conservative lower bound relative to real text. For reference, the search's own <code>p3-lat-win</code> row on this recipe recorded 111.58 tok/s at accept length 2.757, against sweep C's 109.84 and 2.693 — 1.6% and 2.3% apart.</span><span lang="zh">同一个 ISL/OSL 1024 点， 四条请求时测出 101.92 tok/s， 八条时测出 109.84——相差 7.8%， 而吞吐比几乎正好等于接受长度比。 <code>--dataset-name random</code> 产出的是随机 token ID， 草稿模型的接受率对内容敏感， 所以低样本数会给出一个噪声很大的分子。 这里每个 bsz=1 数字都该被理解为带有 8–10% 的 run-to-run 波动， 并且相对真实文本是保守下界。 作为参照， 搜索自己在该配方上的 <code>p3-lat-win</code> 行记录为 111.58 tok/s、接受长度 2.757， 对比扫描 C 的 109.84 与 2.693——分别差 1.6% 与 2.3%。</span></p>
+
+  <h4><span lang="en">A scaling segment that looked too good</span><span lang="zh">一段好得反常的扩展区间</span></h4>
+  <p><span lang="en">The 4 → 8 segment shows 90.3% scaling efficiency, higher than its neighbours on both sides. That is an artifact, not a sweet spot: at concurrency 4 with 8 requests there are only two waves, so ramp-up and drain dominate and achieved concurrency reaches just 3.39 — 85% of what was requested. Understating the denominator of the previous point inflates the ratio into the next one. From concurrency 8 up, achieved concurrency exceeds 92% and the segments are comparable. A curve measured with a fixed small request count will always bend upward at its low end.</span><span lang="zh">4 → 8 那一段显示 90.3% 的线性度， 比它两侧的邻居都高。 那是假象， 不是甜点： 并发 4 配 8 条请求时只有两个波次， 爬坡与收尾占了主导， 实测并发只到 3.39——是请求量的 85%。 低估了前一个点的分母， 就会把比值虚增到下一个点上。 从并发 8 往上， 实测并发超过 92%， 各段之间才可比。 一条用固定的小请求数测出来的曲线， 在低端永远会向上弯。</span></p>
+</section>
+
+<section id="epilogue">
+  <span class="sec-num">13</span>
+  <h2><span lang="en">Epilogue</span><span lang="zh">结语</span></h2>
+
+  <p><span lang="en">The shipped recipe is four lines long, and none of them is surprising on its own:</span><span lang="zh">最终发布的配方只有四行， 单看每一行都不令人惊讶：</span></p>
+
+  <pre><code>MEM_FRAC=0.92
+RADIX=0
+CUDA_GRAPH_MAX_BS=256
+EXTRA_ARGS=--speculative-dspark-block-size 3</code></pre>
+
+  <p><span lang="en">What the 450 minutes bought was not those four lines. It was knowing that the memory fraction cannot go higher because activation peaks are invisible at boot, that the request cap cannot go higher because it trades against the token budget, that the prefix cache is off for a reason that a real deployment should reverse, and that the one flag doing all the work does it by making the verify step cheaper rather than more productive.</span><span lang="zh">那 450 分钟买到的不是这四行。 买到的是知道： 显存占比不能再高， 因为激活峰值在启动时不可见；请求上限不能再高， 因为它要和 token 预算互换；前缀缓存是有理由关掉的， 而真实部署应该把这个理由反过来；以及那个包办了全部收益的 flag， 靠的是让验证步骤更便宜， 而不是让它更多产。</span></p>
+
+  <p><span lang="en">The through-line is worth restating in a form that outlives this model and this hardware. Speculative decoding turns generation into a bet, and the return on that bet is tokens accepted divided by the cost of the step that verified them. Almost every tuning lever moves one of those two terms, usually at the other's expense. When a lever seems to win on the metric you can read most easily — accept length, or TPOT — check which half of the fraction you are looking at. In this search, tuning on accept length alone would have picked a verify window that was 41% slower, and tuning on TPOT alone would have attributed a draft-model problem to the attention kernel.</span><span lang="zh">这条主线值得用一种能活得比这个模型和这批硬件更久的形式重述一遍。 投机解码把生成变成一场赌注， 而赌注的回报是「被接受的 token 数」除以「验证它们那一步的成本」。 几乎每一个调优杠杆都在动这两项之一， 而且通常以另一项为代价。 当某个杠杆在你最容易读到的指标上看起来赢了——接受长度， 或者 TPOT——先确认你看的是这个分数的哪一半。 在这次搜索里， 只按接受长度调参会选出一个慢 41% 的验证窗口；只按 TPOT 调参则会把草稿模型的问题归因到 attention kernel 上。</span></p>
+
+  <p><span lang="en">Everything here is reproducible from two scripts and two CSVs, archived alongside the recipe and the gate that justified it. The numbers on this page are spliced in from those CSVs by a generator, so the page cannot drift from the measurements even if the prose around it is rewritten.</span><span lang="zh">这里的一切都可以从两个脚本和两份 CSV 复现， 它们与配方、以及为配方提供依据的闸门一起归档。 本页所有数字都由生成器从那些 CSV 回写进来， 所以即使周围的文字被重写， 页面也不会与测量结果发生漂移。</span></p>
+</section>
+
+</main>
+</div>
+</div>
+
+<script>
+(function() {
+  var KEY = 'kimi-k3-tuning-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
