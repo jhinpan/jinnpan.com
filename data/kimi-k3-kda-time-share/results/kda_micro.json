@@ -1,0 +1,10 @@
+{
+ "heads_per_gpu": 12,
+ "head_dim": 128,
+ "batch": 1,
+ "state_bytes_per_layer": 786432,
+ "iters": 500,
+ "per_call_us": 25.85581398010254,
+ "implied_per_step_us_69_layers": 1784.0511646270752,
+ "state_traffic_gb_per_s": 60.83212082243494
+}

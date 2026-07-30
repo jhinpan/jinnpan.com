@@ -1,0 +1,90 @@
+diff --git a/python/sglang/srt/models/kimi_k3.py b/python/sglang/srt/models/kimi_k3.py
+index b7f61cf2c..a1f7189c5 100644
+--- a/python/sglang/srt/models/kimi_k3.py
++++ b/python/sglang/srt/models/kimi_k3.py
+@@ -120,6 +120,29 @@ logger = logging.getLogger(__name__)
+ _is_hip = is_hip()
+ _aiter_k3_opt = get_bool_env_var("SGLANG_AITER_K3_OPT")
+ 
++# Opt-in profiler ranges around the cost centres of a K3 block (KDA /
++# full-attention / MoE). A torch profile can then attribute each GPU kernel to a
++# block type by correlation, instead of guessing from kernel names -- the Tensile
++# GEMM names encode tile shapes, not which projection they served, so a KDA
++# q_proj and a shared-expert GEMM are indistinguishable by name alone. Off unless
++# the env var is set, and then a no-op class rather than a hot-path branch.
++if get_bool_env_var("SGLANG_K3_PROF_RANGES"):
++    from torch.profiler import record_function as _prof_range
++else:
++
++    class _prof_range:
++        __slots__ = ()
++
++        def __init__(self, name: str) -> None:
++            pass
++
++        def __enter__(self) -> "_prof_range":
++            return self
++
++        def __exit__(self, *exc) -> bool:
++            return False
++
++
+ # ---------------------------------------------------------------------------
+ # Helpers
+ # ---------------------------------------------------------------------------
+@@ -1953,6 +1976,11 @@ class KimiK3DecoderLayer(nn.Module):
+             config.hidden_size, eps=config.rms_norm_eps
+         )
+ 
++        self._prof_attn_tag = (
++            "K3/kda" if config.is_kda_layer(layer_idx) else "K3/full_attn"
++        )
++        self._prof_mlp_tag = "K3/moe" if self._is_moe_layer else "K3/dense_mlp"
++
+         # Attention Residual
+         self.use_attn_residuals = config.attn_res_block_size is not None
+         if self.use_attn_residuals:
+@@ -2108,12 +2136,13 @@ class KimiK3DecoderLayer(nn.Module):
+             attn_inputs = AttentionInputs(hidden_states, forward_batch, qkv_latent_func)
+             get_attn_tp_context().set_attn_inputs(attn_inputs)
+ 
+-        result = self.self_attn(
+-            hidden_states=hidden_states,
+-            positions=positions,
+-            forward_batch=forward_batch,
+-            zero_allocator=zero_allocator,
+-        )
++        with _prof_range(self._prof_attn_tag):
++            result = self.self_attn(
++                hidden_states=hidden_states,
++                positions=positions,
++                forward_batch=forward_batch,
++                zero_allocator=zero_allocator,
++            )
+ 
+         if qkv_latent_func is not None:
+             get_attn_tp_context().clear_attn_inputs()
+@@ -2161,7 +2190,8 @@ class KimiK3DecoderLayer(nn.Module):
+         )
+ 
+         hidden_states, residual = self.post_attention_layernorm(hidden_states, residual)
+-        hidden_states = self.mlp(hidden_states, forward_batch=forward_batch)
++        with _prof_range(self._prof_mlp_tag):
++            hidden_states = self.mlp(hidden_states, forward_batch=forward_batch)
+         return hidden_states, residual, False
+ 
+     def _forward_attn_residual(
+@@ -2293,9 +2323,10 @@ class KimiK3DecoderLayer(nn.Module):
+ 
+         # ---- MLP (consumes +prefix_sum: MoE folds it into the 3-way tail
+         # add, dense adds it after down_proj) ----
+-        out = self.mlp(
+-            hidden_states, prefix_sum=prefix_sum, forward_batch=forward_batch
+-        )
++        with _prof_range(self._prof_mlp_tag):
++            out = self.mlp(
++                hidden_states, prefix_sum=prefix_sum, forward_batch=forward_batch
++            )
+         if shard_lo >= 0:
+             if keep_sharded:
+                 return out, None, True

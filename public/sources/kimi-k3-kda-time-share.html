@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Three of every four layers are linear — what does that buy? Kimi-K3 time attribution on MI355X</title>
+<meta name="description" content="Attributing Kimi-K3 decode and prefill GPU time to KDA, full attention and MoE across 1K to 1M context on 8x MI355X — with the kernel-attribution method, the three ways the measurement lied, and an instruction-level thread trace of the KDA decode kernel."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&amp;family=Petrona:ital,wght@0,300..700;1,300..600&amp;family=Martian+Mono:wght@300;400;600&amp;family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  /* riso datasheet — two saturated inks on newsprint */
+  --bg:#ece7dd; --paper:#f8f4ec; --sunk:#e0d9cb; --deep:#d4cbb8;
+  --fg:#17150f; --fg2:#4a4539; --fg3:#7b7464;
+  --rule:#cdc4b1; --rule2:#a89d86;
+  --blue:#1454b8;      /* KDA — the linear mechanism */
+  --flame:#dd3c14;     /* full attention — the thing that grows */
+  --violet:#6b3fa0;    /* MoE */
+  --olive:#5f6b1c;     /* attention-residual bank */
+  --slate:#6e6a5c;     /* everything else */
+  --display:'Familjen Grotesk','Noto Sans SC',sans-serif;
+  --body:'Petrona','Noto Sans SC','Songti SC',Georgia,serif;
+  --ui:'Familjen Grotesk','Noto Sans SC',system-ui,sans-serif;
+  --mono:'Martian Mono',ui-monospace,'Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--body); font-size:18px; line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--blue); text-underline-offset:3px; text-decoration-thickness:1px}
+a:hover{color:var(--flame)}
+code{font-family:var(--mono); font-size:.76em; background:var(--sunk); padding:.12em .34em; letter-spacing:-.02em}
+:lang(zh){font-family:'Noto Sans SC','Petrona',sans-serif; line-height:1.85}
+
+.wrap{display:grid; grid-template-columns:250px minmax(0,1fr); max-width:1200px; margin:0 auto; background:var(--paper); border-left:1px solid var(--rule); border-right:1px solid var(--rule)}
+
+/* ---- rail ---- */
+.rail{grid-column:1; padding:40px 22px 60px 26px; font-family:var(--ui); font-size:12.5px; line-height:1.55; border-right:2px solid var(--fg); background:var(--bg)}
+.rail-inner{position:sticky; top:34px}
+.rail .back{display:inline-block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; color:var(--fg2); text-decoration:none; margin-bottom:26px; border-bottom:2px solid var(--flame); padding-bottom:2px}
+.rail .back:hover{color:var(--flame)}
+.rail h4{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg3); margin:0 0 12px; font-weight:600}
+.rail ol{list-style:none; margin:0; padding:0; counter-reset:sec}
+.rail ol li{counter-increment:sec; margin:0 0 3px}
+.rail ol li a{display:grid; grid-template-columns:26px 1fr; gap:6px; padding:5px 6px 5px 0; text-decoration:none; color:var(--fg2); border-left:2px solid transparent}
+.rail ol li a::before{content:counter(sec,decimal-leading-zero); font-family:var(--mono); font-size:9.5px; color:var(--fg3); padding-top:2px}
+.rail ol li a:hover{color:var(--fg); background:var(--sunk); border-left-color:var(--blue)}
+
+/* ---- masthead ---- */
+.masthead{padding:56px 56px 34px; border-bottom:2px solid var(--fg)}
+.kicker{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--flame); font-weight:600; margin-bottom:20px}
+.masthead h1{font-family:var(--display); font-weight:700; font-size:46px; line-height:1.06; letter-spacing:-.02em; margin:0 0 16px; max-width:20ch}
+.dek{font-size:19px; color:var(--fg2); max-width:60ch; margin:0 0 30px; line-height:1.55}
+.spec{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--rule2); font-family:var(--ui)}
+.spec div{padding:11px 13px; border-right:1px solid var(--rule)}
+.spec div:last-child{border-right:0}
+.spec dt{font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fg3); margin-bottom:4px; font-weight:600}
+.spec dd{margin:0; font-size:13px; line-height:1.42; color:var(--fg)}
+
+/* ---- article ---- */
+.article{padding:0 56px 90px}
+section{padding:44px 0 8px; border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+h2{font-family:var(--display); font-weight:700; font-size:29px; line-height:1.16; letter-spacing:-.015em; margin:0 0 6px; max-width:26ch}
+.sec-num{font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; color:var(--flame); font-weight:600; display:block; margin-bottom:10px}
+h3{font-family:var(--display); font-weight:600; font-size:19px; margin:34px 0 8px; letter-spacing:-.01em}
+p{max-width:70ch; margin:0 0 18px}
+.lede{font-size:20px; color:var(--fg2); max-width:64ch}
+ul,ol.body-list{max-width:70ch; padding-left:20px}
+li{margin-bottom:8px}
+
+/* ---- callout ---- */
+.note{border-left:3px solid var(--blue); background:var(--sunk); padding:16px 20px; margin:24px 0; max-width:72ch}
+.note.warn{border-left-color:var(--flame)}
+.note.key{border-left-color:var(--violet)}
+.note p{margin:0 0 10px; font-size:16.5px}
+.note p:last-child{margin-bottom:0}
+.note .tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--fg3); font-weight:600; display:block; margin-bottom:7px}
+
+/* ---- tables ---- */
+.tbl{margin:26px 0; overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13.5px}
+th{text-align:left; font-weight:600; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg3); border-bottom:2px solid var(--fg); padding:8px 10px 7px}
+td{padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top}
+tbody tr:hover{background:var(--sunk)}
+td.num,th.num{text-align:right; font-family:var(--mono); font-size:12px; letter-spacing:-.03em}
+td.k{font-weight:600}
+.cap{font-size:13px; color:var(--fg3); font-family:var(--ui); margin-top:-14px; margin-bottom:26px; max-width:74ch}
+
+/* ---- plates ---- */
+.plate{margin:34px 0 30px; border:1px solid var(--rule2); background:var(--paper)}
+.plate.wide{margin-left:-40px; margin-right:-40px}
+.plate-meta{display:flex; justify-content:space-between; align-items:baseline; padding:9px 14px; border-bottom:1px solid var(--rule); font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fg3); background:var(--sunk)}
+.plate-svg{padding:16px 14px 6px}
+.plate svg{display:block; width:100%; height:auto}
+.caption{padding:0 16px 14px; font-family:var(--ui); font-size:13px; font-style:italic; color:var(--fg2); max-width:88ch}
+.diag-text{font-family:'Familjen Grotesk',sans-serif; font-size:12px; fill:#4a4539}
+.diag-label{font-family:'Martian Mono',monospace; font-size:9.5px; letter-spacing:.06em; fill:#7b7464}
+.diag-strong{font-family:'Familjen Grotesk',sans-serif; font-size:13px; font-weight:600; fill:#17150f}
+.diag-node{fill:#f8f4ec; stroke:#a89d86; stroke-width:1}
+.diag-edge{stroke:#7b7464; stroke-width:1.4; fill:none}
+.axis{stroke:#a89d86; stroke-width:1}
+.gridline{stroke:#cdc4b1; stroke-width:.8; stroke-dasharray:2 3}
+
+/* ---- lang toggle ---- */
+.lang-toggle{position:fixed; top:16px; right:18px; z-index:50; display:flex; border:1.5px solid var(--fg); background:var(--paper)}
+.lang-toggle button{font-family:var(--mono); font-size:10px; letter-spacing:.1em; padding:6px 11px; border:0; background:transparent; color:var(--fg2); cursor:pointer}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"]{background:var(--fg); color:var(--paper)}
+
+/* ---- colophon ---- */
+.colophon{border-top:2px solid var(--fg); padding:26px 56px 60px; font-family:var(--ui); font-size:12.5px; color:var(--fg3); display:grid; grid-template-columns:repeat(2,1fr); gap:8px 34px; max-width:1200px; margin:0 auto; background:var(--paper); border-left:1px solid var(--rule); border-right:1px solid var(--rule)}
+.colophon b{color:var(--fg2); font-weight:600}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  .rail{border-right:0; border-bottom:2px solid var(--fg)}
+  .rail-inner{position:static}
+  .masthead,.article,.colophon{padding-left:22px; padding-right:22px}
+  .plate.wide{margin-left:0; margin-right:0}
+  .spec{grid-template-columns:repeat(2,1fr)}
+  .masthead h1{font-size:34px}
+}
+
+/* Language visibility — must stay last so it wins */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+</style>
+</head>
+<body data-lang="en">
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="wrap">
+<nav class="rail">
+  <div class="rail-inner">
+    <a class="back" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回书架</span></a>
+    <h4><span lang="en">Contents</span><span lang="zh">目录</span></h4>
+    <ol>
+      <li><a href="#question"><span lang="en">The question</span><span lang="zh">问题</span></a></li>
+      <li><a href="#attribution"><span lang="en">Attributing a kernel to a layer</span><span lang="zh">把核函数归到层上</span></a></li>
+      <li><a href="#decode"><span lang="en">Decode, 4K to 1M</span><span lang="zh">Decode： 4K 到 1M</span></a></li>
+      <li><a href="#divergence"><span lang="en">Why the two diverge</span><span lang="zh">两者为何分化</span></a></li>
+      <li><a href="#internals"><span lang="en">Inside the blocks</span><span lang="zh">拆开每个块</span></a></li>
+      <li><a href="#prefill"><span lang="en">Prefill, 1K to 32K</span><span lang="zh">Prefill： 1K 到 32K</span></a></li>
+      <li><a href="#trace"><span lang="en">One wave, one kernel</span><span lang="zh">一个波， 一个核函数</span></a></li>
+      <li><a href="#lies"><span lang="en">Three ways it lied</span><span lang="zh">三次被测量欺骗</span></a></li>
+      <li><a href="#amd"><span lang="en">What to fix on MI355X</span><span lang="zh">MI355X 上该修什么</span></a></li>
+      <li><a href="#reproduce"><span lang="en">Reproducing this</span><span lang="zh">复现</span></a></li>
+      <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    </ol>
+  </div>
+</nav>
+
+<div>
+<header class="masthead">
+  <div class="kicker">Experiment 002 · Kimi-K3 · 8× MI355X</div>
+  <h1><span lang="en">Three of every four layers are linear. What does that buy?</span><span lang="zh">每四层里有三层是线性注意力。 它到底买到了什么？</span></h1>
+  <p class="dek" lang="en">Kimi-K3 spends 69 of its 93 layers on Kimi Delta Attention. That is a share of layers, not a share of time. This measures the time — by layer type, across five decode context lengths and four prefill lengths — and finds that the answer flips depending on how long the context is.</p>
+  <p class="dek" lang="zh">Kimi-K3 的 93 层里有 69 层是 Kimi Delta Attention。 那是层数的占比， 不是时间的占比。 这篇把时间测出来—— 按层类型拆分， 覆盖五个 decode 上下文长度和四个 prefill 长度—— 结论会随上下文长度翻转。</p>
+  <dl class="spec">
+    <div><dt><span lang="en">Silicon</span><span lang="zh">硬件</span></dt><dd>8× MI355X · gfx950 · 288 GB HBM3E</dd></div>
+    <div><dt><span lang="en">Model</span><span lang="zh">模型</span></dt><dd>Kimi-K3 · 93 L · 896 experts · MXFP4</dd></div>
+    <div><dt><span lang="en">Serving</span><span lang="zh">推理</span></dt><dd>SGLang TP8 · triton attn · bs 1 · no spec</dd></div>
+    <div><dt><span lang="en">Data</span><span lang="zh">数据</span></dt><dd><a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share">data/kimi-k3-kda-time-share</a></dd></div>
+  </dl>
+</header>
+
+<main class="article">
+
+<!-- ============================================================ 00 -->
+<section id="question">
+  <span class="sec-num">00</span>
+  <h2><span lang="en">The question</span><span lang="zh">问题</span></h2>
+
+  <p class="lede" lang="en">A colleague noticed the layout while reading the config and asked the obvious question: three of every four attention layers are KDA — so how much of the decode time is that?</p>
+  <p class="lede" lang="zh">同事在读 config 的时候注意到这个排布， 提了一个很自然的问题： 每四层注意力里有三层是 KDA， 那它占了多少解码时间？</p>
+
+  <p lang="en">The layout is real. <code>linear_attn_config.kda_layers</code> lists 69 indices and <code>full_attn_layers</code> lists 24, interleaved so that layers 1–3 are KDA, layer 4 is full attention, and so on to the tail, where 92 and 93 are both full attention. Every layer past the first also carries a mixture-of-experts feed-forward with 896 experts, 16 routed plus 2 shared.</p>
+  <p lang="zh">这个排布是真的。 <code>linear_attn_config.kda_layers</code> 里有 69 个下标， <code>full_attn_layers</code> 里有 24 个， 交替排成第 1–3 层 KDA、第 4 层全注意力， 一直到末尾， 第 92 和 93 层都是全注意力。 除了第一层， 每层还挂着一个 896 专家的 MoE 前馈， 每 token 激活 16 个路由专家加 2 个共享专家。</p>
+
+  <p lang="en">But a fraction of layers only becomes a fraction of time if the layers cost the same, and here they cannot. The two mechanisms differ in the one thing that decides decode cost: what they have to read. A full-attention layer reads a cache that grows with every token generated. A KDA layer reads a fixed-size matrix that does not. Those are different functions of context length, so their time curves cannot have the same shape — the only real questions are where they cross and how steep the crossing is.</p>
+  <p lang="zh">但层数占比要变成时间占比， 前提是每层成本相同， 而这里显然不同。 两种机制在决定解码成本的那件事上是相反的： 它们要读什么。 全注意力层读的缓存随生成的每个 token 增长， KDA 层读的是一个固定大小的矩阵。 这是两个不同的上下文长度函数， 时间曲线不可能同形—— 真正的问题只是它们在哪里相交、交叉有多陡。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate I · Layer stack and state footprint</span><span>93 layers</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 322" role="img" aria-label="The 93-layer stack of Kimi-K3 with KDA and full-attention layers, and the decode-time state each keeps">
+        <text class="diag-label" x="24" y="30">LAYER 1</text>
+        <text class="diag-label" x="880" y="30">LAYER 93</text>
+
+        <!-- 93 bars: KDA blue, full-attention flame. full-attn at 4,8,...,88,92,93 -->
+        <g>
+          <rect x="24" y="42" width="7" height="46" fill="#1454b8"/><rect x="33.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="42.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="51.6" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="60.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="70" y="42" width="7" height="46" fill="#1454b8"/><rect x="79.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="88.4" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="97.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="106.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="116" y="42" width="7" height="46" fill="#1454b8"/><rect x="125.2" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="134.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="143.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="152.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="162" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="171.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="180.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="189.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="198.8" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="208" y="42" width="7" height="46" fill="#1454b8"/><rect x="217.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="226.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="235.6" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="244.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="254" y="42" width="7" height="46" fill="#1454b8"/><rect x="263.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="272.4" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="281.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="290.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="300" y="42" width="7" height="46" fill="#1454b8"/><rect x="309.2" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="318.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="327.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="336.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="346" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="355.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="364.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="373.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="382.8" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="392" y="42" width="7" height="46" fill="#1454b8"/><rect x="401.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="410.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="419.6" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="428.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="438" y="42" width="7" height="46" fill="#1454b8"/><rect x="447.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="456.4" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="465.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="474.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="484" y="42" width="7" height="46" fill="#1454b8"/><rect x="493.2" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="502.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="511.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="520.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="530" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="539.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="548.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="557.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="566.8" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="576" y="42" width="7" height="46" fill="#1454b8"/><rect x="585.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="594.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="603.6" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="612.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="622" y="42" width="7" height="46" fill="#1454b8"/><rect x="631.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="640.4" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="649.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="658.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="668" y="42" width="7" height="46" fill="#1454b8"/><rect x="677.2" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="686.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="695.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="704.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="714" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="723.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="732.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="741.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="750.8" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="760" y="42" width="7" height="46" fill="#1454b8"/><rect x="769.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="778.4" y="42" width="7" height="46" fill="#1454b8"/><rect x="787.6" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="796.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="806" y="42" width="7" height="46" fill="#1454b8"/><rect x="815.2" y="42" width="7" height="46" fill="#1454b8"/><rect x="824.4" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="833.6" y="42" width="7" height="46" fill="#1454b8"/><rect x="842.8" y="42" width="7" height="46" fill="#1454b8"/><rect x="852" y="42" width="7" height="46" fill="#1454b8"/><rect x="861.2" y="42" width="7" height="46" fill="#dd3c14"/>
+          <rect x="870.4" y="42" width="7" height="46" fill="#dd3c14"/>
+        </g>
+
+        <!-- brace over the repeating unit -->
+        <path class="diag-edge" d="M24 96 L24 104 L58.6 104 L58.6 96" />
+        <text class="diag-strong" x="24" y="122">3 KDA : 1 full attention</text>
+        <text class="diag-label" x="24" y="139">THE UNIT, REPEATED 22 TIMES</text>
+        <path class="diag-edge" d="M861.2 96 L861.2 104 L877.4 104 L877.4 96" />
+        <text class="diag-label" x="748" y="122">TAIL: 92 AND 93 BOTH FULL</text>
+
+        <!-- two state boxes -->
+        <rect class="diag-node" x="24" y="172" width="440" height="122" stroke="#1454b8" stroke-width="1.6"/>
+        <rect x="24" y="172" width="440" height="5" fill="#1454b8"/>
+        <text class="diag-strong" x="42" y="204" fill="#1454b8">69 × KDA</text>
+        <text class="diag-text" x="42" y="228">state = [128 × 128] per head, 12 heads per rank</text>
+        <text class="diag-text" x="42" y="248">fp32 · 768 KiB per layer · 54.3 MB per rank</text>
+        <text class="diag-strong" x="42" y="276">constant in context length</text>
+
+        <rect class="diag-node" x="500" y="172" width="456" height="122" stroke="#dd3c14" stroke-width="1.6"/>
+        <rect x="500" y="172" width="456" height="5" fill="#dd3c14"/>
+        <text class="diag-strong" x="518" y="204" fill="#dd3c14">24 × full attention (MLA)</text>
+        <text class="diag-text" x="518" y="228">latent KV = (512 + 64) dims per token per layer</text>
+        <text class="diag-text" x="518" y="248">bf16 · 27.0 KiB per token · 27.6 GB at 1M</text>
+        <text class="diag-strong" x="518" y="276">linear in context length</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">The repeating unit is three KDA layers then one full-attention layer, 22 times, with a two-layer full-attention tail. The two boxes are the reason the time cannot follow the layer count: one mechanism carries a fixed state, the other carries a per-token cache.</p>
+    <p class="caption" lang="zh">重复单元是三层 KDA 加一层全注意力， 重复 22 次， 末尾是两层连续的全注意力。 下面两个框就是时间无法跟随层数的原因： 一种机制带的是固定状态， 另一种带的是随 token 增长的缓存。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 01 -->
+<section id="attribution">
+  <span class="sec-num">01</span>
+  <h2><span lang="en">Attributing a kernel to a layer type</span><span lang="zh">把一个核函数归到某类层上</span></h2>
+
+  <p lang="en">The measurement sounds like it should be a profiler flag. It is not, and the reason is worth stating because it recurs in any attribution work on a fused, tensor-parallel serving stack.</p>
+  <p lang="zh">这个测量听起来像是打开一个 profiler 开关就行。 并不是。 原因值得写下来， 因为在任何融合过的、张量并行的推理栈上做归因都会遇到同一件事。</p>
+
+  <h3><span lang="en">Why kernel names cannot do it</span><span lang="zh">为什么靠核函数名字不行</span></h3>
+  <p lang="en">A GPU profile is a list of kernel launches with names and durations. The obvious move is to bucket by name. That fails here because the names describe the shape of the computation, not its purpose. The dense GEMMs come from Tensile and hipBLASLt, whose kernel names encode tile geometry — <code>Cijk_Alik_Bljk_..._MT256x16x64_...</code> — so a KDA layer's <code>q_proj</code> and a shared expert's projection can be the same kernel, launched with the same tile, byte-identical in the trace. Any name-based rule that separates them is a guess.</p>
+  <p lang="zh">一份 GPU profile 就是一串带名字和时长的 kernel launch， 最直接的做法是按名字分桶。 这里行不通， 因为名字描述的是计算的形状， 不是它的用途。 稠密 GEMM 来自 Tensile 和 hipBLASLt， 名字编码的是 tile 几何—— <code>Cijk_Alik_Bljk_..._MT256x16x64_...</code> —— 所以 KDA 层的 <code>q_proj</code> 和共享专家的投影可能是同一个核函数、同一个 tile， 在 trace 里逐字节相同。 任何基于名字去区分它们的规则都是在猜。</p>
+
+  <p lang="en">The fix is to ask the host side instead of the device side. A one-line-per-site patch wraps the three cost centres of <code>KimiK3DecoderLayer</code> in <code>torch.profiler.record_function</code> ranges named <code>K3/kda</code>, <code>K3/full_attn</code> and <code>K3/moe</code>. Each GPU kernel carries a correlation id shared with the host call that launched it, and that host call sits inside whichever range was open — so the innermost enclosing range names the block. The patch is gated behind <code>SGLANG_K3_PROF_RANGES</code> and compiles to a no-op class otherwise, because as section 07 shows, leaving it on is not free.</p>
+  <p lang="zh">解法是去问主机侧， 而不是设备侧。 一个每处一行的补丁把 <code>KimiK3DecoderLayer</code> 的三个成本中心包进 <code>torch.profiler.record_function</code> 区间， 命名为 <code>K3/kda</code>、<code>K3/full_attn</code>、<code>K3/moe</code>。 每个 GPU 核函数都带一个 correlation id， 和发起它的主机调用共享； 那次主机调用落在当时打开的区间里—— 最内层的那个区间就是它所属的块。 补丁由 <code>SGLANG_K3_PROF_RANGES</code> 控制， 关闭时编译成一个空操作类， 因为第 07 节会说明， 一直开着并不是免费的。</p>
+
+  <h3><span lang="en">Why that is not enough for decode</span><span lang="zh">为什么这对 decode 还不够</span></h3>
+  <p lang="en">For prefill the ranges are the whole method. Prefill does not run through a CUDA graph in this configuration, so the profiler sees every kernel and the ranges label them directly.</p>
+  <p lang="zh">对 prefill 来说， 区间就是全部方法。 这个配置下 prefill 不走 CUDA graph， profiler 能看到每个核函数， 区间直接给它们打上标签。</p>
+
+  <p lang="en">Decode is captured in a HIP graph, and the torch profiler cannot see kernels replayed from inside one. This is not subtle in the data: a decode trace of the running server showed 1.8 ms of GPU work per step against a real step time of about 26 ms, and the kernels it did show were the draft model and the speculative bookkeeping — everything outside the graph. Profiling a graph-mode decode with the torch profiler measures the parts you did not want.</p>
+  <p lang="zh">Decode 被捕获进了 HIP graph， 而 torch profiler 看不到从 graph 内部重放的核函数。 这一点在数据里非常明显： 对运行中的服务器做一次 decode trace， 每步只看到 1.8 ms 的 GPU 工作， 而真实每步约 26 ms； 看到的那些核函数是 draft 模型和投机解码的簿记， 也就是 graph 之外的部分。 用 torch profiler 去测 graph 模式的 decode， 量到的恰好是你不想要的那部分。</p>
+
+  <p lang="en">So the ranges are used once, in eager mode, not to produce the answer but to <em>learn the map</em> from kernel name to block type. That map is then applied to traces taken with graphs on. The step is only legitimate if the map is nearly injective, and it is: 81% of non-collective dispatches carry a name unique to one block. The one compute kernel genuinely shared between KDA and full attention is the 1536→7168 <code>o_proj</code>, and it is shared in the most benign possible way — both blocks issue the identical shape, 69 times and 24 times per step, so splitting its time 69:24 is exact rather than an approximation.</p>
+  <p lang="zh">于是区间只在 eager 模式下用一次， 目的不是给出答案， 而是<em>学出</em>核函数名字到块类型的映射。 然后把这张映射用到打开 graph 时采集的 trace 上。 这一步成立的前提是映射近乎单射， 而事实确实如此： 81% 的非集合通信派发的名字唯一属于一个块。 唯一真正被 KDA 和全注意力共享的计算核函数是 1536→7168 的 <code>o_proj</code>， 而且共享方式是最良性的一种—— 两个块发出的形状完全相同， 每步分别 69 次和 24 次， 所以按 69:24 切分是精确的， 不是近似。</p>
+
+  <div class="note key">
+    <span class="tag">The check that makes it safe</span>
+    <p lang="en">A learned map is only worth as much as its validation. Every context point re-derives three structural counts before its numbers are used: exactly 69 KDA recurrence dispatches, 24 MLA stage-1 dispatches and 92 expert-GEMM dispatches per decode step — one per layer of each kind — and an integral per-step count for every mapped name. All five decode points pass, with 3372 dispatches per step and no unmapped kernel names, at 4K and at 1M alike. If the map did not describe the trace, a non-integral count would say so immediately.</p>
+    <p lang="zh">一张学出来的映射， 价值全在于它的验证。 每个上下文点在使用数字之前都会重新导出三个结构性计数： 每个 decode step 恰好 69 次 KDA 递推派发、24 次 MLA stage-1 派发、92 次专家 GEMM 派发—— 各类层每层一次—— 并且每个已映射名字的每步派发次数必须是整数。 五个 decode 点全部通过， 每步 3372 次派发， 没有未映射的名字， 4K 和 1M 一样。 如果映射描述不了这份 trace， 一个非整数的计数会立刻暴露它。</p>
+  </div>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate II · The attribution path</span><span>and the two dead ends</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 372" role="img" aria-label="How kernels were attributed to block types: name-based bucketing fails, ranges in eager mode learn the map, the map transfers to graph-mode traces">
+        <defs>
+          <marker id="arrowhead" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <polygon points="0 0, 9 3.5, 0 7" fill="#7b7464"/>
+          </marker>
+        </defs>
+
+        <!-- dead end A -->
+        <rect class="diag-node" x="20" y="34" width="270" height="98" stroke="#dd3c14" stroke-dasharray="4 3"/>
+        <text class="diag-label" x="36" y="56" fill="#dd3c14">DEAD END A</text>
+        <text class="diag-strong" x="36" y="78">Bucket by kernel name</text>
+        <text class="diag-text" x="36" y="99">Tensile names encode tile shape.</text>
+        <text class="diag-text" x="36" y="117">KDA q_proj ≡ shared-expert GEMM.</text>
+
+        <!-- dead end B -->
+        <rect class="diag-node" x="20" y="150" width="270" height="98" stroke="#dd3c14" stroke-dasharray="4 3"/>
+        <text class="diag-label" x="36" y="172" fill="#dd3c14">DEAD END B</text>
+        <text class="diag-strong" x="36" y="194">Profile the graph directly</text>
+        <text class="diag-text" x="36" y="215">torch profiler: blind inside HIP graph.</text>
+        <text class="diag-text" x="36" y="233">rocprofv3 on 8 ranks: watchdog kill.</text>
+
+        <!-- step 1 -->
+        <rect class="diag-node" x="352" y="34" width="266" height="128" stroke="#1454b8" stroke-width="1.6"/>
+        <rect x="352" y="34" width="266" height="5" fill="#1454b8"/>
+        <text class="diag-label" x="368" y="60">STEP 1 · EAGER, GRAPHS OFF</text>
+        <text class="diag-strong" x="368" y="82">record_function ranges</text>
+        <text class="diag-text" x="368" y="104">K3/kda · K3/full_attn · K3/moe</text>
+        <text class="diag-text" x="368" y="122">correlation id → host call → range</text>
+        <text class="diag-text" x="368" y="145">ground truth, distorted timings</text>
+
+        <!-- step 2 -->
+        <rect class="diag-node" x="352" y="188" width="266" height="128" stroke="#1454b8" stroke-width="1.6"/>
+        <rect x="352" y="188" width="266" height="5" fill="#1454b8"/>
+        <text class="diag-label" x="368" y="214">STEP 2 · THE MAP</text>
+        <text class="diag-strong" x="368" y="236">name → block, with weights</text>
+        <text class="diag-text" x="368" y="258">81% of names unique to one block</text>
+        <text class="diag-text" x="368" y="276">shared o_proj split 69:24 — exact,</text>
+        <text class="diag-text" x="368" y="294">both blocks issue the same shape</text>
+
+        <!-- step 3 -->
+        <rect class="diag-node" x="680" y="98" width="276" height="156" stroke="#5f6b1c" stroke-width="1.6"/>
+        <rect x="680" y="98" width="276" height="5" fill="#5f6b1c"/>
+        <text class="diag-label" x="696" y="124">STEP 3 · APPLY TO REAL TRACES</text>
+        <text class="diag-strong" x="696" y="146">per-context decode profile</text>
+        <text class="diag-text" x="696" y="170">invariant check, every point:</text>
+        <text class="diag-text" x="696" y="190">69 KDA · 24 MLA · 92 MoE per step</text>
+        <text class="diag-text" x="696" y="210">integral counts for every name</text>
+        <text class="diag-strong" x="696" y="236" fill="#5f6b1c">5 / 5 points pass</text>
+
+        <path class="diag-edge" d="M290 83 L340 83" marker-end="url(#arrowhead)" stroke="#dd3c14" stroke-dasharray="4 3"/>
+        <path class="diag-edge" d="M290 199 L340 199" marker-end="url(#arrowhead)" stroke="#dd3c14" stroke-dasharray="4 3"/>
+        <path class="diag-edge" d="M485 162 L485 186" marker-end="url(#arrowhead)"/>
+        <path class="diag-edge" d="M618 252 L660 220 L668 200" marker-end="url(#arrowhead)"/>
+
+        <text class="diag-label" x="352" y="344">PREFILL SKIPS STEPS 2 AND 3 — NO GRAPH, SO THE RANGES LABEL THE REAL TRACE DIRECTLY</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Two approaches fail before the working one: names are ambiguous by construction, and the decode forward is invisible to the profiler because it is replayed from a graph. The ranges are therefore demoted from measurement instrument to map-learning instrument, and the map is validated by counting layers.</p>
+    <p class="caption" lang="zh">在可行方案之前有两条路走不通： 名字天然有歧义， 而 decode 的前向因为是从 graph 重放的， profiler 看不见。 于是区间从「测量工具」降级为「学映射的工具」， 再用数层数的方式验证这张映射。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 02 -->
+<section id="decode">
+  <span class="sec-num">02</span>
+  <h2><span lang="en">Decode, 4K to 1M</span><span lang="zh">Decode： 4K 到 1M</span></h2>
+
+  <p lang="en">Batch size 1, no speculative decoding. That is the realistic operating point at long context — at 1M the KV cache barely fits one sequence — and it removes the draft model and the accept length as confounds. Each point is the mean of 24 consecutive decode steps on rank TP0, with the profiler armed only after prefill has produced its first token.</p>
+  <p lang="zh">批大小 1， 不开投机解码。 这是长上下文下的真实工作点—— 1M 时 KV cache 基本只装得下一条序列—— 同时也去掉了 draft 模型和接受长度这两个混淆因素。 每个点取 rank TP0 上连续 24 个 decode step 的平均， profiler 在 prefill 产出首个 token 之后才武装。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate III · Device time per decode step, by block type</span><span>ms · batch 1</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 420" role="img" aria-label="Stacked bars of GPU time per decode step at 4K, 32K, 64K, 512K and 1M context, split into KDA, full attention, MoE, attention residual and other">
+        <!-- y axis -->
+        <line class="axis" x1="92" y1="60" x2="92" y2="340"/>
+        <line class="gridline" x1="92" y1="340" x2="900" y2="340"/>
+        <line class="gridline" x1="92" y1="270" x2="900" y2="270"/>
+        <line class="gridline" x1="92" y1="200" x2="900" y2="200"/>
+        <line class="gridline" x1="92" y1="130" x2="900" y2="130"/>
+        <line class="gridline" x1="92" y1="60" x2="900" y2="60"/>
+        <text class="diag-label" x="56" y="344">0</text>
+        <text class="diag-label" x="48" y="274">10</text>
+        <text class="diag-label" x="48" y="204">20</text>
+        <text class="diag-label" x="48" y="134">30</text>
+        <text class="diag-label" x="48" y="64">40</text>
+        <text class="diag-label" x="20" y="40">MS / STEP</text>
+
+        <!-- 4K: total 20.77 -> top 194.6 ; scale 7 px per ms -->
+        <g>
+          <rect x="120" y="315.2" width="90" height="24.8" fill="#1454b8"/>
+          <rect x="120" y="293.5" width="90" height="21.7" fill="#dd3c14"/>
+          <rect x="120" y="219.7" width="90" height="73.8" fill="#6b3fa0"/>
+          <rect x="120" y="203.7" width="90" height="16.0" fill="#5f6b1c"/>
+          <rect x="120" y="194.7" width="90" height="9.0" fill="#6e6a5c"/>
+          <text class="diag-strong" x="146" y="186">20.8</text>
+          <text class="diag-label" x="152" y="360">4K</text>
+        </g>
+        <!-- 32K: total 21.79 -> top 187.5 -->
+        <g>
+          <rect x="270" y="315.2" width="90" height="24.8" fill="#1454b8"/>
+          <rect x="270" y="286.8" width="90" height="28.4" fill="#dd3c14"/>
+          <rect x="270" y="212.8" width="90" height="74.0" fill="#6b3fa0"/>
+          <rect x="270" y="196.8" width="90" height="16.0" fill="#5f6b1c"/>
+          <rect x="270" y="187.5" width="90" height="9.3" fill="#6e6a5c"/>
+          <text class="diag-strong" x="292" y="179">21.8</text>
+          <text class="diag-label" x="298" y="360">32K</text>
+        </g>
+        <!-- 64K: total 22.53 -> top 182.3 -->
+        <g>
+          <rect x="420" y="315.2" width="90" height="24.8" fill="#1454b8"/>
+          <rect x="420" y="281.5" width="90" height="33.7" fill="#dd3c14"/>
+          <rect x="420" y="207.7" width="90" height="73.8" fill="#6b3fa0"/>
+          <rect x="420" y="191.7" width="90" height="16.0" fill="#5f6b1c"/>
+          <rect x="420" y="182.2" width="90" height="9.5" fill="#6e6a5c"/>
+          <text class="diag-strong" x="442" y="174">22.5</text>
+          <text class="diag-label" x="448" y="360">64K</text>
+        </g>
+        <!-- 512K: total 31.16 -> top 121.9 -->
+        <g>
+          <rect x="570" y="314.9" width="90" height="25.1" fill="#1454b8"/>
+          <rect x="570" y="226.2" width="90" height="88.7" fill="#dd3c14"/>
+          <rect x="570" y="151.7" width="90" height="74.5" fill="#6b3fa0"/>
+          <rect x="570" y="135.4" width="90" height="16.3" fill="#5f6b1c"/>
+          <rect x="570" y="121.9" width="90" height="13.5" fill="#6e6a5c"/>
+          <text class="diag-strong" x="592" y="113">31.2</text>
+          <text class="diag-label" x="592" y="360">512K</text>
+        </g>
+        <!-- 1M: total 40.10 -> top 59.3 -->
+        <g>
+          <rect x="720" y="315.4" width="90" height="24.6" fill="#1454b8"/>
+          <rect x="720" y="166.8" width="90" height="148.6" fill="#dd3c14"/>
+          <rect x="720" y="93.2" width="90" height="73.6" fill="#6b3fa0"/>
+          <rect x="720" y="76.9" width="90" height="16.3" fill="#5f6b1c"/>
+          <rect x="720" y="59.3" width="90" height="17.6" fill="#6e6a5c"/>
+          <text class="diag-strong" x="742" y="51">40.1</text>
+          <text class="diag-label" x="752" y="360">1M</text>
+        </g>
+
+        <!-- KDA band highlight: a rule across all bars at the KDA top -->
+        <line x1="112" y1="315.2" x2="820" y2="315.4" stroke="#1454b8" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <text class="diag-label" x="828" y="319" fill="#1454b8">KDA TOP: FLAT</text>
+
+        <!-- legend -->
+        <g>
+          <rect x="120" y="382" width="13" height="13" fill="#1454b8"/><text class="diag-text" x="139" y="393">KDA, 69 layers</text>
+          <rect x="262" y="382" width="13" height="13" fill="#dd3c14"/><text class="diag-text" x="281" y="393">Full attention, 24 layers</text>
+          <rect x="452" y="382" width="13" height="13" fill="#6b3fa0"/><text class="diag-text" x="471" y="393">MoE FFN, 92 layers</text>
+          <rect x="614" y="382" width="13" height="13" fill="#5f6b1c"/><text class="diag-text" x="633" y="393">Attn-residual bank</text>
+          <rect x="770" y="382" width="13" height="13" fill="#6e6a5c"/><text class="diag-text" x="789" y="393">Norms, embed, sampling</text>
+        </g>
+      </svg>
+    </div>
+    <p class="caption" lang="en">The blue band and the violet band are the same height in all five bars. Everything that makes the rightmost bar twice the height of the leftmost is the flame band — the 24 full-attention layers.</p>
+    <p class="caption" lang="zh">五根柱子里蓝色和紫色两段的高度完全一样。 让最右边这根柱子比最左边高一倍的， 全部来自橙红色那一段—— 那 24 层全注意力。</p>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Context</span><span lang="zh">上下文</span></th>
+      <th class="num">KDA · 69 L</th><th class="num">Full attn · 24 L</th><th class="num">MoE · 92 L</th>
+      <th class="num"><span lang="en">Attn-res</span><span lang="zh">残差库</span></th>
+      <th class="num"><span lang="en">Other</span><span lang="zh">其他</span></th>
+      <th class="num"><span lang="en">Device total</span><span lang="zh">设备合计</span></th>
+      <th class="num"><span lang="en">Measured</span><span lang="zh">实测</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">4K</td><td class="num">3.54 · 17.1%</td><td class="num">3.10 · 14.9%</td><td class="num">10.55 · 50.8%</td><td class="num">2.29 · 11.0%</td><td class="num">1.29 · 6.2%</td><td class="num">20.77</td><td class="num">19.39</td></tr>
+      <tr><td class="k">32K</td><td class="num">3.55 · 16.3%</td><td class="num">4.05 · 18.6%</td><td class="num">10.57 · 48.5%</td><td class="num">2.29 · 10.5%</td><td class="num">1.33 · 6.1%</td><td class="num">21.79</td><td class="num">20.39</td></tr>
+      <tr><td class="k">64K</td><td class="num">3.54 · 15.7%</td><td class="num">4.81 · 21.3%</td><td class="num">10.55 · 46.8%</td><td class="num">2.28 · 10.1%</td><td class="num">1.36 · 6.0%</td><td class="num">22.53</td><td class="num">21.19</td></tr>
+      <tr><td class="k">512K</td><td class="num">3.59 · 11.5%</td><td class="num">12.67 · 40.7%</td><td class="num">10.64 · 34.2%</td><td class="num">2.33 · 7.5%</td><td class="num">1.92 · 6.2%</td><td class="num">31.16</td><td class="num">29.67</td></tr>
+      <tr><td class="k">1M</td><td class="num">3.52 · 8.8%</td><td class="num">21.23 · 52.9%</td><td class="num">10.52 · 26.2%</td><td class="num">2.32 · 5.8%</td><td class="num">2.51 · 6.3%</td><td class="num">40.10</td><td class="num">38.75</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Milliseconds of GPU time per decode step and share of device compute time. The last column is measured inter-token latency with CUDA graphs on, same server configuration. Full data: <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/results/decode-composition.csv"><code>decode-composition.csv</code></a>.</p>
+  <p class="cap" lang="zh">每个 decode step 的 GPU 毫秒数及其占设备计算时间的比例。 最后一列是同一服务器配置下打开 CUDA graph 后实测的 token 间延迟。 完整数据： <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/results/decode-composition.csv"><code>decode-composition.csv</code></a>。</p>
+
+  <p lang="en">KDA costs 3.52 to 3.59 ms per step across a 256-fold change in context. Its share of decode time falls from 17.1% to 8.8% purely because the denominator grows. MoE is equally flat at 10.5 ms and falls from 50.8% to 26.2% for the same reason. The 24 full-attention layers go from 3.10 ms to 21.23 ms, a factor of 6.8, and that single term accounts for essentially the whole 19.3 ms increase in step time.</p>
+  <p lang="zh">在上下文变化 256 倍的范围内， KDA 每步耗时 3.52 到 3.59 ms。 它占解码时间的比例从 17.1% 降到 8.8%， 纯粹是因为分母变大了。 MoE 同样平坦， 稳定在 10.5 ms， 出于同样的原因从 50.8% 降到 26.2%。 24 层全注意力从 3.10 ms 涨到 21.23 ms， 6.8 倍， 而每步时间总共增加的 19.3 ms 基本全部来自这一项。</p>
+
+  <div class="note">
+    <span class="tag">Why the percentages can be read as wall-clock shares</span>
+    <p lang="en">Composition was measured in eager mode, so it needs an anchor. Measured latency with CUDA graphs on, divided by the eager compute-kernel sum, is 0.933, 0.936, 0.940, 0.952 and 0.966 at the five points — a tight, slowly rising ratio. Real latency comes in slightly <em>below</em> the eager kernel sum, which means real collectives and launch gaps together net out to roughly nothing, and the composition transfers to wall-clock time without a correction term.</p>
+    <p lang="zh">构成是在 eager 模式下测的， 所以需要一个锚。 打开 CUDA graph 后实测的每步延迟， 除以 eager 下计算核函数的时间之和， 在五个点上分别是 0.933、0.936、0.940、0.952、0.966—— 一个很紧、缓慢上升的比值。 真实延迟略<em>低于</em> eager 的核函数时间和， 说明真实的集合通信与发射空隙加起来几乎相互抵消， 构成可以不加修正项地搬到墙钟时间上。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 03 -->
+<section id="divergence">
+  <span class="sec-num">03</span>
+  <h2><span lang="en">Why the two diverge — and why only 6.8×</span><span lang="zh">两者为何分化—— 以及为何只有 6.8 倍</span></h2>
+
+  <p lang="en">Count the bytes each mechanism has to move for one decoded token, per rank. KDA reads and writes a <code>[128 × 128]</code> fp32 state for each of its 12 local heads in each of its 69 layers: 54.3 MB in, 54.3 MB out, unchanged whether the sequence is a thousand tokens or a million. MLA reads a compressed latent cache of 512 + 64 dimensions per token per layer, in bf16, over 24 layers: 27.0 KiB per token, which at 1M context is 28.96 GB for a single step.</p>
+  <p lang="zh">按每生成一个 token、每张卡需要搬运的字节数来算。 KDA 在它的 69 层里， 每层为 12 个本地头各读写一个 <code>[128 × 128]</code> 的 fp32 状态： 读 54.3 MB， 写 54.3 MB， 序列是一千个 token 还是一百万个都一样。 MLA 读的是压缩后的 latent 缓存， 每 token 每层 512 + 64 维、bf16， 24 层合计每 token 27.0 KiB， 在 1M 上下文下单步就是 28.96 GB。</p>
+
+  <p lang="en">That is a ratio above 500×. The time ratio is 6.8×. The gap between those two numbers is the interesting part, and it is not a rounding error — it is the two kernels sitting in different bottleneck regimes.</p>
+  <p lang="zh">这是 500 倍以上的字节差。 时间差是 6.8 倍。 这两个数字之间的落差才是有意思的地方， 而且它不是舍入误差—— 它是两个核函数处在完全不同的瓶颈区间。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate IV · Bytes moved per decode step, and the bandwidth actually achieved</span><span>log scale, left</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 372" role="img" aria-label="Left, log-scale plot of bytes read per decode step by KDA state versus MLA latent KV. Right, achieved bandwidth of the MLA KV scan as a percentage of the 8 TB per second peak">
+        <!-- LEFT: log plot -->
+        <text class="diag-label" x="20" y="36">GB MOVED PER DECODE STEP (LOG)</text>
+        <line class="axis" x1="86" y1="52" x2="86" y2="300"/>
+        <line class="gridline" x1="86" y1="300" x2="470" y2="300"/>
+        <line class="gridline" x1="86" y1="204" x2="470" y2="204"/>
+        <line class="gridline" x1="86" y1="108" x2="470" y2="108"/>
+        <text class="diag-label" x="48" y="304">0.1</text>
+        <text class="diag-label" x="56" y="208">1</text>
+        <text class="diag-label" x="48" y="112">10</text>
+
+        <!-- x positions for 4K,32K,64K,512K,1M -->
+        <text class="diag-label" x="104" y="322">4K</text>
+        <text class="diag-label" x="180" y="322">32K</text>
+        <text class="diag-label" x="258" y="322">64K</text>
+        <text class="diag-label" x="330" y="322">512K</text>
+        <text class="diag-label" x="418" y="322">1M</text>
+
+        <!-- MLA KV read: 0.11, 0.91, 1.81, 14.5, 28.96 -->
+        <polyline class="diag-edge" stroke="#dd3c14" stroke-width="2.2" points="112,296.0 190,207.9 268,179.3 346,92.5 424,63.7"/>
+        <circle cx="112" cy="296.0" r="4" fill="#dd3c14"/><circle cx="190" cy="207.9" r="4" fill="#dd3c14"/>
+        <circle cx="268" cy="179.3" r="4" fill="#dd3c14"/><circle cx="346" cy="92.5" r="4" fill="#dd3c14"/>
+        <circle cx="424" cy="63.7" r="4" fill="#dd3c14"/>
+        <text class="diag-strong" x="340" y="52" fill="#dd3c14">MLA latent KV</text>
+        <text class="diag-label" x="340" y="68">28.96 GB AT 1M</text>
+
+        <!-- KDA state traffic: flat 0.1085 GB -->
+        <polyline class="diag-edge" stroke="#1454b8" stroke-width="2.2" points="112,296.6 190,296.6 268,296.6 346,296.6 424,296.6"/>
+        <circle cx="112" cy="296.6" r="4" fill="#1454b8"/><circle cx="190" cy="296.6" r="4" fill="#1454b8"/>
+        <circle cx="268" cy="296.6" r="4" fill="#1454b8"/><circle cx="346" cy="296.6" r="4" fill="#1454b8"/>
+        <circle cx="424" cy="296.6" r="4" fill="#1454b8"/>
+        <text class="diag-strong" x="112" y="284" fill="#1454b8">KDA state · 0.109 GB, flat</text>
+
+        <path class="diag-edge" d="M448 63.7 L448 296.6" stroke="#7b7464" stroke-dasharray="3 3"/>
+        <text class="diag-label" x="452" y="176">533×</text>
+
+        <!-- RIGHT: bandwidth bars -->
+        <text class="diag-label" x="546" y="36">MLA KV SCAN: % OF 8 TB/S PEAK</text>
+        <line class="axis" x1="600" y1="52" x2="600" y2="300"/>
+        <line class="gridline" x1="600" y1="300" x2="944" y2="300"/>
+        <line class="gridline" x1="600" y1="52" x2="944" y2="52"/>
+        <text class="diag-label" x="948" y="56">100%</text>
+        <text class="diag-label" x="948" y="304">0</text>
+
+        <!-- scale: 248 px = 100% -> 2.48 px per % -->
+        <rect x="616" y="288.6" width="50" height="11.4" fill="#dd3c14"/><text class="diag-label" x="672" y="298">4.6%  · 4K</text>
+        <rect x="616" y="271.2" width="50" height="28.8" fill="#dd3c14"/><text class="diag-label" x="672" y="266">11.6% · 32K</text>
+        <rect x="616" y="263.3" width="50" height="36.7" fill="#dd3c14"/>
+        <rect x="700" y="263.3" width="50" height="36.7" fill="#dd3c14"/><text class="diag-label" x="756" y="272">14.8% · 64K</text>
+        <rect x="784" y="250.4" width="50" height="49.6" fill="#dd3c14"/><text class="diag-label" x="840" y="246">20.0% · 512K</text>
+        <rect x="868" y="248.9" width="50" height="51.1" fill="#dd3c14"/><text class="diag-label" x="838" y="228">20.6% · 1M</text>
+
+        <rect x="616" y="52" width="302" height="196.9" fill="#dd3c14" opacity="0.07"/>
+        <text class="diag-strong" x="640" y="150" fill="#dd3c14">79% of peak bandwidth unused</text>
+        <text class="diag-text" x="640" y="172">even at the most favourable point</text>
+
+        <text class="diag-label" x="616" y="322">HEADROOM SHOWN AS THE TINTED BLOCK</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Left: the two mechanisms' decode-time memory traffic, on a log axis. Right: what fraction of the machine's bandwidth the MLA KV scan converts that traffic into. The 533× byte gap becomes a 6.8× time gap because the KDA kernel cannot use the machine and the MLA kernel only uses a fifth of it.</p>
+    <p class="caption" lang="zh">左： 两种机制在解码时的访存量， 对数轴。 右： MLA 的 KV 扫描把这些访存量转化成了机器带宽的多少比例。 533 倍的字节差之所以只变成 6.8 倍的时间差， 是因为 KDA 的核函数用不满机器， 而 MLA 的核函数也只用了五分之一。</p>
+  </div>
+
+  <p lang="en">KDA's recurrence kernel is latency-bound, not bandwidth-bound. At batch 1 its grid is 48 workgroups of 64 threads — four V-blocks by twelve local heads — on a GPU with 256 compute units. It moves its 108.5 MB at an effective 0.24 TB/s, 3% of peak, because there is no way for 48 workgroups to saturate anything. Its 6.5 µs per layer is the cost of touching memory at all, and it would be roughly 6.5 µs if the state were half the size.</p>
+  <p lang="zh">KDA 的递推核函数是延迟受限， 不是带宽受限。 批大小 1 时它的 grid 是 48 个 workgroup、每个 64 线程—— 四个 V 分块乘以十二个本地头—— 而 GPU 有 256 个计算单元。 它以 0.24 TB/s 的有效带宽搬完那 108.5 MB， 只有峰值的 3%， 因为 48 个 workgroup 无论如何也喂不满任何东西。 它每层 6.5 µs 的开销就是「碰一次内存」的代价， 状态哪怕小一半， 也还是大约 6.5 µs。</p>
+
+  <p lang="en">The MLA KV scan is bandwidth-bound and therefore does scale with the bytes, but it converts them at 1.64 TB/s against an 8 TB/s peak. That number is the single most actionable result in this experiment: at 1M the scan alone costs 17.61 ms of a 40.10 ms step, and four fifths of the machine's bandwidth is sitting idle while it runs.</p>
+  <p lang="zh">MLA 的 KV 扫描是带宽受限的， 所以确实随字节数增长， 但它的转化效率是 1.64 TB/s， 而峰值是 8 TB/s。 这个数字是本次实验里最具可操作性的结果： 1M 时仅这一次扫描就要 17.61 ms， 占 40.10 ms 每步时间的 44%， 而它运行期间机器有五分之四的带宽是闲着的。</p>
+</section>
+
+<!-- ============================================================ 04 -->
+<section id="internals">
+  <span class="sec-num">04</span>
+  <h2><span lang="en">Inside the blocks</span><span lang="zh">拆开每个块</span></h2>
+
+  <p lang="en">Block-level totals are the answer to the question that was asked. The breakdown inside each block is where the optimization targets are, and in two of the three cases it is not where you would guess.</p>
+  <p lang="zh">块级别的合计回答了最初的问题。 而每个块内部的拆解才是优化靶子所在， 三个块里有两个的答案和直觉不一样。</p>
+
+  <h3><span lang="en">A KDA layer is mostly not KDA</span><span lang="zh">一层 KDA 里大部分不是 KDA</span></h3>
+  <p lang="en">Of the 3.54 ms that 69 KDA layers spend per decode step, the gated delta-rule recurrence — the actual linear-attention mathematics — is 445 µs, or 12.6%. Projection GEMMs are 2233 µs, 63%. The short depthwise convolution over the 4-token window is 297 µs and the gated output norm 269 µs. The proportions do not move between 4K and 1M.</p>
+  <p lang="zh">69 层 KDA 每步花掉的 3.54 ms 里， 门控 delta-rule 递推—— 也就是线性注意力真正的数学部分—— 是 445 µs， 占 12.6%。 投影 GEMM 是 2233 µs， 占 63%。 4-token 窗口上的深度可分离短卷积是 297 µs， 门控输出 norm 是 269 µs。 从 4K 到 1M 这个比例不变。</p>
+
+  <div class="note">
+    <span class="tag">What this rules out</span>
+    <p lang="en">If someone proposes making KDA cheaper by optimizing the recurrence kernel, the ceiling on that work is 12.6% of 8.8–17.1% of decode time — under 2% end to end, even if the kernel became free. The projections are ordinary bf16 matmuls that any attention variant would also need. The honest reading is that KDA's decode cost is already close to the floor for <em>any</em> mechanism with the same projection widths, and the way to reduce it is to make the layer narrower, not to make the recurrence faster.</p>
+    <p lang="zh">如果有人提议通过优化递推核函数来降低 KDA 的成本， 这项工作的天花板是「解码时间的 8.8–17.1% 里的 12.6%」—— 端到端不到 2%， 哪怕核函数变成零开销也是如此。 那些投影是普通的 bf16 矩阵乘， 任何注意力变体同样需要。 更诚实的解读是： KDA 的解码成本已经接近「任何具有相同投影宽度的机制」的下限， 要降它得把层做窄， 而不是把递推做快。</p>
+  </div>
+
+  <h3><span lang="en">A full-attention layer changes character with context</span><span lang="zh">全注意力层的性质随上下文改变</span></h3>
+  <p lang="en">At 4K the KV scan is 308 µs, only 9.9% of the block; projections (1029 µs) and the split reduction (905 µs) dominate. At 1M the scan is 17609 µs and 83% of the block, while projections are unchanged at 1036 µs. So the same 24 layers are a fixed-overhead problem at short context and a pure bandwidth problem at long context — and an optimization that helps at one end may be irrelevant at the other.</p>
+  <p lang="zh">4K 时 KV 扫描是 308 µs， 只占这个块的 9.9%； 投影（1029 µs）和 split 归约（905 µs）才是主项。 1M 时扫描变成 17609 µs、占 83%， 而投影仍是 1036 µs 不变。 所以同样这 24 层， 在短上下文下是固定开销问题， 在长上下文下是纯带宽问题—— 一端有效的优化在另一端可能毫无意义。</p>
+
+  <h3><span lang="en">At batch 1, MoE does not spend its time on experts</span><span lang="zh">批大小 1 时， MoE 的时间没花在专家上</span></h3>
+  <p lang="en">MoE is a flat 10.5 ms at every context, and the split inside it is counterintuitive. The routed-expert MXFP4 GEMMs — the thing the architecture is named after — are 1439 µs, 13.6%. The two dense shared experts cost 3836 µs, 36.4%. Routing, sorting and quantization cost 2959 µs, 28.1%.</p>
+  <p lang="zh">MoE 在每个上下文点都稳定在 10.5 ms， 而它内部的拆分很反直觉。 被路由专家的 MXFP4 GEMM—— 这个架构因之得名的东西—— 是 1439 µs， 占 13.6%。 两个稠密共享专家花掉 3836 µs， 占 36.4%。 路由、排序和量化花掉 2959 µs， 占 28.1%。</p>
+
+  <p lang="en">The reason is structural rather than an implementation flaw. Sparsity removes work in proportion to how few experts fire, but it removes nothing from the parts that always run. One token through 16 of 896 experts is a set of very small GEMMs; the two shared experts run at full width for that same token; and the routing machinery — gate, top-k, sort, scatter — has a cost per token that is independent of how sparse the routing is. Sparsity scales down the numerator and leaves the fixed terms alone, so at batch 1 the fixed terms are what you see.</p>
+  <p lang="zh">原因是结构性的， 不是实现缺陷。 稀疏化按「激活了多少专家」成比例地减少工作量， 但它对那些始终要跑的部分毫无作用。 一个 token 过 896 个专家里的 16 个， 是一组非常小的 GEMM； 而两个共享专家对同一个 token 是全宽度运行的； 路由机制—— gate、top-k、排序、scatter—— 的每 token 成本与稀疏程度无关。 稀疏化缩小的是分子， 固定项原封不动， 所以批大小 1 时你看到的就是固定项。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Block</span><span lang="zh">块</span></th>
+      <th><span lang="en">Component</span><span lang="zh">组成部分</span></th>
+      <th class="num">µs / step</th>
+      <th class="num"><span lang="en">Share of block</span><span lang="zh">占该块</span></th>
+      <th><span lang="en">Scales with context?</span><span lang="zh">随上下文变化？</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">KDA</td><td><span lang="en">Projection GEMMs</span><span lang="zh">投影 GEMM</span></td><td class="num">2233</td><td class="num">63.2%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td></td><td><span lang="en">Gated delta-rule recurrence</span><span lang="zh">门控 delta-rule 递推</span></td><td class="num">445</td><td class="num">12.6%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td></td><td><span lang="en">Short conv, kernel 4</span><span lang="zh">短卷积， kernel 4</span></td><td class="num">297</td><td class="num">8.4%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td></td><td><span lang="en">Gated output RMSNorm</span><span lang="zh">门控输出 RMSNorm</span></td><td class="num">269</td><td class="num">7.6%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td class="k">Full attn</td><td><span lang="en">KV scan, stage 1</span><span lang="zh">KV 扫描， stage 1</span></td><td class="num">308 → 17609</td><td class="num">9.9% → 83.0%</td><td><span lang="en">yes, linearly</span><span lang="zh">是， 线性</span></td></tr>
+      <tr><td></td><td><span lang="en">KV-split reduction, stage 2</span><span lang="zh">KV-split 归约， stage 2</span></td><td class="num">905 → 1731</td><td class="num">29.2% → 8.2%</td><td><span lang="en">weakly</span><span lang="zh">弱相关</span></td></tr>
+      <tr><td></td><td><span lang="en">Projection GEMMs</span><span lang="zh">投影 GEMM</span></td><td class="num">1029 → 1036</td><td class="num">33.2% → 4.9%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td class="k">MoE</td><td><span lang="en">Shared-expert GEMMs, dense</span><span lang="zh">共享专家 GEMM， 稠密</span></td><td class="num">3836</td><td class="num">36.4%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td></td><td><span lang="en">Routing, sort, quantize</span><span lang="zh">路由、排序、量化</span></td><td class="num">2959</td><td class="num">28.1%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+      <tr><td></td><td><span lang="en">Routed-expert GEMMs, MXFP4</span><span lang="zh">被路由专家 GEMM， MXFP4</span></td><td class="num">1439</td><td class="num">13.6%</td><td><span lang="en">no</span><span lang="zh">否</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Ranges show 4K → 1M where the component moves. Full 150-row breakdown: <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/results/decode-block-internals.csv"><code>decode-block-internals.csv</code></a>.</p>
+  <p class="cap" lang="zh">带箭头的区间表示该组成部分从 4K 到 1M 的变化。 完整的 150 行拆解： <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/results/decode-block-internals.csv"><code>decode-block-internals.csv</code></a>。</p>
+</section>
+
+<!-- ============================================================ 05 -->
+<section id="prefill">
+  <span class="sec-num">05</span>
+  <h2><span lang="en">Prefill, 1K to 32K — the answer inverts</span><span lang="zh">Prefill： 1K 到 32K—— 答案反了过来</span></h2>
+
+  <p lang="en">Prefill is the easier measurement and the more surprising result. Easier because there is no CUDA graph, so the ranges label the real trace directly, and because summed kernel time lands within 1% of measured TTFT at every size — 169.6 against 170 ms, 330.6 against 333, 588.5 against 593, 3052 against 3051 — which means the GPU is saturated throughout and the composition is the composition of wall-clock time, collectives included.</p>
+  <p lang="zh">Prefill 是更容易的测量， 也是更意外的结果。 容易是因为没有 CUDA graph， 区间可以直接给真实 trace 打标签； 也因为核函数时间之和在每个尺寸上都落在实测 TTFT 的 1% 以内—— 169.6 对 170 ms， 330.6 对 333， 588.5 对 593， 3052 对 3051—— 这说明 GPU 全程饱和， 于是这个构成就是墙钟时间的构成， 集合通信也包含在内。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate V · Prefill composition, and the per-layer crossover</span><span>1K → 32K</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 392" role="img" aria-label="Left, 100 percent stacked composition of prefill time at 1K, 4K, 8K and 32K. Right, log-scale per-layer cost of one KDA layer versus one full-attention layer, crossing near 8K">
+        <!-- LEFT: 100% stacked -->
+        <text class="diag-label" x="20" y="34">SHARE OF PREFILL COMPUTE TIME (%)</text>
+        <line class="axis" x1="80" y1="52" x2="80" y2="300"/>
+        <text class="diag-label" x="46" y="56">100</text>
+        <text class="diag-label" x="56" y="304">0</text>
+
+        <!-- scale: 248 px = 100% -> 2.48 px/% ; baseline y=300 -->
+        <!-- 1K: kda 23.6 fa 6.3 moe 56.1 other 14.0 -->
+        <g>
+          <rect x="100" y="241.5" width="66" height="58.5" fill="#1454b8"/>
+          <rect x="100" y="225.9" width="66" height="15.6" fill="#dd3c14"/>
+          <rect x="100" y="86.8" width="66" height="139.1" fill="#6b3fa0"/>
+          <rect x="100" y="52.1" width="66" height="34.7" fill="#6e6a5c"/>
+          <text class="diag-label" x="120" y="322">1K</text>
+        </g>
+        <!-- 4K: 23.1 6.3 49.5 21.2 -->
+        <g>
+          <rect x="192" y="242.7" width="66" height="57.3" fill="#1454b8"/>
+          <rect x="192" y="227.1" width="66" height="15.6" fill="#dd3c14"/>
+          <rect x="192" y="104.3" width="66" height="122.8" fill="#6b3fa0"/>
+          <rect x="192" y="51.7" width="66" height="52.6" fill="#6e6a5c"/>
+          <text class="diag-label" x="212" y="322">4K</text>
+        </g>
+        <!-- 8K: 22.7 7.5 46.9 23.0 -->
+        <g>
+          <rect x="284" y="243.7" width="66" height="56.3" fill="#1454b8"/>
+          <rect x="284" y="225.1" width="66" height="18.6" fill="#dd3c14"/>
+          <rect x="284" y="108.8" width="66" height="116.3" fill="#6b3fa0"/>
+          <rect x="284" y="51.8" width="66" height="57.0" fill="#6e6a5c"/>
+          <text class="diag-label" x="304" y="322">8K</text>
+        </g>
+        <!-- 32K: 15.8 37.6 30.2 16.5 -->
+        <g>
+          <rect x="376" y="260.8" width="66" height="39.2" fill="#1454b8"/>
+          <rect x="376" y="167.6" width="66" height="93.2" fill="#dd3c14"/>
+          <rect x="376" y="92.7" width="66" height="74.9" fill="#6b3fa0"/>
+          <rect x="376" y="51.8" width="66" height="40.9" fill="#6e6a5c"/>
+          <text class="diag-label" x="392" y="322">32K</text>
+        </g>
+
+        <g>
+          <rect x="100" y="344" width="12" height="12" fill="#1454b8"/><text class="diag-text" x="117" y="354">KDA</text>
+          <rect x="168" y="344" width="12" height="12" fill="#dd3c14"/><text class="diag-text" x="185" y="354">Full attn</text>
+          <rect x="264" y="344" width="12" height="12" fill="#6b3fa0"/><text class="diag-text" x="281" y="354">MoE</text>
+          <rect x="330" y="344" width="12" height="12" fill="#6e6a5c"/><text class="diag-text" x="347" y="354">Other</text>
+        </g>
+
+        <!-- RIGHT: per-layer crossover, log axis -->
+        <text class="diag-label" x="546" y="34">MS PER LAYER OVER THE WHOLE PREFILL (LOG)</text>
+        <line class="axis" x1="600" y1="52" x2="600" y2="300"/>
+        <line class="gridline" x1="600" y1="300" x2="944" y2="300"/>
+        <line class="gridline" x1="600" y1="226" x2="944" y2="226"/>
+        <line class="gridline" x1="600" y1="134" x2="944" y2="134"/>
+        <text class="diag-label" x="562" y="304">0.16</text>
+        <text class="diag-label" x="572" y="230">1</text>
+        <text class="diag-label" x="566" y="138">10</text>
+
+        <text class="diag-label" x="620" y="322">1K</text>
+        <text class="diag-label" x="700" y="322">4K</text>
+        <text class="diag-label" x="780" y="322">8K</text>
+        <text class="diag-label" x="856" y="322">32K</text>
+
+        <!-- KDA per layer: .333 .848 1.537 6.005 -->
+        <polyline class="diag-edge" stroke="#1454b8" stroke-width="2.2" points="626,270.2 706,232.8 786,208.9 866,154.3"/>
+        <circle cx="626" cy="270.2" r="4" fill="#1454b8"/><circle cx="706" cy="232.8" r="4" fill="#1454b8"/>
+        <circle cx="786" cy="208.9" r="4" fill="#1454b8"/><circle cx="866" cy="154.3" r="4" fill="#1454b8"/>
+
+        <!-- FA per layer: .255 .662 1.454 41.046 -->
+        <polyline class="diag-edge" stroke="#dd3c14" stroke-width="2.2" points="626,280.9 706,242.7 786,211.1 866,77.3"/>
+        <circle cx="626" cy="280.9" r="4" fill="#dd3c14"/><circle cx="706" cy="242.7" r="4" fill="#dd3c14"/>
+        <circle cx="786" cy="211.1" r="4" fill="#dd3c14"/><circle cx="866" cy="77.3" r="4" fill="#dd3c14"/>
+
+        <circle cx="786" cy="210" r="13" fill="none" stroke="#17150f" stroke-width="1.4"/>
+        <text class="diag-strong" x="700" y="188">crossover ≈ 8K</text>
+        <text class="diag-strong" x="880" y="82" fill="#dd3c14">41.0</text>
+        <text class="diag-strong" x="880" y="158" fill="#1454b8">6.0</text>
+        <text class="diag-label" x="614" y="268">KDA</text>
+        <text class="diag-label" x="614" y="296">FULL ATTN</text>
+
+        <text class="diag-label" x="600" y="354">BELOW THE CROSSING, A KDA LAYER IS THE MORE EXPENSIVE OF THE TWO</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Right panel: the two lines cross at about 8K. Left of the crossing a full-attention layer is cheaper than a KDA layer, so the 3:1 layout costs prefill time rather than saving it — 69 KDA layers take 22.7% of an 8K prefill against 7.5% for 24 full-attention layers, purely on layer count.</p>
+    <p class="caption" lang="zh">右图： 两条线在 8K 附近相交。 交点左侧， 一层全注意力比一层 KDA 更便宜， 所以 3:1 的排布在 prefill 上是在花时间而不是省时间—— 8K 时 69 层 KDA 占 22.7%， 24 层全注意力占 7.5%， 差别纯粹来自层数。</p>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Input</span><span lang="zh">输入长度</span></th>
+      <th class="num">TTFT</th><th class="num"><span lang="en">Throughput</span><span lang="zh">吞吐</span></th>
+      <th class="num">KDA</th><th class="num"><span lang="en">Full attn</span><span lang="zh">全注意力</span></th><th class="num">MoE</th>
+      <th class="num"><span lang="en">One KDA layer</span><span lang="zh">单层 KDA</span></th>
+      <th class="num"><span lang="en">One full-attn layer</span><span lang="zh">单层全注意力</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">1K</td><td class="num">170 ms</td><td class="num">6,041 tok/s</td><td class="num">23.6%</td><td class="num">6.3%</td><td class="num">56.1%</td><td class="num">0.333 ms</td><td class="num">0.255 ms</td></tr>
+      <tr><td class="k">4K</td><td class="num">333 ms</td><td class="num">12,299 tok/s</td><td class="num">23.1%</td><td class="num">6.3%</td><td class="num">49.5%</td><td class="num">0.848 ms</td><td class="num">0.662 ms</td></tr>
+      <tr><td class="k">8K</td><td class="num">593 ms</td><td class="num">13,814 tok/s</td><td class="num">22.7%</td><td class="num">7.5%</td><td class="num">46.9%</td><td class="num">1.537 ms</td><td class="num">1.454 ms</td></tr>
+      <tr><td class="k">32K</td><td class="num">3051 ms</td><td class="num">10,741 tok/s</td><td class="num">15.8%</td><td class="num">37.6%</td><td class="num">30.2%</td><td class="num">6.005 ms</td><td class="num">41.046 ms</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Percentages are shares of prefill compute time with collectives excluded, matching the decode table. Full data including collectives and per-token cost: <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/results/prefill-composition.csv"><code>prefill-composition.csv</code></a>.</p>
+  <p class="cap" lang="zh">百分比是剔除集合通信后占 prefill 计算时间的比例， 与 decode 那张表口径一致。 含集合通信与每 token 成本的完整数据： <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/results/prefill-composition.csv"><code>prefill-composition.csv</code></a>。</p>
+
+  <p lang="en">Per input token the three mechanisms separate cleanly. KDA converges to 12.6 µs/token and MoE to 24.2 µs/token — both linear, both flattening once the fixed per-layer overheads are amortized. Full attention falls to 3.9 µs/token at 4K and then turns back up to 30.1 µs/token at 32K, which is what quadratic cost looks like once the quadratic term overtakes the constant one.</p>
+  <p lang="zh">按每个输入 token 看， 三种机制分得很干净。 KDA 收敛到 12.6 µs/token， MoE 收敛到 24.2 µs/token—— 都是线性的， 固定的每层开销摊薄后就走平。 全注意力在 4K 降到 3.9 µs/token， 然后在 32K 反弹到 30.1 µs/token， 这正是二次项超过常数项之后二次成本的样子。</p>
+
+  <p lang="en">One kernel carries all of it. The MLA prefill attention kernel goes from 18.5 ms at 8K to 916.1 ms at 32K — about 50× for 4× the input — at which point it alone is 30% of all prefill GPU time. The KDA chunked kernels over the same span go from 41.2 ms to 176.9 ms, 4.3×, which is linear to within the noise.</p>
+  <p lang="zh">这一切由一个核函数承担。 MLA 的 prefill 注意力核函数从 8K 的 18.5 ms 涨到 32K 的 916.1 ms—— 输入 4 倍， 时间约 50 倍—— 到那时它一个就占了整个 prefill GPU 时间的 30%。 同一区间里 KDA 的分块核函数从 41.2 ms 涨到 176.9 ms， 4.3 倍， 在噪声范围内是线性的。</p>
+
+  <div class="note warn">
+    <span class="tag">Why the crossover exists at all</span>
+    <p lang="en">Linear attention is not free at small L, it is merely <em>flat</em>. A chunked linear-attention prefill has to materialize and pass a state matrix between chunks and run secondary GEMMs whose cost is set by the head dimension, not the sequence length. Quadratic attention has a much smaller constant. So at small L the constant wins and the asymptotics have not started paying yet; the crossing point is wherever the quadratic term catches the linear constant, and for these dimensions that is around 8K in prefill and around 4K in decode. Below those lengths, replacing three quarters of the layers with KDA buys memory, not time.</p>
+    <p lang="zh">线性注意力在 L 很小时并不是免费的， 它只是<em>平</em>。 分块线性注意力的 prefill 必须在 chunk 之间物化并传递状态矩阵， 还要跑一批二级 GEMM， 它们的成本由 head 维度决定， 与序列长度无关。 二次注意力的常数项则小得多。 所以 L 小的时候常数项占上风， 渐进优势还没开始兑现； 交叉点就在二次项追上线性常数的地方， 对这组维度来说 prefill 大约在 8K， decode 大约在 4K。 在这些长度以下， 把 3/4 的层换成 KDA 买到的是显存， 不是时间。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 06 -->
+<section id="trace">
+  <span class="sec-num">06</span>
+  <h2><span lang="en">One wave, one kernel</span><span lang="zh">一个波， 一个核函数</span></h2>
+
+  <p lang="en">The claim that the KDA recurrence is latency-bound rather than bandwidth-bound deserves evidence below the kernel-timing level, so the kernel was thread-traced. <code>rocprofv3 --att</code> captures an instruction-level Advanced Thread Trace; the ROCprof Trace Decoder turns it into a directory that ROCprof Compute Viewer opens.</p>
+  <p lang="zh">「KDA 递推是延迟受限而非带宽受限」这个论断值得有核函数计时层面以下的证据， 所以给这个核函数做了 thread trace。 <code>rocprofv3 --att</code> 抓的是指令级的 Advanced Thread Trace， 再由 ROCprof Trace Decoder 解成一个可以被 ROCprof Compute Viewer 直接打开的目录。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate VI · Occupancy and instruction mix of the KDA decode kernel</span><span>batch 1 · per rank</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 372" role="img" aria-label="Left, a 16 by 16 grid of 256 compute units with 48 of them shaded to show the KDA decode kernel's occupancy. Right, the instruction time mix inside one traced wave">
+        <defs>
+          <pattern id="cugrid" width="18" height="18" patternUnits="userSpaceOnUse">
+            <rect width="18" height="18" fill="none" stroke="#cdc4b1" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <text class="diag-label" x="20" y="34">MI355X COMPUTE UNITS · 16 × 16 = 256</text>
+        <!-- 48 filled = exactly 3 rows of 16 -->
+        <rect x="60" y="52" width="288" height="54" fill="#1454b8"/>
+        <rect x="60" y="52" width="288" height="288" fill="url(#cugrid)"/>
+        <rect x="60" y="52" width="288" height="288" fill="none" stroke="#7b7464" stroke-width="1.4"/>
+        <text class="diag-strong" x="368" y="76" fill="#1454b8">48 workgroups</text>
+        <text class="diag-text" x="368" y="98">4 V-blocks × 12 heads per rank</text>
+        <text class="diag-text" x="368" y="118">64 threads each, one wave per CU</text>
+        <text class="diag-strong" x="368" y="150">18.75% of the machine</text>
+        <text class="diag-text" x="368" y="172">at batch 1 there is no more</text>
+        <text class="diag-text" x="368" y="190">parallelism to find: the grid is</text>
+        <text class="diag-text" x="368" y="208">batch × heads × V-blocks</text>
+        <text class="diag-label" x="60" y="360">SHADED = OCCUPIED BY THIS DISPATCH</text>
+
+        <!-- RIGHT: instruction mix -->
+        <text class="diag-label" x="596" y="34">LATENCY CYCLES BY INSTRUCTION CLASS</text>
+        <!-- scale: 55.7% -> 300px => 5.39 px per % -->
+        <rect x="600" y="56" width="300" height="22" fill="#1454b8"/>
+        <text class="diag-text" x="600" y="96">Vector ALU · 55.7%</text>
+        <rect x="600" y="112" width="127" height="22" fill="#dd3c14"/>
+        <text class="diag-text" x="600" y="152">Memory wait, s_waitcnt · 23.5%</text>
+        <rect x="600" y="168" width="64" height="22" fill="#6b3fa0"/>
+        <text class="diag-text" x="600" y="208">Scalar / control · 11.9%</text>
+        <rect x="600" y="224" width="27" height="22" fill="#5f6b1c"/>
+        <text class="diag-text" x="600" y="264">Memory issue · 5.0%</text>
+        <rect x="600" y="280" width="22" height="22" fill="#6e6a5c"/>
+        <text class="diag-text" x="600" y="320">Other / branch · 4.0%</text>
+        <text class="diag-label" x="600" y="360">1439 INSTRUCTION SLOTS · 61216 CYCLES · 30.1% STALL</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">The two panels say opposite-sounding things that are both true. Inside a wave the kernel is ALU-heavy and only 30% stalled — each wave is working. But only 48 waves exist, so 81% of the compute units never see this dispatch at all.</p>
+    <p class="caption" lang="zh">两幅图说的话听起来相反， 但都成立。 在一个波内部， 这个核函数是 ALU 主导的、只有 30% 的时间在 stall—— 每个波都在干活。 但一共只有 48 个波， 所以 81% 的计算单元根本没参与这次派发。</p>
+  </div>
+
+  <p lang="en">This resolves the apparent contradiction in section 03. The kernel is not slow because it waits on memory; a traced wave spends 55.7% of its cycles in vector ALU doing the per-K decay and the delta-rule update on a <code>[128 × 128]</code> fp32 state. It is slow relative to the bytes it moves because the grid at batch 1 is <code>batch × heads × V-blocks</code> = 1 × 12 × 4, and no amount of per-wave tuning changes that. The practical consequence: KDA decode cost is a fixed per-layer overhead that only amortizes with batch size — the same 6.5 µs serves one sequence or, up to the occupancy limit, many.</p>
+  <p lang="zh">这解开了第 03 节里表面上的矛盾。 这个核函数慢， 不是因为它在等内存； 被追踪的波有 55.7% 的周期花在向量 ALU 上， 对一个 <code>[128 × 128]</code> 的 fp32 状态做 per-K 衰减和 delta-rule 更新。 它相对于搬运的字节数显得慢， 是因为批大小 1 时 grid 是 <code>batch × heads × V-blocks</code> = 1 × 12 × 4， 再怎么调单波效率也改变不了这一点。 实际后果是： KDA 的解码成本是一项固定的每层开销， 只能靠批大小摊薄—— 同样的 6.5 µs， 服务一条序列， 或者在占用率上限之内服务很多条。</p>
+
+  <div class="note">
+    <span class="tag">Getting the trace at all</span>
+    <p lang="en">Two details cost real time. Whole-server tracing is not possible: <code>rocprofv3</code> per-dispatch interception across 8 TP ranks drove the scheduler past its 300 s watchdog with no output, and runtime <code>--attach</code> injected successfully but produced nothing. The trace therefore comes from a standalone reproduction at the server's exact per-GPU shapes — sound here precisely because the kernel's launch geometry does not depend on context length. Second, the default <code>--att-target-cu</code> captures nothing, because 48 workgroups on 256 CUs will usually miss any particular one; <code>--att-shader-engine-mask 0xFF</code> with <code>--att-consecutive-kernels 8</code> is what makes waves land in the trace.</p>
+    <p lang="zh">有两个细节花了不少时间。 整机 trace 做不到： <code>rocprofv3</code> 在 8 个 TP rank 上逐派发拦截， 把 scheduler 拖过了 300 秒看门狗， 而且没有任何输出； 运行时 <code>--attach</code> 注入成功但什么也没产出。 所以这份 trace 来自一个与服务器完全同形状的独立复现—— 在这里成立， 恰恰是因为这个核函数的启动几何与上下文长度无关。 第二， 默认的 <code>--att-target-cu</code> 什么也抓不到， 因为 256 个 CU 上只有 48 个 workgroup， 通常落不到指定的那一个； 要靠 <code>--att-shader-engine-mask 0xFF</code> 配合 <code>--att-consecutive-kernels 8</code> 才能让波出现在 trace 里。</p>
+  </div>
+
+  <p lang="en">The decoded trace is archived at <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share/att/rcv-ui-output"><code>att/rcv-ui-output/</code></a> — per-wave JSON for all eight shader engines, occupancy and wave-state series, and the Triton source correlation — alongside the per-instruction table in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/att/instruction-stats.csv"><code>instruction-stats.csv</code></a>.</p>
+  <p lang="zh">解码后的 trace 归档在 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share/att/rcv-ui-output"><code>att/rcv-ui-output/</code></a>—— 包含全部八个 shader engine 的逐波 JSON、occupancy 与 wave-state 序列、以及 Triton 源码对应关系—— 逐指令表在 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/att/instruction-stats.csv"><code>instruction-stats.csv</code></a>。</p>
+</section>
+
+<!-- ============================================================ 07 -->
+<section id="lies">
+  <span class="sec-num">07</span>
+  <h2><span lang="en">Three ways the measurement lied</span><span lang="zh">测量骗了我三次</span></h2>
+
+  <p lang="en">Each of these produced a plausible, wrong number that survived until something else contradicted it. They are recorded because the corrections are more transferable than the results.</p>
+  <p lang="zh">这三次都产生了一个看起来合理、实际错误的数字， 直到别的证据与它矛盾才被发现。 记录下来， 是因为这些修正比结果本身更有迁移价值。</p>
+
+  <h3><span lang="en">1 · Collectives that are not communication</span><span lang="zh">1 · 不是通信的集合通信</span></h3>
+  <p lang="en">The first eager decode profile put 135 of 156 ms per step in <code>cross_device_reduce</code>. Taken at face value, TP communication would be 87% of decode. It is not: at batch 1 the all-reduce payload is 7168 bf16 values, 14 KB, which no interconnect takes 600 µs to move. The kernel busy-waits on its peers, so its duration measures the <em>skew between ranks</em>, and in eager mode that skew is the host launch jitter accumulated over the ~18 kernels between consecutive collectives, multiplied by 187 collectives per step.</p>
+  <p lang="zh">第一份 eager decode profile 把每步 156 ms 里的 135 ms 记在了 <code>cross_device_reduce</code> 上。 照字面理解， TP 通信占了解码的 87%。 并非如此： 批大小 1 时 all-reduce 的载荷是 7168 个 bf16， 14 KB， 任何互连都不需要 600 µs 去搬。 这个核函数在自旋等待对端， 所以它的时长量的是<em>各 rank 之间的偏移</em>； eager 模式下这个偏移就是相邻两次集合通信之间约 18 次 kernel launch 累积的主机抖动， 再乘以每步 187 次集合通信。</p>
+  <p lang="en">The correction is to exclude them from the decode composition and to calibrate the exclusion against graphs-on latency, which is what the 0.93–0.97 ratio in section 02 is for. Prefill is the opposite case and the contrast is instructive: there a chunk all-reduces 235 MB per layer and the surrounding kernels are millisecond-scale, so the same kernel now reports something real and is reported.</p>
+  <p lang="zh">修正办法是把它们从 decode 的构成里剔除， 并用打开 graph 后的实测延迟去校准这次剔除—— 第 02 节那个 0.93–0.97 的比值就是干这个用的。 Prefill 是相反的情形， 对比很有启发： 那里一个 chunk 每层要 all-reduce 235 MB， 周围的核函数都是毫秒级的， 于是同一个核函数报告的就是真实开销， 也就照实计入。</p>
+
+  <h3><span lang="en">2 · The probe changed the thing it measured</span><span lang="zh">2 · 探针改变了被测对象</span></h3>
+  <p lang="en">The first prefill pass put the GPU at 29% busy during a 1K prefill and 48% at 4K, which reads as a host-launch-bound regime and would have been an interesting finding. It was an artifact of the <code>record_function</code> ranges: with them compiled in, 4K TTFT was 692 ms; without, 333 ms. At 32K both were about 3.05 s. Annotations are negligible against a saturated GPU and are not negligible against an idle one, and the shape of that error is exactly the shape of the conclusion it produced.</p>
+  <p lang="zh">第一轮 prefill 测下来， 1K 时 GPU 只有 29% 忙、4K 时 48%， 读起来像是主机发射受限， 而且本来会是个有意思的发现。 它其实是 <code>record_function</code> 区间造成的假象： 带着区间时 4K 的 TTFT 是 692 ms， 去掉后是 333 ms； 而 32K 两种情况都是约 3.05 s。 注解对饱和的 GPU 可以忽略， 对空闲的 GPU 不能忽略， 而这个误差的形状恰好就是它导出的那个结论的形状。</p>
+  <p lang="en">Re-measured on a server built without the annotations, summed kernel time is within 1% of TTFT at every prefill size — the GPU is saturated even at 1K. Kernel <em>durations</em> were never affected, so the composition numbers stood; only the wall-clock column moved. The general form: when an instrument's overhead lands in the same place as the effect you are looking for, the measurement will confirm you.</p>
+  <p lang="zh">在一台不带注解的服务器上重测， 每个 prefill 尺寸的核函数时间之和都落在 TTFT 的 1% 以内—— 连 1K 时 GPU 都是饱和的。 核函数<em>时长</em>从头到尾没有受影响， 所以构成数字站得住， 动的只是墙钟那一列。 一般化的说法是： 当仪器的开销恰好落在你要找的效应所在的位置时， 测量就会替你确认它。</p>
+
+  <h3><span lang="en">3 · A profiler that cannot see the work</span><span lang="zh">3 · 看不见工作的 profiler</span></h3>
+  <p lang="en">The very first decode profile looked clean — a well-formed trace, plausible kernels, no errors — and reported 1.8 ms of GPU time per step against a known step time near 26 ms. Nothing in the tool signals that a HIP graph replay is invisible to it; the trace simply contains what it can see. The tell was arithmetic, not a warning: the kernels present were 5 attention dispatches per step, which matches the 5-layer draft model, not a 93-layer target model.</p>
+  <p lang="zh">最早那份 decode profile 看起来很干净—— trace 结构完整、核函数合理、没有报错—— 报告每步 1.8 ms 的 GPU 时间， 而已知每步约 26 ms。 工具本身不会提示「HIP graph 重放对我不可见」， trace 里就只有它能看到的东西。 暴露问题的是算术而不是警告： trace 里每步有 5 次注意力派发， 对得上 5 层的 draft 模型， 对不上 93 层的目标模型。</p>
+  <p lang="en">The habit worth keeping is to check a profile against an independently known total before reading anything else out of it. Every one of these three was caught by a number that had to add up and did not.</p>
+  <p lang="zh">值得保留的习惯是： 在从一份 profile 里读出任何结论之前， 先拿它和一个独立已知的总量对一下。 上面这三次， 每一次都是被一个「本该对上却没对上」的数字抓出来的。</p>
+</section>
+
+<!-- ============================================================ 08 -->
+<section id="amd">
+  <span class="sec-num">08</span>
+  <h2><span lang="en">What to fix on MI355X</span><span lang="zh">MI355X 上该修什么</span></h2>
+
+  <p lang="en">Ranked by measured headroom rather than by how interesting the mechanism is.</p>
+  <p lang="zh">按实测的可优化空间排序， 而不是按机制本身有多有趣。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Target</span><span lang="zh">目标</span></th>
+      <th><span lang="en">Measured today</span><span lang="zh">当前实测</span></th>
+      <th><span lang="en">Why there is room</span><span lang="zh">为什么有空间</span></th>
+      <th class="num"><span lang="en">Prize</span><span lang="zh">收益</span></th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="k"><span lang="en">MLA decode KV scan</span><span lang="zh">MLA 解码 KV 扫描</span></td>
+        <td><span lang="en">1.64 TB/s, 20.6% of peak; 17.61 ms of a 40.10 ms step at 1M</span><span lang="zh">1.64 TB/s， 峰值的 20.6%； 1M 时占 40.10 ms 中的 17.61 ms</span></td>
+        <td><span lang="en">Pure streaming read of a contiguous latent cache — the one access pattern HBM3E is built for</span><span lang="zh">对连续 latent 缓存的纯流式读取—— 正是 HBM3E 最擅长的访问模式</span></td>
+        <td class="num"><span lang="en">−12 ms/step at 1M</span><span lang="zh">1M 时每步 −12 ms</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">MLA prefill attention</span><span lang="zh">MLA prefill 注意力</span></td>
+        <td><span lang="en">916 ms at 32K, 30% of prefill; ~50× growth for 4× input</span><span lang="zh">32K 时 916 ms， 占 prefill 的 30%； 输入 4 倍、时间约 50 倍</span></td>
+        <td><span lang="en">Growth outruns the quadratic expectation between 8K and 32K, so part of it is kernel efficiency, not algorithm</span><span lang="zh">8K 到 32K 之间的增长超过二次预期， 说明其中一部分是核函数效率而非算法</span></td>
+        <td class="num"><span lang="en">TTFT above 32K</span><span lang="zh">32K 以上的 TTFT</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">MoE routing at low batch</span><span lang="zh">低批量下的 MoE 路由</span></td>
+        <td><span lang="en">2959 µs/step, 28.1% of MoE, versus 1439 µs for the actual experts</span><span lang="zh">每步 2959 µs， 占 MoE 的 28.1%， 而真正的专家只有 1439 µs</span></td>
+        <td><span lang="en">Gate, top-k, sort and scatter cost per token regardless of sparsity — pure fixed overhead at batch 1</span><span lang="zh">gate、top-k、排序、scatter 的每 token 成本与稀疏度无关—— 批大小 1 时是纯固定开销</span></td>
+        <td class="num"><span lang="en">up to 7% of decode</span><span lang="zh">最多解码的 7%</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">KDA decode occupancy</span><span lang="zh">KDA 解码占用率</span></td>
+        <td><span lang="en">48 of 256 CUs, 0.24 TB/s effective, 6.5 µs per layer</span><span lang="zh">256 个 CU 中占 48 个， 有效 0.24 TB/s， 每层 6.5 µs</span></td>
+        <td><span lang="en">Grid is batch × heads × V-blocks; nothing to gain at batch 1, but it amortizes as batch grows</span><span lang="zh">grid 是 batch × heads × V-blocks； 批大小 1 时无从优化， 但会随批量增大而摊薄</span></td>
+        <td class="num"><span lang="en">batch, not kernel</span><span lang="zh">靠批量， 不靠核函数</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p lang="en">The ordering carries the real message. The KDA kernels — the novel part of the architecture, and the part it is easiest to get excited about optimizing — are last, and the honest entry in their prize column is "not a kernel problem". The first two rows are both the same conventional attention path that every dense model also has, and together they are where the machine is being wasted.</p>
+  <p lang="zh">这个排序本身就是结论。 KDA 的那些核函数—— 架构里最新颖、也最容易让人想去优化的部分—— 排在最后， 而它们收益一栏诚实的写法是「这不是核函数的问题」。 前两行都是同一条常规注意力路径， 每个稠密模型也都有它； 机器被浪费掉的地方就在这两行。</p>
+</section>
+
+<!-- ============================================================ 09 -->
+<section id="reproduce">
+  <span class="sec-num">09</span>
+  <h2><span lang="en">Reproducing this</span><span lang="zh">复现</span></h2>
+
+  <p lang="en">Four server configurations, because no single one can produce all four numbers. The composition needs eager mode (the profiler is blind to graph replay); the latency anchor needs graphs on; prefill composition needs the ranges compiled in; and the prefill wall-clock reference needs them compiled out, for the reason in section 07.</p>
+  <p lang="zh">需要四种服务器配置， 因为没有哪一种能同时给出全部四类数字。 构成需要 eager 模式（profiler 看不见 graph 重放）； 延迟锚点需要打开 graph； prefill 构成需要编入区间； 而 prefill 的墙钟参考值需要去掉区间， 原因见第 07 节。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Produces</span><span lang="zh">产出</span></th>
+      <th><span lang="en">Server</span><span lang="zh">服务器</span></th>
+      <th><span lang="en">Driver</span><span lang="zh">驱动脚本</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><span lang="en">decode composition</span><span lang="zh">decode 构成</span></td><td><code>GRAPH=off RANGES=0</code></td><td><code>sweep2.sh ctx</code></td></tr>
+      <tr><td><span lang="en">decode latency anchor</span><span lang="zh">decode 延迟锚点</span></td><td><code>GRAPH=on RANGES=0</code></td><td><code>rp3_drive.py --max-new 40</code></td></tr>
+      <tr><td><span lang="en">prefill composition</span><span lang="zh">prefill 构成</span></td><td><code>GRAPH=on RANGES=1</code></td><td><code>sweep-prefill.sh pf</code></td></tr>
+      <tr><td><span lang="en">prefill wall clock</span><span lang="zh">prefill 墙钟</span></td><td><code>GRAPH=on RANGES=0</code></td><td><code>prefill_ttft.py --reps 3</code></td></tr>
+      <tr><td><span lang="en">the name map</span><span lang="zh">名字映射</span></td><td><code>GRAPH=off RANGES=1</code></td><td><code>name_map.py traces/&lt;tag&gt;</code></td></tr>
+      <tr><td><span lang="en">the thread trace</span><span lang="zh">thread trace</span></td><td><span lang="en">none — standalone</span><span lang="zh">无—— 独立进程</span></td><td><code>rocprofv3 --att … kda_micro.py</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">All of it, with the exact flags, in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/README.md"><code>README.md</code></a>; the harness itself is under <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share/scripts"><code>scripts/</code></a>, and the one-line-per-site instrumentation is <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/sglang-k3-profiler-ranges.patch"><code>sglang-k3-profiler-ranges.patch</code></a>.</p>
+  <p class="cap" lang="zh">完整命令与参数见 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/README.md"><code>README.md</code></a>； 测量脚本在 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share/scripts"><code>scripts/</code></a>， 每处一行的插桩补丁是 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/kimi-k3-kda-time-share/sglang-k3-profiler-ranges.patch"><code>sglang-k3-profiler-ranges.patch</code></a>。</p>
+
+  <p lang="en">Two costs to plan for. Prefilling 1M tokens takes 1462 s at chunked-prefill 16384, so the two long decode points are most of the wall time in the whole study. And the first call at any new shape runs roughly twice the warm one, because aiter picks a GEMM configuration on the fly for shapes it has not seen — every sweep here warms up first and every TTFT is the best of three.</p>
+  <p lang="zh">有两项成本要预留。 在 chunked-prefill 16384 下 prefill 一百万 token 要 1462 秒， 所以两个长上下文的 decode 点占了整个研究的大部分墙钟时间。 另外任何新形状的第一次调用大约是热身后的两倍， 因为 aiter 会为没见过的形状现场挑选 GEMM 配置—— 这里每次扫描都先热身， 每个 TTFT 都取三次里的最好值。</p>
+</section>
+
+<!-- ============================================================ 10 -->
+<section id="epilogue">
+  <span class="sec-num">10</span>
+  <h2><span lang="en">Epilogue</span><span lang="zh">尾声</span></h2>
+
+  <p lang="en">Three of every four layers are linear, and they cost between 8.8% and 23.6% of the time depending on which phase you are in and how long the context is. The architecture does what it claims at long context: 74% of the layers hold their absolute cost constant from 4K to 1M while the remaining 26% grow by a factor of 6.8 and end up taking more than half the step.</p>
+  <p lang="zh">每四层里有三层是线性的， 而它们占用的时间在 8.8% 到 23.6% 之间， 取决于你在哪个阶段、上下文有多长。 架构在长上下文上确实兑现了它的承诺： 74% 的层从 4K 到 1M 绝对成本保持不变， 剩下 26% 增长 6.8 倍， 最终吃掉了超过一半的每步时间。</p>
+
+  <p lang="en">What the measurement adds beyond that is a threshold and a warning. The threshold: a KDA layer is only cheaper than a full-attention layer above roughly 4K in decode and 8K in prefill; below that, the 3:1 layout is buying KV-cache memory and paying for it in time. The warning: the part of a KDA layer that is actually KDA is an eighth of it, and the part of decode that is actually attention-of-any-kind is a third at 4K. It is easy to spend a quarter's optimization budget on the mechanism with the interesting name and leave the streaming read that owns 44% of a 1M decode step running at a fifth of the bandwidth it could have.</p>
+  <p lang="zh">这次测量在此之外多给了一个阈值和一个警告。 阈值： 一层 KDA 只有在 decode 约 4K 以上、prefill 约 8K 以上时才比一层全注意力便宜； 在那以下， 3:1 的排布买到的是 KV cache 显存， 代价是时间。 警告： 一层 KDA 里真正属于 KDA 的部分只有八分之一， 而 4K 解码里真正属于「任何一种注意力」的部分只有三分之一。 把一个季度的优化预算花在名字最有意思的那个机制上、同时让那个占据 1M 解码步 44% 的流式读取以五分之一的带宽跑着—— 这是很容易发生的事。</p>
+</section>
+
+</main>
+</div>
+</div>
+
+<footer class="colophon">
+  <div><b><span lang="en">Source</span><span lang="zh">来源</span></b> · <span lang="en">measurements taken 2026-07-30 on 8× MI355X, SGLang TP8, Kimi-K3 MXFP4</span><span lang="zh">2026-07-30 实测于 8× MI355X， SGLang TP8， Kimi-K3 MXFP4</span></div>
+  <div><b><span lang="en">Raw data</span><span lang="zh">原始数据</span></b> · <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share">data/kimi-k3-kda-time-share</a></div>
+  <div><b><span lang="en">Typography</span><span lang="zh">字体</span></b> · Familjen Grotesk · Petrona · Martian Mono</div>
+  <div><b><span lang="en">Palette</span><span lang="zh">配色</span></b> · <span lang="en">newsprint, riso blue, flame, violet</span><span lang="zh">新闻纸、riso 蓝、火焰橙、紫</span></div>
+  <div><b><span lang="en">Instruments</span><span lang="zh">仪器</span></b> · torch profiler · rocprofv3 --att · ROCprof Compute Viewer</div>
+  <div><b><span lang="en">Compiled for</span><span lang="zh">面向</span></b> · <span lang="en">anyone deciding where to spend a kernel-optimization quarter</span><span lang="zh">正在决定把一个季度的核函数优化预算花在哪里的人</span></div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'kimi-k3-kda-time-share-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>

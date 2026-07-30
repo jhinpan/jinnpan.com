@@ -1,0 +1,152 @@
+{
+ "rows": [
+  {
+   "label": "1k",
+   "isl": 1024,
+   "chunks": 1.0,
+   "total_gpu_ms": 169.61822399999997,
+   "collective_ms": 72.4031,
+   "compute_ms": 97.21512399999997,
+   "ttft_ms": 591.0604569944553,
+   "tok_per_s": 1732.4792885097472,
+   "gpu_busy_over_ttft": 0.2869727148767645,
+   "groups_ms": {
+    "kda": 22.9708079999999,
+    "full_attn": 6.121722999999999,
+    "moe": 54.52105600000009,
+    "dense_mlp": 0.212437,
+    "other": 13.389100000000004
+   },
+   "groups_pct_of_compute": {
+    "kda": 23.62884194850166,
+    "full_attn": 6.297089123704662,
+    "moe": 56.08289508533683,
+    "dense_mlp": 0.2185225829676461,
+    "other": 13.772651259489223
+   },
+   "us_per_token": {
+    "kda": 22.4324296874999,
+    "full_attn": 5.978245117187499,
+    "moe": 53.24321875000008,
+    "dense_mlp": 0.20745800781249998,
+    "other": 13.075292968750004
+   },
+   "total_us_per_token": 165.64279687499996,
+   "kda_us_per_layer_per_ktok": 325.10767663043333,
+   "full_attn_us_per_layer_per_ktok": 249.09354654947913,
+   "mla_prefill_kernel_ms": 1.2223,
+   "kda_chunk_kernels_ms": 4.035299999999999
+  },
+  {
+   "label": "4k",
+   "isl": 4096,
+   "chunks": 1.0,
+   "total_gpu_ms": 330.6137010000005,
+   "collective_ms": 77.3019,
+   "compute_ms": 253.31180100000051,
+   "ttft_ms": 691.8796620157082,
+   "tok_per_s": 5920.104643727779,
+   "gpu_busy_over_ttft": 0.47784856117434826,
+   "groups_ms": {
+    "kda": 58.49554900000018,
+    "full_attn": 15.890286,
+    "moe": 125.27137600000034,
+    "dense_mlp": 0.6614610000000001,
+    "other": 52.993128999999996
+   },
+   "groups_pct_of_compute": {
+    "kda": 23.092311044758656,
+    "full_attn": 6.273014497259828,
+    "moe": 49.45343071482094,
+    "dense_mlp": 0.26112522092881046,
+    "other": 20.920118522231775
+   },
+   "us_per_token": {
+    "kda": 14.28113989257817,
+    "full_attn": 3.87946435546875,
+    "moe": 30.583832031250083,
+    "dense_mlp": 0.16148950195312503,
+    "other": 12.937775634765623
+   },
+   "total_us_per_token": 80.71623559570325,
+   "kda_us_per_layer_per_ktok": 206.97304192142275,
+   "full_attn_us_per_layer_per_ktok": 161.64434814453125,
+   "mla_prefill_kernel_ms": 5.8896999999999995,
+   "kda_chunk_kernels_ms": 19.4708
+  },
+  {
+   "label": "8k",
+   "isl": 8192,
+   "chunks": 1.0,
+   "total_gpu_ms": 588.4634940000005,
+   "collective_ms": 121.22749999999999,
+   "compute_ms": 467.2359940000006,
+   "ttft_ms": 597.2119370126165,
+   "tok_per_s": 13717.073441261335,
+   "gpu_busy_over_ttft": 0.9853511919798897,
+   "groups_ms": {
+    "kda": 106.04830999999994,
+    "full_attn": 34.90383899999997,
+    "moe": 218.98535700000062,
+    "dense_mlp": 1.223566,
+    "other": 106.07492200000004
+   },
+   "groups_pct_of_compute": {
+    "kda": 22.6969478725562,
+    "full_attn": 7.470280425356084,
+    "moe": 46.86825497438032,
+    "dense_mlp": 0.2618732323092382,
+    "other": 22.702643495398156
+   },
+   "us_per_token": {
+    "kda": 12.945350341796868,
+    "full_attn": 4.260722534179684,
+    "moe": 26.73161096191414,
+    "dense_mlp": 0.149361083984375,
+    "other": 12.948598876953131
+   },
+   "total_us_per_token": 71.83392260742194,
+   "kda_us_per_layer_per_ktok": 187.61377306951982,
+   "full_attn_us_per_layer_per_ktok": 177.53010559082017,
+   "mla_prefill_kernel_ms": 18.450200000000002,
+   "kda_chunk_kernels_ms": 41.162800000000004
+  },
+  {
+   "label": "32k",
+   "isl": 32768,
+   "chunks": 2.0,
+   "total_gpu_ms": 3052.035692,
+   "collective_ms": 429.12309999999997,
+   "compute_ms": 2622.912592,
+   "ttft_ms": 3103.699464001693,
+   "tok_per_s": 10557.723252544316,
+   "gpu_busy_over_ttft": 0.9833541318671747,
+   "groups_ms": {
+    "kda": 414.3615389999988,
+    "full_attn": 985.0964090000001,
+    "moe": 791.5609410000013,
+    "dense_mlp": 5.159513,
+    "other": 426.73418999999996
+   },
+   "groups_pct_of_compute": {
+    "kda": 15.797763915725591,
+    "full_attn": 37.55734796518145,
+    "moe": 30.17870070906279,
+    "dense_mlp": 0.19670930002535134,
+    "other": 16.269478110004815
+   },
+   "us_per_token": {
+    "kda": 12.645310638427699,
+    "full_attn": 30.062756622314456,
+    "moe": 24.156522857666054,
+    "dense_mlp": 0.15745584106445312,
+    "other": 13.022893981933592
+   },
+   "total_us_per_token": 93.14073767089843,
+   "kda_us_per_layer_per_ktok": 183.26537157141593,
+   "full_attn_us_per_layer_per_ktok": 1252.6148592631023,
+   "mla_prefill_kernel_ms": 916.1447,
+   "kda_chunk_kernels_ms": 176.94850000000002
+  }
+ ]
+}

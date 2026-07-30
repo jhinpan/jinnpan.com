@@ -1,0 +1,6 @@
+context,input_tokens,kda_us_per_layer,full_attn_us_per_layer,full_attn_over_kda,kda_recurrence_us_per_step,mla_kv_scan_us_per_step,mla_kv_read_gb_per_step,mla_kv_scan_achieved_tbps,mla_kv_scan_pct_of_8tbps_peak
+4k,4096,51.34,129.17,2.52,447.3,307.6,0.113,0.368,4.6
+32k,32768,51.45,168.86,3.28,449.0,976.5,0.906,0.928,11.6
+64k,65536,51.25,200.26,3.91,445.4,1531.6,1.812,1.183,14.8
+512k,524288,52.08,527.97,10.14,458.1,9043.0,14.496,1.603,20.0
+1m,1047552,51.07,884.39,17.32,459.6,17609.3,28.963,1.645,20.6

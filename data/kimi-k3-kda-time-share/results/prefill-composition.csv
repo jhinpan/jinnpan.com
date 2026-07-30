@@ -1,0 +1,5 @@
+context,input_tokens,chunks,ttft_ms_measured,tokens_per_s,gpu_kernel_ms_total,gpu_busy_over_ttft,collective_ms,kda_ms,full_attn_ms,moe_ms,other_ms,kda_pct,full_attn_pct,moe_pct,other_pct,kda_us_per_token,full_attn_us_per_token,moe_us_per_token,kda_ms_per_layer,full_attn_ms_per_layer,full_attn_over_kda
+1k,1024,1,170,6041,169.6,1.001,72.4,23.0,6.1,54.5,13.6,23.63,6.30,56.08,13.99,22.43,5.98,53.24,0.3329,0.2551,0.766
+4k,4096,1,333,12299,330.6,0.993,77.3,58.5,15.9,125.3,53.7,23.09,6.27,49.45,21.18,14.28,3.88,30.58,0.8478,0.6621,0.781
+8k,8192,1,593,13814,588.5,0.992,121.2,106.0,34.9,219.0,107.3,22.70,7.47,46.87,22.96,12.95,4.26,26.73,1.5369,1.4543,0.946
+32k,32768,2,3051,10741,3052.0,1.000,429.1,414.4,985.1,791.6,431.9,15.80,37.56,30.18,16.47,12.65,30.06,24.16,6.0052,41.0457,6.835

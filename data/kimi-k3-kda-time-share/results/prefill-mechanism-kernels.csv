@@ -1,0 +1,5 @@
+context,input_tokens,mla_prefill_attn_kernel_ms,kda_chunked_kernels_ms,mla_kernel_pct_of_all_prefill_gpu_time
+1k,1024,1.2,4.0,0.72
+4k,4096,5.9,19.5,1.78
+8k,8192,18.5,41.2,3.14
+32k,32768,916.1,176.9,30.02
