@@ -112,6 +112,50 @@ li{margin:0 0 7px}
 .zone-label{font-family:var(--ui); font-size:10px; letter-spacing:.14em; text-transform:uppercase; fill:var(--fg3)}
 .bar-kv{fill:var(--ai)} .bar-ssm{fill:var(--shu)} .bar-track{fill:var(--sunk)}
 
+/* ------------------------------------------------------- animated plate -- */
+/* One 15s cycle shared by every element in Plate VII. Each element states its
+   own absolute percentages rather than using animation-delay, so the schedule
+   can be read off the stylesheet and checked against the prose. Everything
+   animates opacity or transform only -- no layout, no script. */
+.cyc{animation-duration:15s; animation-iteration-count:infinite; animation-timing-function:ease-in-out}
+@keyframes d0{0%,3%{opacity:.12}7%,90%{opacity:1}96%,100%{opacity:.12}}
+@keyframes d1{0%,11%{opacity:.12}15%,90%{opacity:1}96%,100%{opacity:.12}}
+@keyframes d2{0%,19%{opacity:.12}23%,90%{opacity:1}96%,100%{opacity:.12}}
+@keyframes arr0{0%,8%{opacity:0}12%,90%{opacity:1}96%,100%{opacity:0}}
+@keyframes arr1{0%,16%{opacity:0}20%,90%{opacity:1}96%,100%{opacity:0}}
+/* The verify lane flashes as one unit: that simultaneity is the point. */
+@keyframes vflash{0%,26%{opacity:.12}30%,34%{opacity:1}38%,90%{opacity:.85}96%,100%{opacity:.12}}
+@keyframes vmark{0%,35%{opacity:0}39%,90%{opacity:1}96%,100%{opacity:0}}
+@keyframes cut{0%,43%{opacity:0; transform:translateY(-14px)}48%,90%{opacity:1; transform:translateY(0)}96%,100%{opacity:0; transform:translateY(-14px)}}
+@keyframes rej{0%,50%{opacity:1}56%,90%{opacity:.2}96%,100%{opacity:1}}
+@keyframes cand{0%,29%{opacity:0}33%,60%{opacity:1}66%,90%{opacity:.12}96%,100%{opacity:0}}
+@keyframes keep{0%,29%{opacity:0}33%,90%{opacity:1}96%,100%{opacity:0}}
+@keyframes ship{0%,64%{opacity:0; transform:translateX(-150px)}72%,90%{opacity:1; transform:translateX(0)}96%,100%{opacity:0; transform:translateX(-150px)}}
+.a-d0{animation-name:d0} .a-d1{animation-name:d1} .a-d2{animation-name:d2}
+.a-arr0{animation-name:arr0} .a-arr1{animation-name:arr1}
+.a-vflash{animation-name:vflash} .a-vmark{animation-name:vmark}
+.a-cut{animation-name:cut} .a-rej{animation-name:rej}
+.a-cand{animation-name:cand} .a-keep{animation-name:keep} .a-ship{animation-name:ship}
+.lane-label{font-family:var(--ui); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; fill:var(--fg3)}
+.cell{fill:var(--paper); stroke:var(--rule2); stroke-width:1}
+.cell.mask{fill:var(--sunk); stroke-dasharray:4 3}
+.cell.acc{stroke:var(--shu); stroke-width:1.7}
+.cell.rejd{stroke:var(--rule2); stroke-dasharray:4 3}
+.cell.state{fill:var(--sunk); stroke:var(--rule2)}
+.cell.state.acc{fill:var(--paper); stroke:var(--shu); stroke-width:1.7}
+.cell-t{font-family:var(--mono); font-size:12px; fill:var(--sumi); text-anchor:middle}
+.cell-t.sm{font-size:10px; fill:var(--fg3)}
+.tick{stroke:var(--shu); stroke-width:1.8; fill:none}
+.cross{stroke:var(--kin); stroke-width:1.8; fill:none}
+.cutline{stroke:var(--shu); stroke-width:1.6; stroke-dasharray:5 4}
+.brace{stroke:var(--rule2); stroke-width:1; fill:none}
+@media (prefers-reduced-motion: reduce){
+  /* Freeze on the end state: block drafted, window verified, tail cut,
+     accepted recurrent state committed. The plate still reads as a diagram. */
+  .cyc{animation:none !important}
+  .a-cand{opacity:.12} .a-rej{opacity:.2} .a-vflash{opacity:.85}
+}
+
 /* --------------------------------------------------------------- tables -- */
 .table-wrap{overflow-x:auto; margin:22px 0 8px; border:1px solid var(--rule); background:var(--paper)}
 table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13px}
@@ -185,7 +229,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
     <li><a href="#decomposition"><span lang="en">Splitting the loss</span><span lang="zh">拆开损失</span></a></li>
     <li><a href="#output-length"><span lang="en">Output length barely matters</span><span lang="zh">输出长度几乎不重要</span></a></li>
     <li><a href="#concurrency"><span lang="en">Scaling and the knee</span><span lang="zh">扩展与拐点</span></a></li>
-    <li><a href="#dspark"><span lang="en">What DSpark costs</span><span lang="zh">DSpark 的代价</span></a></li>
+    <li><a href="#dspark"><span lang="en">How DSpark works</span><span lang="zh">DSpark 如何工作</span></a></li>
     <li><a href="#reefs"><span lang="en">Reefs</span><span lang="zh">暗礁</span></a></li>
     <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">结语</span></a></li>
   </ol>
@@ -580,15 +624,144 @@ measured                               <span class="gen" data-gen="f-loss">6.35x
 
 <section id="dspark">
   <span class="sec-num">12</span>
-  <h2><span lang="en">What DSpark costs on a hybrid model</span><span lang="zh">DSpark 在混合架构上的代价</span></h2>
+  <h2><span lang="en">How DSpark works, and why it runs here</span><span lang="zh">DSpark 如何工作， 以及它为何能在这里运行</span></h2>
 
   <p><span lang="en">Section 06 treated the verify window as a knob and found the narrow setting won. This section is the mechanism behind that, because on this particular architecture speculation is more expensive than the usual account of it suggests — and the extra cost is exactly what caps concurrency at 48.</span><span lang="zh">第 06 节把验证窗口当成一个旋钮， 测出窄的那一档胜出。 这一节讲它背后的机制——因为在这个架构上， 投机解码比通常的说法要贵， 而多出来的这部分代价， 恰好就是并发被锁在 48 的原因。</span></p>
+
+  <h3><span lang="en">One cycle, watched</span><span lang="zh">看一轮完整的循环</span></h3>
+
+  <p><span lang="en">The economics of speculation are decided by what happens in one step, and one step has a shape that a static picture flattens: part of it is serial and cheap, part of it is parallel and expensive, and where the two meet is what the block-size knob moves. So here it is running.</span><span lang="zh">投机解码的经济性由一步之内发生的事决定， 而这一步有一个静态图会压平的形状： 其中一部分是串行且便宜的， 另一部分是并行且昂贵的， 而两者交汇的位置正是 block-size 这个旋钮在移动的东西。 所以这里让它跑起来。</span></p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span><b>Plate VII</b> · <span lang="en">One DSPARK step, γ = 3</span><span lang="zh">DSPARK 的一步， γ = 3</span></span><span class="diag-text sm">15 s loop</span></div>
+    <svg viewBox="0 0 900 400" role="img" class="plate-svg">
+      <defs>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9" fill="none" stroke="#b23a26" stroke-width="1.4"/>
+        </marker>
+        <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9" fill="none" stroke="#c9c4b8" stroke-width="1.4"/>
+        </marker>
+      </defs>
+
+      <!-- lane 1 : draft block ------------------------------------------- -->
+      <text class="lane-label" x="112" y="80" text-anchor="end">draft · γ=3</text>
+      <path class="brace" d="M218,44 L218,36 L484,36 L484,44"/>
+      <text class="diag-text sm" x="351" y="28" text-anchor="middle">1 draft forward + 3 Markov steps</text>
+
+      <g class="cyc a-d0"><rect class="cell" x="218" y="56" width="82" height="40" rx="2"/><text class="cell-t" x="259" y="81">is</text></g>
+      <g class="cyc a-d1"><rect class="cell" x="310" y="56" width="82" height="40" rx="2"/><text class="cell-t" x="351" y="81">a</text></g>
+      <g class="cyc a-d2"><rect class="cell" x="402" y="56" width="82" height="40" rx="2"/><text class="cell-t" x="443" y="81">prime</text></g>
+
+      <!-- markov corrections: serial, and this is the only serial part ---- -->
+      <g class="cyc a-arr0"><path class="tick" d="M259,102 Q305,124 347,104" marker-end="url(#ah2)"/></g>
+      <g class="cyc a-arr1"><path class="tick" d="M351,102 Q397,124 439,104" marker-end="url(#ah2)"/></g>
+      <text class="diag-text sm" x="351" y="132" text-anchor="middle">each step biases the next by rank-r of the token it just drafted</text>
+
+      <!-- lane 2 : target verify window ---------------------------------- -->
+      <text class="lane-label" x="112" y="192" text-anchor="end">verify · γ+1=4</text>
+      <path class="brace" d="M126,164 L126,156 L484,156 L484,164"/>
+      <text class="diag-text sm" x="305" y="152" text-anchor="middle">1 target forward, all 4 positions at once</text>
+
+      <rect class="cell" x="126" y="168" width="82" height="40" rx="2"/>
+      <text class="cell-t" x="167" y="193">17</text>
+      <text class="cell-t sm" x="167" y="224">anchor</text>
+
+      <g class="cyc a-vflash">
+        <rect class="cell acc" x="218" y="168" width="82" height="40" rx="2"/><text class="cell-t" x="259" y="193">is</text>
+        <rect class="cell acc" x="310" y="168" width="82" height="40" rx="2"/><text class="cell-t" x="351" y="193">a</text>
+      </g>
+      <g class="cyc a-rej">
+        <rect class="cell rejd" x="402" y="168" width="82" height="40" rx="2"/><text class="cell-t" x="443" y="193">prime</text>
+      </g>
+
+      <g class="cyc a-vmark">
+        <path class="tick" d="M252,220 l5,6 l10,-14"/>
+        <path class="tick" d="M344,220 l5,6 l10,-14"/>
+        <path class="cross" d="M437,214 l12,12 M449,214 l-12,12"/>
+        <text class="cell-t sm" x="566" y="216">target says “not”</text>
+      </g>
+
+      <!-- the cut ------------------------------------------------------- -->
+      <g class="cyc a-cut">
+        <line class="cutline" x1="397" y1="172" x2="397" y2="326"/>
+        <text class="diag-text sm" x="498" y="196" fill="#b23a26">first mismatch cuts here</text>
+      </g>
+
+      <!-- lane 3 : recurrent state ---------------------------------------- -->
+      <text class="lane-label" x="112" y="300" text-anchor="end">KDA state</text>
+      <g class="cyc a-cand"><rect class="cell state" x="126" y="280" width="82" height="32" rx="2"/><text class="cell-t sm" x="167" y="300">s₀</text></g>
+      <g class="cyc a-cand"><rect class="cell state" x="218" y="280" width="82" height="32" rx="2"/><text class="cell-t sm" x="259" y="300">s₁</text></g>
+      <g class="cyc a-keep"><rect class="cell state acc" x="310" y="280" width="82" height="32" rx="2"/><text class="cell-t sm" x="351" y="300">s₂</text></g>
+      <g class="cyc a-cand"><rect class="cell state" x="402" y="280" width="82" height="32" rx="2"/><text class="cell-t sm" x="443" y="300">s₃</text></g>
+      <text class="diag-text sm" x="286" y="344" text-anchor="middle">all γ+1 candidate states written to scratch — persistent cache untouched</text>
+
+      <g class="cyc a-ship">
+        <path class="tick" d="M400,296 L622,296" marker-end="url(#ah2)"/>
+        <text class="diag-text sm" x="511" y="288" text-anchor="middle" fill="#b23a26">commit s₂ only</text>
+        <rect class="cell state acc" x="636" y="280" width="140" height="32" rx="2"/>
+        <text class="cell-t sm" x="706" y="300">persistent KDA cache</text>
+      </g>
+
+      <!-- emitted tokens ------------------------------------------------- -->
+      <g class="cyc a-vmark">
+        <text class="lane-label" x="104" y="372" text-anchor="end">commit</text>
+        <text class="cell-t" x="200" y="372">is · a · not</text>
+      </g>
+    </svg>
+    <p class="caption"><span lang="en">The draft lane fills left to right because the Markov head is a recurrence; the verify lane flashes as one unit because it is a single target forward over all γ+1 positions. Two of three drafts survive, so the step commits three tokens, and exactly one of the four candidate recurrent states is written back. Freeze the animation and this is a diagram of the end state.</span><span lang="zh">draft 行从左到右逐格填充， 因为 Markov head 是一个递推；verify 行整体闪一次， 因为它是在全部 γ+1 个位置上的单次目标前向。 三个草稿里活下来两个， 所以这一步提交三个 token， 而四个候选循环状态里恰好只有一个被写回。 把动画停住， 它就是一张终态示意图。</span></p>
+  </div>
+
+  <p><span lang="en">Read the lanes against each other and the trade is visible without any numbers. The draft lane is serial — the Markov head cannot compute position <em>i</em> before it has drafted position <em>i−1</em>, because the correction it applies is a function of the token it just produced. But each of those steps is an embedding lookup and a rank-<em>r</em> projection, so serial does not mean slow. The verify lane is the opposite: every position is computed in the same forward pass, so it is not serial at all, but that one pass is a full target-model forward and it is where the step's cost lives.</span><span lang="zh">把两行对着读， 权衡不需要任何数字就能看见。 draft 行是串行的——Markov head 在草拟出位置 <em>i−1</em> 之前算不了位置 <em>i</em>， 因为它施加的修正是刚产出的那个 token 的函数。 但这些步骤每一步只是一次 embedding 查表加一个 rank-<em>r</em> 投影， 所以串行不等于慢。 verify 行恰好相反： 每个位置都在同一次前向里算完， 所以它完全不串行， 但那一次前向是一整个目标模型的前向， 这一步的成本就住在那里。</span></p>
+
+  <p><span lang="en">That asymmetry is the whole reason a speculative step can be worth taking, and also the reason the block cannot be made arbitrarily wide. Widening γ adds positions to the expensive parallel pass at close to linear cost, while the marginal draft token it buys is the least likely one to survive — the Markov correction at position <em>i</em> is conditioned on a token that was itself drafted, so an error at any position poisons every position after it. Cost grows about linearly in γ; expected accepted length grows sublinearly and eventually flattens. An optimum in the middle is not a tuning accident, it is the shape of the two curves.</span><span lang="zh">这种不对称正是一次投机步骤值得做的全部理由， 同时也是块不能被任意加宽的理由。 加宽 γ 会以接近线性的成本给那次昂贵的并行前向增加位置， 而它换来的边际草稿 token 恰好是最不可能活下来的那一个——位置 <em>i</em> 的 Markov 修正所依赖的那个 token 本身也是草拟出来的， 所以任何一个位置出错都会污染它之后的每个位置。 成本大致随 γ 线性增长， 期望接受长度则次线性增长并最终走平。 中间存在一个最优点不是调参的偶然， 它就是这两条曲线的形状。</span></p>
+
+  <h3><span lang="en">What SGLang actually runs</span><span lang="zh">SGLang 实际执行的东西</span></h3>
+
+  <p><span lang="en">The step above maps onto a short, concrete sequence. The draft's input is a block of γ positions whose first column is last step's bonus token and whose remaining columns are a mask token — one transformer forward over that block produces γ hidden states, which go through the <em>target's own</em> <code>lm_head</code> to base logits. The Markov head is genuinely small: an embedding into rank <em>r</em>, a projection back out to vocabulary, added as a bias to the base logits at each position. Then one target forward over γ+1 positions, and acceptance.</span><span lang="zh">上面那一步对应一段很短很具体的序列。 draft 的输入是一个 γ 宽的位置块， 第一列是上一步的 bonus token， 其余列是 mask token——在这个块上做一次 transformer 前向得到 γ 个隐藏态， 它们经过<em>目标模型自己的</em> <code>lm_head</code> 得到基础 logits。 Markov head 确实很小： 一个到 rank <em>r</em> 的 embedding， 一个投影回词表， 作为偏置加到每个位置的基础 logits 上。 然后是在 γ+1 个位置上的一次目标前向， 接着是接受判定。</span></p>
+
+  <p><span lang="en">Acceptance has two forms and both are worth naming, because the sampling one is what made this port possible. For an all-greedy batch it is the longest matching prefix: compare each draft against the target's own argmax at that position, take a cumulative product of the matches, and the sum of that product is the accepted length. For any batch containing a sampled request it is chain rejection sampling — the textbook rule, accept when a uniform draw times the draft probability falls under the target probability, and resample from the positive residual otherwise. Either way the step commits accepted drafts plus one bonus token, which is the target's own prediction at the position where the chain broke. That bonus is why even a fully rejected block still makes progress.</span><span lang="zh">接受判定有两种形式， 两个都值得点名， 因为其中采样那一种正是让这次移植成为可能的东西。 全贪心的批次走最长匹配前缀： 把每个草稿与目标模型在该位置自己的 argmax 比较， 对匹配取累积乘积， 该乘积之和就是接受长度。 只要批次里有一个采样请求， 就走链式拒绝采样——教科书规则， 均匀采样乘草稿概率落在目标概率之下就接受， 否则从正残差重新采样。 两种方式下这一步都提交「接受的草稿 + 一个 bonus token」， 后者是目标模型在链断裂那个位置上自己的预测。 这个 bonus 正是为什么即使一整块全被拒绝， 这一步依然有进展。</span></p>
+
+  <div class="note">
+    <p class="note-label"><span lang="en">Where the recurrent state goes</span><span lang="zh">循环状态去了哪里</span></p>
+    <p><span lang="en">The KDA lane in the plate is not a simplification. During verify the persistent state cache is explicitly not written — the kernel is called with state updates disabled — and each of the γ+1 candidate post-states is staged in a scratch buffer instead. After acceptance a fused scatter writes back exactly the state at index <code>commit_lens − 1</code>. Nothing is rolled back because nothing was committed; the rejected states are simply never read again. That scratch buffer is also the answer to section 04's wall: it is γ+1 recurrent states per in-flight request, reserved up front, which is why the state pool saturates at 48 requests while the KV cache is still at 29%.</span><span lang="zh">图版里那条 KDA 行不是简化。 verify 期间持久状态缓存明确不被写入——kernel 是带着「禁用状态更新」调用的——而 γ+1 个候选后继状态各自被暂存到一块 scratch 缓冲里。 接受判定之后， 一次融合的 scatter 只把索引 <code>commit_lens − 1</code> 处的那个状态写回。 没有任何东西被回滚， 因为没有任何东西曾被提交；被拒绝的那些状态只是再也不会被读到。 这块 scratch 缓冲也正是第 04 节那道墙的答案： 它是每个在途请求 γ+1 份循环状态、预先预留， 这就是为什么状态池在 48 个请求时饱和而 KV cache 还停在 29%。</span></p>
+  </div>
+
+  <h3><span lang="en">Why it retargets to ROCm without being ported</span><span lang="zh">为什么它不用移植就能重定向到 ROCm</span></h3>
+
+  <p><span lang="en">This is the part worth understanding, because the answer is not "AMD did the work." Nobody ported DSPARK. It runs because of where its verify math is written down and what its dispatch keys on.</span><span lang="zh">这部分值得弄懂， 因为答案不是「AMD 做了适配」。 没有人移植过 DSPARK。 它能跑， 靠的是它的验证数学写在什么地方， 以及它的分派看的是什么。</span></p>
+
+  <p><span lang="en">Every operator on the DSPARK hot path — greedy accept, chain rejection sampling, the draft's per-step sampler, the verify-window scatter, the length scheduler, the KDA verify recurrence, the causal conv, the post-verify state scatter — is written in Triton. Triton is a compiler input, not a binary: the same kernel text retargets to AMDGCN. And the dispatch that decides whether to take those kernels asks one question about the data, <code>tensor.is_cuda</code>, not one question about the toolchain.</span><span lang="zh">DSPARK 热路径上的每一个算子——贪心接受、链式拒绝采样、draft 的逐步采样器、verify 窗口的 scatter、长度调度器、KDA 的验证递推、因果卷积、验证后的状态 scatter——都是用 Triton 写的。 Triton 是编译器的输入而不是二进制： 同一份 kernel 文本可以重定向到 AMDGCN。 而决定是否走这些 kernel 的分派， 问的是关于数据的一个问题——<code>tensor.is_cuda</code>——而不是关于工具链的问题。</span></p>
+
+  <p><span lang="en">Those two facts land differently on ROCm than one might expect, because PyTorch-HIP deliberately keeps the CUDA device namespace. Measured on this node: <code>torch.version.cuda</code> is <code>None</code> and <code>torch.version.hip</code> is <code>7.2.26015</code>, yet <code>torch.cuda.is_available()</code> is <code>True</code>, a device tensor reports its device as <code>cuda:0</code>, and <code>tensor.is_cuda</code> is <code>True</code>. So the codebase carries two different notions of "is this CUDA", and they disagree here — which turns out to be exactly what is wanted:</span><span lang="zh">这两个事实在 ROCm 上的落点和人们的直觉不同， 因为 PyTorch-HIP 刻意保留了 CUDA 的设备命名空间。 在这台机器上实测：<code>torch.version.cuda</code> 是 <code>None</code>、<code>torch.version.hip</code> 是 <code>7.2.26015</code>， 但 <code>torch.cuda.is_available()</code> 是 <code>True</code>， 设备张量报告自己的 device 是 <code>cuda:0</code>，<code>tensor.is_cuda</code> 是 <code>True</code>。 所以代码库里存在两个不同的「是否 CUDA」概念， 而它们在这里给出不同答案——结果这恰好就是我们想要的：</span></p>
+
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th><span lang="en">the test</span><span lang="zh">判据</span></th>
+      <th><span lang="en">what it gates</span><span lang="zh">它门控什么</span></th>
+      <th><span lang="en">on ROCm</span><span lang="zh">ROCm 上</span></th>
+      <th><span lang="en">effect</span><span lang="zh">效果</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>device.startswith("cuda")</code></td><td><span lang="en">DSPARK's launch-arg gate</span><span lang="zh">DSPARK 的启动参数门</span></td><td><strong>True</strong></td><td><span lang="en">the algorithm is allowed to start</span><span lang="zh">算法被允许启动</span></td></tr>
+      <tr><td><code>tensor.is_cuda</code></td><td><span lang="en">Triton vs torch per operator</span><span lang="zh">每个算子选 Triton 还是 torch</span></td><td><strong>True</strong></td><td><span lang="en">the Triton kernels are taken</span><span lang="zh">走 Triton kernel</span></td></tr>
+      <tr><td><code>is_cuda()</code></td><td><span lang="en">the CuTeDSL KDA fast path</span><span lang="zh">CuTeDSL 的 KDA 快路径</span></td><td><strong>False</strong></td><td><span lang="en">skipped, Triton fallback used</span><span lang="zh">跳过， 改用 Triton 回退</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="caption"><span lang="en"><code>is_cuda()</code> additionally requires <code>torch.version.cuda is not None</code>, which is what makes it the strict test — the one that correctly excludes the single NVIDIA-only kernel on this path.</span><span lang="zh"><code>is_cuda()</code> 额外要求 <code>torch.version.cuda is not None</code>， 这正是它成为严格判据的原因——它正确地把这条路径上唯一一个 NVIDIA 专属 kernel 排除掉了。</span></p>
+
+  <p><span lang="en">The one NVIDIA-only kernel is a fused KDA verify written in CuTeDSL, and it is reachable only when the strict test passes, CUTLASS imports, and the device is SM100. On ROCm the strict test fails first, so the KDA verify falls back to the Triton recurrence — a slower path, but a present one. Contrast the sibling algorithm: DFLASH's non-greedy verify calls <code>tree_speculative_sampling_target_only</code>, a compiled C++ symbol from <code>sgl_kernel</code> that is only bound when the strict test passes and is <code>None</code> otherwise. There is no fallback to fall back to. DSPARK proposes a strict chain rather than a tree, so it never needed the general tree kernel, and it ships its own Triton chain sampler instead.</span><span lang="zh">那个唯一的 NVIDIA 专属 kernel 是一个用 CuTeDSL 写的融合 KDA 验证， 只有在严格判据通过、CUTLASS 可导入、且设备是 SM100 时才可达。 在 ROCm 上严格判据先失败， 于是 KDA 验证回退到 Triton 递推——一条更慢但存在的路。 对比它的兄弟算法： DFLASH 的非贪心 verify 会调用 <code>tree_speculative_sampling_target_only</code>， 那是 <code>sgl_kernel</code> 里一个编译好的 C++ 符号， 只在严格判据通过时才绑定， 否则是 <code>None</code>。 没有回退可以回退。 DSPARK 提议的是严格的链而不是树， 所以它从来不需要那个通用的树 kernel， 而是自带了一个 Triton 的链式采样器。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">The transferable rule</span><span lang="zh">可迁移的规则</span></p>
+    <p><span lang="en">Portability here was not a porting effort, it was two authoring decisions taken earlier: express the maths in a language that retargets, and dispatch on where the data lives rather than on who built the toolchain. DFLASH made neither and is unavailable on this hardware for sampled traffic; DSPARK made both and needed one four-line fix, in a helper it did not own. If you are writing a kernel-adjacent feature you want to survive a hardware change, those are the two choices that decide it — and neither of them is visible in a benchmark.</span><span lang="zh">这里的可移植性不是一次移植工程， 而是更早时候的两个撰写决策： 把算法用一门可重定向的语言表达， 以及按数据所在之处而不是按工具链的出身来分派。 DFLASH 两个都没做， 于是在这块硬件上对采样流量不可用；DSPARK 两个都做了， 只需要一处四行的修复， 而且那还是在一个它并不拥有的辅助模块里。 如果你在写一个希望能活过硬件更迭的贴近 kernel 的功能， 决定成败的就是这两个选择——而它们两个都不会出现在 benchmark 里。</span></p>
+  </div>
 
   <h3><span lang="en">Verification on a recurrent layer is not a cache write</span><span lang="zh">在循环层上做验证不是一次缓存写入</span></h3>
 
   <p><span lang="en">On a pure-attention model, verifying <em>k</em> drafted tokens is one forward pass over <em>k</em> positions. The KV entries for those positions get written, the target checks them, and the rejected tail is simply abandoned — the cache is indexed by position, so abandoning it costs nothing but the bandwidth already spent.</span><span lang="zh">在纯 attention 模型上， 验证 <em>k</em> 个草稿 token 就是在 <em>k</em> 个位置上做一次前向。 这些位置的 KV 条目被写入， 目标模型检查它们， 被拒绝的尾部直接丢弃——缓存是按位置索引的， 丢弃它除了已经花掉的带宽之外没有额外代价。</span></p>
 
-  <p><span lang="en">Most of K3's layers do not have a cache. They carry a recurrent state, and a recurrent state is a <em>value</em>, not a table: advancing it through <em>k</em> speculated positions is a serial chain, and rejecting the tail means the state has to be restored to where it was before the guess. You cannot index your way back to it. So a speculative request must keep several copies of that state alive — the committed one, plus whatever the in-flight guess has advanced to — where a non-speculative request keeps one.</span><span lang="zh">K3 的大多数层没有缓存。 它们携带一个循环状态， 而循环状态是一个<em>值</em>而不是一张表： 把它推进过 <em>k</em> 个投机位置是一条串行链， 拒绝尾部意味着状态必须被还原到猜测之前的位置。 你没法靠索引退回去。 所以一个投机请求必须同时保有该状态的数份副本——已提交的那份， 加上在途猜测推进到的那些——而非投机请求只需要一份。</span></p>
+  <p><span lang="en">Most of K3's layers do not have a cache. They carry a recurrent state, and a recurrent state is a <em>value</em>, not a table: advancing it through <em>k</em> speculated positions is a serial chain, and there is no index to forget: wherever the chain breaks, the state that survives has to be <em>chosen</em>, which means every candidate has to still exist by the time acceptance runs. So a speculative request keeps γ+1 recurrent states alive where a non-speculative request keeps one.</span><span lang="zh">K3 的大多数层没有缓存。 它们携带一个循环状态， 而循环状态是一个<em>值</em>而不是一张表： 把它推进过 <em>k</em> 个投机位置是一条串行链， 而且没有索引可以遗忘： 无论链在哪里断裂， 存活下来的那个状态必须被<em>选出</em>， 这意味着接受判定运行时每个候选都还得存在。 所以一个投机请求要保有 γ+1 份循环状态， 而非投机请求只保有一份。</span></p>
 
   <p><span lang="en">That is the mechanism behind the wall in section 04. At 48 running requests the state pool sits at 98% while the KV cache is at 29%: the speculative lane is not short of cache, it is short of <em>state slots</em>. And it is why the cap is not a policy the operator can raise — the server says so at boot, <code>Max running requests is reset to 48 for speculative decoding</code>, and section 04's four attempts to raise it all traded token budget for slots and lost.</span><span lang="zh">这就是第 04 节那道墙的机制。 48 个运行请求时状态池占到 98%， 而 KV cache 只有 29%： 投机通道缺的不是缓存， 缺的是<em>状态槽位</em>。 这也解释了为什么这个上限不是运维方能调高的策略——服务器在启动时就说了，<code>Max running requests is reset to 48 for speculative decoding</code>， 而第 04 节里四次抬高它的尝试， 全都是拿 token 预算换槽位， 全都输了。</span></p>
 
