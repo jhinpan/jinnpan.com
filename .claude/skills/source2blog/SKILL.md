@@ -6,14 +6,15 @@ description: >-
 
 `source2blog` is Jhin's workflow for **converting a source into a polished portfolio artifact** on jinnpan.com. It is **category-aware**: the first thing you do is decide which of four shelves the entry lives on, because the category determines the output shape.
 
-## The four categories — and what each produces
+## The five categories — and what each produces
 
 | Category | What it is | Output | Markdown? |
 |---|---|---|---|
 | **code** 代码 | A source-level reading of a real **code repository / codebase** | `public/sources/<slug>.html` — HTML deep dive, kicker `Source Reading NNN` | **No** |
 | **paper** 论文 | A close reading of a research **paper** | `public/sources/<slug>.html` — HTML deep dive, kicker `Paper Reading NNN` | **No** |
 | **tutorial** 教程 | A first-principles **primer / explainer / guide** on a concept (not one repo or paper) | bilingual `src/content/blog/{en,zh}/<slug>.md`; **optionally also** an HTML primer at `public/sources/<slug>.html` when it deserves hand-coded plates | **Yes** |
-| **blog** 博客 | **Original writing** — a benchmark, a framework comparison, an opinion, a project note | bilingual `src/content/blog/{en,zh}/<slug>.md` | **Yes** |
+| **blog** 博客 | **Original writing** — a framework comparison, an opinion, a project note | bilingual `src/content/blog/{en,zh}/<slug>.md` | **Yes** |
+| **experiments** 实验 | A **reproducible measurement** I ran — kernel or system benchmark, meant to be cited later | `public/sources/<slug>.html` — HTML deep dive, kicker `Experiment NNN`, **plus** raw data under `data/<slug>/` | **No** |
 
 **In every case, you also register the entry as a card in the `/sources/` library hub (`public/sources/index.html`).** That hub is the single, categorized map of everything — it is linked from the site nav and replaces the old per-entry "appetizer" markdown.
 
@@ -25,7 +26,8 @@ description: >-
 
 - Am I **reading someone else's artifact**? → repo = `code`, paper = `paper`.
 - Am I **teaching a concept from first principles** (no single repo/paper at the center)? → `tutorial`.
-- Am I **sharing original work / measurements / an opinion** (a benchmark I ran, a comparison I reasoned through, my own project)? → `blog`.
+- Did I **run a measurement whose raw numbers should survive and be cited later** (a kernel sweep, a throughput characterisation)? → `experiments`. The test is whether someone would later want the CSVs, not just the prose — experiments commit their raw data under `data/<slug>/`.
+- Am I **sharing original reasoning / an opinion / a project note** with no dataset behind it? → `blog`.
 - For a `tutorial`, does the topic deserve hand-coded SVG plates and a long visual walkthrough (e.g. `from-python-to-silicon`)? → also build the HTML primer. Otherwise markdown alone is enough.
 
 When in doubt, ask the user which shelf they want.
@@ -250,11 +252,23 @@ Add a card to `public/sources/index.html` in the correct shelf, and bump the cou
      </div>
      <div class="links"><a class="link primary" href="/en/blog/<slug>/">EN</a><a class="link" href="/zh/blog/<slug>/">中文</a></div>
    </article>
+
+   <!-- experiments: HTML deep dive like code/paper, but numbered "Experiment" -->
+   <article class="entry" data-kind="experiments" data-search="lowercase keywords hardware kernel">
+     <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 001</span></div>
+     <div class="entry-body">
+       <h3>Title</h3><p>Description.</p>
+       <div class="tags"><span class="tag">tag</span></div>
+     </div>
+     <div class="links"><a class="link primary" href="./<slug>.html">Deep dive →</a></div>
+   </article>
    ```
 
-   `data-kind` ∈ `code|paper|tutorial|blog` (drives the accent color + filter). `entry-kind` label: `Source Reading` / `Paper Reading` for code/paper; for tutorial/blog use a fitting label (`Primer`, `Guide`, `Benchmark`, `Comparison`, `Project`, `Note`).
+   `data-kind` ∈ `code|paper|tutorial|blog|experiments` (drives the accent color + filter). `entry-kind` label: `Source Reading` / `Paper Reading` / `Experiment` for those shelves; for tutorial/blog use a fitting label (`Primer`, `Guide`, `Benchmark`, `Comparison`, `Project`, `Note`).
 
 2. **Bump the counts**: the matching `.stat[data-c="..."] .num`, the shelf's `.shelf-count` text, and the SVG legend count in the hero plate (and add a small `<rect>` book on that shelf's row if you want it visually exact).
+
+   The filter JS is data-driven — it matches `button.data-filter` against `section.data-section`, so a new shelf needs no JS change. But `.stats` has a hard-coded `grid-template-columns: repeat(N, ...)`; bump `N` when adding a shelf or the strip wraps.
 
 ## Step 6 · Verify locally
 

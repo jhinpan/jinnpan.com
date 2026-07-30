@@ -1,0 +1,883 @@
+PASS quack_tuned fwd M=1     N=4096 float16/float16: 3.956 us, 6.2 GB/s, 0.1% of peak BW
+PASS quack  fwd M=1     N=4096 float16/float16: 3.972 us, 6.2 GB/s, 0.1% of peak BW
+PASS torch  fwd M=1     N=4096 float16/float16: 9.760 us, 2.5 GB/s, 0.1% of peak BW
+PASS quack_tuned bwd M=1     N=4096 float16/float16: 23.260 us, 1.8 GB/s, 0.0% of peak BW
+PASS quack  bwd M=1     N=4096 float16/float16: 22.408 us, 1.8 GB/s, 0.0% of peak BW
+PASS torch  bwd M=1     N=4096 float16/float16: 47.616 us, 0.9 GB/s, 0.0% of peak BW
+PASS quack_tuned fwd M=1     N=4096 float16/float32: 3.908 us, 8.4 GB/s, 0.2% of peak BW
+PASS quack  fwd M=1     N=4096 float16/float32: 3.992 us, 8.2 GB/s, 0.2% of peak BW
+PASS torch  fwd M=1     N=4096 float16/float32: 44.896 us, 0.7 GB/s, 0.0% of peak BW
+PASS quack_tuned bwd M=1     N=4096 float16/float32: 15.080 us, 3.8 GB/s, 0.1% of peak BW
+PASS quack  bwd M=1     N=4096 float16/float32: 14.908 us, 3.8 GB/s, 0.1% of peak BW
+PASS torch  bwd M=1     N=4096 float16/float32: 172.276 us, 0.3 GB/s, 0.0% of peak BW
+PASS quack_tuned fwd M=1     N=4096 bfloat16/bfloat16: 3.868 us, 6.4 GB/s, 0.1% of peak BW
+PASS quack  fwd M=1     N=4096 bfloat16/bfloat16: 3.944 us, 6.2 GB/s, 0.1% of peak BW
+PASS torch  fwd M=1     N=4096 bfloat16/bfloat16: 9.732 us, 2.5 GB/s, 0.1% of peak BW
+PASS quack_tuned bwd M=1     N=4096 bfloat16/bfloat16: 22.424 us, 1.8 GB/s, 0.0% of peak BW
+PASS quack  bwd M=1     N=4096 bfloat16/bfloat16: 23.380 us, 1.8 GB/s, 0.0% of peak BW
+PASS torch  bwd M=1     N=4096 bfloat16/bfloat16: 48.988 us, 0.8 GB/s, 0.0% of peak BW
+PASS quack_tuned fwd M=1     N=4096 bfloat16/float32: 3.904 us, 8.4 GB/s, 0.2% of peak BW
+PASS quack  fwd M=1     N=4096 bfloat16/float32: 4.012 us, 8.2 GB/s, 0.2% of peak BW
+PASS torch  fwd M=1     N=4096 bfloat16/float32: 37.388 us, 0.9 GB/s, 0.0% of peak BW
+PASS quack_tuned bwd M=1     N=4096 bfloat16/float32: 17.316 us, 3.3 GB/s, 0.1% of peak BW
+PASS quack  bwd M=1     N=4096 bfloat16/float32: 14.840 us, 3.9 GB/s, 0.1% of peak BW
+PASS torch  bwd M=1     N=4096 bfloat16/float32: 178.144 us, 0.3 GB/s, 0.0% of peak BW
+PASS quack_tuned fwd M=1     N=4096 float32/float32: 3.916 us, 12.6 GB/s, 0.3% of peak BW
+PASS quack  fwd M=1     N=4096 float32/float32: 4.104 us, 12.0 GB/s, 0.3% of peak BW
+PASS torch  fwd M=1     N=4096 float32/float32: 8.196 us, 6.0 GB/s, 0.1% of peak BW
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div4quack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (1, 4096), (2, 1), torch.float32, (4096,), (1,), torch.float32, (1, 4096), (2, 1), torch.float32, (1,), (1,), torch.float32, (1, 4096), (2, 1), torch.float32, (264, 4096), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=1     N=4096 float32/float32: 15.676 us, 5.2 GB/s, 0.1% of peak BW
+PASS quack  bwd M=1     N=4096 float32/float32: 14.568 us, 5.6 GB/s, 0.1% of peak BW
+PASS torch  bwd M=1     N=4096 float32/float32: 51.724 us, 1.6 GB/s, 0.0% of peak BW
+PASS quack_tuned fwd M=256   N=4096 float16/float16: 5.316 us, 790.5 GB/s, 18.3% of peak BW
+PASS quack  fwd M=256   N=4096 float16/float16: 5.500 us, 764.1 GB/s, 17.7% of peak BW
+PASS torch  fwd M=256   N=4096 float16/float16: 9.964 us, 421.8 GB/s, 9.8% of peak BW
+PASS quack_tuned bwd M=256   N=4096 float16/float16: 23.464 us, 268.9 GB/s, 6.2% of peak BW
+PASS quack  bwd M=256   N=4096 float16/float16: 23.544 us, 268.0 GB/s, 6.2% of peak BW
+PASS torch  bwd M=256   N=4096 float16/float16: 56.676 us, 111.3 GB/s, 2.6% of peak BW
+PASS quack_tuned fwd M=256   N=4096 float16/float32: 5.432 us, 775.2 GB/s, 18.0% of peak BW
+PASS quack  fwd M=256   N=4096 float16/float32: 5.452 us, 772.3 GB/s, 17.9% of peak BW
+PASS torch  fwd M=256   N=4096 float16/float32: 39.228 us, 107.3 GB/s, 2.5% of peak BW
+PASS quack_tuned bwd M=256   N=4096 float16/float32: 15.172 us, 416.9 GB/s, 9.7% of peak BW
+PASS quack  bwd M=256   N=4096 float16/float32: 15.100 us, 418.9 GB/s, 9.7% of peak BW
+PASS torch  bwd M=256   N=4096 float16/float32: 177.592 us, 35.6 GB/s, 0.8% of peak BW
+PASS quack_tuned fwd M=256   N=4096 bfloat16/bfloat16: 5.484 us, 766.3 GB/s, 17.8% of peak BW
+PASS quack  fwd M=256   N=4096 bfloat16/bfloat16: 5.588 us, 752.1 GB/s, 17.4% of peak BW
+PASS torch  fwd M=256   N=4096 bfloat16/bfloat16: 10.176 us, 413.0 GB/s, 9.6% of peak BW
+PASS quack_tuned bwd M=256   N=4096 bfloat16/bfloat16: 24.020 us, 262.7 GB/s, 6.1% of peak BW
+PASS quack  bwd M=256   N=4096 bfloat16/bfloat16: 23.840 us, 264.6 GB/s, 6.1% of peak BW
+PASS torch  bwd M=256   N=4096 bfloat16/bfloat16: 46.552 us, 135.5 GB/s, 3.1% of peak BW
+PASS quack_tuned fwd M=256   N=4096 bfloat16/float32: 5.348 us, 787.3 GB/s, 18.3% of peak BW
+PASS quack  fwd M=256   N=4096 bfloat16/float32: 5.468 us, 770.1 GB/s, 17.9% of peak BW
+PASS torch  fwd M=256   N=4096 bfloat16/float32: 39.816 us, 105.8 GB/s, 2.5% of peak BW
+PASS quack_tuned bwd M=256   N=4096 bfloat16/float32: 15.416 us, 410.3 GB/s, 9.5% of peak BW
+PASS quack  bwd M=256   N=4096 bfloat16/float32: 15.164 us, 417.1 GB/s, 9.7% of peak BW
+PASS torch  bwd M=256   N=4096 bfloat16/float32: 175.964 us, 35.9 GB/s, 0.8% of peak BW
+PASS quack_tuned fwd M=256   N=4096 float32/float32: 6.084 us, 1381.5 GB/s, 32.0% of peak BW
+PASS quack  fwd M=256   N=4096 float32/float32: 6.524 us, 1288.3 GB/s, 29.9% of peak BW
+PASS torch  fwd M=256   N=4096 float32/float32: 9.320 us, 901.8 GB/s, 20.9% of peak BW
+1_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNorquack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (256, 4096), (2, 1), torch.float32, (4096,), (1,), torch.float32, (256, 4096), (2, 1), torch.float32, (256,), (1,), torch.float32, (256, 4096), (2, 1), torch.float32, (264, 4096), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=256   N=4096 float32/float32: 16.180 us, 779.8 GB/s, 18.1% of peak BW
+PASS quack  bwd M=256   N=4096 float32/float32: 16.308 us, 773.7 GB/s, 17.9% of peak BW
+PASS torch  bwd M=256   N=4096 float32/float32: 50.400 us, 250.3 GB/s, 5.8% of peak BW
+PASS quack_tuned fwd M=512   N=4096 float16/float16: 6.084 us, 1380.1 GB/s, 32.0% of peak BW
+PASS quack  fwd M=512   N=4096 float16/float16: 6.444 us, 1303.0 GB/s, 30.2% of peak BW
+PASS torch  fwd M=512   N=4096 float16/float16: 10.656 us, 788.0 GB/s, 18.3% of peak BW
+PASS quack_tuned bwd M=512   N=4096 float16/float16: 22.796 us, 552.8 GB/s, 12.8% of peak BW
+PASS quack  bwd M=512   N=4096 float16/float16: 22.444 us, 561.5 GB/s, 13.0% of peak BW
+PASS torch  bwd M=512   N=4096 float16/float16: 48.332 us, 260.7 GB/s, 6.0% of peak BW
+PASS quack_tuned fwd M=512   N=4096 float16/float32: 6.000 us, 1400.8 GB/s, 32.5% of peak BW
+PASS quack  fwd M=512   N=4096 float16/float32: 6.452 us, 1302.7 GB/s, 30.2% of peak BW
+PASS torch  fwd M=512   N=4096 float16/float32: 51.536 us, 163.1 GB/s, 3.8% of peak BW
+PASS quack_tuned bwd M=512   N=4096 float16/float32: 15.944 us, 791.4 GB/s, 18.3% of peak BW
+PASS quack  bwd M=512   N=4096 float16/float32: 16.760 us, 752.8 GB/s, 17.5% of peak BW
+PASS torch  bwd M=512   N=4096 float16/float32: 182.560 us, 69.1 GB/s, 1.6% of peak BW
+PASS quack_tuned fwd M=512   N=4096 bfloat16/bfloat16: 6.108 us, 1374.7 GB/s, 31.9% of peak BW
+PASS quack  fwd M=512   N=4096 bfloat16/bfloat16: 6.456 us, 1300.6 GB/s, 30.2% of peak BW
+PASS torch  fwd M=512   N=4096 bfloat16/bfloat16: 10.492 us, 800.3 GB/s, 18.6% of peak BW
+PASS quack_tuned bwd M=512   N=4096 bfloat16/bfloat16: 22.760 us, 553.7 GB/s, 12.8% of peak BW
+PASS quack  bwd M=512   N=4096 bfloat16/bfloat16: 23.364 us, 539.3 GB/s, 12.5% of peak BW
+PASS torch  bwd M=512   N=4096 bfloat16/bfloat16: 46.392 us, 271.6 GB/s, 6.3% of peak BW
+PASS quack_tuned fwd M=512   N=4096 bfloat16/float32: 6.000 us, 1400.8 GB/s, 32.5% of peak BW
+PASS quack  fwd M=512   N=4096 bfloat16/float32: 6.448 us, 1303.5 GB/s, 30.2% of peak BW
+PASS torch  fwd M=512   N=4096 bfloat16/float32: 51.664 us, 162.7 GB/s, 3.8% of peak BW
+PASS quack_tuned bwd M=512   N=4096 bfloat16/float32: 16.452 us, 766.9 GB/s, 17.8% of peak BW
+PASS quack  bwd M=512   N=4096 bfloat16/float32: 16.432 us, 767.9 GB/s, 17.8% of peak BW
+PASS torch  bwd M=512   N=4096 bfloat16/float32: 182.840 us, 69.0 GB/s, 1.6% of peak BW
+PASS quack_tuned fwd M=512   N=4096 float32/float32: 7.636 us, 2199.3 GB/s, 51.0% of peak BW
+PASS quack  fwd M=512   N=4096 float32/float32: 8.624 us, 1947.3 GB/s, 45.2% of peak BW
+PASS torch  fwd M=512   N=4096 float32/float32: 10.544 us, 1592.7 GB/s, 36.9% of peak BW
+mBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU archquack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (512, 4096), (2, 1), torch.float32, (4096,), (1,), torch.float32, (512, 4096), (2, 1), torch.float32, (512,), (1,), torch.float32, (512, 4096), (2, 1), torch.float32, (264, 4096), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=512   N=4096 float32/float32: 19.016 us, 1325.2 GB/s, 30.7% of peak BW
+PASS quack  bwd M=512   N=4096 float32/float32: 19.172 us, 1314.5 GB/s, 30.5% of peak BW
+PASS torch  bwd M=512   N=4096 float32/float32: 49.196 us, 512.2 GB/s, 11.9% of peak BW
+PASS quack_tuned fwd M=4096  N=3000 float16/float16: 18.808 us, 2613.7 GB/s, 60.6% of peak BW
+PASS quack  fwd M=4096  N=3000 float16/float16: 19.692 us, 2496.3 GB/s, 57.9% of peak BW
+PASS torch  fwd M=4096  N=3000 float16/float16: 22.896 us, 2147.0 GB/s, 49.8% of peak BW
+PASS quack_tuned bwd M=4096  N=3000 float16/float16: 44.571 us, 1654.8 GB/s, 38.4% of peak BW
+PASS quack  bwd M=4096  N=3000 float16/float16: 46.592 us, 1583.0 GB/s, 36.7% of peak BW
+PASS torch  bwd M=4096  N=3000 float16/float16: 72.091 us, 1023.1 GB/s, 23.7% of peak BW
+PASS quack_tuned fwd M=4096  N=3000 float16/float32: 19.624 us, 2505.3 GB/s, 58.1% of peak BW
+PASS quack  fwd M=4096  N=3000 float16/float32: 20.120 us, 2443.5 GB/s, 56.7% of peak BW
+PASS torch  fwd M=4096  N=3000 float16/float32: 189.712 us, 259.2 GB/s, 6.0% of peak BW
+PASS quack_tuned bwd M=4096  N=3000 float16/float32: 38.773 us, 1902.6 GB/s, 44.1% of peak BW
+PASS quack  bwd M=4096  N=3000 float16/float32: 43.461 us, 1697.3 GB/s, 39.4% of peak BW
+PASS torch  bwd M=4096  N=3000 float16/float32: 453.904 us, 162.5 GB/s, 3.8% of peak BW
+PASS quack_tuned fwd M=4096  N=3000 bfloat16/bfloat16: 18.976 us, 2590.5 GB/s, 60.1% of peak BW
+PASS quack  fwd M=4096  N=3000 bfloat16/bfloat16: 20.284 us, 2423.5 GB/s, 56.2% of peak BW
+PASS torch  fwd M=4096  N=3000 bfloat16/bfloat16: 23.116 us, 2126.6 GB/s, 49.3% of peak BW
+PASS quack_tuned bwd M=4096  N=3000 bfloat16/bfloat16: 45.019 us, 1638.4 GB/s, 38.0% of peak BW
+PASS quack  bwd M=4096  N=3000 bfloat16/bfloat16: 46.405 us, 1589.4 GB/s, 36.9% of peak BW
+PASS torch  bwd M=4096  N=3000 bfloat16/bfloat16: 70.379 us, 1048.0 GB/s, 24.3% of peak BW
+PASS quack_tuned fwd M=4096  N=3000 bfloat16/float32: 19.436 us, 2529.5 GB/s, 58.7% of peak BW
+PASS quack  fwd M=4096  N=3000 bfloat16/float32: 20.044 us, 2452.8 GB/s, 56.9% of peak BW
+PASS torch  fwd M=4096  N=3000 bfloat16/float32: 190.192 us, 258.5 GB/s, 6.0% of peak BW
+PASS quack_tuned bwd M=4096  N=3000 bfloat16/float32: 38.576 us, 1912.3 GB/s, 44.3% of peak BW
+PASS quack  bwd M=4096  N=3000 bfloat16/float32: 41.493 us, 1777.8 GB/s, 41.2% of peak BW
+PASS torch  bwd M=4096  N=3000 bfloat16/float32: 453.504 us, 162.7 GB/s, 3.8% of peak BW
+PASS quack_tuned fwd M=4096  N=3000 float32/float32: 33.640 us, 2922.6 GB/s, 67.8% of peak BW
+PASS quack  fwd M=4096  N=3000 float32/float32: 34.264 us, 2869.4 GB/s, 66.5% of peak BW
+PASS torch  fwd M=4096  N=3000 float32/float32: 37.472 us, 2623.7 GB/s, 60.8% of peak BW
+ sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 294976 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 295024 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrquack autotune: 8/272 configs failed for rmsnorm_bwd_tuned(True, (4096, 3000), (2, 1), torch.float32, (3000,), (1,), torch.float32, (4096, 3000), (2, 1), torch.float32, (4096,), (1,), torch.float32, (4096, 3000), (2, 1), torch.float32, (264, 3000), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=4096  N=3000 float32/float32: 57.904 us, 2547.3 GB/s, 59.1% of peak BW
+PASS quack  bwd M=4096  N=3000 float32/float32: 59.832 us, 2465.2 GB/s, 57.2% of peak BW
+PASS torch  bwd M=4096  N=3000 float32/float32: 106.008 us, 1391.4 GB/s, 32.3% of peak BW
+PASS quack_tuned fwd M=4096  N=4096 float16/float16: 24.389 us, 2751.9 GB/s, 63.8% of peak BW
+PASS quack  fwd M=4096  N=4096 float16/float16: 24.443 us, 2745.9 GB/s, 63.7% of peak BW
+PASS torch  fwd M=4096  N=4096 float16/float16: 29.429 us, 2280.6 GB/s, 52.9% of peak BW
+PASS quack_tuned bwd M=4096  N=4096 float16/float16: 55.968 us, 1799.2 GB/s, 41.7% of peak BW
+PASS quack  bwd M=4096  N=4096 float16/float16: 54.008 us, 1864.5 GB/s, 43.2% of peak BW
+PASS torch  bwd M=4096  N=4096 float16/float16: 83.264 us, 1209.4 GB/s, 28.0% of peak BW
+PASS quack_tuned fwd M=4096  N=4096 float16/float32: 24.395 us, 2751.6 GB/s, 63.8% of peak BW
+PASS quack  fwd M=4096  N=4096 float16/float32: 24.656 us, 2722.5 GB/s, 63.1% of peak BW
+PASS torch  fwd M=4096  N=4096 float16/float32: 248.325 us, 270.3 GB/s, 6.3% of peak BW
+PASS quack_tuned bwd M=4096  N=4096 float16/float32: 47.272 us, 2130.5 GB/s, 49.4% of peak BW
+PASS quack  bwd M=4096  N=4096 float16/float32: 48.032 us, 2096.8 GB/s, 48.6% of peak BW
+PASS torch  bwd M=4096  N=4096 float16/float32: 585.296 us, 172.1 GB/s, 4.0% of peak BW
+PASS quack_tuned fwd M=4096  N=4096 bfloat16/bfloat16: 24.160 us, 2778.0 GB/s, 64.4% of peak BW
+PASS quack  fwd M=4096  N=4096 bfloat16/bfloat16: 24.107 us, 2784.2 GB/s, 64.6% of peak BW
+PASS torch  fwd M=4096  N=4096 bfloat16/bfloat16: 28.789 us, 2331.3 GB/s, 54.1% of peak BW
+PASS quack_tuned bwd M=4096  N=4096 bfloat16/bfloat16: 51.128 us, 1969.5 GB/s, 45.7% of peak BW
+PASS quack  bwd M=4096  N=4096 bfloat16/bfloat16: 54.336 us, 1853.2 GB/s, 43.0% of peak BW
+PASS torch  bwd M=4096  N=4096 bfloat16/bfloat16: 81.000 us, 1243.2 GB/s, 28.8% of peak BW
+PASS quack_tuned fwd M=4096  N=4096 bfloat16/float32: 24.635 us, 2724.8 GB/s, 63.2% of peak BW
+PASS quack  fwd M=4096  N=4096 bfloat16/float32: 24.848 us, 2701.4 GB/s, 62.6% of peak BW
+PASS torch  fwd M=4096  N=4096 bfloat16/float32: 248.795 us, 269.8 GB/s, 6.3% of peak BW
+PASS quack_tuned bwd M=4096  N=4096 bfloat16/float32: 47.120 us, 2137.4 GB/s, 49.6% of peak BW
+PASS quack  bwd M=4096  N=4096 bfloat16/float32: 47.776 us, 2108.0 GB/s, 48.9% of peak BW
+PASS torch  bwd M=4096  N=4096 bfloat16/float32: 584.464 us, 172.3 GB/s, 4.0% of peak BW
+PASS quack_tuned fwd M=4096  N=4096 float32/float32: 42.416 us, 3164.7 GB/s, 73.4% of peak BW
+PASS quack  fwd M=4096  N=4096 float32/float32: 42.096 us, 3188.8 GB/s, 73.9% of peak BW
+PASS torch  fwd M=4096  N=4096 float32/float32: 52.472 us, 2558.2 GB/s, 59.3% of peak BW
+f32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 294976 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 295024 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 294976 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 295024 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 294976 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o3000i64div41_tensorptrf32_gmem_align16_o_4300001_tensorptrf32gmemalign16o3000i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 295024 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Erroquack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (4096, 4096), (2, 1), torch.float32, (4096,), (1,), torch.float32, (4096, 4096), (2, 1), torch.float32, (4096,), (1,), torch.float32, (4096, 4096), (2, 1), torch.float32, (264, 4096), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=4096  N=4096 float32/float32: 70.992 us, 2836.6 GB/s, 65.8% of peak BW
+PASS quack  bwd M=4096  N=4096 float32/float32: 73.376 us, 2744.4 GB/s, 63.6% of peak BW
+PASS torch  bwd M=4096  N=4096 float32/float32: 137.272 us, 1467.0 GB/s, 34.0% of peak BW
+PASS quack_tuned fwd M=32768 N=1024 float16/float16: 42.888 us, 3129.5 GB/s, 72.6% of peak BW
+PASS quack  fwd M=32768 N=1024 float16/float16: 41.552 us, 3230.2 GB/s, 74.9% of peak BW
+PASS torch  fwd M=32768 N=1024 float16/float16: 50.968 us, 2633.4 GB/s, 61.1% of peak BW
+PASS quack_tuned bwd M=32768 N=1024 float16/float16: 74.800 us, 2693.3 GB/s, 62.5% of peak BW
+PASS quack  bwd M=32768 N=1024 float16/float16: 73.648 us, 2735.5 GB/s, 63.4% of peak BW
+PASS torch  bwd M=32768 N=1024 float16/float16: 198.440 us, 1015.2 GB/s, 23.5% of peak BW
+PASS quack_tuned fwd M=32768 N=1024 float16/float32: 42.408 us, 3165.0 GB/s, 73.4% of peak BW
+PASS quack  fwd M=32768 N=1024 float16/float32: 42.144 us, 3184.8 GB/s, 73.8% of peak BW
+PASS torch  fwd M=32768 N=1024 float16/float32: 466.424 us, 287.8 GB/s, 6.7% of peak BW
+PASS quack_tuned bwd M=32768 N=1024 float16/float32: 71.936 us, 2800.6 GB/s, 64.9% of peak BW
+PASS quack  bwd M=32768 N=1024 float16/float32: 72.448 us, 2780.8 GB/s, 64.5% of peak BW
+PASS torch  bwd M=32768 N=1024 float16/float32: 1089.128 us, 185.0 GB/s, 4.3% of peak BW
+PASS quack_tuned fwd M=32768 N=1024 bfloat16/bfloat16: 42.656 us, 3146.6 GB/s, 73.0% of peak BW
+PASS quack  fwd M=32768 N=1024 bfloat16/bfloat16: 41.288 us, 3250.8 GB/s, 75.4% of peak BW
+PASS torch  fwd M=32768 N=1024 bfloat16/bfloat16: 50.664 us, 2649.2 GB/s, 61.4% of peak BW
+PASS quack_tuned bwd M=32768 N=1024 bfloat16/bfloat16: 74.416 us, 2707.2 GB/s, 62.8% of peak BW
+PASS quack  bwd M=32768 N=1024 bfloat16/bfloat16: 73.792 us, 2730.1 GB/s, 63.3% of peak BW
+PASS torch  bwd M=32768 N=1024 bfloat16/bfloat16: 193.616 us, 1040.5 GB/s, 24.1% of peak BW
+PASS quack_tuned fwd M=32768 N=1024 bfloat16/float32: 42.616 us, 3149.6 GB/s, 73.0% of peak BW
+PASS quack  fwd M=32768 N=1024 bfloat16/float32: 42.384 us, 3166.8 GB/s, 73.4% of peak BW
+PASS torch  fwd M=32768 N=1024 bfloat16/float32: 470.152 us, 285.5 GB/s, 6.6% of peak BW
+PASS quack_tuned bwd M=32768 N=1024 bfloat16/float32: 72.312 us, 2786.1 GB/s, 64.6% of peak BW
+PASS quack  bwd M=32768 N=1024 bfloat16/float32: 71.752 us, 2807.8 GB/s, 65.1% of peak BW
+PASS torch  bwd M=32768 N=1024 bfloat16/float32: 1101.104 us, 183.0 GB/s, 4.2% of peak BW
+PASS quack_tuned fwd M=32768 N=1024 float32/float32: 73.768 us, 3639.0 GB/s, 84.4% of peak BW
+PASS quack  fwd M=32768 N=1024 float32/float32: 74.104 us, 3622.5 GB/s, 84.0% of peak BW
+PASS torch  fwd M=32768 N=1024 float32/float32: 80.144 us, 3349.5 GB/s, 77.7% of peak BW
+PASS quack_tuned bwd M=32768 N=1024 float32/float32: 121.912 us, 3304.0 GB/s, 76.6% of peak BW
+PASS quack  bwd M=32768 N=1024 float32/float32: 125.616 us, 3206.5 GB/s, 74.4% of peak BW
+PASS torch  bwd M=32768 N=1024 float32/float32: 224.960 us, 1790.5 GB/s, 41.5% of peak BW
+PASS quack_tuned fwd M=32768 N=2048 float16/float16: 73.672 us, 3643.7 GB/s, 84.5% of peak BW
+PASS quack  fwd M=32768 N=2048 float16/float16: 73.272 us, 3663.6 GB/s, 84.9% of peak BW
+PASS torch  fwd M=32768 N=2048 float16/float16: 85.264 us, 3148.3 GB/s, 73.0% of peak BW
+PASS quack_tuned bwd M=32768 N=2048 float16/float16: 126.432 us, 3185.8 GB/s, 73.9% of peak BW
+PASS quack  bwd M=32768 N=2048 float16/float16: 126.240 us, 3190.7 GB/s, 74.0% of peak BW
+PASS torch  bwd M=32768 N=2048 float16/float16: 264.488 us, 1522.9 GB/s, 35.3% of peak BW
+PASS quack_tuned fwd M=32768 N=2048 float16/float32: 74.680 us, 3594.6 GB/s, 83.3% of peak BW
+PASS quack  fwd M=32768 N=2048 float16/float32: 76.584 us, 3505.2 GB/s, 81.3% of peak BW
+PASS torch  fwd M=32768 N=2048 float16/float32: 913.416 us, 293.9 GB/s, 6.8% of peak BW
+PASS quack_tuned bwd M=32768 N=2048 float16/float32: 121.264 us, 3321.7 GB/s, 77.0% of peak BW
+PASS quack  bwd M=32768 N=2048 float16/float32: 120.264 us, 3349.3 GB/s, 77.7% of peak BW
+PASS torch  bwd M=32768 N=2048 float16/float32: 2047.360 us, 196.7 GB/s, 4.6% of peak BW
+PASS quack_tuned fwd M=32768 N=2048 bfloat16/bfloat16: 74.080 us, 3623.6 GB/s, 84.0% of peak BW
+PASS quack  fwd M=32768 N=2048 bfloat16/bfloat16: 74.200 us, 3617.8 GB/s, 83.9% of peak BW
+PASS torch  fwd M=32768 N=2048 bfloat16/bfloat16: 86.688 us, 3096.6 GB/s, 71.8% of peak BW
+PASS quack_tuned bwd M=32768 N=2048 bfloat16/bfloat16: 124.616 us, 3232.3 GB/s, 74.9% of peak BW
+PASS quack  bwd M=32768 N=2048 bfloat16/bfloat16: 123.744 us, 3255.0 GB/s, 75.5% of peak BW
+PASS torch  bwd M=32768 N=2048 bfloat16/bfloat16: 254.416 us, 1583.2 GB/s, 36.7% of peak BW
+PASS quack_tuned fwd M=32768 N=2048 bfloat16/float32: 73.856 us, 3634.7 GB/s, 84.3% of peak BW
+PASS quack  fwd M=32768 N=2048 bfloat16/float32: 76.120 us, 3526.6 GB/s, 81.8% of peak BW
+PASS torch  fwd M=32768 N=2048 bfloat16/float32: 907.824 us, 295.7 GB/s, 6.9% of peak BW
+PASS quack_tuned bwd M=32768 N=2048 bfloat16/float32: 121.080 us, 3326.7 GB/s, 77.1% of peak BW
+PASS quack  bwd M=32768 N=2048 bfloat16/float32: 120.736 us, 3336.2 GB/s, 77.4% of peak BW
+PASS torch  bwd M=32768 N=2048 bfloat16/float32: 2059.208 us, 195.6 GB/s, 4.5% of peak BW
+PASS quack_tuned fwd M=32768 N=2048 float32/float32: 146.136 us, 3673.8 GB/s, 85.2% of peak BW
+PASS quack  fwd M=32768 N=2048 float32/float32: 154.832 us, 3467.5 GB/s, 80.4% of peak BW
+PASS torch  fwd M=32768 N=2048 float32/float32: 162.040 us, 3313.3 GB/s, 76.8% of peak BW
+PASS quack_tuned bwd M=32768 N=2048 float32/float32: 228.288 us, 3528.2 GB/s, 81.8% of peak BW
+PASS quack  bwd M=32768 N=2048 float32/float32: 237.240 us, 3395.1 GB/s, 78.7% of peak BW
+PASS torch  bwd M=32768 N=2048 float32/float32: 458.416 us, 1757.0 GB/s, 40.7% of peak BW
+PASS quack_tuned fwd M=32768 N=4096 float16/float16: 137.688 us, 3899.2 GB/s, 90.4% of peak BW
+PASS quack  fwd M=32768 N=4096 float16/float16: 136.840 us, 3923.4 GB/s, 91.0% of peak BW
+PASS torch  fwd M=32768 N=4096 float16/float16: 163.144 us, 3290.8 GB/s, 76.3% of peak BW
+PASS quack_tuned bwd M=32768 N=4096 float16/float16: 221.760 us, 3632.1 GB/s, 84.2% of peak BW
+PASS quack  bwd M=32768 N=4096 float16/float16: 240.568 us, 3348.1 GB/s, 77.6% of peak BW
+PASS torch  bwd M=32768 N=4096 float16/float16: 432.024 us, 1864.4 GB/s, 43.2% of peak BW
+PASS quack_tuned fwd M=32768 N=4096 float16/float32: 137.752 us, 3897.5 GB/s, 90.4% of peak BW
+PASS quack  fwd M=32768 N=4096 float16/float32: 140.296 us, 3826.8 GB/s, 88.7% of peak BW
+PASS torch  fwd M=32768 N=4096 float16/float32: 1727.360 us, 310.8 GB/s, 7.2% of peak BW
+PASS quack_tuned bwd M=32768 N=4096 float16/float32: 208.776 us, 3858.1 GB/s, 89.5% of peak BW
+PASS quack  bwd M=32768 N=4096 float16/float32: 209.328 us, 3847.9 GB/s, 89.2% of peak BW
+PASS torch  bwd M=32768 N=4096 float16/float32: 3997.176 us, 201.5 GB/s, 4.7% of peak BW
+PASS quack_tuned fwd M=32768 N=4096 bfloat16/bfloat16: 139.240 us, 3855.8 GB/s, 89.4% of peak BW
+PASS quack  fwd M=32768 N=4096 bfloat16/bfloat16: 138.648 us, 3872.2 GB/s, 89.8% of peak BW
+PASS torch  fwd M=32768 N=4096 bfloat16/bfloat16: 164.048 us, 3272.7 GB/s, 75.9% of peak BW
+PASS quack_tuned bwd M=32768 N=4096 bfloat16/bfloat16: 219.568 us, 3668.4 GB/s, 85.1% of peak BW
+PASS quack  bwd M=32768 N=4096 bfloat16/bfloat16: 241.440 us, 3336.0 GB/s, 77.4% of peak BW
+PASS torch  bwd M=32768 N=4096 bfloat16/bfloat16: 483.552 us, 1665.7 GB/s, 38.6% of peak BW
+PASS quack_tuned fwd M=32768 N=4096 bfloat16/float32: 136.616 us, 3929.9 GB/s, 91.1% of peak BW
+PASS quack  fwd M=32768 N=4096 bfloat16/float32: 140.232 us, 3828.6 GB/s, 88.8% of peak BW
+PASS torch  fwd M=32768 N=4096 bfloat16/float32: 1730.120 us, 310.3 GB/s, 7.2% of peak BW
+PASS quack_tuned bwd M=32768 N=4096 bfloat16/float32: 206.608 us, 3898.5 GB/s, 90.4% of peak BW
+PASS quack  bwd M=32768 N=4096 bfloat16/float32: 207.720 us, 3877.7 GB/s, 89.9% of peak BW
+PASS torch  bwd M=32768 N=4096 bfloat16/float32: 4002.520 us, 201.2 GB/s, 4.7% of peak BW
+PASS quack_tuned fwd M=32768 N=4096 float32/float32: 263.192 us, 4079.8 GB/s, 94.6% of peak BW
+PASS quack  fwd M=32768 N=4096 float32/float32: 266.688 us, 4026.3 GB/s, 93.4% of peak BW
+PASS torch  fwd M=32768 N=4096 float32/float32: 365.168 us, 2940.4 GB/s, 68.2% of peak BW
+r: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_Nonquack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (32768, 4096), (2, 1), torch.float32, (4096,), (1,), torch.float32, (32768, 4096), (2, 1), torch.float32, (32768,), (1,), torch.float32, (32768, 4096), (2, 1), torch.float32, (264, 4096), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=32768 N=4096 float32/float32: 402.824 us, 3998.7 GB/s, 92.7% of peak BW
+PASS quack  bwd M=32768 N=4096 float32/float32: 419.704 us, 3837.9 GB/s, 89.0% of peak BW
+PASS torch  bwd M=32768 N=4096 float32/float32: 893.560 us, 1802.7 GB/s, 41.8% of peak BW
+PASS quack_tuned fwd M=32768 N=8192 float16/float16: 267.376 us, 4015.9 GB/s, 93.1% of peak BW
+PASS quack  fwd M=32768 N=8192 float16/float16: 265.272 us, 4047.8 GB/s, 93.9% of peak BW
+PASS torch  fwd M=32768 N=8192 float16/float16: 403.056 us, 2664.0 GB/s, 61.8% of peak BW
+e_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o4096i64div41_tensorptrf32_gmem_align16_o_4409601_tensorptrf32gmemalign16o4096i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_9quack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (32768, 8192), (2, 1), torch.float16, (8192,), (1,), torch.float16, (32768, 8192), (2, 1), torch.float16, (32768,), (1,), torch.float32, (32768, 8192), (2, 1), torch.float16, (132, 8192), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=32768 N=8192 float16/float16: 398.928 us, 4037.8 GB/s, 93.6% of peak BW
+PASS quack  bwd M=32768 N=8192 float16/float16: 489.640 us, 3289.7 GB/s, 76.3% of peak BW
+PASS torch  bwd M=32768 N=8192 float16/float16: 1066.984 us, 1509.7 GB/s, 35.0% of peak BW
+PASS quack_tuned fwd M=32768 N=8192 float16/float32: 288.072 us, 3727.5 GB/s, 86.4% of peak BW
+PASS quack  fwd M=32768 N=8192 float16/float32: 277.344 us, 3871.6 GB/s, 89.8% of peak BW
+PASS torch  fwd M=32768 N=8192 float16/float32: 3455.424 us, 310.8 GB/s, 7.2% of peak BW
+0a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf16_gmem_align16_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gquack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (32768, 8192), (2, 1), torch.float16, (8192,), (1,), torch.float32, (32768, 8192), (2, 1), torch.float16, (32768,), (1,), torch.float32, (32768, 8192), (2, 1), torch.float16, (132, 8192), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=32768 N=8192 float16/float32: 401.488 us, 4012.1 GB/s, 93.0% of peak BW
+PASS quack  bwd M=32768 N=8192 float16/float32: 472.208 us, 3411.2 GB/s, 79.1% of peak BW
+PASS torch  bwd M=32768 N=8192 float16/float32: 7867.608 us, 204.7 GB/s, 4.7% of peak BW
+PASS quack_tuned fwd M=32768 N=8192 bfloat16/bfloat16: 294.880 us, 3641.3 GB/s, 84.4% of peak BW
+PASS quack  fwd M=32768 N=8192 bfloat16/bfloat16: 266.472 us, 4029.5 GB/s, 93.4% of peak BW
+PASS torch  fwd M=32768 N=8192 bfloat16/bfloat16: 403.968 us, 2658.0 GB/s, 61.6% of peak BW
+PASS quack_tuned bwd M=32768 N=8192 bfloat16/bfloat16: 407.120 us, 3956.5 GB/s, 91.7% of peak BW
+PASS quack  bwd M=32768 N=8192 bfloat16/bfloat16: 493.352 us, 3265.0 GB/s, 75.7% of peak BW
+PASS torch  bwd M=32768 N=8192 bfloat16/bfloat16: 1046.096 us, 1539.8 GB/s, 35.7% of peak BW
+PASS quack_tuned fwd M=32768 N=8192 bfloat16/float32: 265.624 us, 4042.5 GB/s, 93.7% of peak BW
+PASS quack  fwd M=32768 N=8192 bfloat16/float32: 270.608 us, 3968.0 GB/s, 92.0% of peak BW
+PASS torch  fwd M=32768 N=8192 bfloat16/float32: 3451.880 us, 311.1 GB/s, 7.2% of peak BW
+mem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrf16gmemalign16o8192i64div81_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kequack autotune: 16/400 configs failed for rmsnorm_bwd_tuned(True, (32768, 8192), (2, 1), torch.bfloat16, (8192,), (1,), torch.float32, (32768, 8192), (2, 1), torch.bfloat16, (32768,), (1,), torch.float32, (32768, 8192), (2, 1), torch.bfloat16, (132, 8192), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=32768 N=8192 bfloat16/float32: 403.184 us, 3995.2 GB/s, 92.6% of peak BW
+PASS quack  bwd M=32768 N=8192 bfloat16/float32: 483.896 us, 3328.8 GB/s, 77.2% of peak BW
+PASS torch  bwd M=32768 N=8192 bfloat16/float32: 7857.448 us, 205.0 GB/s, 4.8% of peak BW
+PASS quack_tuned fwd M=32768 N=8192 float32/float32: 515.456 us, 4166.2 GB/s, 96.6% of peak BW
+PASS quack  fwd M=32768 N=8192 float32/float32: 525.304 us, 4088.1 GB/s, 94.8% of peak BW
+PASS torch  fwd M=32768 N=8192 float32/float32: 771.480 us, 2783.6 GB/s, 64.5% of peak BW
+rnel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrbf16gmemalign16o8192i64div81_tensorptrf32_gmem_align32_o_4819201_tensorptrbf16gmemalign16o8192i64div81_None_tensorptr_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262176 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262176 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393296 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393296 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393248 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393248 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262176 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262176 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393248 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393296 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393248 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393296 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524352 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786496 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524384 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786544 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524352 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786496 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524384 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786544 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524352 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786496 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524384 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786544 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524352 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786496 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 524384 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 786544 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262304 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393376 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262432 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393520 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262304 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393376 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262432 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393520 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262304 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393376 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262432 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393520 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262304 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393376 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262432 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_4819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393520 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel quack autotune: 64/400 configs failed for rmsnorm_bwd_tuned(True, (32768, 8192), (2, 1), torch.float32, (8192,), (1,), torch.float32, (32768, 8192), (2, 1), torch.float32, (32768,), (1,), torch.float32, (32768, 8192), (2, 1), torch.float32, (132, 8192), (2, 1), torch.float32); set QUACK_PRINT_AUTOTUNING=1 for details
+PASS quack_tuned bwd M=32768 N=8192 float32/float32: 778.472 us, 4138.1 GB/s, 96.0% of peak BW
+PASS quack  bwd M=32768 N=8192 float32/float32: 779.712 us, 4131.6 GB/s, 95.8% of peak BW
+PASS torch  bwd M=32768 N=8192 float32/float32: 1787.280 us, 1802.4 GB/s, 41.8% of peak BW
+Artifacts: /root/xbench-h200-tuned
+CSV: /root/xbench-h200-tuned/results.csv
+Environment: /root/xbench-h200-tuned/environment.json
+'@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262208 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393280 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 262240 bytes. Max: 232448 bytes.
+
+
+Error: kernel '@kernels::@kernel_cutlass_kernel_quackrmsnormRMSNormBackward_object_at__tensorptrf32gmemalign16o8192i64div41_tensorptrf32_gmem_align16_o_2819201_tensorptrf32gmemalign16o8192i64div41_None_tensorptrf3_0' launch shared memory exceeds current GPU arch sm_90a allowed. Allocated: 393328 bytes. Max: 232448 bytes.
+

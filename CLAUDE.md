@@ -31,12 +31,13 @@ Push to `main` auto-deploys via Vercel (~60s).
 
 ## Content categories
 
-All published writing sorts into four shelves, surfaced by the categorized hub at `public/sources/index.html` (linked from the top nav as `sources`):
+All published writing sorts into five shelves, surfaced by the categorized hub at `public/sources/index.html` (linked from the top nav as `sources`):
 
 - **code** 代码 — source-level readings of real codebases → self-contained HTML deep dives under `public/sources/<slug>.html` (kicker `Source Reading NNN`). **No markdown twin.**
 - **paper** 论文 — close readings of research papers → HTML deep dives under `public/sources/<slug>.html` (kicker `Paper Reading NNN`). **No markdown twin.**
 - **tutorial** 教程 — first-principles primers/guides → bilingual markdown under `src/content/blog/{en,zh}/`, plus an HTML primer when the topic deserves hand-coded plates.
 - **blog** 博客 — original writing (benchmarks, comparisons, project notes) → bilingual markdown only.
+- **experiments** 实验 — reproducible kernel and system measurements → HTML deep dives under `public/sources/<slug>.html` (kicker `Experiment NNN`), with raw CSVs, run logs and the exact commands archived under `data/<slug>/`. **No markdown twin.** These exist to be cited later, so the raw data is committed alongside the write-up rather than living in a canvas that dies with the container.
 
 As of 2026-06-08 the per-entry "appetizer" markdown for code/paper readings was pruned — the HTML deep dive is the canonical artifact, discovered via the `/sources/` hub. Do not recreate appetizer markdown for code/paper entries.
 

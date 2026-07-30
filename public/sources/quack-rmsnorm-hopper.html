@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Quack RMSNorm on H100 and H200 — what a tuned Hopper kernel actually costs</title>
+<meta name="description" content="A 90-cell tuned and un-tuned sweep of Quack's CuTe DSL RMSNorm forward and backward kernels on idle H100 and H200 GPUs, archived as a reference baseline for a future MI355X implementation."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=Crimson+Pro:ital,wght@0,300..600;1,300..500&amp;family=Archivo:wght@400;500;600&amp;family=Azeret+Mono:wght@300;400;500&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f4f5f7; --paper:#fcfcfd; --sunk:#e8eaee;
+  --fg:#16181d; --fg2:#464a54; --fg3:#787d88;
+  --rule:#dcdfe5; --rule2:#bdc2cc;
+  --plum:#6d3f8c;       /* the shelf accent — primary series, H200 */
+  --teal:#0f6b62;       /* secondary series, H100 */
+  --amber:#9a6b12;      /* warnings */
+  --ink:#1e2027;
+  --display:'Fraunces','Noto Serif SC','Songti SC',serif;
+  --body:'Crimson Pro','Noto Serif SC','Songti SC',Georgia,serif;
+  --ui:'Archivo',system-ui,-apple-system,sans-serif;
+  --mono:'Azeret Mono',ui-monospace,'Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--body); font-size:18px; line-height:1.68;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+code{font-family:var(--mono); font-size:.86em; background:var(--sunk); padding:.08em .32em; border-radius:2px}
+
+.wrap{display:grid; grid-template-columns:236px minmax(0,1fr); max-width:1180px; margin:0 auto}
+
+/* ---- rail ---- */
+.rail{
+  grid-column:1; padding:44px 26px 60px 20px; font-family:var(--ui);
+  font-size:12.5px; line-height:1.5; border-right:1px solid var(--rule);
+  position:sticky; top:0; align-self:start; max-height:100vh; overflow-y:auto;
+}
+.rail-back{display:block; margin-bottom:24px; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg3); text-decoration:none}
+.rail-back:hover{color:var(--plum)}
+.rail-brand{font-family:var(--display); font-size:19px; line-height:1.2; margin-bottom:4px}
+.rail-ref{font-family:var(--mono); font-size:11px; color:var(--fg3); margin-bottom:22px}
+.rail-title{font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fg3); margin:0 0 8px}
+.rail ol{list-style:none; margin:0; padding:0; counter-reset:toc}
+.rail ol li{counter-increment:toc; margin:0 0 6px}
+.rail ol li a{text-decoration:none; color:var(--fg2); display:block; padding-left:22px; position:relative}
+.rail ol li a::before{content:counter(toc,decimal-leading-zero); position:absolute; left:0; font-family:var(--mono); font-size:10px; color:var(--rule2)}
+.rail ol li a:hover{color:var(--plum)}
+
+/* ---- main ---- */
+.main{grid-column:2; padding:0 0 90px}
+.masthead{padding:52px 0 28px; border-bottom:2px solid var(--ink); margin-bottom:36px; max-width:760px}
+.kicker{font-family:var(--ui); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--plum); margin:0 0 16px}
+.kicker .chip{font-family:var(--mono); background:var(--plum); color:#fff; padding:2px 6px; letter-spacing:.04em}
+.masthead h1{font-family:var(--display); font-size:40px; line-height:1.12; letter-spacing:-.014em; margin:0 0 14px; font-weight:600}
+.masthead .sub{font-size:18.5px; color:var(--fg2); margin:0 0 26px; line-height:1.6}
+.spec{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px 20px; margin:0; font-family:var(--ui)}
+.spec div{min-width:0}
+.spec dt{font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--fg3); margin-bottom:3px}
+.spec dd{margin:0; font-size:13px; color:var(--fg)}
+
+.article{max-width:760px}
+.article h2{
+  font-family:var(--display); font-size:26px; font-weight:600; letter-spacing:-.01em;
+  margin:52px 0 4px; padding-top:14px; border-top:1px solid var(--rule);
+}
+.article h2 .n{font-family:var(--mono); font-size:12px; color:var(--plum); display:block; margin-bottom:6px; letter-spacing:.08em}
+.article h3{font-family:var(--ui); font-size:15px; font-weight:600; margin:30px 0 8px; color:var(--fg)}
+.article p{margin:0 0 16px}
+.lede{font-size:19px; color:var(--fg2)}
+
+.note{
+  border-left:3px solid var(--plum); background:var(--paper);
+  padding:14px 18px; margin:22px 0; font-size:16px; color:var(--fg2);
+}
+.note.warn{border-left-color:var(--amber)}
+.note .lbl{font-family:var(--ui); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--plum); display:block; margin-bottom:6px}
+.note.warn .lbl{color:var(--amber)}
+
+pre{
+  background:var(--ink); color:#e6e8ee; font-family:var(--mono); font-size:12.5px; line-height:1.62;
+  padding:16px 18px; overflow-x:auto; margin:20px 0; border-radius:3px;
+}
+pre code{background:none; padding:0; font-size:inherit; color:inherit}
+
+/* ---- plates ---- */
+.plate{margin:28px 0 10px; background:var(--paper); border:1px solid var(--rule); padding:16px 18px 12px}
+.plate.wide{max-width:none; width:min(980px,calc(100vw - 300px))}
+.plate-meta{
+  display:flex; justify-content:space-between; gap:14px; align-items:baseline;
+  font-family:var(--ui); font-size:11.5px; color:var(--fg2); margin-bottom:12px;
+  border-bottom:1px solid var(--rule); padding-bottom:8px;
+}
+.plate-meta b{font-family:var(--mono); color:var(--plum); font-weight:500; letter-spacing:.06em}
+.plate-svg{width:100%; height:auto; display:block}
+.caption{font-size:14.5px; font-style:italic; color:var(--fg3); margin:10px 0 0; line-height:1.55}
+
+/* svg shared classes */
+.ax-grid{stroke:var(--rule); stroke-width:1}
+.ax-axis{stroke:var(--rule2); stroke-width:1}
+.ax-tick{font-family:var(--mono); font-size:10px; fill:var(--fg3)}
+.ax-label{font-family:var(--ui); font-size:11px; fill:var(--fg2)}
+.bar{shape-rendering:crispEdges}
+.bar-a{fill:var(--plum)}
+.bar-b{fill:var(--teal)}
+.bar-c{fill:#b08bc9}
+.bar-d{fill:#6fb0a7}
+.diag-node{fill:var(--paper); stroke:var(--rule2); stroke-width:1.2}
+.diag-node.hot{stroke:var(--plum); stroke-width:1.8}
+.diag-text{font-family:var(--ui); font-size:11.5px; fill:var(--fg)}
+.diag-text.sm{font-size:10px; fill:var(--fg3)}
+.diag-text.mono{font-family:var(--mono); font-size:10px; fill:var(--fg2)}
+.diag-edge{stroke:var(--rule2); stroke-width:1.3; fill:none}
+.diag-edge.hot{stroke:var(--plum)}
+
+/* ---- tables ---- */
+.table-wrap{overflow-x:auto; margin:22px 0}
+table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13px}
+th,td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--rule); white-space:nowrap}
+thead th{
+  font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--fg3);
+  border-bottom:1.5px solid var(--rule2); font-weight:600;
+}
+td.num,th.num{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--paper)}
+td code{background:none; padding:0; color:var(--fg2)}
+
+.gen{font-family:var(--mono); font-size:.9em; font-variant-numeric:tabular-nums}
+
+/* ---- colophon ---- */
+.colophon{max-width:760px; margin-top:64px; padding-top:22px; border-top:2px solid var(--ink); font-family:var(--ui); font-size:12.5px; color:var(--fg2)}
+.colophon .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px 24px; margin-bottom:22px}
+.colophon .lbl{font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--fg3); margin-bottom:4px}
+.colophon .closing{font-family:var(--mono); font-size:11px; color:var(--fg3); letter-spacing:.03em}
+
+/* ---- language toggle ---- */
+.lang-toggle{position:fixed; top:16px; right:18px; z-index:40; display:inline-flex; background:var(--paper); border:1px solid var(--rule2)}
+.lang-toggle button{font-family:var(--ui); font-size:11.5px; letter-spacing:.06em; padding:6px 11px; background:none; border:0; color:var(--fg3); cursor:pointer}
+.lang-toggle button+button{border-left:1px solid var(--rule)}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"]{background:var(--ink); color:var(--paper)}
+
+@media (max-width:940px){
+  .wrap{grid-template-columns:1fr; padding:0 20px}
+  .rail{position:static; max-height:none; border-right:0; border-bottom:1px solid var(--rule); padding:20px 0}
+  .main{grid-column:1}
+  .plate.wide{width:auto}
+}
+
+/* Language visibility — must stay last so it wins. */
+body[data-lang="en"] [lang="zh"]:not(html){display:none !important}
+body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
+</style>
+</head>
+<body data-lang="en">
+
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="wrap">
+
+<nav class="rail">
+  <a class="rail-back" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+  <div class="rail-brand">Quack RMSNorm</div>
+  <div class="rail-ref">Experiment No.001 · 2026-07-30</div>
+  <p class="rail-title"><span lang="en">Contents</span><span lang="zh">目录</span></p>
+  <ol>
+    <li><a href="#why"><span lang="en">Why measure this</span><span lang="zh">为什么要测</span></a></li>
+    <li><a href="#setup"><span lang="en">What a clean run requires</span><span lang="zh">一次干净的测量需要什么</span></a></li>
+    <li><a href="#two-paths"><span lang="en">Two config paths</span><span lang="zh">两条配置路径</span></a></li>
+    <li><a href="#forward"><span lang="en">Forward</span><span lang="zh">前向</span></a></li>
+    <li><a href="#backward"><span lang="en">Backward</span><span lang="zh">反向</span></a></li>
+    <li><a href="#gain"><span lang="en">Where autotune pays</span><span lang="zh">autotune 在哪里有回报</span></a></li>
+    <li><a href="#dtype"><span lang="en">Dtype sensitivity</span><span lang="zh">dtype 敏感性</span></a></li>
+    <li><a href="#caveats"><span lang="en">What limits these numbers</span><span lang="zh">这些数字的边界</span></a></li>
+    <li><a href="#mi355x"><span lang="en">Targets for MI355X</span><span lang="zh">给 MI355X 的目标</span></a></li>
+    <li><a href="#reproduce"><span lang="en">Reproducing</span><span lang="zh">复现</span></a></li>
+  </ol>
+</nav>
+
+<div class="main">
+
+<header class="masthead">
+  <p class="kicker"><span class="chip">Experiment No.001</span> &nbsp;Quack RMSNorm · Hopper</p>
+  <h1><span lang="en">What a tuned RMSNorm kernel actually costs on Hopper</span><span lang="zh">在 Hopper 上， 一个调优过的 RMSNorm kernel 到底要花多少</span></h1>
+  <p class="sub"><span lang="en">Ninety cells per GPU, three providers, two idle Hopper cards. Both kernels can reach the low nineties as a fraction of measured bandwidth — but forward gets there from the hand-written config ladder, and backward only gets there by searching, because the ladder hardcodes the two knobs that matter most for wide rows.</span><span lang="zh">每张卡 90 个测试点、 三个 provider、 两张空闲的 Hopper。 两个 kernel 都能达到实测带宽的九十出头—— 但前向靠手写的配置阶梯就够到了， 反向只有靠搜索才能到达， 因为那条阶梯把对宽行最要紧的两个旋钮写死了。</span></p>
+  <dl class="spec">
+    <div><dt><span lang="en">Hardware</span><span lang="zh">硬件</span></dt><dd>1x H200 · 1x H100 80GB HBM3</dd></div>
+    <div><dt><span lang="en">Kernels</span><span lang="zh">Kernel</span></dt><dd>Quack CuTe DSL RMSNorm fwd + bwd</dd></div>
+    <div><dt><span lang="en">Matrix</span><span lang="zh">测试矩阵</span></dt><dd><span class="gen" data-gen="cells-per-gpu">90</span> cells · <span class="gen" data-gen="rows-per-gpu">270</span> rows / GPU</dd></div>
+    <div><dt><span lang="en">Commit</span><span lang="zh">提交</span></dt><dd><code>8aabb38</code></dd></div>
+    <div><dt><span lang="en">Date</span><span lang="zh">日期</span></dt><dd>2026-07-30</dd></div>
+    <div><dt><span lang="en">Raw data</span><span lang="zh">原始数据</span></dt><dd><code>data/quack-rmsnorm-hopper/</code></dd></div>
+  </dl>
+</header>
+
+<article class="article">
+
+<section id="why">
+<h2><span class="n">01</span><span lang="en">Why measure this</span><span lang="zh">为什么要测</span></h2>
+<p class="lede"><span lang="en">We are about to implement RMSNorm forward and backward on MI355X. The question that decides whether that implementation is finished is not "does it run" but "how close to the memory system is it, and how close should it be." That number has to come from somewhere.</span><span lang="zh">我们即将在 MI355X 上实现 RMSNorm 的前向与反向。 判断这个实现是否算完成的问题， 不是"能不能跑"， 而是"离显存系统还有多远， 以及本来应该有多近"。 这个数字总得有个来源。</span></p>
+<p><span lang="en">Quack's CuTe DSL implementation is a reasonable answer. It is a mature, well-tuned kernel on hardware whose memory system is well understood, written by people optimising for exactly this. Measuring it carefully gives the MI355X work a target rather than a vibe — and, more usefully, tells us <em>which part</em> of RMSNorm is hard. Those turn out to be very different for forward and backward.</span><span lang="zh">Quack 的 CuTe DSL 实现是个合理的参照。 它是一个成熟、 调优良好的 kernel， 跑在显存系统被充分理解的硬件上， 由专门做这件事的人写成。 认真测一遍， 能给 MI355X 的工作一个明确目标而不是一种感觉； 更有用的是， 它会告诉我们 RMSNorm 究竟<em>哪一部分</em>难。 而前向和反向的答案完全不同。</span></p>
+<p><span lang="en">RMSNorm is memory bound. Every row is read, reduced, scaled and written; there is no arithmetic worth hiding behind. So the only interesting metric is what fraction of the memory system a kernel actually extracts, and the only honest comparison across two different memory systems is that fraction — not microseconds.</span><span lang="zh">RMSNorm 是带宽受限算子。 每一行被读入、 归约、 缩放、 写出， 中间没有值得用来掩盖访存的算术。 所以唯一有意思的指标是 kernel 实际榨出了显存系统的多少比例； 跨两套不同显存系统时， 唯一诚实的比较也是这个比例， 而不是微秒数。</span></p>
+</section>
+
+<section id="setup">
+<h2><span class="n">02</span><span lang="en">What a clean run requires</span><span lang="zh">一次干净的测量需要什么</span></h2>
+<p><span lang="en">A percent-of-peak number is a ratio, and the denominator is measured, not quoted from a spec sheet. The harness probes the device three ways — a copy, a pure write, and a two-read-one-write pattern — and takes the best as the achievable roofline. That choice matters later, because the two GPUs did not peak on the same probe.</span><span lang="zh">占峰值的百分比是一个比值， 而分母是实测出来的， 不是从规格表上抄的。 测试框架用三种方式探测设备—— copy、 纯写、 以及 2 读 1 写—— 取最优值作为可达上限。 这个选择在后面会变得重要， 因为两张卡的峰值并不出现在同一种探测上。</span></p>
+<p><span lang="en">Three disciplines make the ratio trustworthy. Every cell is validated against an fp32 reference <em>before</em> it is timed, so a fast wrong kernel cannot score. Inputs rotate through cloned buffers with a cache-evicting copy between calls, so small shapes cannot quietly serve from L2. And the bandwidth probe is repeated at the end of the sweep: if the closing number has drifted from the opening one, a co-tenant arrived and every ratio in the run is suspect.</span><span lang="zh">三条纪律让这个比值可信。 每个测试点在计时<em>之前</em>都与 fp32 参考实现校验， 所以一个又快又错的 kernel 拿不到分数。 输入在多组克隆缓冲之间轮转， 两次调用之间插入一次冲刷缓存的拷贝， 所以小 shape 无法悄悄从 L2 供数。 带宽探测在 sweep 结束时再做一次： 如果收尾值相对开场值发生漂移， 说明中途来了邻居， 这一轮所有比值都要打问号。</span></p>
+<p><span lang="en">GPUs were chosen by inspection, not by hope: <code>0 MiB</code> allocated and <code>0%</code> utilisation, re-checked immediately before launch. On the H200 node five of the other seven cards were in use by someone else, which is exactly the situation the canary exists for.</span><span lang="zh">GPU 是看着挑的， 不是赌来的： 显存占用 <code>0 MiB</code>、 利用率 <code>0%</code>， 并在启动前立刻复查一次。 H200 那台机器上另外七张卡有五张正被别人使用—— 这正是哨兵存在的意义。</span></p>
+
+<div class="table-wrap">
+<!-- GEN:table-env -->
+<table><thead><tr><th>property</th><th>H200</th><th>H100</th></tr></thead><tbody><tr><td>GPU</td><td>NVIDIA H200</td><td>NVIDIA H100 80GB HBM3</td></tr><tr><td>visible index</td><td>3</td><td>0</td></tr><tr><td>SMs</td><td>132</td><td>132</td></tr><tr><td>reported L2</td><td>60 MiB</td><td>50 MiB</td></tr><tr><td>PyTorch</td><td>2.9.1+cu128</td><td>2.11.0+cu130</td></tr><tr><td>CUDA</td><td>12.8</td><td>13.0</td></tr><tr><td>commit</td><td>8aabb38</td><td>8aabb38</td></tr><tr><td>achievable bandwidth</td><td>4312.7 GB/s (two read one write)</td><td>3182.3 GB/s (write)</td></tr><tr><td>contention canary</td><td>0.999 (quiet)</td><td>0.999 (quiet)</td></tr><tr><td>result rows</td><td>270</td><td>270</td></tr></tbody></table>
+<!-- /GEN:table-env -->
+</div>
+<p class="caption"><span lang="en">Run environment, read back from each run's <code>environment.json</code>. Note the two hosts do not share a toolchain, and did not peak on the same bandwidth probe.</span><span lang="zh">运行环境， 取自各自的 <code>environment.json</code>。 注意两台机器的工具链并不相同， 峰值也不出现在同一种带宽探测上。</span></p>
+
+<div class="note warn">
+  <span class="lbl"><span lang="en">The trap that invalidates everything</span><span lang="zh">会让一切作废的陷阱</span></span>
+  <p style="margin:0"><span lang="en">Running the harness by path puts <code>benchmarks/</code> at the front of <code>sys.path</code>, so a bare <code>import quack</code> resolves to the pip wheel in site-packages rather than the checkout under test. The first attempt at this experiment measured the wheel on one host and crashed on the other, where the installed wheel was too old for the local CUTLASS. Every run here sets <code>PYTHONPATH</code> to the repository root and prints the resolved module path before starting.</span><span lang="zh">用路径方式执行测试脚本会把 <code>benchmarks/</code> 放到 <code>sys.path</code> 最前面， 于是未限定的 <code>import quack</code> 会解析到 site-packages 里 pip 安装的 wheel， 而不是待测的代码。 这个实验第一次尝试时， 一台机器上测的是 wheel， 另一台直接崩溃—— 那里装的 wheel 对本地 CUTLASS 来说太旧。 这里每一次运行都把 <code>PYTHONPATH</code> 指向仓库根目录， 并在开始前打印解析到的模块路径。</span></p>
+</div>
+</section>
+
+<section id="two-paths">
+<h2><span class="n">03</span><span lang="en">Two config paths, only one of them searched</span><span lang="zh">两条配置路径， 只有一条真的搜索过</span></h2>
+<p><span lang="en">Quack exposes RMSNorm twice. <code>rmsnorm_fwd</code> and <code>rmsnorm_bwd</code> pick a launch configuration from a hand-written analytical ladder — a few thresholds on row width that select thread count, threads per row and cluster size. <code>rmsnorm_fwd_tuned</code> and <code>rmsnorm_bwd_tuned</code> hand the same decision to <code>@autotune</code>, which compiles and benchmarks the whole config space and caches the winner on disk.</span><span lang="zh">Quack 把 RMSNorm 暴露了两次。 <code>rmsnorm_fwd</code> 和 <code>rmsnorm_bwd</code> 从一条手写的解析式阶梯里挑 launch config—— 几个基于行宽的阈值， 决定线程数、 每行线程数和 cluster 大小。 <code>rmsnorm_fwd_tuned</code> 和 <code>rmsnorm_bwd_tuned</code> 则把同一个决策交给 <code>@autotune</code>， 由它编译并实测整个配置空间， 再把赢家缓存到磁盘。</span></p>
+<p><span lang="en">This distinction is easy to miss and it changes the headline. The un-tuned entry points are what a caller gets by default, so they are the honest "out of the box" number. The tuned ones are the ceiling. Both were measured here, in the same sweep, against the same roofline.</span><span lang="zh">这个区别很容易被忽略， 而它会改变结论。 未 tune 的入口是调用者默认拿到的东西， 所以那是诚实的"开箱"数字； tune 过的则是上限。 这里两者都测了， 在同一次 sweep 里， 对同一个 roofline。</span></p>
+
+<div class="plate wide">
+  <div class="plate-meta"><span><b>Plate I</b> · <span lang="en">How a launch config is chosen</span><span lang="zh">launch config 是怎么选出来的</span></span><span class="diag-text sm">quack/rmsnorm.py</span></div>
+  <svg viewBox="0 0 760 232" role="img" class="plate-svg">
+    <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#bdc2cc"/></marker>
+    <marker id="ahp" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6d3f8c"/></marker></defs>
+
+    <text class="diag-text mono" x="12" y="16">call site</text>
+    <rect class="diag-node" x="12" y="86" width="118" height="46"/>
+    <text class="diag-text" x="30" y="106">rmsnorm_bwd</text>
+    <text class="diag-text sm" x="30" y="121">(x, w, dout, rstd)</text>
+
+    <!-- upper branch: analytical -->
+    <path class="diag-edge" d="M130 100 C160 100 160 56 190 56" marker-end="url(#ah)"/>
+    <rect class="diag-node" x="196" y="32" width="176" height="48"/>
+    <text class="diag-text" x="210" y="52">_for_hopper_bwd(N)</text>
+    <text class="diag-text sm" x="210" y="68">threshold ladder on row width</text>
+    <path class="diag-edge" d="M372 56 H430" marker-end="url(#ah)"/>
+    <rect class="diag-node" x="436" y="26" width="200" height="60"/>
+    <text class="diag-text mono" x="448" y="44">use_tma = False</text>
+    <text class="diag-text mono" x="448" y="58">smem_stages = 2</text>
+    <text class="diag-text sm" x="448" y="76">both hardcoded — never varied</text>
+    <text class="diag-text sm" x="642" y="60">1 config</text>
+
+    <!-- lower branch: autotune -->
+    <path class="diag-edge hot" d="M130 118 C160 118 160 168 190 168" marker-end="url(#ahp)"/>
+    <rect class="diag-node hot" x="196" y="144" width="176" height="48"/>
+    <text class="diag-text" x="210" y="164">@autotune search</text>
+    <text class="diag-text sm" x="210" y="180">compile + bench every candidate</text>
+    <path class="diag-edge hot" d="M372 168 H430" marker-end="url(#ahp)"/>
+    <rect class="diag-node hot" x="436" y="138" width="200" height="60"/>
+    <text class="diag-text mono" x="448" y="156">use_tma ∈ {False, True}</text>
+    <text class="diag-text mono" x="448" y="170">smem_stages ∈ {2, 3}</text>
+    <text class="diag-text sm" x="448" y="188">x threads x cluster_n x reload</text>
+    <text class="diag-text sm" x="642" y="172">~400 configs</text>
+
+    <line class="ax-grid" x1="12" y1="212" x2="748" y2="212"/>
+    <text class="diag-text sm" x="12" y="228">The upper path cannot express the lower path's winning configuration. That is the whole finding.</text>
+  </svg>
+  <p class="caption"><span lang="en">The Hopper backward heuristic hardcodes <code>use_tma=False</code> and never sets <code>smem_stages</code>, leaving it at the default 2. The autotune space varies both. The gap this opens is measured in section 06.</span><span lang="zh">Hopper 的反向启发式把 <code>use_tma=False</code> 写死， 且从不设置 <code>smem_stages</code>， 于是它恒为默认值 2。 autotune 的搜索空间两者都会变。 这个缺口有多大， 见第 06 节。</span></p>
+</div>
+</section>
+
+<section id="forward">
+<h2><span class="n">04</span><span lang="en">Forward: already at the wall</span><span lang="zh">前向： 已经贴着墙了</span></h2>
+<p class="lede"><span lang="en">The forward kernel saturates, and it does so from the default path. At the widest row the analytical config reaches <span class="gen" data-gen="h200-fwd-big-analytical">93.4%</span> of achievable bandwidth on the H200 and <span class="gen" data-gen="h100-fwd-big-analytical">93.8%</span> on the H100 — the same fraction of two very different memory systems, which is what a kernel doing its job looks like.</span><span lang="zh">前向是打满的， 而且是用默认路径打满的。 在最宽的行上， 解析式配置在 H200 上达到可达带宽的 <span class="gen" data-gen="h200-fwd-big-analytical">93.4%</span>， 在 H100 上达到 <span class="gen" data-gen="h100-fwd-big-analytical">93.8%</span>—— 两套差异很大的显存系统上相同的比例， 这正是一个称职的 kernel 应有的样子。</span></p>
+<p><span lang="en">Searching does not improve on that. On the H100 autotune lands at <span class="gen" data-gen="h100-fwd-big">94.0%</span>, indistinguishable from the default; on the H200 it picks a worse config and drops to <span class="gen" data-gen="h200-fwd-big">84.4%</span>. Section 06 covers why a search can lose. For forward the practical conclusion is that the hand-written ladder is already right, and paying 20 s per cell to confirm it is a bad trade.</span><span lang="zh">搜索并不能改进它。 H100 上 autotune 落在 <span class="gen" data-gen="h100-fwd-big">94.0%</span>， 与默认无从区分； H200 上它挑了一个更差的配置， 掉到 <span class="gen" data-gen="h200-fwd-big">84.4%</span>。 搜索为什么会输见第 06 节。 对前向来说， 实用的结论是手写的那条阶梯已经是对的， 而为了确认这一点每个测试点付 20 秒并不划算。</span></p>
+<p><span lang="en">The ramp below the wall is not inefficiency, it is arithmetic. A short row cannot amortise launch and reduction cost, so the small shapes report a low fraction because they are latency bound, not because the kernel is bad. The useful reading is where the curve reaches its plateau — around <code>32768x2048</code>, and only the last two shapes are genuinely at the wall.</span><span lang="zh">墙以下的那段爬升不是低效， 而是算术。 短行摊不掉 launch 和归约的开销， 所以小 shape 的比例低是因为它们受延迟约束， 而不是 kernel 写得差。 有用的读法是看曲线在哪里进入平台—— 大约在 <code>32768x2048</code>， 而真正贴到墙上的只有最后两个 shape。</span></p>
+
+<div class="plate wide">
+  <div class="plate-meta"><span><b>Plate II</b> · <span lang="en">Forward, percent of achievable bandwidth by shape</span><span lang="zh">前向： 各 shape 占可达带宽的百分比</span></span><span class="diag-text sm">bfloat16 · both config paths</span></div>
+<!-- GEN:plate-fwd -->
+<svg viewBox="0 0 760 300" role="img" class="plate-svg"><line class="ax-grid" x1="54" y1="246.0" x2="746" y2="246.0"/><text class="ax-tick" x="46" y="249.5" text-anchor="end">0</text><line class="ax-grid" x1="54" y1="200.4" x2="746" y2="200.4"/><text class="ax-tick" x="46" y="203.9" text-anchor="end">20</text><line class="ax-grid" x1="54" y1="154.8" x2="746" y2="154.8"/><text class="ax-tick" x="46" y="158.3" text-anchor="end">40</text><line class="ax-grid" x1="54" y1="109.2" x2="746" y2="109.2"/><text class="ax-tick" x="46" y="112.7" text-anchor="end">60</text><line class="ax-grid" x1="54" y1="63.6" x2="746" y2="63.6"/><text class="ax-tick" x="46" y="67.1" text-anchor="end">80</text><line class="ax-grid" x1="54" y1="18.0" x2="746" y2="18.0"/><text class="ax-tick" x="46" y="21.5" text-anchor="end">100</text><line class="ax-axis" x1="54" y1="18" x2="54" y2="246"/><rect class="bar bar-c" x="68.6" y="245.7" width="10.3" height="0.8"><title>1x4096 H200 analytical: 0.14%</title></rect><rect class="bar bar-a" x="80.5" y="245.7" width="10.3" height="0.8"><title>1x4096 H200 tuned: 0.15%</title></rect><rect class="bar bar-d" x="92.4" y="245.5" width="10.3" height="0.8"><title>1x4096 H100 analytical: 0.20%</title></rect><rect class="bar bar-b" x="104.4" y="245.5" width="10.3" height="0.8"><title>1x4096 H100 tuned: 0.21%</title></rect><text class="ax-tick" x="92.4" y="262" text-anchor="middle">1x4096</text><rect class="bar bar-c" x="145.5" y="206.2" width="10.3" height="39.8"><title>256x4096 H200 analytical: 17.4%</title></rect><rect class="bar bar-a" x="157.4" y="205.5" width="10.3" height="40.5"><title>256x4096 H200 tuned: 17.8%</title></rect><rect class="bar bar-d" x="169.3" y="190.0" width="10.3" height="56.0"><title>256x4096 H100 analytical: 24.6%</title></rect><rect class="bar bar-b" x="181.3" y="187.7" width="10.3" height="58.3"><title>256x4096 H100 tuned: 25.6%</title></rect><text class="ax-tick" x="169.3" y="262" text-anchor="middle">256x4096</text><rect class="bar bar-c" x="222.4" y="177.2" width="10.3" height="68.8"><title>512x4096 H200 analytical: 30.2%</title></rect><rect class="bar bar-a" x="234.3" y="173.3" width="10.3" height="72.7"><title>512x4096 H200 tuned: 31.9%</title></rect><rect class="bar bar-d" x="246.2" y="157.3" width="10.3" height="88.7"><title>512x4096 H100 analytical: 38.9%</title></rect><rect class="bar bar-b" x="258.1" y="153.2" width="10.3" height="92.8"><title>512x4096 H100 tuned: 40.7%</title></rect><text class="ax-tick" x="246.2" y="262" text-anchor="middle">512x4096</text><rect class="bar bar-c" x="299.3" y="117.9" width="10.3" height="128.1"><title>4096x3000 H200 analytical: 56.2%</title></rect><rect class="bar bar-a" x="311.2" y="109.0" width="10.3" height="137.0"><title>4096x3000 H200 tuned: 60.1%</title></rect><rect class="bar bar-d" x="323.1" y="90.5" width="10.3" height="155.5"><title>4096x3000 H100 analytical: 68.2%</title></rect><rect class="bar bar-b" x="335.0" y="84.0" width="10.3" height="162.0"><title>4096x3000 H100 tuned: 71.0%</title></rect><text class="ax-tick" x="323.1" y="262" text-anchor="middle">4096x3000</text><rect class="bar bar-c" x="376.2" y="98.8" width="10.3" height="147.2"><title>4096x4096 H200 analytical: 64.6%</title></rect><rect class="bar bar-a" x="388.1" y="99.1" width="10.3" height="146.9"><title>4096x4096 H200 tuned: 64.4%</title></rect><rect class="bar bar-d" x="400.0" y="81.0" width="10.3" height="165.0"><title>4096x4096 H100 analytical: 72.4%</title></rect><rect class="bar bar-b" x="411.9" y="77.3" width="10.3" height="168.7"><title>4096x4096 H100 tuned: 74.0%</title></rect><text class="ax-tick" x="400.0" y="262" text-anchor="middle">4096x4096</text><rect class="bar bar-c" x="453.1" y="74.1" width="10.3" height="171.9"><title>32768x1024 H200 analytical: 75.4%</title></rect><rect class="bar bar-a" x="465.0" y="79.7" width="10.3" height="166.3"><title>32768x1024 H200 tuned: 73.0%</title></rect><rect class="bar bar-d" x="476.9" y="59.8" width="10.3" height="186.2"><title>32768x1024 H100 analytical: 81.6%</title></rect><rect class="bar bar-b" x="488.8" y="64.4" width="10.3" height="181.6"><title>32768x1024 H100 tuned: 79.6%</title></rect><text class="ax-tick" x="476.9" y="262" text-anchor="middle">32768x1024</text><rect class="bar bar-c" x="529.9" y="54.7" width="10.3" height="191.3"><title>32768x2048 H200 analytical: 83.9%</title></rect><rect class="bar bar-a" x="541.9" y="54.4" width="10.3" height="191.6"><title>32768x2048 H200 tuned: 84.0%</title></rect><rect class="bar bar-d" x="553.8" y="47.2" width="10.3" height="198.8"><title>32768x2048 H100 analytical: 87.2%</title></rect><rect class="bar bar-b" x="565.7" y="46.7" width="10.3" height="199.3"><title>32768x2048 H100 tuned: 87.4%</title></rect><text class="ax-tick" x="553.8" y="262" text-anchor="middle">32768x2048</text><rect class="bar bar-c" x="606.8" y="41.3" width="10.3" height="204.7"><title>32768x4096 H200 analytical: 89.8%</title></rect><rect class="bar bar-a" x="618.7" y="42.2" width="10.3" height="203.8"><title>32768x4096 H200 tuned: 89.4%</title></rect><rect class="bar bar-d" x="630.7" y="37.5" width="10.3" height="208.5"><title>32768x4096 H100 analytical: 91.5%</title></rect><rect class="bar bar-b" x="642.6" y="37.0" width="10.3" height="209.0"><title>32768x4096 H100 tuned: 91.7%</title></rect><text class="ax-tick" x="630.7" y="262" text-anchor="middle">32768x4096</text><rect class="bar bar-c" x="683.7" y="33.0" width="10.3" height="213.0"><title>32768x8192 H200 analytical: 93.4%</title></rect><rect class="bar bar-a" x="695.6" y="53.5" width="10.3" height="192.5"><title>32768x8192 H200 tuned: 84.4%</title></rect><rect class="bar bar-d" x="707.6" y="32.1" width="10.3" height="213.9"><title>32768x8192 H100 analytical: 93.8%</title></rect><rect class="bar bar-b" x="719.5" y="31.7" width="10.3" height="214.3"><title>32768x8192 H100 tuned: 94.0%</title></rect><text class="ax-tick" x="707.6" y="262" text-anchor="middle">32768x8192</text><rect class="bar bar-c" x="54" y="278" width="10" height="10"/><text class="ax-label" x="69" y="287">H200 analytical</text><rect class="bar bar-a" x="172" y="278" width="10" height="10"/><text class="ax-label" x="187" y="287">H200 tuned</text><rect class="bar bar-d" x="258" y="278" width="10" height="10"/><text class="ax-label" x="273" y="287">H100 analytical</text><rect class="bar bar-b" x="376" y="278" width="10" height="10"/><text class="ax-label" x="391" y="287">H100 tuned</text><text class="ax-label" x="10" y="132" transform="rotate(-90 10 132.0)" text-anchor="middle">% of achievable bandwidth</text></svg>
+<!-- /GEN:plate-fwd -->
+  <p class="caption"><span lang="en">X-axis: shape M x N, smallest working set first. Y-axis: percent of that host's measured achievable bandwidth. bfloat16 activations and weight, median of 12 timed samples. Both config paths are shown per host: analytical is the default, tuned is the autotune winner. Source: <code>data/quack-rmsnorm-hopper/</code>, 2026-07-30.</span><span lang="zh">横轴为 shape M x N， 按工作集从小到大。 纵轴为占该机器实测可达带宽的百分比。 bfloat16 激活与权重， 12 次计时样本取中位数。 每台机器都画出两条配置路径： analytical 是默认， tuned 是 autotune 选出的赢家。 数据来源： <code>data/quack-rmsnorm-hopper/</code>， 2026-07-30。</span></p>
+</div>
+</section>
+
+<section id="backward">
+<h2><span class="n">05</span><span lang="en">Backward: the weaker half</span><span lang="zh">反向： 较弱的一半</span></h2>
+<p><span lang="en">Backward moves more bytes for the same row — it reads the input, the incoming gradient, the weight and the fp32 reciprocal standard deviation, and writes both the input gradient and a per-CTA fp32 partial weight gradient. It also does not finish inside the kernel: the partials are summed by PyTorch afterwards, so a real backward call is a CuTe kernel plus a reduction the kernel does not own.</span><span lang="zh">反向在同样的行上搬运更多字节—— 它要读输入、 上游梯度、 权重和 fp32 的 rstd， 并写出输入梯度以及每个 CTA 一份的 fp32 部分权重梯度。 它也不在 kernel 内部收尾： 这些部分和随后由 PyTorch 求和， 所以一次真实的反向调用是一个 CuTe kernel 加上一段不归它管的归约。</span></p>
+<p><span lang="en">This is where the two config paths separate. On the default path backward stalls at <span class="gen" data-gen="h200-bwd-big-analytical">75.7%</span> of achievable bandwidth on the H200 and <span class="gen" data-gen="h100-bwd-big-analytical">85.1%</span> on the H100 at the widest row — visibly short of the low nineties forward manages on the same card and the same memory system.</span><span lang="zh">两条配置路径在这里分道。 走默认路径时， 最宽行上反向停在 H200 的 <span class="gen" data-gen="h200-bwd-big-analytical">75.7%</span> 与 H100 的 <span class="gen" data-gen="h100-bwd-big-analytical">85.1%</span>—— 明显低于同一张卡、 同一套显存系统上前向能做到的九十出头。</span></p>
+<p><span lang="en">Searched, it closes almost all of that: <span class="gen" data-gen="h200-bwd-big">91.7%</span> and <span class="gen" data-gen="h100-bwd-big">93.6%</span>. So the gap is not the algorithm and it is not the extra bytes — the same kernel reaches forward-class efficiency once it is allowed a configuration the ladder cannot express. What remains after that, a point or two, is the reduction that happens outside the kernel.</span><span lang="zh">而搜索之后， 这个缺口几乎被补平： <span class="gen" data-gen="h200-bwd-big">91.7%</span> 与 <span class="gen" data-gen="h100-bwd-big">93.6%</span>。 所以缺口既不是算法造成的， 也不是多出来的那些字节造成的—— 同一个 kernel 一旦被允许使用阶梯表达不出的配置， 就能达到前向级别的效率。 剩下那一两个点， 才是发生在 kernel 之外的归约。</span></p>
+
+<div class="plate wide">
+  <div class="plate-meta"><span><b>Plate III</b> · <span lang="en">Backward, percent of achievable bandwidth by shape</span><span lang="zh">反向： 各 shape 占可达带宽的百分比</span></span><span class="diag-text sm">bfloat16 · both config paths</span></div>
+<!-- GEN:plate-bwd -->
+<svg viewBox="0 0 760 300" role="img" class="plate-svg"><line class="ax-grid" x1="54" y1="246.0" x2="746" y2="246.0"/><text class="ax-tick" x="46" y="249.5" text-anchor="end">0</text><line class="ax-grid" x1="54" y1="200.4" x2="746" y2="200.4"/><text class="ax-tick" x="46" y="203.9" text-anchor="end">20</text><line class="ax-grid" x1="54" y1="154.8" x2="746" y2="154.8"/><text class="ax-tick" x="46" y="158.3" text-anchor="end">40</text><line class="ax-grid" x1="54" y1="109.2" x2="746" y2="109.2"/><text class="ax-tick" x="46" y="112.7" text-anchor="end">60</text><line class="ax-grid" x1="54" y1="63.6" x2="746" y2="63.6"/><text class="ax-tick" x="46" y="67.1" text-anchor="end">80</text><line class="ax-grid" x1="54" y1="18.0" x2="746" y2="18.0"/><text class="ax-tick" x="46" y="21.5" text-anchor="end">100</text><line class="ax-axis" x1="54" y1="18" x2="54" y2="246"/><rect class="bar bar-c" x="68.6" y="245.9" width="10.3" height="0.8"><title>1x4096 H200 analytical: 0.04%</title></rect><rect class="bar bar-a" x="80.5" y="245.9" width="10.3" height="0.8"><title>1x4096 H200 tuned: 0.04%</title></rect><rect class="bar bar-d" x="92.4" y="245.8" width="10.3" height="0.8"><title>1x4096 H100 analytical: 0.08%</title></rect><rect class="bar bar-b" x="104.4" y="245.8" width="10.3" height="0.8"><title>1x4096 H100 tuned: 0.09%</title></rect><text class="ax-tick" x="92.4" y="262" text-anchor="middle">1x4096</text><rect class="bar bar-c" x="145.5" y="232.0" width="10.3" height="14.0"><title>256x4096 H200 analytical: 6.1%</title></rect><rect class="bar bar-a" x="157.4" y="232.1" width="10.3" height="13.9"><title>256x4096 H200 tuned: 6.1%</title></rect><rect class="bar bar-d" x="169.3" y="221.7" width="10.3" height="24.3"><title>256x4096 H100 analytical: 10.7%</title></rect><rect class="bar bar-b" x="181.3" y="219.8" width="10.3" height="26.2"><title>256x4096 H100 tuned: 11.5%</title></rect><text class="ax-tick" x="169.3" y="262" text-anchor="middle">256x4096</text><rect class="bar bar-c" x="222.4" y="217.5" width="10.3" height="28.5"><title>512x4096 H200 analytical: 12.5%</title></rect><rect class="bar bar-a" x="234.3" y="216.7" width="10.3" height="29.3"><title>512x4096 H200 tuned: 12.8%</title></rect><rect class="bar bar-d" x="246.2" y="203.2" width="10.3" height="42.8"><title>512x4096 H100 analytical: 18.8%</title></rect><rect class="bar bar-b" x="258.1" y="200.4" width="10.3" height="45.6"><title>512x4096 H100 tuned: 20.0%</title></rect><text class="ax-tick" x="246.2" y="262" text-anchor="middle">512x4096</text><rect class="bar bar-c" x="299.3" y="162.0" width="10.3" height="84.0"><title>4096x3000 H200 analytical: 36.9%</title></rect><rect class="bar bar-a" x="311.2" y="159.4" width="10.3" height="86.6"><title>4096x3000 H200 tuned: 38.0%</title></rect><rect class="bar bar-d" x="323.1" y="141.6" width="10.3" height="104.4"><title>4096x3000 H100 analytical: 45.8%</title></rect><rect class="bar bar-b" x="335.0" y="131.6" width="10.3" height="114.4"><title>4096x3000 H100 tuned: 50.2%</title></rect><text class="ax-tick" x="323.1" y="262" text-anchor="middle">4096x3000</text><rect class="bar bar-c" x="376.2" y="148.0" width="10.3" height="98.0"><title>4096x4096 H200 analytical: 43.0%</title></rect><rect class="bar bar-a" x="388.1" y="141.9" width="10.3" height="104.1"><title>4096x4096 H200 tuned: 45.7%</title></rect><rect class="bar bar-d" x="400.0" y="125.6" width="10.3" height="120.4"><title>4096x4096 H100 analytical: 52.8%</title></rect><rect class="bar bar-b" x="411.9" y="123.3" width="10.3" height="122.7"><title>4096x4096 H100 tuned: 53.8%</title></rect><text class="ax-tick" x="400.0" y="262" text-anchor="middle">4096x4096</text><rect class="bar bar-c" x="453.1" y="101.7" width="10.3" height="144.3"><title>32768x1024 H200 analytical: 63.3%</title></rect><rect class="bar bar-a" x="465.0" y="102.9" width="10.3" height="143.1"><title>32768x1024 H200 tuned: 62.8%</title></rect><rect class="bar bar-d" x="476.9" y="91.0" width="10.3" height="155.0"><title>32768x1024 H100 analytical: 68.0%</title></rect><rect class="bar bar-b" x="488.8" y="91.1" width="10.3" height="154.9"><title>32768x1024 H100 tuned: 67.9%</title></rect><text class="ax-tick" x="476.9" y="262" text-anchor="middle">32768x1024</text><rect class="bar bar-c" x="529.9" y="73.9" width="10.3" height="172.1"><title>32768x2048 H200 analytical: 75.5%</title></rect><rect class="bar bar-a" x="541.9" y="75.1" width="10.3" height="170.9"><title>32768x2048 H200 tuned: 74.9%</title></rect><rect class="bar bar-d" x="553.8" y="76.6" width="10.3" height="169.4"><title>32768x2048 H100 analytical: 74.3%</title></rect><rect class="bar bar-b" x="565.7" y="72.1" width="10.3" height="173.9"><title>32768x2048 H100 tuned: 76.3%</title></rect><text class="ax-tick" x="553.8" y="262" text-anchor="middle">32768x2048</text><rect class="bar bar-c" x="606.8" y="69.6" width="10.3" height="176.4"><title>32768x4096 H200 analytical: 77.4%</title></rect><rect class="bar bar-a" x="618.7" y="52.1" width="10.3" height="193.9"><title>32768x4096 H200 tuned: 85.1%</title></rect><rect class="bar bar-d" x="630.7" y="47.4" width="10.3" height="198.6"><title>32768x4096 H100 analytical: 87.1%</title></rect><rect class="bar bar-b" x="642.6" y="49.0" width="10.3" height="197.0"><title>32768x4096 H100 tuned: 86.4%</title></rect><text class="ax-tick" x="630.7" y="262" text-anchor="middle">32768x4096</text><rect class="bar bar-c" x="683.7" y="73.4" width="10.3" height="172.6"><title>32768x8192 H200 analytical: 75.7%</title></rect><rect class="bar bar-a" x="695.6" y="36.8" width="10.3" height="209.2"><title>32768x8192 H200 tuned: 91.7%</title></rect><rect class="bar bar-d" x="707.6" y="52.1" width="10.3" height="193.9"><title>32768x8192 H100 analytical: 85.1%</title></rect><rect class="bar bar-b" x="719.5" y="32.5" width="10.3" height="213.5"><title>32768x8192 H100 tuned: 93.6%</title></rect><text class="ax-tick" x="707.6" y="262" text-anchor="middle">32768x8192</text><rect class="bar bar-c" x="54" y="278" width="10" height="10"/><text class="ax-label" x="69" y="287">H200 analytical</text><rect class="bar bar-a" x="172" y="278" width="10" height="10"/><text class="ax-label" x="187" y="287">H200 tuned</text><rect class="bar bar-d" x="258" y="278" width="10" height="10"/><text class="ax-label" x="273" y="287">H100 analytical</text><rect class="bar bar-b" x="376" y="278" width="10" height="10"/><text class="ax-label" x="391" y="287">H100 tuned</text><text class="ax-label" x="10" y="132" transform="rotate(-90 10 132.0)" text-anchor="middle">% of achievable bandwidth</text></svg>
+<!-- /GEN:plate-bwd -->
+  <p class="caption"><span lang="en">Same axes and conditions as Plate II. Backward logical bytes count reads of x, dout, weight and fp32 rstd, plus writes of dx and dweight — the reduction of the fp32 partials is included in the timed region.</span><span lang="zh">坐标与条件同 Plate II。 反向的逻辑字节数计入读 x、 dout、 weight 与 fp32 rstd， 以及写 dx 与 dweight—— fp32 部分和的归约包含在计时区间内。</span></p>
+</div>
+</section>
+
+<section id="gain">
+<h2><span class="n">06</span><span lang="en">Where autotune pays, and why</span><span lang="zh">autotune 在哪里有回报， 以及为什么</span></h2>
+<p><span lang="en">Comparing the two config paths cell by cell gives a clean answer: forward has nothing left to win, and backward has a lot — but only at the wide rows.</span><span lang="zh">把两条配置路径逐点对比， 答案很干净： 前向已经无利可图， 反向则有相当大的空间—— 但只在宽行上。</span></p>
+
+<div class="plate wide">
+  <div class="plate-meta"><span><b>Plate IV</b> · <span lang="en">Autotune gain over the analytical heuristic</span><span lang="zh">autotune 相对解析式启发的收益</span></span><span class="diag-text sm">positive = tuned is faster</span></div>
+<!-- GEN:plate-gain -->
+<svg viewBox="0 0 760 280" role="img" class="plate-svg"><line class="ax-grid" x1="54" y1="226.0" x2="746" y2="226.0"/><text class="ax-tick" x="46" y="229.5" text-anchor="end">-15</text><line class="ax-grid" x1="54" y1="196.3" x2="746" y2="196.3"/><text class="ax-tick" x="46" y="199.8" text-anchor="end">-10</text><line class="ax-grid" x1="54" y1="166.6" x2="746" y2="166.6"/><text class="ax-tick" x="46" y="170.1" text-anchor="end">-5</text><line class="ax-grid" x1="54" y1="136.9" x2="746" y2="136.9"/><text class="ax-tick" x="46" y="140.4" text-anchor="end">0</text><line class="ax-grid" x1="54" y1="107.1" x2="746" y2="107.1"/><text class="ax-tick" x="46" y="110.6" text-anchor="end">+5</text><line class="ax-grid" x1="54" y1="77.4" x2="746" y2="77.4"/><text class="ax-tick" x="46" y="80.9" text-anchor="end">+10</text><line class="ax-grid" x1="54" y1="47.7" x2="746" y2="47.7"/><text class="ax-tick" x="46" y="51.2" text-anchor="end">+15</text><line class="ax-grid" x1="54" y1="18.0" x2="746" y2="18.0"/><text class="ax-tick" x="46" y="21.5" text-anchor="end">+20</text><line class="ax-axis" x1="54" y1="136.9" x2="746" y2="136.9"/><rect class="bar bar-a" x="69.4" y="125.4" width="9.9" height="11.5"><title>1x4096 H200 fwd: +1.9%</title></rect><rect class="bar bar-b" x="80.9" y="115.8" width="9.9" height="21.0"><title>1x4096 H100 fwd: +3.5%</title></rect><rect class="bar bar-c" x="92.4" y="112.6" width="9.9" height="24.3"><title>1x4096 H200 bwd: +4.1%</title></rect><rect class="bar bar-d" x="104.0" y="117.5" width="9.9" height="19.3"><title>1x4096 H100 bwd: +3.3%</title></rect><text class="ax-tick" x="92.4" y="242" text-anchor="middle">1x4096</text><rect class="bar bar-a" x="146.3" y="125.8" width="9.9" height="11.1"><title>256x4096 H200 fwd: +1.9%</title></rect><rect class="bar bar-b" x="157.8" y="113.9" width="9.9" height="23.0"><title>256x4096 H100 fwd: +3.9%</title></rect><rect class="bar bar-c" x="169.3" y="136.9" width="9.9" height="4.5"><title>256x4096 H200 bwd: -0.8%</title></rect><rect class="bar bar-d" x="180.9" y="93.2" width="9.9" height="43.7"><title>256x4096 H100 bwd: +7.4%</title></rect><text class="ax-tick" x="169.3" y="242" text-anchor="middle">256x4096</text><rect class="bar bar-a" x="223.2" y="104.8" width="9.9" height="32.0"><title>512x4096 H200 fwd: +5.4%</title></rect><rect class="bar bar-b" x="234.7" y="110.9" width="9.9" height="25.9"><title>512x4096 H100 fwd: +4.4%</title></rect><rect class="bar bar-c" x="246.2" y="121.5" width="9.9" height="15.4"><title>512x4096 H200 bwd: +2.6%</title></rect><rect class="bar bar-d" x="257.8" y="99.9" width="9.9" height="36.9"><title>512x4096 H100 bwd: +6.2%</title></rect><text class="ax-tick" x="246.2" y="242" text-anchor="middle">512x4096</text><rect class="bar bar-a" x="300.0" y="98.5" width="9.9" height="38.3"><title>4096x3000 H200 fwd: +6.4%</title></rect><rect class="bar bar-b" x="311.6" y="113.0" width="9.9" height="23.8"><title>4096x3000 H100 fwd: +4.0%</title></rect><rect class="bar bar-c" x="323.1" y="119.1" width="9.9" height="17.8"><title>4096x3000 H200 bwd: +3.0%</title></rect><rect class="bar bar-d" x="334.6" y="85.1" width="9.9" height="51.8"><title>4096x3000 H100 bwd: +8.7%</title></rect><text class="ax-tick" x="323.1" y="242" text-anchor="middle">4096x3000</text><rect class="bar bar-a" x="376.9" y="136.9" width="9.9" height="1.3"><title>4096x4096 H200 fwd: -0.2%</title></rect><rect class="bar bar-b" x="388.5" y="123.8" width="9.9" height="13.0"><title>4096x4096 H100 fwd: +2.2%</title></rect><rect class="bar bar-c" x="400.0" y="101.8" width="9.9" height="35.1"><title>4096x4096 H200 bwd: +5.9%</title></rect><rect class="bar bar-d" x="411.5" y="125.7" width="9.9" height="11.2"><title>4096x4096 H100 bwd: +1.9%</title></rect><text class="ax-tick" x="400.0" y="242" text-anchor="middle">4096x4096</text><rect class="bar bar-a" x="453.8" y="136.9" width="9.9" height="19.7"><title>32768x1024 H200 fwd: -3.3%</title></rect><rect class="bar bar-b" x="465.4" y="136.9" width="9.9" height="15.0"><title>32768x1024 H100 fwd: -2.5%</title></rect><rect class="bar bar-c" x="476.9" y="136.9" width="9.9" height="5.0"><title>32768x1024 H200 bwd: -0.8%</title></rect><rect class="bar bar-d" x="488.4" y="136.9" width="9.9" height="0.8"><title>32768x1024 H100 bwd: -0.1%</title></rect><text class="ax-tick" x="476.9" y="242" text-anchor="middle">32768x1024</text><rect class="bar bar-a" x="530.7" y="135.9" width="9.9" height="1.0"><title>32768x2048 H200 fwd: +0.2%</title></rect><rect class="bar bar-b" x="542.2" y="135.3" width="9.9" height="1.6"><title>32768x2048 H100 fwd: +0.3%</title></rect><rect class="bar bar-c" x="553.8" y="136.9" width="9.9" height="4.2"><title>32768x2048 H200 bwd: -0.7%</title></rect><rect class="bar bar-d" x="565.3" y="121.5" width="9.9" height="15.3"><title>32768x2048 H100 bwd: +2.6%</title></rect><text class="ax-tick" x="553.8" y="242" text-anchor="middle">32768x2048</text><rect class="bar bar-a" x="607.6" y="136.9" width="9.9" height="2.5"><title>32768x4096 H200 fwd: -0.4%</title></rect><rect class="bar bar-b" x="619.1" y="135.5" width="9.9" height="1.4"><title>32768x4096 H100 fwd: +0.2%</title></rect><rect class="bar bar-c" x="630.7" y="83.0" width="9.9" height="53.8"><title>32768x4096 H200 bwd: +9.1%</title></rect><rect class="bar bar-d" x="642.2" y="136.9" width="9.9" height="4.7"><title>32768x4096 H100 bwd: -0.8%</title></rect><text class="ax-tick" x="630.7" y="242" text-anchor="middle">32768x4096</text><rect class="bar bar-a" x="684.5" y="136.9" width="9.9" height="63.4"><title>32768x8192 H200 fwd: -10.7%</title></rect><rect class="bar bar-b" x="696.0" y="135.6" width="9.9" height="1.3"><title>32768x8192 H100 fwd: +0.2%</title></rect><rect class="bar bar-c" x="707.6" y="33.0" width="9.9" height="103.9"><title>32768x8192 H200 bwd: +17.5%</title></rect><rect class="bar bar-d" x="719.1" y="82.5" width="9.9" height="54.4"><title>32768x8192 H100 bwd: +9.2%</title></rect><text class="ax-tick" x="707.6" y="242" text-anchor="middle">32768x8192</text><rect class="bar bar-a" x="54" y="258" width="10" height="10"/><text class="ax-label" x="69" y="267">H200 fwd</text><rect class="bar bar-b" x="127.2" y="258" width="10" height="10"/><text class="ax-label" x="142.2" y="267">H100 fwd</text><rect class="bar bar-c" x="200.4" y="258" width="10" height="10"/><text class="ax-label" x="215.4" y="267">H200 bwd</text><rect class="bar bar-d" x="273.6" y="258" width="10" height="10"/><text class="ax-label" x="288.6" y="267">H100 bwd</text><text class="ax-label" x="10" y="122" transform="rotate(-90 10 122.0)" text-anchor="middle">autotune gain (%)</text></svg>
+<!-- /GEN:plate-gain -->
+  <p class="caption"><span lang="en">X-axis: shape M x N. Y-axis: percent reduction in median latency from using the autotuned config instead of the analytical one; positive means autotune won. bfloat16. Values near zero mean the heuristic already picked the winner — or something indistinguishable from it.</span><span lang="zh">横轴为 shape M x N。 纵轴为改用 autotune 配置后中位延迟的下降百分比， 正值表示 autotune 更快。 bfloat16。 接近零说明启发式已经选中了赢家， 或者选中了与赢家难以区分的配置。</span></p>
+</div>
+
+<p><span lang="en">The backward gain at the widest row is <span class="gen" data-gen="h200-bwd-big-gain">+17.5%</span> on the H200 and <span class="gen" data-gen="h100-bwd-big-gain">+9.2%</span> on the H100. That is not a mistuned threshold. Reading <code>_for_hopper_bwd</code> in <code>quack/rmsnorm_config.py</code> shows it returns a config with <code>use_tma=False</code> written as a literal, and it never passes <code>smem_stages</code>, so the dataclass default of 2 stands. The autotune winners on both hosts chose <code>use_tma=True</code> with <code>smem_stages=3</code>.</span><span lang="zh">最宽行上反向的收益是 H200 <span class="gen" data-gen="h200-bwd-big-gain">+17.5%</span>、 H100 <span class="gen" data-gen="h100-bwd-big-gain">+9.2%</span>。 这不是阈值没调好。 读 <code>quack/rmsnorm_config.py</code> 里的 <code>_for_hopper_bwd</code> 会看到它返回的配置里 <code>use_tma=False</code> 是字面量写死的， 并且它从不传 <code>smem_stages</code>， 于是 dataclass 的默认值 2 生效。 而两台机器上 autotune 选出的赢家都是 <code>use_tma=True</code> 配 <code>smem_stages=3</code>。</span></p>
+
+<div class="note">
+  <span class="lbl"><span lang="en">The transferable point</span><span lang="zh">可迁移的那一点</span></span>
+  <p style="margin:0"><span lang="en">A heuristic that hardcodes a knob is not a heuristic that chose badly — it is a heuristic that cannot choose at all. The distinction matters when you are deciding whether to fix a threshold or to widen the space the threshold selects from. Here the analytical ladder tunes three knobs well and simply does not model the two that matter most for wide backward rows, where deeper pipelining and TMA have the most latency to hide.</span><span lang="zh">一个把旋钮写死的启发式， 不是"选错了"， 而是"根本没得选"。 当你要决定是修一个阈值还是拓宽阈值所能选择的空间时， 这个区别很关键。 这里的解析式阶梯把三个旋钮调得不错， 只是完全没有建模那两个对宽反向行最要紧的—— 而恰恰在那里， 更深的流水和 TMA 有最多的延迟可以掩盖。</span></p>
+</div>
+
+<p><span lang="en">Read the other direction, the same plate says the analytical ladder is good. Across forward it is within noise of an exhaustive search, and at narrow rows it matches backward too. A search that costs 20 s per forward cell and up to 160 s per backward cell, to win nothing on most of the matrix, is a poor default — which is presumably why the un-tuned path is the default.</span><span lang="zh">反过来读， 同一张图也说明这条解析式阶梯是好的。 在前向上它与穷举搜索的差距落在噪声之内， 在窄行上反向也追平。 一次搜索前向每个测试点约 20 秒、 反向最多 160 秒， 却在矩阵的大部分上一无所获—— 作为默认路径并不划算， 这大概正是未 tune 的那条被设为默认的原因。</span></p>
+
+<h3><span lang="en">Autotune is not a free win</span><span lang="zh">autotune 不是白拿的</span></h3>
+<p><span lang="en">Across all 45 backward cells the search improves 21 of them on the H200 and 34 on the H100, but it also makes 8 and 2 respectively measurably worse, with a worst case of −16.7%. Forward regresses in 4 cells on each card, including the −10.7% at the widest H200 row quoted in section 04.</span><span lang="zh">在全部 45 个反向测试点里， 搜索在 H200 上改善了 21 个、 在 H100 上改善了 34 个， 但同时也分别让 8 个和 2 个明显变差， 最差的一例是 −16.7%。 前向在两张卡上各有 4 个测试点回退， 包括第 04 节引用的 H200 最宽行那 −10.7%。</span></p>
+<p><span lang="en">The reason is a methodology mismatch, not a broken search. The autotuner scores candidates with its own L2-cold benchmark; this harness times steady-state calls through rotating buffers. Those two regimes reward different configurations — a config that wins when every access misses cache is not necessarily the config that wins in a training loop where the previous layer just left the cache warm. A search only optimises the metric it is given.</span><span lang="zh">原因是评测口径不一致， 而不是搜索坏了。 autotuner 用它自己的 L2-cold 基准给候选打分， 而这套 harness 计时的是经由轮转缓冲的稳态调用。 这两种口径奖励的是不同的配置—— 一个在"每次访问都不命中缓存"时胜出的配置， 未必是在"上一层刚把缓存捂热"的训练循环里胜出的那个。 搜索只会优化你交给它的那个指标。</span></p>
+<p><span lang="en">The practical form of this: do not ship a tuned config without re-measuring it under the access pattern you actually run. The backward win at wide rows survives that check here, which is why it is reported as a finding; the forward "wins" do not.</span><span lang="zh">落到实践上： 不要在没有用真实访存模式复测的情况下就把某个 tuned 配置发出去。 这里宽行上的反向收益经受住了这道复核， 所以才作为结论报告； 前向那些"收益"没有。</span></p>
+</section>
+
+<section id="dtype">
+<h2><span class="n">07</span><span lang="en">Dtype sensitivity at the widest row</span><span lang="zh">最宽行上的 dtype 敏感性</span></h2>
+<p><span lang="en">At <code>32768x8192</code> both kernels are fully bandwidth bound, which makes it the one shape where dtype effects are readable without latency confounding them.</span><span lang="zh">在 <code>32768x8192</code> 上两个 kernel 都完全进入带宽受限区间， 这使它成为唯一一个能在不被延迟干扰的情况下读出 dtype 效应的 shape。</span></p>
+<div class="table-wrap">
+<!-- GEN:table-dtype -->
+<table><thead><tr><th>activation / weight</th><th class="num">H200 fwd</th><th class="num">H200 bwd</th><th class="num">H100 fwd</th><th class="num">H100 bwd</th></tr></thead><tbody><tr><td><code>float16 / float16</code></td><td class="num">93.1%</td><td class="num">93.6%</td><td class="num">93.8%</td><td class="num">93.4%</td></tr><tr><td><code>float16 / float32</code></td><td class="num">86.4%</td><td class="num">93.0%</td><td class="num">93.9%</td><td class="num">94.0%</td></tr><tr><td><code>bfloat16 / bfloat16</code></td><td class="num">84.4%</td><td class="num">91.7%</td><td class="num">94.0%</td><td class="num">93.6%</td></tr><tr><td><code>bfloat16 / float32</code></td><td class="num">93.7%</td><td class="num">92.6%</td><td class="num">94.0%</td><td class="num">94.0%</td></tr><tr><td><code>float32 / float32</code></td><td class="num">96.6%</td><td class="num">96.0%</td><td class="num">94.9%</td><td class="num">93.5%</td></tr></tbody></table>
+<!-- /GEN:table-dtype -->
+</div>
+<p class="caption"><span lang="en">Percent of achievable bandwidth at M=32768, N=8192, autotuned configs. Compare against the default-path figures quoted in the prose below. The weight column is the parameter dtype: matching the activations, or an fp32 master weight.</span><span lang="zh">M=32768、 N=8192 下占可达带宽的百分比， 使用 autotune 配置。 权重列是参数 dtype： 与激活一致， 或使用 fp32 主权重。</span></p>
+<p><span lang="en">Tuned, there is barely any dtype sensitivity left: every cell above sits between the low nineties and 96%. That is worth pausing on, because on the default path there very much is one — backward at this shape runs at <span class="gen" data-gen="h200-bwd-big-analytical">75.7%</span> with 16-bit activations on the H200 but 95.7% with fp32.</span><span lang="zh">调优之后， 几乎看不到 dtype 敏感性了： 上表每一格都落在九十出头到 96% 之间。 这一点值得停一下， 因为在默认路径上敏感性是明显存在的—— 同一个 shape 上， H200 的反向在 16 位激活下只有 <span class="gen" data-gen="h200-bwd-big-analytical">75.7%</span>， 而 fp32 下是 95.7%。</span></p>
+<p><span lang="en">So the dtype dependence was never a property of the algorithm. It came from one configuration being wrong for narrow activations specifically: with fp32 rows the analytical config happens to be near-optimal, and with 16-bit rows — where more of the row fits in shared memory and there is more latency for a deeper pipeline and TMA to hide — it is not. Tuning removes the dependence entirely rather than reducing it, which is the signature of a config artifact rather than a bandwidth effect.</span><span lang="zh">所以这个 dtype 依赖从来就不是算法的属性。 它来自一个配置恰好只对窄激活是错的： fp32 行下解析式配置碰巧接近最优， 而 16 位行下—— 那里更多行能装进共享内存， 也有更多延迟可供更深的流水和 TMA 去掩盖—— 它就不是了。 调优是把这个依赖完全消除而不是减轻， 这正是"配置产物"而非"带宽效应"的特征。</span></p>
+<p><span lang="en">The two forward cells in the eighties on the H200 are the autotune regressions from section 06, not a dtype effect; the analytical path reaches the low nineties on both of them.</span><span lang="zh">H200 上那两个落在 80% 段的前向格子是第 06 节说的 autotune 回退， 不是 dtype 效应； 解析式路径在这两格上都能到九十出头。</span></p>
+</section>
+
+<section id="caveats">
+<h2><span class="n">08</span><span lang="en">What limits these numbers</span><span lang="zh">这些数字的边界</span></h2>
+<p><span lang="en">Three things would change a conclusion drawn from this data, so they belong next to it rather than in a footnote.</span><span lang="zh">有三件事会改变从这批数据得出的结论， 所以它们应该紧挨着数据， 而不是塞进脚注。</span></p>
+<h3><span lang="en">The two hosts do not share a toolchain</span><span lang="zh">两台机器的工具链不同</span></h3>
+<p><span lang="en">The H200 ran PyTorch <span class="gen" data-gen="h200-torch">2.9.1+cu128</span> with CUTLASS DSL 4.6.1; the H100 ran <span class="gen" data-gen="h100-torch">2.11.0+cu130</span> with 4.6.0. The Quack source is identical, so kernel-level differences are attributable, but any absolute microsecond gap between the cards carries a compiler and runtime component too. This is why the plates report percent of peak and not time.</span><span lang="zh">H200 上是 PyTorch <span class="gen" data-gen="h200-torch">2.9.1+cu128</span> 配 CUTLASS DSL 4.6.1； H100 上是 <span class="gen" data-gen="h100-torch">2.11.0+cu130</span> 配 4.6.0。 Quack 源码完全一致， 所以 kernel 层面的差异是可归因的， 但两卡之间任何绝对微秒差里都混有编译器与 runtime 的贡献。 这正是图表报占峰值百分比而不是时间的原因。</span></p>
+<h3><span lang="en">The roofline is a different probe on each host</span><span lang="zh">两台机器的 roofline 来自不同探测</span></h3>
+<p><span lang="en">The H200 peaked at <span class="gen" data-gen="h200-bw">4312.7 GB/s</span> and the H100 at <span class="gen" data-gen="h100-bw">3182.3 GB/s</span>, but not on the same access pattern. The method is identical — best of three probes — yet the denominators are not shaped alike, so percent of peak is a within-host efficiency measure. Comparing <em>H200 91%</em> against <em>H100 93%</em> is comparing two ratios with different denominators, and the difference between them is not evidence about the kernel.</span><span lang="zh">H200 的峰值是 <span class="gen" data-gen="h200-bw">4312.7 GB/s</span>， H100 是 <span class="gen" data-gen="h100-bw">3182.3 GB/s</span>， 但并非来自同一种访存形态。 方法完全一致—— 三种探测取最优—— 但分母的形状不同， 所以占峰值百分比是一个机内效率指标。 拿 <em>H200 的 91%</em> 去比 <em>H100 的 93%</em>， 是在比两个分母不同的比值， 它们之间的差不构成关于 kernel 的证据。</span></p>
+<h3><span lang="en">The H200 node was shared</span><span lang="zh">H200 整机是共享的</span></h3>
+<p><span lang="en">Our card was idle throughout, but five of the other seven held allocations. The closing bandwidth probe came back at <span class="gen" data-gen="h200-canary">0.999</span> of the opening one against <span class="gen" data-gen="h100-canary">0.999</span> on the exclusive H100 — inside the harness's quiet band, but at its edge. H200 figures carry more noise than H100 ones, and a difference of a percent or two between the cards should not be read as real.</span><span lang="zh">我们那张卡全程空闲， 但另外七张里有五张持有显存分配。 收尾的带宽探测是开场值的 <span class="gen" data-gen="h200-canary">0.999</span> 倍， 而独占的 H100 是 <span class="gen" data-gen="h100-canary">0.999</span>—— 落在框架的安静区间内， 但在边缘上。 H200 的数字比 H100 噪声更大， 两卡之间一两个百分点的差异不应被当真。</span></p>
+</section>
+
+<section id="mi355x">
+<h2><span class="n">09</span><span lang="en">What this sets as the target for MI355X</span><span lang="zh">这为 MI355X 定下了什么目标</span></h2>
+<p><span lang="en">The point of the exercise. Four things transfer, none of them a microsecond count.</span><span lang="zh">这才是这件事的意义所在。 有四点可以迁移， 其中没有一个是微秒数。</span></p>
+<p><span lang="en"><strong>Forward should reach the low nineties as a percentage of a locally measured roofline.</strong> Two different Hopper memory systems both got there, so it is a property of the algorithm rather than of the hardware. A forward RMSNorm sitting at 70% on MI355X is not finished, and the gap is not explained by the architecture.</span><span lang="zh"><strong>前向应当达到本机实测 roofline 的九十出头。</strong> 两套不同的 Hopper 显存系统都做到了， 说明这是算法的属性而不是硬件的属性。 一个在 MI355X 上停在 70% 的前向 RMSNorm 不算完成， 而且这个缺口无法用架构来解释。</span></p>
+<p><span lang="en"><strong>Backward should get there too — the gap is not inherent.</strong> This was the surprise. Backward moves more bytes and finishes with a reduction outside the kernel, so a few points of shortfall looked structural; measured, it is worth about one point once the configuration is right. Do not budget a large backward penalty in advance. If an MI355X backward sits well below its forward, suspect the config before the algorithm.</span><span lang="zh"><strong>反向也应该达到同样水平—— 那个缺口不是固有的。</strong> 这是最意外的一点。 反向搬运更多字节， 还要在 kernel 之外收尾归约， 所以看起来天然该差几个点； 但实测下来， 配置正确之后只差约一个点。 不要预先给反向留很大的性能预算。 如果 MI355X 上反向明显低于前向， 先怀疑配置， 再怀疑算法。</span></p>
+<p><span lang="en"><strong>Do not let a config heuristic hardcode a memory-path knob.</strong> The single largest finding here is worth <span class="gen" data-gen="h200-bwd-big-gain">+17.5%</span> on one shape and comes entirely from two constants. The AMD equivalents — whether to use the async copy path, and how deep to make the LDS pipeline — deserve to be in the search space from the start, even if the shipped default is a heuristic.</span><span lang="zh"><strong>不要让配置启发式把访存路径的旋钮写死。</strong> 这里最大的一个发现在某个 shape 上值 <span class="gen" data-gen="h200-bwd-big-gain">+17.5%</span>， 而它完全来自两个常量。 AMD 侧的对应项—— 是否走异步拷贝路径、 LDS 流水做多深—— 应该从一开始就留在搜索空间里， 哪怕最终发布的默认值是一条启发式。</span></p>
+<p><span lang="en"><strong>Measure the roofline on the machine, every run.</strong> A spec-sheet denominator would have hidden both the 10% drift on the shared H200 node and the fact that the two cards peak on different access patterns. Neither is exotic; both would have quietly corrupted a comparison.</span><span lang="zh"><strong>每一次运行都在本机测 roofline。</strong> 用规格表当分母的话， 共享的 H200 节点上那 10% 的漂移、 以及两张卡峰值出现在不同访存形态这件事， 都会被藏起来。 这两件事都不罕见， 而且都会悄悄毁掉一次比较。</span></p>
+</section>
+
+<section id="reproduce">
+<h2><span class="n">10</span><span lang="en">Reproducing this</span><span lang="zh">复现</span></h2>
+<p><span lang="en">Raw results, run logs, the exact commands and the harness patch are committed under <code>data/quack-rmsnorm-hopper/</code>. The figures on this page are generated from those CSVs by <code>scripts/gen-rmsnorm-plates.mjs</code>, so the prose and the plates cannot drift apart.</span><span lang="zh">原始结果、 运行日志、 完整命令和 harness 补丁都提交在 <code>data/quack-rmsnorm-hopper/</code> 下。 本页的图表由 <code>scripts/gen-rmsnorm-plates.mjs</code> 从那些 CSV 生成， 所以正文与图表不会各说各话。</span></p>
+<pre><code>bash data/quack-rmsnorm-hopper/sweep-rmsnorm.sh &lt;repo-root&gt; &lt;idle-gpu&gt; &lt;out-dir&gt;
+
+# regenerate this page's plates from the archived CSVs
+node scripts/gen-rmsnorm-plates.mjs
+node scripts/gen-rmsnorm-plates.mjs --check   # non-zero if the page is stale</code></pre>
+<p><span lang="en">The sweep script refuses to start on a GPU that is not idle, and prints the resolved <code>quack.rmsnorm</code> module path before it begins, because those are the two ways this measurement silently goes wrong.</span><span lang="zh">这个 sweep 脚本在 GPU 不空闲时会拒绝启动， 并在开始前打印解析到的 <code>quack.rmsnorm</code> 模块路径—— 因为这正是这类测量会悄悄出错的两个途径。</span></p>
+<div class="table-wrap">
+<!-- GEN:table-shape -->
+<table><thead><tr><th rowspan="2">shape</th><th class="num" colspan="2">H200 fwd</th><th class="num" colspan="2">H200 bwd</th><th class="num" colspan="2">H100 fwd</th><th class="num" colspan="2">H100 bwd</th></tr><tr><th class="num">analytical</th><th class="num">tuned</th><th class="num">analytical</th><th class="num">tuned</th><th class="num">analytical</th><th class="num">tuned</th><th class="num">analytical</th><th class="num">tuned</th></tr></thead><tbody><tr><td><code>1x4096</code></td><td class="num">0.14%</td><td class="num">0.15%</td><td class="num">0.04%</td><td class="num">0.04%</td><td class="num">0.20%</td><td class="num">0.21%</td><td class="num">0.08%</td><td class="num">0.09%</td></tr><tr><td><code>256x4096</code></td><td class="num">17.4%</td><td class="num">17.8%</td><td class="num">6.1%</td><td class="num">6.1%</td><td class="num">24.6%</td><td class="num">25.6%</td><td class="num">10.7%</td><td class="num">11.5%</td></tr><tr><td><code>512x4096</code></td><td class="num">30.2%</td><td class="num">31.9%</td><td class="num">12.5%</td><td class="num">12.8%</td><td class="num">38.9%</td><td class="num">40.7%</td><td class="num">18.8%</td><td class="num">20.0%</td></tr><tr><td><code>4096x3000</code></td><td class="num">56.2%</td><td class="num">60.1%</td><td class="num">36.9%</td><td class="num">38.0%</td><td class="num">68.2%</td><td class="num">71.0%</td><td class="num">45.8%</td><td class="num">50.2%</td></tr><tr><td><code>4096x4096</code></td><td class="num">64.6%</td><td class="num">64.4%</td><td class="num">43.0%</td><td class="num">45.7%</td><td class="num">72.4%</td><td class="num">74.0%</td><td class="num">52.8%</td><td class="num">53.8%</td></tr><tr><td><code>32768x1024</code></td><td class="num">75.4%</td><td class="num">73.0%</td><td class="num">63.3%</td><td class="num">62.8%</td><td class="num">81.6%</td><td class="num">79.6%</td><td class="num">68.0%</td><td class="num">67.9%</td></tr><tr><td><code>32768x2048</code></td><td class="num">83.9%</td><td class="num">84.0%</td><td class="num">75.5%</td><td class="num">74.9%</td><td class="num">87.2%</td><td class="num">87.4%</td><td class="num">74.3%</td><td class="num">76.3%</td></tr><tr><td><code>32768x4096</code></td><td class="num">89.8%</td><td class="num">89.4%</td><td class="num">77.4%</td><td class="num">85.1%</td><td class="num">91.5%</td><td class="num">91.7%</td><td class="num">87.1%</td><td class="num">86.4%</td></tr><tr><td><code>32768x8192</code></td><td class="num">93.4%</td><td class="num">84.4%</td><td class="num">75.7%</td><td class="num">91.7%</td><td class="num">93.8%</td><td class="num">94.0%</td><td class="num">85.1%</td><td class="num">93.6%</td></tr></tbody></table>
+<!-- /GEN:table-shape -->
+</div>
+<p class="caption"><span lang="en">Full per-shape percent of achievable bandwidth, both config paths side by side, bfloat16 activations and weight.</span><span lang="zh">逐 shape 的完整带宽利用率， 两条配置路径均列出， bfloat16 激活与权重。</span></p>
+</section>
+
+</article>
+
+<footer class="colophon">
+  <div class="grid">
+    <div class="field">
+      <div class="lbl"><span lang="en">Source</span><span lang="zh">来源</span></div>
+      <div><span lang="en">Quack CuTe DSL RMSNorm at commit <code>8aabb38</code>, measured 2026-07-30 on one idle H200 and one idle H100.</span><span lang="zh">Quack CuTe DSL RMSNorm， commit <code>8aabb38</code>， 于 2026-07-30 在一张空闲 H200 与一张空闲 H100 上测得。</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl"><span lang="en">Data</span><span lang="zh">数据</span></div>
+      <div><code>data/quack-rmsnorm-hopper/</code> — <span lang="en">results, environment, logs, commands</span><span lang="zh">结果、 环境、 日志、 命令</span></div>
+    </div>
+    <div class="field">
+      <div class="lbl"><span lang="en">Typography</span><span lang="zh">字体</span></div>
+      <div>Fraunces · Crimson Pro · Archivo · Azeret Mono</div>
+    </div>
+    <div class="field">
+      <div class="lbl"><span lang="en">Palette</span><span lang="zh">配色</span></div>
+      <div>
+        <span style="display:inline-block;width:10px;height:10px;background:#6d3f8c;margin-right:5px"></span>H200
+        <span style="display:inline-block;width:10px;height:10px;background:#0f6b62;margin:0 5px 0 12px"></span>H100
+      </div>
+    </div>
+  </div>
+  <div class="closing" lang="en">No.001 · Experiment · jinnpan.com · 2026 · figures generated from the archived CSVs</div>
+  <div class="closing" lang="zh">No.001 · 实验记录 · jinnpan.com · 2026 · 图表由归档 CSV 生成</div>
+</footer>
+
+</div>
+</div>
+
+<script>
+(function() {
+  var KEY = 'quack-rmsnorm-hopper-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

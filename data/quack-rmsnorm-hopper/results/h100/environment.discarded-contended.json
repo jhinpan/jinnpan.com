@@ -1,0 +1,205 @@
+{
+  "achievable_bandwidth": {
+    "best_probe": "write",
+    "median_gbps": 3189.888082,
+    "median_us": 168.303996,
+    "probe_bytes": 536870912,
+    "probes": {
+      "copy": {
+        "gbps": 2971.390935,
+        "median_us": 361.359999
+      },
+      "two_read_one_write": {
+        "gbps": 3074.627185,
+        "median_us": 523.84001
+      },
+      "write": {
+        "gbps": 3189.888082,
+        "median_us": 168.303996
+      }
+    },
+    "samples": 30
+  },
+  "architecture_overrides": {
+    "ARCH": null,
+    "FLYDSL_GPU_ARCH": null
+  },
+  "artifact_directory": "/root/xbench-h100-tuned",
+  "command": [
+    "/usr/bin/python",
+    "benchmarks/benchmark_rmsnorm_flydsl.py",
+    "--providers",
+    "quack_tuned",
+    "quack",
+    "torch",
+    "--warmup-rounds",
+    "3",
+    "--sample-rounds",
+    "12",
+    "--copy-mib",
+    "512",
+    "--copy-samples",
+    "30",
+    "--min-rotation-buffers",
+    "2",
+    "--max-rotation-buffers",
+    "4",
+    "--expected-arch",
+    "sm_90",
+    "--output-dir",
+    "/root/xbench-h100-tuned"
+  ],
+  "comparison_scope": "same-device providers. RMSNorm is memory bound, so a cross-vendor comparison of microseconds mostly reports the HBM bandwidth ratio; compare peak_bw_pct instead",
+  "completed_at_utc": "2026-07-30T06:59:50.915679+00:00",
+  "contention_canary": {
+    "closing_gbps": 2782.291296,
+    "closing_over_opening": 0.872222,
+    "opening_gbps": 3189.888082,
+    "quiet": false
+  },
+  "correctness_gate": "required",
+  "generated_at_utc": "2026-07-30T05:59:01.854500+00:00",
+  "git_commit": "8aabb380ff648d2c0afc618c50f0c8865bc1b1c8",
+  "gpu": {
+    "arch": "sm_90",
+    "compute_units": 132,
+    "l2_cache_bytes_reported": 52428800,
+    "name": "NVIDIA H100 80GB HBM3",
+    "total_memory_bytes": 85017493504,
+    "visible_count": 1,
+    "visible_index": 0
+  },
+  "host": {
+    "hostname": "b441c534e503",
+    "platform": "Linux-5.15.0-141-generic-x86_64-with-glibc2.39"
+  },
+  "matrix": {
+    "dtype_weight_modes": [
+      [
+        "float16",
+        "same"
+      ],
+      [
+        "float16",
+        "float32"
+      ],
+      [
+        "bfloat16",
+        "same"
+      ],
+      [
+        "bfloat16",
+        "float32"
+      ],
+      [
+        "float32",
+        "same"
+      ]
+    ],
+    "eps": 1e-06,
+    "operations": [
+      "fwd",
+      "bwd"
+    ],
+    "providers": [
+      "quack_tuned",
+      "quack",
+      "torch"
+    ],
+    "shapes": [
+      [
+        1,
+        4096
+      ],
+      [
+        256,
+        4096
+      ],
+      [
+        512,
+        4096
+      ],
+      [
+        4096,
+        3000
+      ],
+      [
+        4096,
+        4096
+      ],
+      [
+        32768,
+        1024
+      ],
+      [
+        32768,
+        2048
+      ],
+      [
+        32768,
+        4096
+      ],
+      [
+        32768,
+        8192
+      ]
+    ]
+  },
+  "methodology": {
+    "cache": "round-robin cloned tensor sets; when their logical working set is below the L2 target, a device copy evicts cache between individually timed calls",
+    "l2_target_ratio": 3,
+    "logical_bytes": {
+      "bwd": "read x + dout + weight + fp32 rstd; write dx + dweight",
+      "fwd": "read x + weight; write y"
+    },
+    "max_rotation_buffers": 4,
+    "peak_bandwidth": "best of a same-device copy, a two-read one-write elementwise, and a pure write; a copy alone understates the memory system",
+    "sample_rounds": 12,
+    "steady_state": "per-call torch.cuda device events after provider warmup; FlyDSL first-launch JIT is synchronized, recorded separately, and excluded",
+    "warmup_rounds": 3
+  },
+  "result_rows": 270,
+  "result_schema": [
+    "schema_version",
+    "provider",
+    "provider_detail",
+    "operation",
+    "m",
+    "n",
+    "activation_dtype",
+    "weight_dtype",
+    "weight_mode",
+    "eps",
+    "cold_compile_ms",
+    "cold_compile_reused",
+    "median_us",
+    "p10_us",
+    "p90_us",
+    "logical_bytes",
+    "logical_gbps",
+    "peak_bw_gbps",
+    "peak_bw_pct",
+    "rotation_buffers",
+    "rotation_working_set_bytes",
+    "l2_target_bytes",
+    "l2_eviction_between_calls",
+    "timed_samples"
+  ],
+  "runtime_scope": "NVIDIA H100 80GB HBM3 / sm_90",
+  "schema_version": 2,
+  "status": "passed",
+  "versions": {
+    "cuda": "13.0",
+    "flydsl": null,
+    "hip": null,
+    "python": "3.12.3",
+    "quack": "0.6.1",
+    "torch": "2.11.0+cu130"
+  },
+  "visibility": {
+    "CUDA_VISIBLE_DEVICES": "0",
+    "HIP_VISIBLE_DEVICES": null,
+    "ROCR_VISIBLE_DEVICES": null
+  },
+  "working_directory": "/root/quack-FlyDSL-cute-compat-test"
+}

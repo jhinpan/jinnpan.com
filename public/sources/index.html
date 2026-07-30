@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The Library · jinnpan.com</title>
-<meta name="description" content="A categorized index of everything written on jinnpan.com — code readings, paper readings, tutorials, and blog posts. Code and paper readings open as self-contained HTML deep dives under /sources; tutorials and blog posts open as bilingual blog pages." />
+<meta name="description" content="A categorized index of everything written on jinnpan.com — code readings, paper readings, tutorials, blog posts, and experiment records. Code readings, paper readings and experiments open as self-contained HTML deep dives under /sources; tutorials and blog posts open as bilingual blog pages." />
 <style>
   :root {
     --paper: #f6f3ea;
@@ -20,6 +20,7 @@
     --paper-c: #a24036;/* rust   */
     --tut: #315d92;    /* cobalt */
     --blog: #4e744c;   /* green  */
+    --exp: #6d3f8c;    /* plum   */
     --amber: #bb7a25;
     --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
     --font-serif: Georgia, "Noto Serif SC", serif;
@@ -166,11 +167,12 @@
   .filter[data-filter="paper"][aria-pressed="true"] { background: var(--paper-c); border-color: var(--paper-c); }
   .filter[data-filter="tutorial"][aria-pressed="true"] { background: var(--tut); border-color: var(--tut); }
   .filter[data-filter="blog"][aria-pressed="true"] { background: var(--blog); border-color: var(--blog); }
+  .filter[data-filter="experiments"][aria-pressed="true"] { background: var(--exp); border-color: var(--exp); }
 
   /* ---- stats ---- */
   .stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     border: 2px solid var(--dark);
     margin: 24px 0 8px;
     background: rgba(255, 250, 240, .72);
@@ -183,6 +185,7 @@
   .stat[data-c="paper"] .num { color: var(--paper-c); }
   .stat[data-c="tutorial"] .num { color: var(--tut); }
   .stat[data-c="blog"] .num { color: var(--blog); }
+  .stat[data-c="experiments"] .num { color: var(--exp); }
 
   /* ---- shelves (category sections) ---- */
   .shelf { margin-top: 44px; scroll-margin-top: 78px; }
@@ -243,6 +246,7 @@
   .entry[data-kind="paper"]    { --accent: var(--paper-c); }
   .entry[data-kind="tutorial"] { --accent: var(--tut); }
   .entry[data-kind="blog"]     { --accent: var(--blog); }
+  .entry[data-kind="experiments"] { --accent: var(--exp); }
   .entry[hidden] { display: none; }
   .entry-top {
     display: flex;
@@ -327,13 +331,13 @@
     <div>
       <p class="kicker">The Library · 文库</p>
       <h1>The Library</h1>
-      <p class="lede">一个分门别类的索引， 收齐了我写过的东西。 <b>代码精读</b>和<b>论文精读</b>是 /sources 下自成一体的 HTML 深读； <b>教程</b>和<b>博客</b>是中英双语的 blog 长文。 四个栏目， 一张地图。</p>
+      <p class="lede">一个分门别类的索引， 收齐了我写过的东西。 <b>代码精读</b>和<b>论文精读</b>是 /sources 下自成一体的 HTML 深读； <b>教程</b>和<b>博客</b>是中英双语的 blog 长文； <b>实验</b>是可复现的 kernel 与系统性能记录， 连原始数据一起存档。 五个栏目， 一张地图。</p>
     </div>
-    <figure class="shelf-plate" aria-label="A visual map of the four shelves in the library">
-      <svg viewBox="0 0 320 240" role="img" aria-labelledby="plate-title plate-desc">
-        <title id="plate-title">Four shelves</title>
-        <desc id="plate-desc">A diagram of four labeled shelves — code, paper, tutorial, and blog — feeding into one index.</desc>
-        <rect x="1" y="1" width="318" height="238" fill="#fffaf0" stroke="#22231f" stroke-width="2" />
+    <figure class="shelf-plate" aria-label="A visual map of the five shelves in the library">
+      <svg viewBox="0 0 320 288" role="img" aria-labelledby="plate-title plate-desc">
+        <title id="plate-title">Five shelves</title>
+        <desc id="plate-desc">A diagram of five labeled shelves — code, paper, tutorial, blog, and experiments — feeding into one index.</desc>
+        <rect x="1" y="1" width="318" height="286" fill="#fffaf0" stroke="#22231f" stroke-width="2" />
         <!-- index spine at top -->
         <path d="M40 40 H280" stroke="#a24036" stroke-width="2" stroke-dasharray="5 5" />
         <text x="40" y="30" fill="#171714" font-family="ui-monospace, monospace" font-size="13">/sources · the library</text>
@@ -351,12 +355,16 @@
           <!-- shelf 4 blog (green) -->
           <line x1="30" y1="226" x2="290" y2="226" stroke="#22231f" stroke-width="3" />
           <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" /><rect x="137" y="196" width="16" height="30" fill="#4e744c" />
+          <!-- shelf 5 experiments (plum) -->
+          <line x1="30" y1="274" x2="290" y2="274" stroke="#22231f" stroke-width="3" />
+          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" />
         </g>
         <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
           <text x="214" y="74">CODE · 11</text>
           <text x="214" y="122">PAPER · 5</text>
           <text x="214" y="170">TUTORIAL · 6</text>
           <text x="214" y="218">BLOG · 6</text>
+          <text x="214" y="266">EXPERIMENTS · 1</text>
         </g>
       </svg>
     </figure>
@@ -370,6 +378,7 @@
       <button class="filter" type="button" data-filter="paper" aria-pressed="false">Paper</button>
       <button class="filter" type="button" data-filter="tutorial" aria-pressed="false">Tutorial</button>
       <button class="filter" type="button" data-filter="blog" aria-pressed="false">Blog</button>
+      <button class="filter" type="button" data-filter="experiments" aria-pressed="false">Experiments</button>
     </div>
   </section>
 
@@ -378,6 +387,7 @@
     <div class="stat" data-c="paper"><span class="num">5</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">7</span><span class="label">tutorials</span></div>
     <div class="stat" data-c="blog"><span class="num">6</span><span class="label">blog posts</span></div>
+    <div class="stat" data-c="experiments"><span class="num">1</span><span class="label">experiments</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -729,8 +739,31 @@
     </div>
   </section>
 
+  <!-- ============ EXPERIMENTS ============ -->
+  <section class="shelf" id="experiments" data-section="experiments" style="--accent: var(--exp);" aria-label="Experiment records">
+    <div class="shelf-head">
+      <div class="shelf-chip">05</div>
+      <div class="shelf-title">
+        <h2>Experiments</h2>
+        <div class="sub"><span class="zh">实验记录</span> · reproducible kernel and system measurements — raw data archived alongside the write-up</div>
+      </div>
+      <div class="shelf-count">1 record</div>
+    </div>
+    <div class="grid">
+      <article class="entry" data-kind="experiments" data-search="experiment 001 quack rmsnorm cute dsl h100 h200 hopper sm90 autotune analytical heuristic forward backward kernel bandwidth roofline tma smem stages baseline mi355x reference cutlass">
+        <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 001</span></div>
+        <div class="entry-body">
+          <h3>Quack RMSNorm on H100 &amp; H200</h3>
+          <p>A tuned and un-tuned sweep of Quack's CuTe DSL RMSNorm forward and backward kernels across 90 cells on two idle Hopper GPUs — and why the analytical config ladder gives up 17% on the widest backward row.</p>
+          <div class="tags"><span class="tag">CuTe DSL</span><span class="tag">RMSNorm</span><span class="tag">H100 / H200</span><span class="tag">autotune</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./quack-rmsnorm-hopper.html">Deep dive →</a></div>
+      </article>
+    </div>
+  </section>
+
   <div class="empty" id="empty" aria-hidden="true">No matching entry.</div>
-  <p class="note">Code &amp; Paper open as self-contained HTML deep dives (each carries its own EN / ZH toggle). Tutorial &amp; Blog open as bilingual blog pages. Search across everything, or filter by shelf. Try: MLIR, ATT, MoE, PagedAttention, agent RL, GF(2), RLHF, Codex.</p>
+  <p class="note">Code, Paper &amp; Experiments open as self-contained HTML deep dives (each carries its own EN / ZH toggle). Tutorial &amp; Blog open as bilingual blog pages. Search across everything, or filter by shelf. Try: MLIR, ATT, MoE, PagedAttention, agent RL, GF(2), RLHF, Codex, RMSNorm.</p>
 </main>
 
 <script>

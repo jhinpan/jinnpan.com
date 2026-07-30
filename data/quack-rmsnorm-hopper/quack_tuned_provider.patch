@@ -1,0 +1,209 @@
+diff --git a/benchmarks/benchmark_rmsnorm_flydsl.py b/benchmarks/benchmark_rmsnorm_flydsl.py
+index b2f3f9e..9c03ff2 100644
+--- a/benchmarks/benchmark_rmsnorm_flydsl.py
++++ b/benchmarks/benchmark_rmsnorm_flydsl.py
+@@ -41,7 +41,7 @@ DTYPE_WEIGHT_MODES = (
+     ("float32", "same"),
+ )
+ OPERATIONS = ("fwd", "bwd")
+-PROVIDERS = ("flydsl", "quack", "torch")
++PROVIDERS = ("flydsl", "quack", "quack_tuned", "torch")
+ RESULT_FIELDS = (
+     "schema_version",
+     "provider",
+@@ -390,16 +390,27 @@ class _FlyDSLProvider:
+                 weight = inputs["weight"].clone()
+                 out = torch.empty_like(x)
+                 rstd = torch.empty(0, device=x.device, dtype=torch.float32)
++                absent = torch.empty(0, device=x.device, dtype=x.dtype)
+                 tensor_sets.append((out,))
+ 
+-                def call(x=x, weight=weight, out=out, rstd=rstd):
+-                    self.impl._launch_rmsnorm_fwd(
++                def call(x=x, weight=weight, out=out, rstd=rstd, absent=absent):
++                    self.impl._launch_rmsnorm_feature_fwd(
+                         x,
+                         weight,
++                        absent,
++                        absent,
+                         out,
++                        absent,
+                         rstd,
+                         eps,
+-                        False,
++                        0.0,
++                        has_weight=True,
++                        has_bias=False,
++                        has_residual=False,
++                        store_residual=False,
++                        store_rstd=False,
++                        per_head=False,
++                        num_heads=1,
+                     )
+ 
+                 calls.append(call)
+@@ -443,6 +454,8 @@ class _FlyDSLProvider:
+             rstd = reference[2].clone()
+             dx = torch.empty_like(x)
+             dweight = torch.empty_like(weight)
++            absent = torch.empty(0, device=x.device, dtype=x.dtype)
++            dbias = torch.empty(1, device=x.device, dtype=weight.dtype)
+             tensor_sets.append((dx, dweight))
+ 
+             # The launcher allocates its own partials, so that allocation is
+@@ -454,8 +467,29 @@ class _FlyDSLProvider:
+                 rstd=rstd,
+                 dx=dx,
+                 dweight=dweight,
++                absent=absent,
++                dbias=dbias,
+             ):
+-                self.impl._launch_rmsnorm_bwd(x, weight, dout, rstd, dx, dweight)
++                self.impl._launch_rmsnorm_feature_bwd(
++                    x,
++                    weight,
++                    dout,
++                    x,
++                    rstd,
++                    dx,
++                    absent,
++                    dweight,
++                    dbias,
++                    0.0,
++                    has_weight=True,
++                    has_bias=False,
++                    compute_dweight=True,
++                    compute_dbias=False,
++                    has_residual=False,
++                    has_dresidual_out=False,
++                    per_head=False,
++                    num_heads=1,
++                )
+ 
+             calls.append(call)
+ 
+@@ -653,6 +687,102 @@ class _QuackProvider:
+         )
+ 
+ 
++class _QuackTunedProvider:
++    """Quack's autotuned CuTe RMSNorm, so the analytical ladder has a ceiling.
++
++    ``rmsnorm_fwd`` / ``rmsnorm_bwd`` pick a launch config from the hand-written
++    analytical heuristic; the ``_tuned`` entry points let ``@autotune`` search
++    the exhaustive config space instead. Those take preallocated outputs and,
++    for backward, stop at the fp32 partials, so this provider allocates and
++    finalizes exactly the way the un-tuned wrappers do internally. Otherwise
++    the two providers would not be timing the same work.
++
++    The first call per cell pays the whole config search. That lands in
++    ``cold_compile_ms``, which the harness records separately and excludes from
++    the steady-state samples.
++    """
++
++    def __init__(self, torch: Any):
++        self.torch = torch
++        module = importlib.import_module("quack.rmsnorm")
++        self._fwd_untuned = module.rmsnorm_fwd
++        self._fwd_tuned = module.rmsnorm_fwd_tuned
++        self._bwd_tuned = module.rmsnorm_bwd_tuned
++        self._sm_count = module.get_sm_count
++
++    def prepare(
++        self,
++        cell: MatrixCell,
++        inputs: dict[str, Any],
++        reference: tuple,
++        *,
++        eps: float,
++        rotation_buffers: int,
++    ) -> PreparedCase:
++        torch = self.torch
++        tensor_sets = []
++        calls = []
++        if cell.operation == "fwd":
++            for _ in range(rotation_buffers):
++                x = inputs["x"].clone()
++                weight = inputs["weight"].clone()
++                slot = [None]
++                tensor_sets.append(slot)
++
++                def call(x=x, weight=weight, slot=slot):
++                    out = torch.empty_like(x)
++                    self._fwd_tuned(x, weight, out, eps=eps)
++                    slot[0] = out
++
++                calls.append(call)
++            cold_start = time.perf_counter()
++            calls[0]()
++            torch.cuda.synchronize()
++            cold_compile_ms = (time.perf_counter() - cold_start) * 1000.0
++            _assert_correct(torch, cell, (tensor_sets[0][0],), reference)
++            return PreparedCase(
++                calls=calls,
++                reset=lambda: None,
++                outputs=lambda: (tensor_sets[0][0],),
++                provider_detail="quack.rmsnorm.rmsnorm_fwd_tuned (CuTe, autotuned)",
++                cold_compile_ms=cold_compile_ms,
++                cold_compile_reused=False,
++            )
++
++        sm_count = self._sm_count(cell.n, inputs["x"].device)
++        for _ in range(rotation_buffers):
++            x = inputs["x"].clone()
++            weight = inputs["weight"].clone()
++            dout = inputs["dout"].clone()
++            rstd = self._fwd_untuned(x, weight, eps=eps, store_rstd=True)[2]
++            slot = [None]
++            tensor_sets.append(slot)
++
++            def call(x=x, weight=weight, dout=dout, rstd=rstd, slot=slot):
++                dx = torch.empty_like(x)
++                dw_partial = torch.empty((sm_count, cell.n), device=x.device, dtype=torch.float32)
++                self._bwd_tuned(x, weight, dout, rstd, dx, dw_partial, has_dw_partial=True)
++                # rmsnorm_bwd folds this fp32 reduction in; keep it inside the
++                # timed region so both providers report the same operation.
++                slot[0] = (dx, dw_partial.sum(dim=0).to(weight.dtype))
++
++            calls.append(call)
++        torch.cuda.synchronize()
++        cold_start = time.perf_counter()
++        calls[0]()
++        torch.cuda.synchronize()
++        cold_compile_ms = (time.perf_counter() - cold_start) * 1000.0
++        _assert_correct(torch, cell, tensor_sets[0][0], reference[:2])
++        return PreparedCase(
++            calls=calls,
++            reset=lambda: None,
++            outputs=lambda: tensor_sets[0][0],
++            provider_detail="quack.rmsnorm.rmsnorm_bwd_tuned (CuTe, autotuned)",
++            cold_compile_ms=cold_compile_ms,
++            cold_compile_reused=False,
++        )
++
++
+ def _parse_shape(value: str) -> tuple[int, int]:
+     try:
+         m_text, n_text = value.lower().split("x", 1)
+@@ -840,8 +970,11 @@ def _validate_runtime(torch: Any, args: argparse.Namespace) -> None:
+         raise RuntimeError(f"expected {args.expected_arch}, found {actual_arch}")
+     if "flydsl" in args.providers and torch.version.hip is None:
+         raise RuntimeError("the FlyDSL provider requires a ROCm PyTorch build")
+-    if "quack" in args.providers and torch.version.hip is not None:
+-        raise RuntimeError("the Quack CuTe provider requires a CUDA PyTorch build")
++    cuda_only = {"quack", "quack_tuned"} & set(args.providers)
++    if cuda_only and torch.version.hip is not None:
++        raise RuntimeError(
++            f"the Quack CuTe providers require a CUDA PyTorch build: {sorted(cuda_only)}"
++        )
+     if not math.isfinite(args.eps) or args.eps <= 0:
+         raise ValueError("--eps must be finite and positive")
+     positive_values = {
+@@ -886,6 +1019,7 @@ def _run(
+         factory = {
+             "flydsl": _FlyDSLProvider,
+             "quack": _QuackProvider,
++            "quack_tuned": _QuackTunedProvider,
+             "torch": _TorchProvider,
+         }[name]
+         providers[name] = factory(torch)
