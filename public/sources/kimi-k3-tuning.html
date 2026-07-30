@@ -136,6 +136,22 @@ li{margin:0 0 7px}
 .a-vflash{animation-name:vflash} .a-vmark{animation-name:vmark}
 .a-cut{animation-name:cut} .a-rej{animation-name:rej}
 .a-cand{animation-name:cand} .a-keep{animation-name:keep} .a-ship{animation-name:ship}
+/* Phase captions: four beats that cross-fade in step with the elements above,
+   so a reader always knows which part of the cycle they are looking at. Without
+   these the plate shows what happens but never says which beat it is. */
+@keyframes ph1{0%{opacity:1}22%{opacity:1}26%{opacity:0}100%{opacity:0}}
+@keyframes ph2{0%{opacity:0}24%{opacity:0}28%{opacity:1}33%{opacity:1}37%{opacity:0}100%{opacity:0}}
+@keyframes ph3{0%{opacity:0}35%{opacity:0}39%{opacity:1}50%{opacity:1}54%{opacity:0}100%{opacity:0}}
+@keyframes ph4{0%{opacity:0}52%{opacity:0}56%{opacity:1}93%{opacity:1}97%{opacity:0}100%{opacity:0}}
+.a-ph1{animation-name:ph1} .a-ph2{animation-name:ph2}
+.a-ph3{animation-name:ph3} .a-ph4{animation-name:ph4}
+.phase{font-family:var(--ui); font-size:13px; fill:var(--shu); text-anchor:middle}
+.phase-n{font-family:var(--mono); font-size:11px; fill:var(--rule2); text-anchor:middle}
+@media (prefers-reduced-motion: reduce){
+  /* Freeze on the last beat, which describes the frozen picture. */
+  .a-ph1,.a-ph2,.a-ph3{opacity:0}
+  .a-ph4{opacity:1}
+}
 .lane-label{font-family:var(--ui); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; fill:var(--fg3)}
 .cell{fill:var(--paper); stroke:var(--rule2); stroke-width:1}
 .cell.mask{fill:var(--sunk); stroke-dasharray:4 3}
@@ -628,9 +644,28 @@ measured                               <span class="gen" data-gen="f-loss">6.35x
 
   <p><span lang="en">Section 06 treated the verify window as a knob and found the narrow setting won. This section is the mechanism behind that, because on this particular architecture speculation is more expensive than the usual account of it suggests — and the extra cost is exactly what caps concurrency at 48.</span><span lang="zh">第 06 节把验证窗口当成一个旋钮， 测出窄的那一档胜出。 这一节讲它背后的机制——因为在这个架构上， 投机解码比通常的说法要贵， 而多出来的这部分代价， 恰好就是并发被锁在 48 的原因。</span></p>
 
+  <h3><span lang="en">Why a guess is worth anything</span><span lang="zh">为什么猜测能值钱</span></h3>
+
+  <p><span lang="en">Start with the cost of one ordinary token, because that number is what makes everything after it possible. To produce a single token, the machine has to move every weight the model needs from memory into the compute units. On a 1.5 TB model that transfer is the whole cost of the step; the arithmetic units spend most of it waiting for data to arrive.</span><span lang="zh">先从产出一个普通 token 的成本说起， 因为正是这个数字让后面的一切成为可能。 要产出一个 token， 机器必须把模型需要的每一个权重从显存搬到计算单元里。 在一个 1.5 TB 的模型上， 这次搬运就是这一步的全部成本；计算单元的大部分时间都在等数据到达。</span></p>
+
+  <p><span lang="en">That leads somewhere counterintuitive. If the weights get streamed once either way, then a forward pass that evaluates four positions costs almost the same as one that evaluates a single position. The expensive resource is the memory traffic, and the memory traffic does not care how many positions you asked about.</span><span lang="zh">这引出一个反直觉的结论。 既然无论如何权重都只被流过一次， 那么一次评估四个位置的前向， 和一次只评估一个位置的前向， 成本几乎相同。 昂贵的那样资源是显存流量， 而显存流量并不在乎你问了多少个位置。</span></p>
+
+  <p><span lang="en">So <em>checking</em> is cheap in a way that <em>generating</em> is not, and that gap is the entire opportunity. Suppose you had four candidate tokens from somewhere, and one target forward confirmed the first three. You paid for one step and collected three tokens. Nothing about the model changed — you simply used capacity that was already sitting idle. Without this, the three tokens the plate below commits would have cost three full target forwards; with it, they cost one.</span><span lang="zh">所以<em>检查</em>的便宜是<em>生成</em>所不具备的， 而这个落差就是全部的机会所在。 假设你从某处拿到了四个候选 token， 一次目标前向确认了前三个。 你付了一步的钱， 收到了三个 token。 模型没有任何改变——你只是用掉了本来就闲着的容量。 没有这一点， 下面图版里提交的那三个 token 需要三次完整的目标前向；有了它， 只需要一次。</span></p>
+
+  <p><span lang="en">Which moves the problem: the candidates have to come from somewhere cheap enough that they do not eat the saving. A small model could write them, but writing four tokens the ordinary way means four of its forward passes, and that just relocates the serial cost instead of removing it. DSpark takes a different route — it runs its draft <strong>once</strong>, over four blank positions at the same time.</span><span lang="zh">于是问题被搬走了： 候选必须来自某个足够便宜的地方， 便宜到不会把省下来的吃掉。 一个小模型可以写出它们， 但用常规方式写四个 token 意味着它要做四次前向， 那只是把串行成本搬了个地方而不是消除它。 DSpark 走了另一条路——它让草稿模型只跑<strong>一次</strong>， 同时覆盖四个空白位置。</span></p>
+
+  <p><span lang="en">That buys the speed and creates a problem worth stating plainly: each blank position is being predicted without knowing what the position before it turned out to be. Four predictions made in mutual ignorance rarely form a sentence. It is like asking four people to each write the next word without letting any of them see what the previous one wrote.</span><span lang="zh">这买到了速度， 也造出一个值得明说的问题： 每个空白位置在被预测时， 并不知道它前面那个位置最终是什么。 四个在彼此无知的情况下作出的预测， 很少能组成一句话。 这就像让四个人各写下一个词， 却不让任何人看见前一个人写了什么。</span></p>
+
+  <p><span lang="en">The repair is deliberately the smallest thing that could work, and it is the piece worth understanding. After the single draft forward, a tiny head walks the four positions in order, and at each one adds a correction derived from the token that was <em>just</em> chosen: an embedding into a small rank-<em>r</em> space and a projection back out to the vocabulary. No attention. No second transformer pass. Just a nudge that carries "here is what the previous position settled on." That is why, in the plate below, the draft lane fills one cell at a time even though only one draft forward ever happened — and why the cells can be filled serially without the step becoming slow.</span><span lang="zh">这个修补被刻意做成了「能起作用的最小的东西」， 而它正是值得弄懂的那一块。 在那一次草稿前向之后， 一个极小的 head 按顺序走过这四个位置， 并在每个位置上加一个由<em>刚刚</em>选定的那个 token 推导出的修正： 一次到低维 rank-<em>r</em> 空间的 embedding， 再投影回词表。 没有 attention。 没有第二次 transformer 前向。 只是一个携带着「前一个位置定下来的是什么」的轻推。 这就是为什么在下面的图版里， draft 行是一格一格填的， 尽管全程只发生过一次草稿前向——也是为什么这些格子可以串行地填， 却不会让这一步变慢。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">Three facts, and everything else follows</span><span lang="zh">三个事实， 其余都是推论</span></p>
+    <p><span lang="en">Checking many positions costs about as much as checking one, because decode is bound by weight traffic. Guesses therefore have to be cheap, which is why the draft runs once over blanks rather than once per token. And blanks predicted simultaneously do not agree with each other, which is why a rank-<em>r</em> nudge walks the block afterwards. Hold those three and the rest of this section is bookkeeping.</span><span lang="zh">检查很多个位置的成本和检查一个差不多， 因为解码受权重流量支配。 于是猜测必须便宜， 这就是草稿为什么在一堆空白上跑一次、而不是每个 token 跑一次。 而同时被预测的空白之间彼此不一致， 这就是为什么事后要有一个 rank-<em>r</em> 的轻推走过整个块。 端住这三条， 本节其余部分都只是记账。</span></p>
+  </div>
+
   <h3><span lang="en">One cycle, watched</span><span lang="zh">看一轮完整的循环</span></h3>
 
-  <p><span lang="en">The economics of speculation are decided by what happens in one step, and one step has a shape that a static picture flattens: part of it is serial and cheap, part of it is parallel and expensive, and where the two meet is what the block-size knob moves. So here it is running.</span><span lang="zh">投机解码的经济性由一步之内发生的事决定， 而这一步有一个静态图会压平的形状： 其中一部分是串行且便宜的， 另一部分是并行且昂贵的， 而两者交汇的位置正是 block-size 这个旋钮在移动的东西。 所以这里让它跑起来。</span></p>
+  <p><span lang="en">Now the three facts have a picture. Watch the two lanes at different speeds: the draft lane fills a cell at a time because of the nudge, and the verify lane flashes all at once because it is one forward. Where those two rates meet is what the block-size knob moves.</span><span lang="zh">现在那三个事实有了一张图。 注意两行的节奏不同： draft 行因为那个轻推而一格一格地填， verify 行因为只是一次前向而整体闪一下。 这两种节奏交汇的位置， 正是 block-size 这个旋钮在移动的东西。</span></p>
 
   <div class="plate wide">
     <div class="plate-meta"><span><b>Plate VII</b> · <span lang="en">One DSPARK step, γ = 3</span><span lang="zh">DSPARK 的一步， γ = 3</span></span><span class="diag-text sm">15 s loop</span></div>
@@ -643,6 +678,28 @@ measured                               <span class="gen" data-gen="f-loss">6.35x
           <path d="M0,1 L9,5 L0,9" fill="none" stroke="#c9c4b8" stroke-width="1.4"/>
         </marker>
       </defs>
+
+      <!-- phase captions : the narration track ---------------------------- -->
+      <g class="cyc a-ph1">
+        <text class="phase-n" x="700" y="72">1 / 4</text>
+        <text class="phase" x="700" y="92" lang="en">the draft walks the block</text>
+        <text class="phase" x="700" y="92" lang="zh">草稿沿块走一遍</text>
+      </g>
+      <g class="cyc a-ph2">
+        <text class="phase-n" x="700" y="72">2 / 4</text>
+        <text class="phase" x="700" y="92" lang="en">one target forward checks all of it</text>
+        <text class="phase" x="700" y="92" lang="zh">一次目标前向把它全部检查完</text>
+      </g>
+      <g class="cyc a-ph3">
+        <text class="phase-n" x="700" y="72">3 / 4</text>
+        <text class="phase" x="700" y="92" lang="en">the first mismatch cuts the tail</text>
+        <text class="phase" x="700" y="92" lang="zh">第一个不匹配处截断尾部</text>
+      </g>
+      <g class="cyc a-ph4">
+        <text class="phase-n" x="700" y="72">4 / 4</text>
+        <text class="phase" x="700" y="92" lang="en">keep the survivors, plus one free token</text>
+        <text class="phase" x="700" y="92" lang="zh">留下存活者， 再加一个免费 token</text>
+      </g>
 
       <!-- lane 1 : draft block ------------------------------------------- -->
       <text class="lane-label" x="112" y="80" text-anchor="end">draft · γ=3</text>
@@ -718,7 +775,7 @@ measured                               <span class="gen" data-gen="f-loss">6.35x
 
   <h3><span lang="en">What SGLang actually runs</span><span lang="zh">SGLang 实际执行的东西</span></h3>
 
-  <p><span lang="en">The step above maps onto a short, concrete sequence. The draft's input is a block of γ positions whose first column is last step's bonus token and whose remaining columns are a mask token — one transformer forward over that block produces γ hidden states, which go through the <em>target's own</em> <code>lm_head</code> to base logits. The Markov head is genuinely small: an embedding into rank <em>r</em>, a projection back out to vocabulary, added as a bias to the base logits at each position. Then one target forward over γ+1 positions, and acceptance.</span><span lang="zh">上面那一步对应一段很短很具体的序列。 draft 的输入是一个 γ 宽的位置块， 第一列是上一步的 bonus token， 其余列是 mask token——在这个块上做一次 transformer 前向得到 γ 个隐藏态， 它们经过<em>目标模型自己的</em> <code>lm_head</code> 得到基础 logits。 Markov head 确实很小： 一个到 rank <em>r</em> 的 embedding， 一个投影回词表， 作为偏置加到每个位置的基础 logits 上。 然后是在 γ+1 个位置上的一次目标前向， 接着是接受判定。</span></p>
+  <p><span lang="en">Three details from the source, for anyone who wants to find this in the tree. The "blank" positions are a mask token, and column 0 of the block is not blank — it holds last step's bonus token, so the draft has an anchor to condition on. The base logits come from the <em>target's own</em> <code>lm_head</code> rather than an output layer of the draft's, which is why the draft needs none. And the nudge has a name — a Markov head — with three available shapes: a plain rank-<em>r</em> embedding correction, a gated variant, and a small GRU-like recurrence.</span><span lang="zh">三个来自源码的细节， 供想在代码树里找到它们的人。 那些「空白」位置是 mask token， 而块的第 0 列并不空白——它放着上一步的 bonus token， 好让草稿有个锚可以条件化。 基础 logits 来自<em>目标模型自己的</em> <code>lm_head</code> 而不是草稿自带的输出层， 这也是草稿为什么不需要自己的输出层。 那个轻推有名字——Markov head——有三种可选形状： 朴素的 rank-<em>r</em> embedding 修正、一个带门控的变体， 以及一个小的类 GRU 递推。</span></p>
 
   <p><span lang="en">Acceptance has two forms and both are worth naming, because the sampling one is what made this port possible. For an all-greedy batch it is the longest matching prefix: compare each draft against the target's own argmax at that position, take a cumulative product of the matches, and the sum of that product is the accepted length. For any batch containing a sampled request it is chain rejection sampling — the textbook rule, accept when a uniform draw times the draft probability falls under the target probability, and resample from the positive residual otherwise. Either way the step commits accepted drafts plus one bonus token, which is the target's own prediction at the position where the chain broke. That bonus is why even a fully rejected block still makes progress.</span><span lang="zh">接受判定有两种形式， 两个都值得点名， 因为其中采样那一种正是让这次移植成为可能的东西。 全贪心的批次走最长匹配前缀： 把每个草稿与目标模型在该位置自己的 argmax 比较， 对匹配取累积乘积， 该乘积之和就是接受长度。 只要批次里有一个采样请求， 就走链式拒绝采样——教科书规则， 均匀采样乘草稿概率落在目标概率之下就接受， 否则从正残差重新采样。 两种方式下这一步都提交「接受的草稿 + 一个 bonus token」， 后者是目标模型在链断裂那个位置上自己的预测。 这个 bonus 正是为什么即使一整块全被拒绝， 这一步依然有进展。</span></p>
 
