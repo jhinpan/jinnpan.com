@@ -1,0 +1,19 @@
+[2026-07-30 00:06:51] run dir   /sgl-workspace/workspace/bsz1_results/concscale
+[2026-07-30 00:06:51] port      30100
+[2026-07-30 00:06:51] sglang    3d35b45f7
+[2026-07-30 00:06:51] === sweep C: concurrency scaling at ISL 1024 / OSL 1024 ===
+[2026-07-30 00:06:52] point C_conc1 (isl=1024 osl=1024 np=8 warmup=2)
+[2026-07-30 00:08:22]   -> OK out_tps=109.84 total_tps=219.68 conc_ach=1 ttft_med=176.37ms tpot_med=8.92ms accept=2.693 (89s)
+[2026-07-30 00:08:23] point C_conc2 (isl=1024 osl=1024 np=8 warmup=2)
+[2026-07-30 00:09:24]   -> OK out_tps=180.73 total_tps=361.46 conc_ach=1.94 ttft_med=202.01ms tpot_med=10.28ms accept=2.544 (60s)
+[2026-07-30 00:09:25] point C_conc4 (isl=1024 osl=1024 np=8 warmup=2)
+[2026-07-30 00:10:11]   -> OK out_tps=261.33 total_tps=522.66 conc_ach=3.39 ttft_med=333.4ms tpot_med=11.42ms accept=2.473 (45s)
+[2026-07-30 00:10:12] point C_conc8 (isl=1024 osl=1024 np=16 warmup=2)
+[2026-07-30 00:11:03]   -> OK out_tps=472 total_tps=943.99 conc_ach=7.36 ttft_med=478.36ms tpot_med=15.36ms accept=2.637 (50s)
+[2026-07-30 00:11:04] point C_conc16 (isl=1024 osl=1024 np=32 warmup=2)
+[2026-07-30 00:12:12]   -> OK out_tps=629.13 total_tps=1258.27 conc_ach=13.82 ttft_med=849.27ms tpot_med=20.85ms accept=2.672 (67s)
+[2026-07-30 00:12:13] point C_conc32 (isl=1024 osl=1024 np=64 warmup=2)
+[2026-07-30 00:13:39]   -> OK out_tps=949.73 total_tps=1899.46 conc_ach=29.66 ttft_med=888.28ms tpot_med=29.67ms accept=2.732 (85s)
+[2026-07-30 00:13:40] point C_conc48 (isl=1024 osl=1024 np=96 warmup=2)
+[2026-07-30 00:15:29]   -> OK out_tps=1060.58 total_tps=2121.16 conc_ach=42.65 ttft_med=2271.28ms tpot_med=38.06ms accept=2.678 (108s)
+[2026-07-30 00:15:29] === done, csv: /sgl-workspace/workspace/bsz1_results/concscale/results.csv ===

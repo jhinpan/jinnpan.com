@@ -1,0 +1,28 @@
+[2026-07-29 23:29:53] run dir   /sgl-workspace/workspace/bsz1_results/bsz1
+[2026-07-29 23:29:53] port      30100
+[2026-07-29 23:29:53] sglang    3d35b45f7
+[2026-07-29 23:29:53] === sweep A: ISL scaling at OSL 1024, bsz=1 ===
+[2026-07-29 23:29:54] point A_isl128_osl1024 (np=4 warmup=1)
+[2026-07-29 23:30:51]   -> OK out_tps=97.6 total_tps=109.8 ttft_med=181.23ms tpot_med=9.92ms accept=2.328 (56s)
+[2026-07-29 23:30:52] point A_isl1024_osl1024 (np=4 warmup=1)
+[2026-07-29 23:31:48]   -> OK out_tps=101.92 total_tps=203.83 ttft_med=179.15ms tpot_med=9.05ms accept=2.514 (55s)
+[2026-07-29 23:31:49] point A_isl4096_osl1024 (np=4 warmup=1)
+[2026-07-29 23:32:50]   -> OK out_tps=89.3 total_tps=446.5 ttft_med=365.28ms tpot_med=10.6ms accept=2.466 (60s)
+[2026-07-29 23:32:51] point A_isl8192_osl1024 (np=4 warmup=1)
+[2026-07-29 23:34:01]   -> OK out_tps=74.29 total_tps=668.64 ttft_med=636.33ms tpot_med=12.48ms accept=2.339 (69s)
+[2026-07-29 23:34:02] point A_isl16384_osl1024 (np=4 warmup=1)
+[2026-07-29 23:35:45]   -> OK out_tps=47.92 total_tps=814.64 ttft_med=1329.14ms tpot_med=19.26ms accept=1.892 (102s)
+[2026-07-29 23:35:46] point A_isl32768_osl1024 (np=4 warmup=1)
+[2026-07-29 23:38:17]   -> OK out_tps=31.02 total_tps=1023.58 ttft_med=3166.65ms tpot_med=29.52ms accept=1.741 (150s)
+[2026-07-29 23:38:18] point A_isl65536_osl1024 (np=4 warmup=1)
+[2026-07-29 23:42:58]   -> OK out_tps=16.04 total_tps=1042.55 ttft_med=8240.8ms tpot_med=55.3ms accept=1.44 (279s)
+[2026-07-29 23:42:58] === sweep B: OSL scaling at ISL 1024, bsz=1 ===
+[2026-07-29 23:42:59] point B_isl1024_osl128 (np=4 warmup=1)
+[2026-07-29 23:43:19]   -> OK out_tps=107.03 total_tps=963.23 ttft_med=176.4ms tpot_med=8.04ms accept=3.038 (19s)
+[2026-07-29 23:43:20] point B_isl1024_osl512 (np=4 warmup=1)
+[2026-07-29 23:43:55]   -> OK out_tps=106.88 total_tps=320.65 ttft_med=176.69ms tpot_med=8.81ms accept=2.658 (34s)
+[2026-07-29 23:43:56] point B_isl1024_osl2048 (np=4 warmup=1)
+[2026-07-29 23:45:28]   -> OK out_tps=106.62 total_tps=159.93 ttft_med=178.84ms tpot_med=9.42ms accept=2.644 (91s)
+[2026-07-29 23:45:29] point B_isl1024_osl4096 (np=4 warmup=1)
+[2026-07-29 23:48:40]   -> OK out_tps=93.47 total_tps=116.84 ttft_med=179.75ms tpot_med=10.46ms accept=2.392 (190s)
+[2026-07-29 23:48:40] === done, csv: /sgl-workspace/workspace/bsz1_results/bsz1/results.csv ===
