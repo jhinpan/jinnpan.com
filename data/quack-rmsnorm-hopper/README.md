@@ -33,8 +33,19 @@ and one thermal state:
 
 ## Headline result
 
-At the widest row (`32768x8192`, bf16) both kernels reach the low nineties as a
-fraction of measured achievable bandwidth — but they get there differently.
+Absolute figures at the widest row (`32768x8192`, bf16), best config path per
+cell — these are the numbers an MI355X run should be placed next to. Logical
+bytes are hardware-independent, so the same shape moves the same bytes and the
+GB/s ratio is a real throughput ratio.
+
+| | bytes moved | H200 | H100 |
+|---|---|---|---|
+| forward | 1024.0 MiB | 266.5 us · 4029.5 GB/s · 93.4% of roofline | 358.9 us · 2991.8 GB/s · 94.0% |
+| backward | 1536.2 MiB | 407.1 us · 3956.5 GB/s · 91.7% | 540.6 us · 2979.6 GB/s · 93.6% |
+| roofline | — | 4312.7 GB/s (2-read-1-write probe) | 3182.3 GB/s (write probe) |
+
+Both kernels reach the low nineties as a fraction of measured achievable
+bandwidth — but they get there differently.
 Forward is already there on the default analytical config (93.4% H200 / 93.8%
 H100) and autotuning does not improve it. Backward on the default config stalls
 at 75.7% (H200) / 85.1% (H100) and only reaches 91.7% / 93.6% once searched,

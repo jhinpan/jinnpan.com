@@ -126,7 +126,17 @@ const shapeLabel = ([m, n]) => `${m}x${n}`;
  * Grouped column chart. One column per shape, `series.length` bars per group.
  * Coordinates are absolute so the SVG needs no layout at render time.
  */
-function columnChart({ series, categories, width = 760, height = 300, yMax, yLabel, valueFmt }) {
+function columnChart({
+  series,
+  categories,
+  width = 760,
+  height = 300,
+  yMax,
+  yLabel,
+  valueFmt,
+  refLines = [],
+  tickFmt = (v) => f1(v).replace(/\.0$/, ""),
+}) {
   const padL = 54;
   const padR = 14;
   const padT = 18;
@@ -145,9 +155,20 @@ function columnChart({ series, categories, width = 760, height = 300, yMax, yLab
     const v = (yMax / ticks) * i;
     const yy = y(v).toFixed(1);
     parts.push(`<line class="ax-grid" x1="${padL}" y1="${yy}" x2="${width - padR}" y2="${yy}"/>`);
-    parts.push(`<text class="ax-tick" x="${padL - 8}" y="${(Number(yy) + 3.5).toFixed(1)}" text-anchor="end">${f1(v).replace(/\.0$/, "")}</text>`);
+    parts.push(`<text class="ax-tick" x="${padL - 8}" y="${(Number(yy) + 3.5).toFixed(1)}" text-anchor="end">${tickFmt(v)}</text>`);
   }
   parts.push(`<line class="ax-axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}"/>`);
+
+  // Measured ceilings, drawn behind the bars so a bar can visibly touch one.
+  for (const r of refLines) {
+    const yy = y(r.value).toFixed(1);
+    parts.push(
+      `<line class="ax-roof roof-${r.cls}" x1="${padL}" y1="${yy}" x2="${width - padR}" y2="${yy}"/>`,
+    );
+    parts.push(
+      `<text class="ax-roof-label roof-${r.cls}" x="${width - padR}" y="${(Number(yy) - 4).toFixed(1)}" text-anchor="end">${esc(r.label)}</text>`,
+    );
+  }
 
   categories.forEach((cat, ci) => {
     const gx = padL + bandW * ci + (bandW - groupW) / 2;
@@ -237,6 +258,20 @@ const peakPct = (host, provider, op, shape, mode = REF) =>
   Number(hosts[host].get(provider, op, shape, mode).peak_bw_pct);
 const medianUs = (host, provider, op, shape, mode = REF) =>
   Number(hosts[host].get(provider, op, shape, mode).median_us);
+const gbps = (host, provider, op, shape, mode = REF) =>
+  Number(hosts[host].get(provider, op, shape, mode).logical_gbps);
+const spreadPct = (host, provider, op, shape, mode = REF) => {
+  const r = hosts[host].get(provider, op, shape, mode);
+  return ((Number(r.p90_us) - Number(r.p10_us)) / Number(r.median_us)) * 100;
+};
+/** The config path a caller should actually deploy for this cell. */
+const best = (host, op, shape, mode = REF) => {
+  const a = hosts[host].get("quack", op, shape, mode);
+  const t = hosts[host].get("quack_tuned", op, shape, mode);
+  return Number(t.median_us) < Number(a.median_us)
+    ? { row: t, path: "tuned" }
+    : { row: a, path: "analytical" };
+};
 /** Positive = the autotuned config is faster than the analytical one. */
 const gain = (host, op, shape, mode = REF) =>
   (1 - medianUs(host, "quack_tuned", op, shape, mode) / medianUs(host, "quack", op, shape, mode)) * 100;
@@ -245,23 +280,35 @@ const cats = SHAPES.map(shapeLabel);
 
 const blocks = {};
 
-/** Both config paths, both hosts — the analytical/tuned contrast is the point. */
-const bothPaths = (op) =>
+/**
+ * Achieved bandwidth in GB/s, both config paths and both hosts, with each
+ * host's measured roofline drawn as a ceiling. Absolute units so the numbers
+ * transfer to another machine; the ceilings carry the efficiency reading that
+ * a percentage would have given.
+ */
+const roofH200 = hosts.h200.env.achievable_bandwidth.median_gbps;
+const roofH100 = hosts.h100.env.achievable_bandwidth.median_gbps;
+const gbpsPlate = (op) =>
   columnChart({
     categories: cats,
-    yMax: 100,
-    yLabel: "% of achievable bandwidth",
-    valueFmt: (v) => pct(v),
+    yMax: Math.ceil((Math.max(roofH200, roofH100) * 1.08) / 500) * 500,
+    yLabel: "achieved bandwidth (GB/s)",
+    valueFmt: (v) => `${f1(v)} GB/s`,
+    tickFmt: (v) => String(Math.round(v)),
+    refLines: [
+      { value: roofH200, label: `H200 roofline ${f1(roofH200)}`, cls: "a" },
+      { value: roofH100, label: `H100 roofline ${f1(roofH100)}`, cls: "b" },
+    ],
     series: [
-      { name: "H200 analytical", cls: "c", data: SHAPES.map((s) => peakPct("h200", "quack", op, s)) },
-      { name: "H200 tuned", cls: "a", data: SHAPES.map((s) => peakPct("h200", "quack_tuned", op, s)) },
-      { name: "H100 analytical", cls: "d", data: SHAPES.map((s) => peakPct("h100", "quack", op, s)) },
-      { name: "H100 tuned", cls: "b", data: SHAPES.map((s) => peakPct("h100", "quack_tuned", op, s)) },
+      { name: "H200 analytical", cls: "c", data: SHAPES.map((s) => gbps("h200", "quack", op, s)) },
+      { name: "H200 tuned", cls: "a", data: SHAPES.map((s) => gbps("h200", "quack_tuned", op, s)) },
+      { name: "H100 analytical", cls: "d", data: SHAPES.map((s) => gbps("h100", "quack", op, s)) },
+      { name: "H100 tuned", cls: "b", data: SHAPES.map((s) => gbps("h100", "quack_tuned", op, s)) },
     ],
   });
 
-blocks["plate-fwd"] = bothPaths("fwd");
-blocks["plate-bwd"] = bothPaths("bwd");
+blocks["plate-fwd"] = gbpsPlate("fwd");
+blocks["plate-bwd"] = gbpsPlate("bwd");
 
 {
   const series = [];
@@ -285,35 +332,57 @@ blocks["plate-bwd"] = bothPaths("bwd");
   blocks["plate-gain"] = gainChart({ categories: cats, series, yMin: lo, yMax: hi });
 }
 
-blocks["table-shape"] = (() => {
+/**
+ * The absolute reference table, one per operation. Latency and achieved
+ * bandwidth are the primary measurements; percent-of-peak is derived and shown
+ * beside them so the ratio can be checked rather than taken on trust.
+ */
+const absTable = (op) => {
   const head =
-    `<thead><tr><th rowspan="2">shape</th>${HOSTS.map((h) => `<th class="num" colspan="2">${h.label} fwd</th><th class="num" colspan="2">${h.label} bwd</th>`).join("")}</tr>` +
-    `<tr>${HOSTS.map(() => `<th class="num">analytical</th><th class="num">tuned</th><th class="num">analytical</th><th class="num">tuned</th>`).join("")}</tr></thead>`;
+    `<thead><tr><th rowspan="2">shape</th><th class="num" rowspan="2">moved</th>` +
+    HOSTS.map((h) => `<th class="num" colspan="4">${h.label}</th>`).join("") +
+    `</tr><tr>${HOSTS.map(
+      () =>
+        `<th class="num">anal. us</th><th class="num">tuned us</th><th class="num">best GB/s</th><th class="num">% peak</th>`,
+    ).join("")}</tr></thead>`;
   const body = SHAPES.map((s) => {
-    const cells = HOSTS.map((h) =>
-      ["fwd", "bwd"]
-        .map((op) =>
-          ["quack", "quack_tuned"]
-            .map((p) => `<td class="num">${pct(peakPct(h.key, p, op, s))}</td>`)
-            .join(""),
-        )
-        .join(""),
-    ).join("");
-    return `<tr><td><code>${shapeLabel(s)}</code></td>${cells}</tr>`;
+    const bytes = Number(hosts.h200.get("quack", op, s).logical_bytes);
+    const moved = bytes >= 1024 ** 2 ? `${f1(bytes / 1024 ** 2)} MiB` : `${f1(bytes / 1024)} KiB`;
+    const cells = HOSTS.map((h) => {
+      const b = best(h.key, op, s);
+      return (
+        `<td class="num">${us(medianUs(h.key, "quack", op, s))}</td>` +
+        `<td class="num">${us(medianUs(h.key, "quack_tuned", op, s))}</td>` +
+        `<td class="num">${f1(Number(b.row.logical_gbps))}</td>` +
+        `<td class="num">${pct(Number(b.row.peak_bw_pct))}</td>`
+      );
+    }).join("");
+    return `<tr><td><code>${shapeLabel(s)}</code></td><td class="num">${moved}</td>${cells}</tr>`;
   }).join("");
   return `<table>${head}<tbody>${body}</tbody></table>`;
-})();
+};
+
+blocks["table-fwd"] = absTable("fwd");
+blocks["table-bwd"] = absTable("bwd");
 
 blocks["table-dtype"] = (() => {
-  const head = `<thead><tr><th>activation / weight</th>${HOSTS.map(
-    (h) => `<th class="num">${h.label} fwd</th><th class="num">${h.label} bwd</th>`,
-  ).join("")}</tr></thead>`;
+  const head =
+    `<thead><tr><th rowspan="2">activation / weight</th>` +
+    HOSTS.map(
+      (h) => `<th class="num" colspan="2">${h.label} fwd</th><th class="num" colspan="2">${h.label} bwd</th>`,
+    ).join("") +
+    `</tr><tr>${HOSTS.map(
+      () => `<th class="num">us</th><th class="num">GB/s</th><th class="num">us</th><th class="num">GB/s</th>`,
+    ).join("")}</tr></thead>`;
   const body = DTYPE_MODES.map((mode) => {
-    const cells = HOSTS.map((h) => {
-      const fp = peakPct(h.key, "quack_tuned", "fwd", BIG, mode);
-      const bp = peakPct(h.key, "quack_tuned", "bwd", BIG, mode);
-      return `<td class="num">${pct(fp)}</td><td class="num">${pct(bp)}</td>`;
-    }).join("");
+    const cells = HOSTS.map((h) =>
+      ["fwd", "bwd"]
+        .map((op) => {
+          const b = best(h.key, op, BIG, mode);
+          return `<td class="num">${us(Number(b.row.median_us))}</td><td class="num">${f1(Number(b.row.logical_gbps))}</td>`;
+        })
+        .join(""),
+    ).join("");
     return `<tr><td><code>${mode[0]} / ${mode[1]}</code></td>${cells}</tr>`;
   }).join("");
   return `<table>${head}<tbody>${body}</tbody></table>`;
@@ -366,7 +435,16 @@ for (const h of HOSTS) {
     );
     const g = gain(k, op, BIG);
     inline[`${k}-${op}-big-gain`] = `${g >= 0 ? "+" : ""}${f1(g)}%`;
+    // Absolute figures at the widest row — the numbers another machine's run
+    // can actually be placed next to.
+    const b = best(k, op, BIG);
+    inline[`${k}-${op}-big-us`] = `${us(Number(b.row.median_us))} us`;
+    inline[`${k}-${op}-big-gbps`] = `${f1(Number(b.row.logical_gbps))} GB/s`;
+    inline[`${k}-${op}-big-analytical-us`] = `${us(medianUs(k, "quack", op, BIG))} us`;
+    inline[`${k}-${op}-big-tuned-us`] = `${us(medianUs(k, "quack_tuned", op, BIG))} us`;
+    inline[`${k}-${op}-big-spread`] = `${f1(spreadPct(k, "quack_tuned", op, BIG))}%`;
   }
+  inline[`${k}-big-bytes`] = `${f1(Number(hosts[k].get("quack", "bwd", BIG).logical_bytes) / 1024 ** 2)} MiB`;
   inline[`${k}-bw`] = `${f1(hosts[k].env.achievable_bandwidth.median_gbps)} GB/s`;
   inline[`${k}-canary`] = hosts[k].env.contention_canary.closing_over_opening.toFixed(3);
   inline[`${k}-torch`] = hosts[k].env.versions.torch;
