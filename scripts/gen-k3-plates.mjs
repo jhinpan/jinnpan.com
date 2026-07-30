@@ -95,6 +95,17 @@ const zhSpace = (s) =>
 const bi = (zh, en) =>
   `<span lang="en">${esc(en)}</span><span lang="zh">${esc(zhSpace(zh))}</span>`;
 
+/**
+ * Bilingual label for use *inside* an `<svg>`. SVG has no `<span>`: an HTML
+ * element nested in `<text>` is parsed as an unknown SVG element and silently
+ * renders nothing, which is how a chart ends up with invisible axis labels.
+ * Emitting two sibling `<text>` elements keeps the `[lang]` visibility rule
+ * working (`display:none` applies to SVG) and keeps the pair count balanced.
+ */
+const biText = (attrs, zh, en) =>
+  `<text ${attrs} lang="en">${esc(en)}</text>` +
+  `<text ${attrs} lang="zh">${esc(zhSpace(zh))}</text>`;
+
 /** Nice axis maximum: 1/2/2.5/5 x 10^k above the data. */
 function niceMax(max) {
   if (max <= 0) return 1;
@@ -160,13 +171,25 @@ function lineChart({
     out += `<text class="ax-tick" x="${x(i).toFixed(1)}" y="${padT + plotH + 18}" text-anchor="middle">${esc(c)}</text>`;
   });
   if (xLabel) {
-    out += `<text class="ax-label" x="${(padL + plotW / 2).toFixed(1)}" y="${height - 6}" text-anchor="middle">${xLabel}</text>`;
+    out += biText(
+      `class="ax-label" x="${(padL + plotW / 2).toFixed(1)}" y="${height - 6}" text-anchor="middle"`,
+      xLabel.zh,
+      xLabel.en,
+    );
   }
   if (yLabel) {
-    out += `<text class="ax-label" transform="translate(13,${(padT + plotH / 2).toFixed(1)}) rotate(-90)" text-anchor="middle">${yLabel}</text>`;
+    out += biText(
+      `class="ax-label" transform="translate(13,${(padT + plotH / 2).toFixed(1)}) rotate(-90)" text-anchor="middle"`,
+      yLabel.zh,
+      yLabel.en,
+    );
   }
   if (yLabelRight) {
-    out += `<text class="ax-label" transform="translate(${width - 8},${(padT + plotH / 2).toFixed(1)}) rotate(-90)" text-anchor="middle">${yLabelRight}</text>`;
+    out += biText(
+      `class="ax-label" transform="translate(${width - 8},${(padT + plotH / 2).toFixed(1)}) rotate(-90)" text-anchor="middle"`,
+      yLabelRight.zh,
+      yLabelRight.en,
+    );
   }
 
   series.forEach((s) => {
@@ -180,8 +203,16 @@ function lineChart({
       if (!Number.isFinite(v)) return;
       out += `<circle class="dot dot-${s.key}" cx="${x(i).toFixed(1)}" cy="${yf(v).toFixed(1)}" r="3"/>`;
       if (s.labels !== false) {
-        const above = s.labelBelow ? 16 : -9;
-        out += `<text class="ser-val val-${s.key}" x="${x(i).toFixed(1)}" y="${(yf(v) + above).toFixed(1)}" text-anchor="middle">${esc(
+        // Series on opposite sides of their own points, so a left-axis label
+        // above one line cannot land on a right-axis label below the other
+        // where the two lines cross.
+        const dy = s.labelBelow ? 17 : -10;
+        // Keep the first and last labels inside the plot: centred text at the
+        // extreme categories overhangs the axis and collides with its ticks.
+        const last = categories.length - 1;
+        const anchor = i === 0 ? "start" : i === last ? "end" : "middle";
+        const dx = i === 0 ? -4 : i === last ? 4 : 0;
+        out += `<text class="ser-val val-${s.key}" x="${(x(i) + dx).toFixed(1)}" y="${(yf(v) + dy).toFixed(1)}" text-anchor="${anchor}">${esc(
           s.format ? s.format(v) : int(v),
         )}</text>`;
       }
@@ -217,6 +248,7 @@ blocks["plate-isl"] =
       {
         key: "tps",
         data: sweepA.map((r) => num(r, "out_tps")),
+        labelBelow: true,
         format: (v) => fmt(v, 1),
       },
       {
@@ -225,12 +257,11 @@ blocks["plate-isl"] =
         dash: true,
         data: sweepA.map((r) => num(r, "accept_len")),
         format: (v) => fmt(v, 2),
-        labelBelow: true,
       },
     ],
-    yLabel: bi("输出吞吐 tok/s", "Output tok/s"),
-    yLabelRight: bi("accept_len", "Accept length"),
-    xLabel: bi("输入长度 ISL（token，OSL 固定 1024，并发 1）", "Input length ISL (tokens; OSL 1024, concurrency 1)"),
+    yLabel: { zh: "输出吞吐 tok/s", en: "Output tok/s" },
+    yLabelRight: { zh: "accept_len", en: "Accept length" },
+    xLabel: { zh: "输入长度 ISL（token，OSL 固定 1024，并发 1）", en: "Input length ISL (tokens; OSL 1024, concurrency 1)" },
   }) +
   legend([
     { key: "tps", label: bi("输出吞吐（左轴）", "Output throughput (left)") },
@@ -243,19 +274,18 @@ blocks["plate-conc"] =
   lineChart({
     categories: sweepC.map((r) => r.conc),
     series: [
-      { key: "tps", data: sweepC.map((r) => num(r, "out_tps")), format: (v) => int(v) },
+      { key: "tps", data: sweepC.map((r) => num(r, "out_tps")), format: (v) => int(v), labelBelow: true },
       {
         key: "acc",
         axis: "right",
         dash: true,
         data: sweepC.map((r) => num(r, "accept_len")),
         format: (v) => fmt(v, 2),
-        labelBelow: true,
       },
     ],
-    yLabel: bi("聚合输出吞吐 tok/s", "Aggregate output tok/s"),
-    yLabelRight: bi("accept_len", "Accept length"),
-    xLabel: bi("客户端并发（ISL/OSL 固定 1024）", "Client concurrency (ISL/OSL 1024)"),
+    yLabel: { zh: "聚合输出吞吐 tok/s", en: "Aggregate output tok/s" },
+    yLabelRight: { zh: "accept_len", en: "Accept length" },
+    xLabel: { zh: "客户端并发（ISL/OSL 固定 1024）", en: "Client concurrency (ISL/OSL 1024)" },
   }) +
   legend([
     { key: "tps", label: bi("聚合吞吐（左轴）", "Aggregate throughput (left)") },
@@ -271,6 +301,7 @@ blocks["plate-cost"] =
       {
         key: "perreq",
         data: sweepC.map((r) => num(r, "out_tps") / num(r, "conc_ach")),
+        labelBelow: true,
         format: (v) => fmt(v, 1),
       },
       {
@@ -279,12 +310,11 @@ blocks["plate-cost"] =
         dash: true,
         data: sweepC.map((r) => num(r, "median_ttft_ms")),
         format: (v) => int(v),
-        labelBelow: true,
       },
     ],
-    yLabel: bi("每请求 tok/s", "tok/s per request"),
-    yLabelRight: bi("TTFT 中位 ms", "Median TTFT (ms)"),
-    xLabel: bi("客户端并发（ISL/OSL 固定 1024）", "Client concurrency (ISL/OSL 1024)"),
+    yLabel: { zh: "每请求 tok/s", en: "tok/s per request" },
+    yLabelRight: { zh: "TTFT 中位 ms", en: "Median TTFT (ms)" },
+    xLabel: { zh: "客户端并发（ISL/OSL 固定 1024）", en: "Client concurrency (ISL/OSL 1024)" },
   }) +
   legend([
     { key: "perreq", label: bi("每请求吞吐（左轴）", "Per-request throughput (left)") },
@@ -307,8 +337,8 @@ blocks["plate-osl"] = (() => {
       series: [{ key: "tps", data, format: (v) => fmt(v, 1) }],
       height: 240,
       yTicks: 4,
-      yLabel: bi("输出吞吐 tok/s", "Output tok/s"),
-      xLabel: bi("输出长度 OSL（token，ISL 固定 1024，并发 1）", "Output length OSL (tokens; ISL 1024, concurrency 1)"),
+      yLabel: { zh: "输出吞吐 tok/s", en: "Output tok/s" },
+      xLabel: { zh: "输出长度 OSL（token，ISL 固定 1024，并发 1）", en: "Output length OSL (tokens; ISL 1024, concurrency 1)" },
     }) +
     `<p class="caption">${bi(
       `OSL 128 到 2048 之间吞吐几乎不动（${fmt(Math.max(...data.slice(0, 4)), 1)} 到 ${fmt(Math.min(...data.slice(0, 4)), 1)} tok/s）。OSL 4096 掉到 ${fmt(data[data.length - 1], 1)}，那是上下文自身增长带来的，与 ISL 曲线同源。`,
