@@ -185,6 +185,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
     <li><a href="#decomposition"><span lang="en">Splitting the loss</span><span lang="zh">拆开损失</span></a></li>
     <li><a href="#output-length"><span lang="en">Output length barely matters</span><span lang="zh">输出长度几乎不重要</span></a></li>
     <li><a href="#concurrency"><span lang="en">Scaling and the knee</span><span lang="zh">扩展与拐点</span></a></li>
+    <li><a href="#dspark"><span lang="en">What DSpark costs</span><span lang="zh">DSpark 的代价</span></a></li>
     <li><a href="#reefs"><span lang="en">Reefs</span><span lang="zh">暗礁</span></a></li>
     <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">结语</span></a></li>
   </ol>
@@ -577,12 +578,44 @@ measured                               <span class="gen" data-gen="f-loss">6.35x
 <!-- /GEN:table-conc -->
 </section>
 
-<section id="reefs">
+<section id="dspark">
   <span class="sec-num">12</span>
+  <h2><span lang="en">What DSpark costs on a hybrid model</span><span lang="zh">DSpark 在混合架构上的代价</span></h2>
+
+  <p><span lang="en">Section 06 treated the verify window as a knob and found the narrow setting won. This section is the mechanism behind that, because on this particular architecture speculation is more expensive than the usual account of it suggests — and the extra cost is exactly what caps concurrency at 48.</span><span lang="zh">第 06 节把验证窗口当成一个旋钮， 测出窄的那一档胜出。 这一节讲它背后的机制——因为在这个架构上， 投机解码比通常的说法要贵， 而多出来的这部分代价， 恰好就是并发被锁在 48 的原因。</span></p>
+
+  <h3><span lang="en">Verification on a recurrent layer is not a cache write</span><span lang="zh">在循环层上做验证不是一次缓存写入</span></h3>
+
+  <p><span lang="en">On a pure-attention model, verifying <em>k</em> drafted tokens is one forward pass over <em>k</em> positions. The KV entries for those positions get written, the target checks them, and the rejected tail is simply abandoned — the cache is indexed by position, so abandoning it costs nothing but the bandwidth already spent.</span><span lang="zh">在纯 attention 模型上， 验证 <em>k</em> 个草稿 token 就是在 <em>k</em> 个位置上做一次前向。 这些位置的 KV 条目被写入， 目标模型检查它们， 被拒绝的尾部直接丢弃——缓存是按位置索引的， 丢弃它除了已经花掉的带宽之外没有额外代价。</span></p>
+
+  <p><span lang="en">Most of K3's layers do not have a cache. They carry a recurrent state, and a recurrent state is a <em>value</em>, not a table: advancing it through <em>k</em> speculated positions is a serial chain, and rejecting the tail means the state has to be restored to where it was before the guess. You cannot index your way back to it. So a speculative request must keep several copies of that state alive — the committed one, plus whatever the in-flight guess has advanced to — where a non-speculative request keeps one.</span><span lang="zh">K3 的大多数层没有缓存。 它们携带一个循环状态， 而循环状态是一个<em>值</em>而不是一张表： 把它推进过 <em>k</em> 个投机位置是一条串行链， 拒绝尾部意味着状态必须被还原到猜测之前的位置。 你没法靠索引退回去。 所以一个投机请求必须同时保有该状态的数份副本——已提交的那份， 加上在途猜测推进到的那些——而非投机请求只需要一份。</span></p>
+
+  <p><span lang="en">That is the mechanism behind the wall in section 04. At 48 running requests the state pool sits at 98% while the KV cache is at 29%: the speculative lane is not short of cache, it is short of <em>state slots</em>. And it is why the cap is not a policy the operator can raise — the server says so at boot, <code>Max running requests is reset to 48 for speculative decoding</code>, and section 04's four attempts to raise it all traded token budget for slots and lost.</span><span lang="zh">这就是第 04 节那道墙的机制。 48 个运行请求时状态池占到 98%， 而 KV cache 只有 29%： 投机通道缺的不是缓存， 缺的是<em>状态槽位</em>。 这也解释了为什么这个上限不是运维方能调高的策略——服务器在启动时就说了，<code>Max running requests is reset to 48 for speculative decoding</code>， 而第 04 节里四次抬高它的尝试， 全都是拿 token 预算换槽位， 全都输了。</span></p>
+
+  <p><span lang="en">It also sharpens why the window optimum is narrow. The work discarded on a rejection is not just attention over a few extra positions; it is state advancement, which is serial in the sequence dimension and therefore cannot be recovered by throwing more parallelism at it. A wider window multiplies serial work by the rejection rate, which is why <code>block-size 5</code> landed within 1.2% of the untuned default while <code>block-size 3</code> won by 1.68x.</span><span lang="zh">它也让「为什么最优窗口偏窄」这件事更清楚。 拒绝时丢掉的工作不只是多几个位置的 attention， 还有状态推进——那是在序列维度上串行的， 因此没法靠加并行度捞回来。 窗口越宽， 串行的白做工作就被拒绝率放大得越多， 这就是为什么 <code>block-size 5</code> 落在未调优默认值的 1.2% 以内， 而 <code>block-size 3</code> 赢下 1.68 倍。</span></p>
+
+  <h3><span lang="en">The context finding, seen from somewhere else</span><span lang="zh">另一个来源看到的同一件事</span></h3>
+
+  <p><span lang="en">Section 08's claim — that accept length decays with context and not with batch — was measured here on one node, which is exactly the kind of result that deserves a second source. There is one, arrived at independently: an upstream issue filed against 8x MI350X reports DSPARK getting <em>slower</em> at roughly 26k of context, with accept length degrading to about 1.6–2.0. Our sweep put accept length at 1.892 at input length 16K and 1.741 at 32K, so 26k lands between those two and the reported range brackets ours.</span><span lang="zh">第 08 节那个结论——接受长度随上下文衰减、而不随批量衰减——是在单个节点上测出来的， 这正是需要第二个来源印证的那类结果。 有一个， 而且是独立得到的： 上游一个针对 8x MI350X 的 issue 报告 DSPARK 在约 26k 上下文时<em>反而更慢</em>， 接受长度退化到约 1.6–2.0。 我们的扫描在输入长度 16K 处测到 1.892、32K 处 1.741， 26k 落在两者之间， 而报告的区间正好把我们的数值夹在中间。</span></p>
+
+  <p><span lang="en">Two caveats on that comparison, since it is someone else's number: the hardware is MI350X rather than MI355X, and the figure is a reporter's observation rather than a protocol like the one behind this page's tables. What it supports is the direction and the rough magnitude, not the third decimal place. It is worth recording anyway, because the decay is not tracked anywhere upstream — the K3 roadmap issue lists no AMD items at all.</span><span lang="zh">对这个对比要加两条限定， 毕竟那是别人的数字： 硬件是 MI350X 而不是 MI355X， 而且那个数值是报告者的观察， 不是本页表格背后那种协议化测量。 它支持的是方向和量级， 不是小数点后第三位。 但仍然值得记下来， 因为这个衰减在上游没有任何地方被跟踪——K3 的 roadmap issue 里一条 AMD 相关的条目都没有。</span></p>
+
+  <div class="note key">
+    <p class="note-label"><span lang="en">The transferable shape</span><span lang="zh">可迁移的形状</span></p>
+    <p><span lang="en">Speculative decoding is usually costed as "one extra forward pass, discarded on a miss." On a model whose layers carry recurrent state, a miss also discards serial state advancement and forces a rollback, and the state that makes rollback possible is per-request memory the scheduler must reserve up front. So on a hybrid model speculation buys its throughput against a <em>concurrency</em> budget, not just a compute budget — which is a different trade to reason about, and the reason the tuning answer here was "narrow window, default cap" rather than "wider window, more requests."</span><span lang="zh">投机解码通常被这样计价： 「多一次前向， 猜错就丢掉」。 但在层携带循环状态的模型上， 猜错还会丢掉串行的状态推进并强制回滚， 而使回滚成为可能的那份状态， 是调度器必须预先预留的每请求显存。 所以在混合架构上， 投机解码换来的吞吐是拿<em>并发</em>预算去买的， 而不只是算力预算——这是一个需要另行推演的权衡， 也是为什么这里的调参答案是「窄窗口 + 默认上限」而不是「宽窗口 + 更多请求」。</span></p>
+  </div>
+</section>
+
+<section id="reefs">
+  <span class="sec-num">13</span>
   <h2><span lang="en">Reefs</span><span lang="zh">暗礁</span></h2>
 
-  <p><span lang="en">Four ways this measurement campaign nearly reported something false. All four were caught; the reason to write them down is that none of them announce themselves.</span><span lang="zh">这轮测量差点报出错误结论的四种方式。 四个都抓住了；把它们写下来的理由是， 它们没有一个会自我声明。</span></p>
+  <p><span lang="en">Five hazards this campaign ran into: one that took the server down, and four that nearly reported something false. All five were caught; the reason to write them down is that none of them announce themselves.</span><span lang="zh">这轮测量差点报出错误结论的四种方式。 四个都抓住了；把它们写下来的理由是， 它们没有一个会自我声明。</span></p>
 
+  <h4><span lang="en">A verify path that only dies on half your test suite</span><span lang="zh">只在半套测试上暴死的验证路径</span></h4>
+  <p><span lang="en">DSPARK reaches its verify-time probability renormalisation from its own triton accept kernel on every device. But the two kernels that renormalisation calls, <code>top_k_renorm_prob</code> and <code>top_p_renorm_prob</code>, are imported from <code>sgl_kernel</code> only under <code>is_cuda()</code> or <code>is_musa()</code>, and are left as <code>None</code> everywhere else. On ROCm, therefore, any request with <code>top_p &lt; 1</code> or <code>top_k &gt; 1</code> killed the scheduler outright with <code>TypeError: 'NoneType' object is not callable</code>.</span><span lang="zh">DSPARK 在所有设备上都会从它自己的 triton accept kernel 走到验证期的概率重归一化。 但重归一化调用的那两个 kernel——<code>top_k_renorm_prob</code> 和 <code>top_p_renorm_prob</code>——只在 <code>is_cuda()</code> 或 <code>is_musa()</code> 下才从 <code>sgl_kernel</code> 导入， 其他情况一律是 <code>None</code>。 所以在 ROCm 上， 任何带 <code>top_p &lt; 1</code> 或 <code>top_k &gt; 1</code> 的请求都会直接以 <code>TypeError: 'NoneType' object is not callable</code> 打死 scheduler。</span></p>
+  <p><span lang="en">What makes this a reef rather than an ordinary bug is which traffic finds it. Greedy decoding never touches the renormalisation, so the GSM8K half of the accuracy gate — temperature 0, 1319 questions — passes cleanly on a configuration that cannot serve a single sampled request. The AIME half, at temperature 1.0 and top_p 0.95, takes the server down on its first decode batch. A test suite can be half green and wholly misleading, and the half that stays green is the half most people run first.</span><span lang="zh">让它成为暗礁而不是普通 bug 的， 是哪种流量会撞上它。 贪心解码永远碰不到重归一化， 所以精度闸门里 GSM8K 那一半——温度 0、1319 道题——在一个连一个采样请求都服务不了的配置上干净通过。 而 AIME 那一半， 温度 1.0、top_p 0.95， 会在第一个 decode batch 就把服务打死。 一套测试可以一半是绿的却整体误导， 而保持绿色的那一半恰好是大多数人先跑的那一半。</span></p>
+  <p><span lang="en">The neighbouring speculative implementation, DFLASH, survives the same code path by gating its entire non-greedy verify on an availability check and silently degrading to greedy argmax verification. That is the wrong repair here, and worth saying why: verifying greedily against a target that was sampled changes the output distribution. It converts a crash into a silent accuracy change — the exact failure the gate in section 07 exists to catch, now moved upstream of the gate where the gate cannot see it. Routing the renormalisation to a real implementation keeps the sampling semantics intact; degrading does not.</span><span lang="zh">相邻的那个投机实现 DFLASH 在同一条代码路径上活了下来， 办法是把整个非贪心 verify 挂在一个可用性检查后面， 静默降级成贪心 argmax 验证。 这在这里是错的修法， 而且值得说清为什么： 拿贪心去验证一个被采样出来的目标， 会改变输出分布。 它把一次崩溃换成了一次静默的精度变化——正是第 07 节那道闸门要抓的失败， 却被搬到了闸门上游、搬到了闸门看不见的地方。 把重归一化接到一个真实实现上能保住采样语义；降级不能。</span></p>
   <h4><span lang="en">A regex that read the command line as a result</span><span lang="zh">一个把命令行当成结果读的正则</span></h4>
   <p><span lang="en">The gate's first run reported FAIL on five of six checks. Nothing was wrong with the model. The GSM8K scraper scanned forward from the word <code>Score</code> and picked up the <code>64</code> in <code>--max-tokens 64000</code>; the AIME25 scraper read the <code>8</code> out of the label <code>pass@1[avg-of-8]</code>. Both now anchor on the <code>=</code> sign or on the exact metric key. A parser that searches forward for "the next number" will eventually find a number from the invocation rather than the output, and it will do so silently.</span><span lang="zh">闸门第一次运行报告六项检查中五项 FAIL。 模型没有任何问题。 GSM8K 的抓取器从 <code>Score</code> 这个词向前扫描， 抓到了 <code>--max-tokens 64000</code> 里的 <code>64</code>；AIME25 的抓取器从标签 <code>pass@1[avg-of-8]</code> 里读出了那个 <code>8</code>。 现在两者都锚定在 <code>=</code> 号或精确的指标键上。 一个「向前找下一个数字」的解析器， 终究会找到来自调用命令而非输出的数字， 而且它会静默地这么做。</span></p>
 
@@ -597,7 +630,7 @@ measured                               <span class="gen" data-gen="f-loss">6.35x
 </section>
 
 <section id="epilogue">
-  <span class="sec-num">13</span>
+  <span class="sec-num">14</span>
   <h2><span lang="en">Epilogue</span><span lang="zh">结语</span></h2>
 
   <p><span lang="en">The shipped recipe is four lines long, and none of them is surprising on its own:</span><span lang="zh">最终发布的配方只有四行， 单看每一行都不令人惊讶：</span></p>
