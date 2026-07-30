@@ -27,3 +27,4 @@ pnpm-debug.log*
 # screenshot test artifacts
 tests/screenshots/current/
 tests/screenshots/diff/
+.env*
