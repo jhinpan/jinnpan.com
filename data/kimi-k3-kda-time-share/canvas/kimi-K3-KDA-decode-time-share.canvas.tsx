@@ -150,6 +150,31 @@ const PF_LAYER_RATIO = [0.77, 0.78, 0.95, 6.83];
 const PF_MLA_KERNEL = [1.2, 5.9, 18.5, 916.1];
 const PF_KDA_CHUNK_KERNEL = [4.0, 19.5, 41.2, 176.9];
 
+// ---------------------------------------------------------------------------
+// The 32K prefill runs as two chunks of 16384. Splitting its trace at the
+// forward-pass boundary shows every kernel identical between the two except the
+// attention kernel, which costs 12.8x more in the second chunk at the same
+// dispatch count. The recorded launch grid explains it: extend_attention_fwd
+// launches (batch, heads, cdiv(max_extend_len, BLOCK_M)) and on gfx950 BLOCK_M
+// is 128 only when 128 < Lq <= 256, else 64. Both chunks extend the same 16384
+// tokens, so grid z of 128 vs 256 pins Lq at 192 vs 576 — the decompressed MHA
+// form versus the absorbed latent form.
+// ---------------------------------------------------------------------------
+const CHUNK_SPLIT = {
+  form: ["decompressed MHA", "absorbed latent"],
+  lq: ["192 / 128", "576 / 512"],
+  blockM: ["128", "64"],
+  gridZ: ["[1, 12, 128]", "[1, 12, 256]"],
+  pairs: [1.342e8, 4.027e8],
+  flop: [1.031e12, 1.051e13],
+  msPerLayer: [2.76, 35.41],
+  totalMs: [66.3, 849.9],
+  tflops: [373, 297],
+};
+// attention is 30.0% of GPU time in that trace but only 0.55% of its slices
+const ATTN_SLICE_SHARE = 0.55;
+const ATTN_TIME_SHARE = 30.0;
+
 // Clean wall-clock reference, measured on a server built without the ranges
 // (best of three, after a warm first call). Summed kernel time lands within 1% of
 // it at every size, so prefill is GPU-saturated throughout and the composition
@@ -868,6 +893,90 @@ function PrefillSection() {
   );
 }
 
+function ChunkSplit() {
+  const { lang, t } = useT();
+  return (
+    <Stack gap={12}>
+      <H2>{t({ zh: "那 50 倍是怎么来的：两个 chunk 跑的不是同一种 MLA", en: "Where that 50x comes from: the two chunks do not run the same MLA" })}</H2>
+      {lang === "zh" ? (
+        <Text tone="secondary">
+          32K 的 prefill 是两个 16384 的 chunk。 把 trace 按前向边界切开逐核函数对比， 除注意力之外<b>每个核函数都一样</b>——
+          KDA 的分块核 68.84 对 68.88 ms， MoE 的归约 34.72 对 34.73 ms。 只有 chunk 2 独有的几个核函数， 加起来 8.9 ms，
+          占两者 783 ms 差距的 1%。 差距全部在同一个核函数、同样 24 次派发里。
+        </Text>
+      ) : (
+        <Text tone="secondary">
+          The 32K prefill runs as two chunks of 16384. Splitting the trace at the forward-pass
+          boundary and comparing kernel by kernel, <b>everything except attention is identical</b> —
+          KDA's chunk kernel 68.84 versus 68.88 ms, MoE's reduction 34.72 versus 34.73 ms. The
+          kernels unique to chunk 2 total 8.9 ms, 1% of the 783 ms gap. All of it sits in one
+          kernel at the same dispatch count.
+        </Text>
+      )}
+      <Table
+        headers={[
+          "",
+          t({ zh: "chunk 1（无前缀）", en: "chunk 1 (no prefix)" }),
+          t({ zh: "chunk 2（16K 前缀）", en: "chunk 2 (16K prefix)" }),
+          t({ zh: "比值", en: "ratio" }),
+        ]}
+        rows={[
+          [t({ zh: "MLA 形式", en: "MLA form" }),
+            t({ zh: "解压后的 MHA", en: "decompressed MHA" }),
+            t({ zh: "吸收后的 latent", en: "absorbed latent" }), ""],
+          ["Lq / Lv", CHUNK_SPLIT.lq[0], CHUNK_SPLIT.lq[1], "3.40×"],
+          [t({ zh: "BLOCK_M / 启动 grid", en: "BLOCK_M / launch grid" }),
+            `128 · ${CHUNK_SPLIT.gridZ[0]}`, `64 · ${CHUNK_SPLIT.gridZ[1]}`, ""],
+          [t({ zh: "query-key 对数", en: "query-key pairs" }),
+            "1.34e8", "4.03e8", "3.00×"],
+          [t({ zh: "每层 FLOP", en: "FLOP per layer" }), "1.03e12", "1.05e13", "10.2×"],
+          [t({ zh: "每层耗时", en: "ms per layer" }),
+            `${fmt(CHUNK_SPLIT.msPerLayer[0])} ms`, `${fmt(CHUNK_SPLIT.msPerLayer[1])} ms`, "12.8×"],
+          [t({ zh: "达到的算力", en: "achieved throughput" }),
+            "373 TFLOP/s", "297 TFLOP/s", "0.80×"],
+        ]}
+        columnAlign={["left", "right", "right", "right"]}
+        rowTone={[undefined, undefined, undefined, undefined, "warning", "warning", undefined]}
+        striped
+      />
+      <Callout tone="warning" title={t({ zh: "更正一处早先的说法", en: "Correcting an earlier reading" })}>
+        {t({
+          zh: "先前把 8K→32K 超出二次的增长记在「核函数效率」上， 那是错的： 它默认两个 chunk 跑同一种数学。 实际上 chunk 2 做了 10.2 倍的算术， 效率只低 1.26 倍。 核函数没问题， 贵的是形式的选择。",
+          en: "An earlier reading blamed the super-quadratic 8K→32K growth on kernel efficiency. That was wrong: it assumed both chunks ran the same maths. Chunk 2 does 10.2× the arithmetic at only 1.26× lower efficiency. The kernel is fine; the cost is the choice of form.",
+        })}
+      </Callout>
+      {lang === "zh" ? (
+        <Text>
+          为什么会切换？ 一旦存在前缀， MLA 就换成吸收形式—— 直接对 576 维的 latent 做注意力， 省掉把前缀 KV 解压成
+          每头 320 维的那一步。 对 decode 这是对的： 一个 query 对很多 key， 解压的成本摊不掉。 但对一个有 16384 个 query 的
+          prefill chunk， 这个取舍反了： 为了省一次能被 16384 个 query 摊薄的解压， 每个 query-key 对多付 3.4 倍的 FLOP。
+          SGLang 里治这个的功能叫 chunked prefix cache， 它让前缀那部分用解压形式跑—— 而它在
+          <Code>triton</Code> 后端上不可用（只支持 flashinfer / fa3 / fa4 / flashmla / cutedsl_mla / cutlass_mla），
+          所以这套配置只能付这个代价。
+        </Text>
+      ) : (
+        <Text>
+          Why the switch? Once a prefix exists, MLA moves to the absorbed form — attending
+          directly over the 576-dim latent, which avoids decompressing the prefix KV into 320
+          dims per head. For decode that is correct: one query against many keys, so the
+          decompression can never be amortized. For a prefill chunk with 16384 queries the
+          trade inverts — you pay 3.4× the FLOPs per query-key pair to avoid a decompression
+          that 16384 queries would have amortized easily. The feature that fixes this is
+          chunked prefix cache, which runs the prefix part in the decompressed form, and it is
+          unavailable on the <Code>triton</Code> backend (only flashinfer / fa3 / fa4 /
+          flashmla / cutedsl_mla / cutlass_mla), so this configuration simply pays.
+        </Text>
+      )}
+      <Callout tone="info" title={t({ zh: "在 Perfetto 里为什么看不见", en: "Why you cannot see this in Perfetto" })}>
+        {t({
+          zh: `在那份 trace 里注意力占 GPU 时间的 ${ATTN_TIME_SHARE}%， 却只占切片数量的 ${ATTN_SLICE_SHARE}%——8727 个核函数里只有 48 个。 而且 93% 的注意力时间集中在最后 24 个切片上， 位于 3.06 秒 trace 的 t≈1.5–3.05 秒。 在前 2.8 秒里随便放大， 几乎看不到注意力。 要按总时长排序， 不能靠眼睛看密度。`,
+          en: `Attention is ${ATTN_TIME_SHARE}% of GPU time in that trace but only ${ATTN_SLICE_SHARE}% of its slices — 48 out of 8727. And 93% of the attention time is in the last 24 of them, between t≈1.5 s and 3.05 s of a 3.06 s trace. Zoom anywhere in the first 2.8 seconds and you will see almost none of it. Sort by total duration; do not judge by visual density.`,
+        })}
+      </Callout>
+    </Stack>
+  );
+}
+
 function PrefillVsDecode() {
   const { lang, t } = useT();
   return (
@@ -907,7 +1016,7 @@ function PrefillVsDecode() {
           ],
           [
             t({ zh: "最该优化的地方", en: "Where to optimize" }),
-            t({ zh: "32K 以上的 MLA prefill 注意力核函数", en: "the MLA prefill attention kernel beyond 32K" }),
+            t({ zh: "让前缀 chunk 别用吸收形式（chunked prefix cache）", en: "stop the prefix chunk using the absorbed form (chunked prefix cache)" }),
             t({ zh: "MLA KV 扫描（仅达峰值带宽 20.6%）", en: "the MLA KV scan (only 20.6% of peak bandwidth)" }),
           ],
         ]}
@@ -1108,6 +1217,7 @@ export default function KimiK3KdaDecodeShare() {
       </Grid>
       <AttTrace />
       <PrefillSection />
+      <ChunkSplit />
       <PrefillVsDecode />
       <Takeaways />
       <Method />

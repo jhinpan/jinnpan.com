@@ -105,7 +105,25 @@ mapped name. All five decode points pass with no unmapped kernel names.
    Kernel *durations* are unaffected by the ranges, so the composition numbers were
    valid throughout — only the wall-clock column moved.
 
-3. **`rocprofv3` could not profile the server.** Per-dispatch interception across
+3. **The 8K→32K attention jump was misread as kernel inefficiency.** The first pass
+   noted that MLA prefill attention grows faster than quadratically past one chunk
+   and attributed part of it to the kernel. `chunk_diff.py` shows that is wrong:
+   splitting the 32K trace at the forward-pass boundary, every kernel is identical
+   between the two chunks except attention, and the recorded launch grids
+   (`[1,12,128]` versus `[1,12,256]`, same 16384 extend tokens, so `BLOCK_M` 128
+   versus 64) pin `Lq` at 192 versus 576. The two chunks run *different MLA forms* —
+   decompressed MHA without a prefix, absorbed latent with one. Chunk 2 does 10.2x
+   the FLOPs at 1.26x lower efficiency, which is the 12.8x. See
+   `results/chunk-split-analysis.txt` and `scripts/chunk2_flops.py`.
+
+   The follow-on: chunked prefix cache is the mechanism that would run the prefix
+   part in the decompressed form, and `maybe_disable_chunked_prefix_cache` turns it
+   off at load time because `triton` is not in
+   `CHUNKED_PREFIX_CACHE_SUPPORTED_ATTENTION_BACKENDS`. The intended ablation
+   (`--disable-chunked-prefix-cache`) would have been a no-op; the server log never
+   prints "Chunked prefix cache is turned on".
+
+4. **`rocprofv3` could not profile the server.** Per-dispatch interception across
    all 8 TP ranks drove the scheduler past its 300 s watchdog with no output, and
    runtime `--attach` loaded but produced nothing. The ATT trace therefore comes
    from `kda_micro.py`, a standalone reproduction at the server's exact per-GPU

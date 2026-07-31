@@ -149,6 +149,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
       <li><a href="#divergence"><span lang="en">Why the two diverge</span><span lang="zh">两者为何分化</span></a></li>
       <li><a href="#internals"><span lang="en">Inside the blocks</span><span lang="zh">拆开每个块</span></a></li>
       <li><a href="#prefill"><span lang="en">Prefill, 1K to 32K</span><span lang="zh">Prefill： 1K 到 32K</span></a></li>
+      <li><a href="#chunks"><span lang="en">Taking the 50x apart</span><span lang="zh">拆开那 50 倍</span></a></li>
       <li><a href="#trace"><span lang="en">One wave, one kernel</span><span lang="zh">一个波， 一个核函数</span></a></li>
       <li><a href="#lies"><span lang="en">Three ways it lied</span><span lang="zh">三次被测量欺骗</span></a></li>
       <li><a href="#amd"><span lang="en">What to fix on MI355X</span><span lang="zh">MI355X 上该修什么</span></a></li>
@@ -735,8 +736,8 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
   <p lang="en">Per input token the three mechanisms separate cleanly. KDA converges to 12.6 µs/token and MoE to 24.2 µs/token — both linear, both flattening once the fixed per-layer overheads are amortized. Full attention falls to 3.9 µs/token at 4K and then turns back up to 30.1 µs/token at 32K, which is what quadratic cost looks like once the quadratic term overtakes the constant one.</p>
   <p lang="zh">按每个输入 token 看， 三种机制分得很干净。 KDA 收敛到 12.6 µs/token， MoE 收敛到 24.2 µs/token—— 都是线性的， 固定的每层开销摊薄后就走平。 全注意力在 4K 降到 3.9 µs/token， 然后在 32K 反弹到 30.1 µs/token， 这正是二次项超过常数项之后二次成本的样子。</p>
 
-  <p lang="en">One kernel carries all of it. The MLA prefill attention kernel goes from 18.5 ms at 8K to 916.1 ms at 32K — about 50× for 4× the input — at which point it alone is 30% of all prefill GPU time. The KDA chunked kernels over the same span go from 41.2 ms to 176.9 ms, 4.3×, which is linear to within the noise.</p>
-  <p lang="zh">这一切由一个核函数承担。 MLA 的 prefill 注意力核函数从 8K 的 18.5 ms 涨到 32K 的 916.1 ms—— 输入 4 倍， 时间约 50 倍—— 到那时它一个就占了整个 prefill GPU 时间的 30%。 同一区间里 KDA 的分块核函数从 41.2 ms 涨到 176.9 ms， 4.3 倍， 在噪声范围内是线性的。</p>
+  <p lang="en">One kernel carries all of it. The MLA prefill attention kernel goes from 18.5 ms at 8K to 916.1 ms at 32K — about 50× for 4× the input — at which point it alone is 30% of all prefill GPU time. The KDA chunked kernels over the same span go from 41.2 ms to 176.9 ms, 4.3×, which is linear to within the noise. Section 06 takes that 50× apart; it is not what it looks like.</p>
+  <p lang="zh">这一切由一个核函数承担。 MLA 的 prefill 注意力核函数从 8K 的 18.5 ms 涨到 32K 的 916.1 ms—— 输入 4 倍， 时间约 50 倍—— 到那时它一个就占了整个 prefill GPU 时间的 30%。 同一区间里 KDA 的分块核函数从 41.2 ms 涨到 176.9 ms， 4.3 倍， 在噪声范围内是线性的。 第 06 节会把这 50 倍拆开， 它并不是看上去那样。</p>
 
   <div class="note warn">
     <span class="tag">Why the crossover exists at all</span>
@@ -746,8 +747,61 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 </section>
 
 <!-- ============================================================ 06 -->
-<section id="trace">
+<section id="chunks">
   <span class="sec-num">06</span>
+  <h2><span lang="en">Taking the 50× apart: the two chunks run different MLA</span><span lang="zh">拆开那 50 倍： 两个 chunk 跑的不是同一种 MLA</span></h2>
+
+  <p lang="en">A 32K prefill is two chunks of 16384. Splitting its trace at the forward-pass boundary and comparing kernel by kernel gives an unusually clean result: <strong>every kernel is identical between the two chunks except attention</strong>. KDA's chunk kernel is 68.84 against 68.88 ms, MoE's reduction 34.72 against 34.73. The kernels chunk 2 runs and chunk 1 does not total 8.9 ms — 1% of the 783 ms gap between them. The entire difference sits in one kernel, launched the same 24 times in both.</p>
+  <p lang="zh">32K 的 prefill 是两个 16384 的 chunk。 把它的 trace 按前向边界切开、逐核函数对比， 结果异常干净： <strong>除注意力之外每个核函数都一样</strong>。 KDA 的分块核 68.84 对 68.88 ms， MoE 的归约 34.72 对 34.73。 chunk 2 有而 chunk 1 没有的核函数加起来 8.9 ms—— 只占两者 783 ms 差距的 1%。 全部差异都在同一个核函数里， 而且两边都是 24 次派发。</p>
+
+  <p lang="en">The launch geometry recorded in the trace explains it. <code>extend_attention_fwd</code> launches <code>(batch, heads, cdiv(max_extend_len, BLOCK_M))</code>, and on gfx950 <code>_get_block_sizes_for_extend_attention</code> picks <code>BLOCK_M = 128</code> only when <code>128 &lt; Lq &lt;= 256</code>, otherwise 64. Both chunks extend the same 16384 tokens, so a grid of <code>[1, 12, 128]</code> versus <code>[1, 12, 256]</code> pins <code>Lq</code> at 192 in chunk 1 and 576 in chunk 2 — the decompressed MHA form and the absorbed latent form respectively.</p>
+  <p lang="zh">trace 里记录的启动几何解释了这件事。 <code>extend_attention_fwd</code> 的 grid 是 <code>(batch, heads, cdiv(max_extend_len, BLOCK_M))</code>， 而在 gfx950 上 <code>_get_block_sizes_for_extend_attention</code> 只在 <code>128 &lt; Lq &lt;= 256</code> 时取 <code>BLOCK_M = 128</code>， 否则取 64。 两个 chunk 扩展的都是同样的 16384 个 token， 所以 <code>[1, 12, 128]</code> 与 <code>[1, 12, 256]</code> 的差别就把 <code>Lq</code> 钉死在 chunk 1 的 192 和 chunk 2 的 576—— 分别是解压后的 MHA 形式和吸收后的 latent 形式。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th></th>
+      <th class="num"><span lang="en">chunk 1 · no prefix</span><span lang="zh">chunk 1 · 无前缀</span></th>
+      <th class="num"><span lang="en">chunk 2 · 16K prefix</span><span lang="zh">chunk 2 · 16K 前缀</span></th>
+      <th class="num"><span lang="en">ratio</span><span lang="zh">比值</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k"><span lang="en">MLA form</span><span lang="zh">MLA 形式</span></td><td class="num"><span lang="en">decompressed MHA</span><span lang="zh">解压后的 MHA</span></td><td class="num"><span lang="en">absorbed latent</span><span lang="zh">吸收后的 latent</span></td><td class="num">—</td></tr>
+      <tr><td class="k">Lq / Lv</td><td class="num">192 / 128</td><td class="num">576 / 512</td><td class="num">3.40×</td></tr>
+      <tr><td class="k">BLOCK_M · grid</td><td class="num">128 · [1,12,128]</td><td class="num">64 · [1,12,256]</td><td class="num">—</td></tr>
+      <tr><td class="k"><span lang="en">query-key pairs</span><span lang="zh">query-key 对数</span></td><td class="num">1.34e8</td><td class="num">4.03e8</td><td class="num">3.00×</td></tr>
+      <tr><td class="k"><span lang="en">FLOP per layer</span><span lang="zh">每层 FLOP</span></td><td class="num">1.03e12</td><td class="num">1.05e13</td><td class="num">10.2×</td></tr>
+      <tr><td class="k"><span lang="en">ms per layer</span><span lang="zh">每层耗时</span></td><td class="num">2.76</td><td class="num">35.41</td><td class="num">12.8×</td></tr>
+      <tr><td class="k"><span lang="en">achieved</span><span lang="zh">达到的算力</span></td><td class="num">373 TFLOP/s</td><td class="num">297 TFLOP/s</td><td class="num">0.80×</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note warn">
+    <span class="tag">Correcting an earlier reading</span>
+    <p lang="en">A first pass through this data blamed the super-quadratic 8K→32K growth on kernel efficiency, and that was wrong — it assumed both chunks ran the same arithmetic. They do not. Chunk 2 performs 10.2× the FLOPs at 1.26× lower efficiency, which is 12.8× the time. The kernel is behaving reasonably; what costs is the choice of form.</p>
+    <p lang="zh">第一轮读这份数据时， 把 8K→32K 超出二次的增长记在了核函数效率上， 那是错的—— 它默认两个 chunk 做的是同样的算术。 并不是。 chunk 2 做了 10.2 倍的 FLOP、效率只低 1.26 倍， 合起来就是 12.8 倍的时间。 核函数的表现是合理的； 贵的是形式的选择。</p>
+  </div>
+
+  <p lang="en">Why does it switch? Once a prefix exists, MLA moves to the absorbed form and attends directly over the 576-dimensional latent, which avoids decompressing the prefix KV into 320 dimensions per head. For decode that is unambiguously right: one query against a very long key sequence, so a decompression could never be amortized. For a prefill chunk carrying 16384 queries the trade inverts — you pay 3.4× the FLOPs on every query-key pair to avoid a decompression that 16384 queries would have amortized many times over.</p>
+  <p lang="zh">为什么会切换？ 一旦存在前缀， MLA 就换成吸收形式， 直接在 576 维的 latent 上做注意力， 省掉把前缀 KV 解压成每头 320 维的那一步。 对 decode 来说这毫无疑问是对的： 一个 query 面对很长的 key 序列， 解压的成本永远摊不掉。 但对一个带着 16384 个 query 的 prefill chunk， 取舍就反了—— 为了省一次能被 16384 个 query 反复摊薄的解压， 每个 query-key 对要多付 3.4 倍的 FLOP。</p>
+
+  <div class="note key">
+    <span class="tag">The fix exists and is switched off here</span>
+    <p lang="en">SGLang's chunked prefix cache is exactly the mechanism for this: it runs the prefix portion in the decompressed form instead. It is gated on the attention backend — <code>CHUNKED_PREFIX_CACHE_SUPPORTED_ATTENTION_BACKENDS</code> lists flashinfer, fa3, fa4, flashmla, cutedsl_mla and cutlass_mla — and this configuration runs <code>triton</code>, so <code>maybe_disable_chunked_prefix_cache</code> turns it off at load time without the recipe ever asking for it. The server log confirms it: the line "Chunked prefix cache is turned on" never appears. Every prefill past one chunk therefore pays the absorbed form's FLOP bill.</p>
+    <p lang="zh">SGLang 的 chunked prefix cache 正是为此存在的机制： 它让前缀那部分改用解压形式跑。 它由注意力后端决定是否可用—— <code>CHUNKED_PREFIX_CACHE_SUPPORTED_ATTENTION_BACKENDS</code> 里是 flashinfer、fa3、fa4、flashmla、cutedsl_mla 和 cutlass_mla—— 而这套配置用的是 <code>triton</code>， 于是 <code>maybe_disable_chunked_prefix_cache</code> 在加载时就把它关掉了， 配方本身从没要求过。 服务器日志可以印证： 「Chunked prefix cache is turned on」这行从未出现。 因此每一次超过一个 chunk 的 prefill， 都在为吸收形式的算力账单买单。</p>
+  </div>
+
+  <div class="note">
+    <span class="tag">A note for anyone opening these traces</span>
+    <p lang="en">Attention is 30.0% of GPU time in the 32K trace but only 0.55% of its slices — 48 out of 8727 — and 93% of that time sits in the last 24 of them, between t≈1.5 s and 3.05 s of a 3.06 s trace. Zoom anywhere in the first 2.8 seconds and attention is effectively invisible while MoE and KDA carpet the timeline with thousands of sub-millisecond slices. Sort by total duration; visual density is measuring slice count, not time.</p>
+    <p lang="zh">在 32K 这份 trace 里， 注意力占 GPU 时间的 30.0%， 却只占切片数量的 0.55%——8727 个里只有 48 个—— 而且其中 93% 的时间集中在最后 24 个上， 位于 3.06 秒 trace 的 t≈1.5 到 3.05 秒之间。 在前 2.8 秒里随便放大， 注意力几乎是隐形的， 而 MoE 和 KDA 用成千上万个亚毫秒切片铺满了时间轴。 要按总时长排序； 视觉密度衡量的是切片数量， 不是时间。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 07 -->
+<section id="trace">
+  <span class="sec-num">07</span>
   <h2><span lang="en">One wave, one kernel</span><span lang="zh">一个波， 一个核函数</span></h2>
 
   <p lang="en">The claim that the KDA recurrence is latency-bound rather than bandwidth-bound deserves evidence below the kernel-timing level, so the kernel was thread-traced. <code>rocprofv3 --att</code> captures an instruction-level Advanced Thread Trace; the ROCprof Trace Decoder turns it into a directory that ROCprof Compute Viewer opens.</p>
@@ -811,7 +865,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ============================================================ 07 -->
 <section id="lies">
-  <span class="sec-num">07</span>
+  <span class="sec-num">08</span>
   <h2><span lang="en">Three ways the measurement lied</span><span lang="zh">测量骗了我三次</span></h2>
 
   <p lang="en">Each of these produced a plausible, wrong number that survived until something else contradicted it. They are recorded because the corrections are more transferable than the results.</p>
@@ -838,7 +892,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ============================================================ 08 -->
 <section id="amd">
-  <span class="sec-num">08</span>
+  <span class="sec-num">09</span>
   <h2><span lang="en">What to fix on MI355X</span><span lang="zh">MI355X 上该修什么</span></h2>
 
   <p lang="en">Ranked by measured headroom rather than by how interesting the mechanism is.</p>
@@ -887,7 +941,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ============================================================ 09 -->
 <section id="reproduce">
-  <span class="sec-num">09</span>
+  <span class="sec-num">10</span>
   <h2><span lang="en">Reproducing this</span><span lang="zh">复现</span></h2>
 
   <p lang="en">Four server configurations, because no single one can produce all four numbers. The composition needs eager mode (the profiler is blind to graph replay); the latency anchor needs graphs on; prefill composition needs the ranges compiled in; and the prefill wall-clock reference needs them compiled out, for the reason in section 07.</p>
@@ -925,7 +979,7 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
 
 <!-- ============================================================ 10 -->
 <section id="epilogue">
-  <span class="sec-num">10</span>
+  <span class="sec-num">11</span>
   <h2><span lang="en">Epilogue</span><span lang="zh">尾声</span></h2>
 
   <p lang="en">Three of every four layers are linear, and they cost between 8.8% and 23.6% of the time depending on which phase you are in and how long the context is. The architecture does what it claims at long context: 74% of the layers hold their absolute cost constant from 4K to 1M while the remaining 26% grow by a factor of 6.8 and end up taking more than half the step.</p>

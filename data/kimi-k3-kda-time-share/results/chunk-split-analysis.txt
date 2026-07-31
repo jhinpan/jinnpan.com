@@ -1,0 +1,55 @@
+                                chunk 1          chunk 2    ratio
+------------------------------------------------------------------
+MLA form                   decompressed         absorbed
+Lq / Lv                       192 / 128        576 / 512     3.40
+BLOCK_M / grid z              128 / 128         64 / 256
+query-key pairs               1.342e+08        4.027e+08     3.00
+FLOP per layer                1.031e+12        1.051e+13    10.20
+ms per layer                       2.76            35.41    12.82
+achieved TFLOP/s                    373              297     0.80
+
+So the 12.8x time is 10.2x more arithmetic at 1.26x lower efficiency --
+not a 4.3x efficiency collapse. The earlier reading assumed both chunks
+ran the same form and so attributed the whole gap to the kernel.
+
+The absorbed form is the right choice for decode (one query, many keys:
+reading the latent once beats decompressing it). For a 16384-query
+prefill chunk it is the wrong side of the trade: 3.4x the FLOPs per pair
+to avoid a decompression that would have been amortized over 16384
+queries. Chunked prefix cache exists to run the prefix part in the
+decompressed form instead -- and it is unavailable on the triton
+backend (CHUNKED_PREFIX_CACHE_SUPPORTED_ATTENTION_BACKENDS), which is
+why this configuration pays the penalty.
+traces/pf32k/pf32k-TP-0.trace.json.gz
+  8961 kernels, 2 forward passes (by _vocab_parallel_embedding_kernel)
+  pass 1: 4463 kernels, 1135.3 ms GPU
+  pass 2: 4460 kernels, 1916.5 ms GPU
+
+  kernels only in pass 2: 4
+          5.51 ms  n=  48  void at::native::(anonymous namespace)::CatArrayBatchedCopy<
+          1.52 ms  n=  24  Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT256x256x32_MI
+          1.20 ms  n=  24  Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT128x256x64_MI
+          0.65 ms  n=  24  void at::native::index_elementwise_kernel<128, 4, at::native
+  kernels only in pass 1: 7
+          0.34 ms  n=  24  set_mla_kv_buffer_kernel
+          0.06 ms  n=   1  write_req_to_token_pool_triton
+          0.02 ms  n=   1  create_flashinfer_kv_indices_triton
+          0.01 ms  n=   1  void at::native::(anonymous namespace)::multi_tensor_apply_k
+          0.00 ms  n=   1  void at::native::index_elementwise_kernel<128, 4, at::native
+          0.00 ms  n=   1  void at::native::vectorized_elementwise_kernel<4, at::native
+          0.00 ms  n=   1  compute_position_kernel
+
+  shared kernels, biggest pass2 - pass1 deltas:
+      p1 ms     p2 ms   ratio    n1    n2  name
+      66.27    849.87   12.82    24    24  _fwd_kernel
+       4.12      4.39    1.07   105    95  Memcpy DtoD (Device -> Device)
+      14.73     14.96    1.02    92    92  void sglang::add3_kernel<false, true>(sglang::Add3Params
+       0.00      0.22   51.92     1    49  void at::native::vectorized_elementwise_kernel<8, at::na
+      68.84     68.88    1.00    69    69  chunk_gated_delta_rule_fwd_kernel_h_blockdim64
+       0.41      0.45    1.10    24    24  _ZN5aiter24add_rmsnorm_quant_kernelIDF16bDF16bLi256ELi8E
+       5.07      5.09    1.00    69    69  _recompute_w_u_fwd_kernel
+       0.38      0.40    1.05    92    92  void at::native::vectorized_elementwise_kernel<4, at::na
+       0.50      0.51    1.03    92    92  void aiter::opus_moe_sorting_entry<aiter::MoeSortingClea
+       0.48      0.50    1.03    69    69  void at::native::vectorized_elementwise_kernel<8, at::na
+       0.28      0.29    1.04    69    69  void at::native::vectorized_elementwise_kernel<4, at::na
+      34.72     34.73    1.00    92    92  moe_reduction_kernel_plain_bf16_topk16_md3584
