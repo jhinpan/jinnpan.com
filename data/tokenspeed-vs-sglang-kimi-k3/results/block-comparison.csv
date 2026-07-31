@@ -1,0 +1,9 @@
+block,tokenspeed_us_per_step,sglang_us_per_step,delta_us,tokenspeed_vs_sglang,tokenspeed_pct,sglang_pct
+moe,8085.1,10548.5,-2463.4,1.30x faster,47.3,50.8
+kda,2904.6,3542.3,-637.7,1.22x faster,17.0,17.1
+full_attn,1467.8,3100.1,-1632.3,2.11x faster,8.6,14.9
+attn_residual,1864.7,2287.7,-423.0,1.23x faster,10.9,11.0
+other,2785.8,1290.3,+1495.5,2.16x slower,16.3,6.2
+TOTAL compute,17107.9,20768.9,-3661.0,1.21x,100.0,100.0
+"collective (eager busy-wait, excluded)",67575.2,excluded,,,,
+"end-to-end step, graph ON",22190,19387,+2803,1.14x slower,,

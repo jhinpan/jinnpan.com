@@ -364,7 +364,7 @@
           <text x="214" y="122">PAPER · 5</text>
           <text x="214" y="170">TUTORIAL · 6</text>
           <text x="214" y="218">BLOG · 6</text>
-          <text x="214" y="266">EXPERIMENTS · 2</text>
+          <text x="214" y="266">EXPERIMENTS · 3</text>
         </g>
       </svg>
     </figure>
@@ -387,7 +387,7 @@
     <div class="stat" data-c="paper"><span class="num">5</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">7</span><span class="label">tutorials</span></div>
     <div class="stat" data-c="blog"><span class="num">6</span><span class="label">blog posts</span></div>
-    <div class="stat" data-c="experiments"><span class="num">2</span><span class="label">experiments</span></div>
+    <div class="stat" data-c="experiments"><span class="num">3</span><span class="label">experiments</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -747,9 +747,18 @@
         <h2>Experiments</h2>
         <div class="sub"><span class="zh">实验记录</span> · reproducible kernel and system measurements — raw data archived alongside the write-up</div>
       </div>
-      <div class="shelf-count">2 records</div>
+      <div class="shelf-count">3 records</div>
     </div>
     <div class="grid">
+      <article class="entry" data-kind="experiments" data-search="experiment 003 tokenspeed lightseek sglang kimi k3 mi355x gfx950 gluon aiter situ moe routing top-k mla decode kernel comparison rocm triton profiler chrome trace flatkv scheduler wedge throughput concurrency ep8 tp8 mxfp4 benchmark">
+        <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 003</span></div>
+        <div class="entry-body">
+          <h3>Faster kernels, slower engine: TokenSpeed vs SGLang on Kimi-K3</h3>
+          <p>TokenSpeed's Gluon kernels beat SGLang's on every block of Kimi-K3 — MLA decode 2.77x, MoE routing 6.51x, total device compute 1.21x — while issuing 30% fewer launches and the same 187 collectives per step. The engine is still 1.14x slower at batch 1 and 3.7x slower at concurrency 8, so the deficit is between the kernels, not inside them.</p>
+          <div class="tags"><span class="tag">TokenSpeed</span><span class="tag">Gluon vs AITER</span><span class="tag">MI355X</span><span class="tag">kernel trace</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./tokenspeed-vs-sglang-kimi-k3.html">Deep dive →</a></div>
+      </article>
       <article class="entry" data-kind="experiments" data-search="experiment 002 kimi k3 kda kimi delta attention linear attention mla full attention moe mi355x gfx950 sglang decode prefill time attribution kernel profiling rocprofv3 att thread trace rcv rocprof compute viewer kv cache bandwidth roofline tp8 mxfp4 context length 1m">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 002</span></div>
         <div class="entry-body">

@@ -1,0 +1,8 @@
+block,tokenspeed_dispatches_per_step
+moe,736
+other,566
+kda,414
+attn_residual,278
+full_attn,192
+collective,189
+TOTAL,2375

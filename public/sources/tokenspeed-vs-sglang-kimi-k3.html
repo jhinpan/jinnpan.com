@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Faster kernels, slower engine — TokenSpeed vs SGLang on Kimi-K3, MI355X</title>
+<meta name="description" content="Building TokenSpeed from source on 8x MI355X, serving Kimi-K3, and profiling it against SGLang kernel by kernel. Every Gluon kernel wins — MLA decode 2.77x, MoE routing 6.51x — and the engine is still slower. Where the milliseconds actually go."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Sora:wght@300;400;500;600;700&amp;family=Reddit+Mono:wght@300;400;500;700&amp;family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  /* signal lab — phosphor traces on an unlit panel */
+  --bg:#080a0c; --panel:#0e1215; --sunk:#141a1e; --deep:#1b2329;
+  --fg:#dfe7e4; --fg2:#9daaa6; --fg3:#67746f;
+  --rule:#1e272c; --rule2:#2c383e;
+  --ts:#5ef2a0;        /* TokenSpeed — phosphor green */
+  --sg:#ffb44d;        /* SGLang — amber */
+  --bad:#ff5f92;       /* failure / wedge — magenta */
+  --cool:#57c7ff;      /* neutral highlight */
+  --display:'Anton','Noto Sans SC',sans-serif;
+  --body:'Sora','Noto Sans SC',system-ui,sans-serif;
+  --ui:'Sora','Noto Sans SC',system-ui,sans-serif;
+  --mono:'Reddit Mono',ui-monospace,'Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--body); font-size:17px; line-height:1.72;
+  font-weight:300; -webkit-font-smoothing:antialiased;
+}
+a{color:var(--ts); text-underline-offset:3px; text-decoration-thickness:1px}
+a:hover{color:var(--cool)}
+code{font-family:var(--mono); font-size:.8em; background:var(--sunk); color:var(--ts); padding:.12em .36em; border:1px solid var(--rule); letter-spacing:-.01em}
+:lang(zh){font-family:'Noto Sans SC','Sora',sans-serif; line-height:1.9}
+
+.wrap{display:grid; grid-template-columns:252px minmax(0,1fr); max-width:1220px; margin:0 auto; background:var(--panel); border-left:1px solid var(--rule); border-right:1px solid var(--rule)}
+
+/* ---- rail ---- */
+.rail{grid-column:1; padding:40px 20px 60px 26px; font-family:var(--ui); font-size:12.5px; line-height:1.5; border-right:1px solid var(--rule2); background:var(--bg)}
+.rail-inner{position:sticky; top:32px}
+.rail .back{display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg2); text-decoration:none; margin-bottom:26px; border-bottom:2px solid var(--ts); padding-bottom:3px}
+.rail .back:hover{color:var(--ts)}
+.rail h4{font-family:var(--mono); font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--fg3); margin:0 0 12px; font-weight:500}
+.rail ol{list-style:none; margin:0; padding:0; counter-reset:sec -1}
+.rail ol li{counter-increment:sec; margin:0 0 2px}
+.rail ol li a{display:grid; grid-template-columns:24px 1fr; gap:6px; padding:5px 6px 5px 0; text-decoration:none; color:var(--fg2); border-left:2px solid transparent}
+.rail ol li a::before{content:counter(sec,decimal-leading-zero); font-family:var(--mono); font-size:9px; color:var(--fg3); padding-top:3px}
+.rail ol li a:hover{color:var(--fg); background:var(--sunk); border-left-color:var(--ts)}
+
+/* ---- masthead ---- */
+.masthead{padding:56px 54px 34px; border-bottom:1px solid var(--rule2); position:relative; overflow:hidden}
+.masthead::after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:linear-gradient(90deg,var(--ts),var(--sg) 55%,transparent)}
+.kicker{font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ts); font-weight:500; margin-bottom:20px}
+.masthead h1{font-family:var(--display); font-weight:400; font-size:58px; line-height:1.0; letter-spacing:.005em; text-transform:uppercase; margin:0 0 18px; max-width:17ch; color:#fff}
+.dek{font-size:18px; color:var(--fg2); max-width:62ch; margin:0 0 30px; line-height:1.62; font-weight:300}
+.spec{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--rule2); font-family:var(--ui); background:var(--bg)}
+.spec div{padding:11px 13px; border-right:1px solid var(--rule)}
+.spec div:last-child{border-right:0}
+.spec dt{font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--fg3); margin-bottom:5px}
+.spec dd{margin:0; font-size:12.5px; line-height:1.4; color:var(--fg)}
+
+/* ---- article ---- */
+.article{padding:0 54px 90px}
+section{padding:46px 0 10px; border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+h2{font-family:var(--display); font-weight:400; font-size:33px; line-height:1.1; letter-spacing:.01em; text-transform:uppercase; margin:0 0 10px; max-width:24ch; color:#fff}
+.sec-num{font-family:var(--mono); font-size:10px; letter-spacing:.22em; color:var(--sg); display:block; margin-bottom:11px}
+h3{font-family:var(--ui); font-weight:600; font-size:18px; margin:34px 0 8px; color:var(--fg); letter-spacing:-.01em}
+p{max-width:70ch; margin:0 0 18px}
+.lede{font-size:19.5px; color:var(--fg); max-width:64ch; font-weight:300}
+ul,ol.body-list{max-width:70ch; padding-left:20px}
+li{margin-bottom:8px}
+b,strong{font-weight:600; color:#fff}
+
+/* ---- callout ---- */
+.note{border-left:3px solid var(--cool); background:var(--sunk); padding:16px 20px; margin:24px 0; max-width:72ch}
+.note.warn{border-left-color:var(--bad)}
+.note.key{border-left-color:var(--ts)}
+.note p{margin:0 0 10px; font-size:16px}
+.note p:last-child{margin-bottom:0}
+.note .tag{font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg3); display:block; margin-bottom:8px}
+
+/* ---- tables ---- */
+.tbl{margin:26px 0; overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13px}
+th{text-align:left; font-weight:600; font-family:var(--mono); font-size:9.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--fg3); border-bottom:1px solid var(--rule2); padding:9px 10px 8px}
+td{padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top; font-weight:300}
+tbody tr:hover{background:var(--sunk)}
+td.num,th.num{text-align:right; font-family:var(--mono); font-size:12px; letter-spacing:-.02em}
+td.k{font-weight:500; color:var(--fg)}
+td.win{color:var(--ts)}
+td.lose{color:var(--bad)}
+.cap{font-size:12.5px; color:var(--fg3); font-family:var(--ui); margin-top:-14px; margin-bottom:26px; max-width:74ch}
+
+/* ---- code ---- */
+pre{background:var(--bg); border:1px solid var(--rule2); border-left:3px solid var(--rule2); padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.62; color:var(--fg2); margin:22px 0; max-width:78ch}
+pre code{background:none; border:0; padding:0; color:inherit; font-size:inherit}
+pre .c{color:var(--fg3)}
+pre .g{color:var(--ts)}
+pre .a{color:var(--sg)}
+pre .r{color:var(--bad)}
+
+/* ---- plates ---- */
+.plate{margin:34px 0 30px; border:1px solid var(--rule2); background:var(--bg)}
+.plate.wide{margin-left:-38px; margin-right:-38px}
+.plate-meta{display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:9px 14px; border-bottom:1px solid var(--rule); font-family:var(--mono); font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--fg3); background:var(--sunk)}
+.plate-svg{padding:16px 14px 6px}
+.plate svg{display:block; width:100%; height:auto}
+.caption{padding:0 16px 14px; font-family:var(--ui); font-size:12.5px; font-style:italic; color:var(--fg2); max-width:90ch}
+.diag-text{font-family:'Sora',sans-serif; font-size:12px; font-weight:400; fill:#9daaa6}
+.diag-label{font-family:'Reddit Mono',monospace; font-size:9px; letter-spacing:.06em; fill:#67746f}
+.diag-strong{font-family:'Sora',sans-serif; font-size:12.5px; font-weight:600; fill:#dfe7e4}
+.diag-num{font-family:'Reddit Mono',monospace; font-size:10.5px; fill:#dfe7e4}
+.axis{stroke:#2c383e; stroke-width:1}
+.gridline{stroke:#1e272c; stroke-width:.8}
+
+/* ---- lang toggle ---- */
+.lang-toggle{position:fixed; top:16px; right:18px; z-index:50; display:flex; border:1px solid var(--rule2); background:var(--panel)}
+.lang-toggle button{font-family:var(--mono); font-size:10px; letter-spacing:.1em; padding:6px 11px; border:0; background:transparent; color:var(--fg2); cursor:pointer}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"]{background:var(--ts); color:var(--bg)}
+
+/* ---- colophon ---- */
+.colophon{border-top:1px solid var(--rule2); padding:26px 54px 60px; font-family:var(--ui); font-size:12.5px; color:var(--fg3); display:grid; grid-template-columns:repeat(2,1fr); gap:8px 34px; max-width:1220px; margin:0 auto; background:var(--panel); border-left:1px solid var(--rule); border-right:1px solid var(--rule)}
+.colophon b{color:var(--fg2); font-weight:500}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  .rail{border-right:0; border-bottom:1px solid var(--rule2)}
+  .rail-inner{position:static}
+  .masthead,.article,.colophon{padding-left:20px; padding-right:20px}
+  .plate.wide{margin-left:0; margin-right:0}
+  .spec{grid-template-columns:repeat(2,1fr)}
+  .masthead h1{font-size:38px}
+  .colophon{grid-template-columns:1fr}
+}
+
+@media (prefers-reduced-motion: reduce){
+  animate,animateTransform,animateMotion{display:none}
+  .anim-dash{stroke-dasharray:none !important; stroke-dashoffset:0 !important}
+}
+
+/* Language visibility — must stay last so it wins */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+</style>
+</head>
+<body data-lang="en">
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="wrap">
+<nav class="rail">
+  <div class="rail-inner">
+    <a class="back" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回书架</span></a>
+    <h4><span lang="en">Contents</span><span lang="zh">目录</span></h4>
+    <ol>
+      <li><a href="#result"><span lang="en">The result that did not fit</span><span lang="zh">对不上的那个结果</span></a></li>
+      <li><a href="#stacks"><span lang="en">Two stacks, one inverted flag</span><span lang="zh">两套栈， 一个反的 flag</span></a></li>
+      <li><a href="#pitfalls"><span lang="en">Four pitfalls to a running server</span><span lang="zh">到跑起来之间的四个坑</span></a></li>
+      <li><a href="#endtoend"><span lang="en">End to end</span><span lang="zh">端到端</span></a></li>
+      <li><a href="#wedge"><span lang="en">The wedge at 8K × 128</span><span lang="zh">8K × 128 上的卡死</span></a></li>
+      <li><a href="#method"><span lang="en">How the traces were taken</span><span lang="zh">trace 是怎么抓的</span></a></li>
+      <li><a href="#blocks"><span lang="en">Block by block</span><span lang="zh">逐块拆解</span></a></li>
+      <li><a href="#gluon"><span lang="en">Gluon vs AITER, op by op</span><span lang="zh">Gluon 对 AITER， 逐个算子</span></a></li>
+      <li><a href="#reconcile"><span lang="en">Where the milliseconds go</span><span lang="zh">毫秒去哪了</span></a></li>
+      <li><a href="#fix"><span lang="en">What to fix on each side</span><span lang="zh">两边各该修什么</span></a></li>
+      <li><a href="#reproduce"><span lang="en">Reproducing this</span><span lang="zh">复现</span></a></li>
+    </ol>
+  </div>
+</nav>
+
+<div>
+<header class="masthead">
+  <div class="kicker">Experiment 003 · TokenSpeed vs SGLang · Kimi-K3 · 8× MI355X</div>
+  <h1><span lang="en">Faster kernels, slower engine</span><span lang="zh">更快的核， 更慢的引擎</span></h1>
+  <p class="dek" lang="en">TokenSpeed's hand-written Gluon kernels beat SGLang's on every block of Kimi-K3 — MLA decode by 2.77x, MoE routing by 6.51x, total device compute by 1.21x — while issuing 30% fewer launches and exactly the same number of collectives. And the engine is still slower end to end. This is where the milliseconds actually go.</p>
+  <p class="dek" lang="zh">TokenSpeed 手写的 Gluon 核在 Kimi-K3 的每一块上都赢过 SGLang——MLA decode 快 2.77 倍、 MoE routing 快 6.51 倍、 device compute 总量少 1.21 倍—— 而且 launch 次数少 30%、 collective 次数完全相同。 然后引擎端到端还是更慢。 这篇讲那些毫秒到底去了哪里。</p>
+  <dl class="spec">
+    <div><dt><span lang="en">Silicon</span><span lang="zh">硬件</span></dt><dd>8× MI355X · gfx950 · ROCm 7.2</dd></div>
+    <div><dt><span lang="en">Model</span><span lang="zh">模型</span></dt><dd>Kimi-K3 · 93 L · 896 experts · MXFP4</dd></div>
+    <div><dt><span lang="en">Compared</span><span lang="zh">对比</span></dt><dd>tokenspeed d50bb481 · sglang 3d35b45f7</dd></div>
+    <div><dt><span lang="en">Data</span><span lang="zh">数据</span></dt><dd><a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/tokenspeed-vs-sglang-kimi-k3">data/tokenspeed-vs-sglang-kimi-k3</a></dd></div>
+  </dl>
+</header>
+
+<main class="article">
+
+<!-- ============================================================ 00 -->
+<section id="result">
+  <span class="sec-num">00</span>
+  <h2><span lang="en">The result that did not fit</span><span lang="zh">对不上的那个结果</span></h2>
+
+  <p class="lede" lang="en">When an engine is slower, you profile the kernels, and the kernels are usually where the answer is. This time the trace said the opposite twice over, and it took a third measurement before I believed it.</p>
+  <p class="lede" lang="zh">当一个引擎更慢时， 你会去 profile 它的核函数， 而答案通常也确实在那里。 这次 trace 连着两次给出了相反的答案， 直到第三个测量出来我才相信。</p>
+
+  <p lang="en">TokenSpeed is LightSeek's inference engine, MIT-licensed and public since May 2026. It treats Kimi-K3 on AMD gfx950 as a first-class path: a <code>Dockerfile.amd</code>, native Gluon kernels for MoE and MLA decode, per-commit CI on an 8× MI35x runner. We already had a heavily instrumented SGLang deployment of the same checkpoint on the same node, so the two could be put side by side under one methodology, on one day, on one machine.</p>
+  <p lang="zh">TokenSpeed 是 LightSeek 的推理引擎， MIT 协议， 2026 年 5 月开源。 它把 Kimi-K3 on AMD gfx950 当成一等公民： 有 <code>Dockerfile.amd</code>、 MoE 和 MLA decode 都有原生 Gluon 核、 还有跑在 8× MI35x runner 上的 per-commit CI。 我们手上正好有同一份 checkpoint、 同一台机器上已经 profile 得很透的 SGLang 部署， 所以两者可以在同一套方法学下、 同一天、 同一台机器上并排测。</p>
+
+  <p lang="en">The headline is a contradiction. Every kernel group that maps cleanly between the two stacks is faster on TokenSpeed. Its total device compute per decode step is lower. It issues fewer launches. And it loses.</p>
+  <p lang="zh">结论本身是个矛盾。 凡是能在两套栈之间干净映射的核函数组， TokenSpeed 都更快。 它每个 decode step 的 device compute 总量更低。 它的 launch 次数更少。 然后它输了。</p>
+
+  <div class="note key">
+    <span class="tag">the three numbers</span>
+    <p lang="en"><b>Device compute per decode step:</b> TokenSpeed 17,108 µs against SGLang 20,769 µs. <b>Kernel launches per step:</b> 2,375 against 3,372. <b>Collective dispatches per step:</b> 187 against 187 — identical. <b>End-to-end step:</b> 22.19 ms against 19.39 ms. TokenSpeed does less work, in fewer launches, with the same communication, and takes 14% longer.</p>
+    <p lang="zh"><b>每 decode step 的 device compute：</b> TokenSpeed 17,108 µs， SGLang 20,769 µs。 <b>每 step 的 kernel launch 数：</b> 2,375 对 3,372。 <b>每 step 的 collective dispatch 数：</b> 187 对 187， 完全相同。 <b>端到端 step：</b> 22.19 ms 对 19.39 ms。 TokenSpeed 干的活更少、 launch 更少、 通信一样多， 然后多花 14% 的时间。</p>
+  </div>
+
+  <p lang="en">Both of the cheap explanations are ruled out by measurement, not by argument. It is not launch overhead — it issues 30% fewer launches. It is not collective count — both issue exactly one all-reduce per layer block, 187 per step. Whatever costs TokenSpeed those milliseconds happens between the kernels, not inside them, which turns the AMD story from a kernel problem into a runtime problem.</p>
+  <p lang="zh">两个最省事的解释都是被测量排除的， 不是被论证排除的。 不是 launch overhead—— 它的 launch 少 30%。 不是 collective 数量—— 两边都是每个 layer block 一次 all-reduce， 每 step 187 次。 那些毫秒是花在核函数*之间*的， 不是核函数内部。 这把 AMD 上的故事从一个核函数问题变成了一个 runtime 问题。</p>
+</section>
+
+<!-- ============================================================ 01 -->
+<section id="stacks">
+  <span class="sec-num">01</span>
+  <h2><span lang="en">Two stacks, one inverted flag</span><span lang="zh">两套栈， 一个反的 flag</span></h2>
+
+  <p lang="en">One node, 8× AMD Instinct MI355X (gfx950, 288 GiB each), ROCm 7.2. The model is <code>moonshotai/Kimi-K3</code>: 2.78 T total parameters, 105.4 B active, 93 layers of which <b>69 are KDA linear attention and 24 are full NoPE-MLA</b>, 896 routed experts at top-16 plus 2 shared, <code>situ</code> activation, routed experts stored as <code>compressed-tensors</code> MXFP4 at group size 32 with everything else BF16.</p>
+  <p lang="zh">一台机器， 8 张 AMD Instinct MI355X（gfx950， 每张 288 GiB）， ROCm 7.2。 模型是 <code>moonshotai/Kimi-K3</code>： 2.78 T 总参数、 105.4 B 激活、 93 层里 <b>69 层是 KDA 线性注意力、 24 层是 full NoPE-MLA</b>、 896 个 routed expert 走 top-16 外加 2 个 shared、 <code>situ</code> 激活， routed expert 以 <code>compressed-tensors</code> MXFP4（group size 32）存储， 其余都是 BF16。</p>
+
+  <p lang="en">Each stack runs its own recommended configuration. That makes this best-config against best-config rather than a controlled A/B, which is the honest way to answer "which should I deploy" but means some differences are structural rather than incidental.</p>
+  <p lang="zh">两套栈各跑各自推荐的配置。 所以这是 best-config 对 best-config， 而不是受控 A/B—— 这是回答「我该部署哪个」时最诚实的方式， 但也意味着有些差异是结构性的而非偶然的。</p>
+
+  <div class="tbl"><table>
+    <thead><tr>
+      <th><span lang="en">Axis</span><span lang="zh">维度</span></th>
+      <th>TokenSpeed</th><th>SGLang</th>
+      <th><span lang="en">Effect on the comparison</span><span lang="zh">对比较的影响</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k"><span lang="en">MoE parallelism</span><span lang="zh">MoE 并行</span></td><td>TP8 + EP8</td><td><span lang="en">pure TP8</span><span lang="zh">纯 TP8</span></td><td><span lang="en">Structural. Changes expert GEMM shapes — see §07.</span><span lang="zh">结构性差异。 会改变 expert GEMM 的 shape， 见 §07。</span></td></tr>
+      <tr><td class="k"><span lang="en">Attention backend</span><span lang="zh">Attention 后端</span></td><td><span lang="en">mla (Gluon gfx950)</span><span lang="zh">mla（Gluon gfx950）</span></td><td>triton</td><td><span lang="en">Each stack's own recommendation for this chip.</span><span lang="zh">各自对这块芯片的推荐值。</span></td></tr>
+      <tr><td class="k"><span lang="en">MoE backend</span><span lang="zh">MoE 后端</span></td><td><span lang="en">auto → Gluon SiTU</span><span lang="zh">auto → Gluon SiTU</span></td><td>AITER situv2 a8w4</td><td><span lang="en">The comparison this experiment exists for.</span><span lang="zh">这个实验的核心对比对象。</span></td></tr>
+      <tr><td class="k">KV cache</td><td>fp8</td><td>bf16</td><td class="win"><span lang="en">Favours TokenSpeed — cannot explain a deficit.</span><span lang="zh">对 TokenSpeed 有利—— 解释不了它的劣势。</span></td></tr>
+      <tr><td class="k"><span lang="en">Scheduler</span><span lang="zh">调度器</span></td><td><span lang="en">FlatKV (C++ FSM)</span><span lang="zh">FlatKV（C++ FSM）</span></td><td><span lang="en">radix, disabled here</span><span lang="zh">radix， 本次关闭</span></td><td><span lang="en">Both run without prefix caching.</span><span lang="zh">两边都不开前缀缓存。</span></td></tr>
+      <tr><td class="k"><span lang="en">Speculative decoding</span><span lang="zh">投机解码</span></td><td><span lang="en">none</span><span lang="zh">无</span></td><td><span lang="en">off (nospec) / DSpark</span><span lang="zh">关（nospec）/ DSpark</span></td><td><span lang="en">nospec is the like-for-like row.</span><span lang="zh">nospec 才是同类对比那一行。</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <p lang="en">The fp8 KV cache deserves a note because it cuts the wrong way for the conclusion: fp8 halves the bytes moved per cached token relative to bf16, so it is a handicap given <em>to</em> TokenSpeed. Any deficit we find survives despite that advantage.</p>
+  <p lang="zh">fp8 KV cache 值得单独说一句， 因为它对结论是反向的： 相对 bf16， fp8 把每个缓存 token 搬运的字节数砍半， 所以这是*送给* TokenSpeed 的优势。 我们找到的任何劣势都是在这个优势之上仍然存在的。</p>
+
+  <div class="note warn">
+    <span class="tag">the flag that would have silently ruined it</span>
+    <p lang="en">Both benchmark harnesses descend from vLLM's <code>benchmark_serving.py</code> and print identically-named metrics, so it is easy to assume the flags mean the same thing. <code>--random-range-ratio</code> does not. SGLang's <code>1</code> means exact lengths. TokenSpeed validates the argument into <code>[0, 1)</code> and <code>0</code> means exact lengths. Passing <code>1</code> to both compares exact lengths against an argument error. Every number here uses exact lengths on both sides.</p>
+    <p lang="zh">两边的 benchmark harness 都源自 vLLM 的 <code>benchmark_serving.py</code>， 打印的指标名字一模一样， 所以很容易默认 flag 的含义也一样。 <code>--random-range-ratio</code> 不是。 SGLang 的 <code>1</code> 表示精确长度； TokenSpeed 把参数校验在 <code>[0, 1)</code> 区间内， <code>0</code> 才表示精确长度。 两边都传 <code>1</code>， 比的就是「精确长度」对「参数报错」。 本文所有数字两边都用精确长度。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 02 -->
+<section id="pitfalls">
+  <span class="sec-num">02</span>
+  <h2><span lang="en">Four pitfalls to a running server</span><span lang="zh">到跑起来之间的四个坑</span></h2>
+
+  <p lang="en">None of these are exotic, all four are load-bearing, and the documented recipe walks into three of them. They are worth recording because each one is the kind of failure that costs an afternoon and leaves no trace in a benchmark table.</p>
+  <p lang="zh">没有一个是稀奇古怪的问题， 四个都绕不过去， 而官方文档的 recipe 会踩中其中三个。 值得记下来， 是因为每一个都是那种「浪费一个下午、 却在 benchmark 表格里不留痕迹」的失败。</p>
+
+  <h3><span lang="en">2.1 · A pinned dependency that was never published</span><span lang="zh">2.1 · 一个从未发布过的依赖被硬钉住</span></h3>
+  <p lang="en"><code>python/pyproject.toml</code> on <code>main</code> pins <code>tokenspeed-mooncake&gt;=0.3.12.post20260725</code>. That package has no PyPI release at all, so the runtime install dies with <code>from versions: none</code>. Mooncake is the KV transfer engine for prefill/decode disaggregation; its imports are lazy, inside <code>runtime/pd/</code> and <code>runtime/cache/storage/mooncake_store/</code>, and an aggregated single-node server started with <code>--disable-kvstore</code> never reaches them. Install the runtime with that one entry removed. The general lesson: repo <code>main</code> can be ahead of what its own package index can satisfy.</p>
+  <p lang="zh"><code>main</code> 上的 <code>python/pyproject.toml</code> 把 <code>tokenspeed-mooncake</code> 钉在 <code>&gt;=0.3.12.post20260725</code>。 这个包在 PyPI 上一个 release 都没有， 所以运行时安装直接死在 <code>from versions: none</code>。 Mooncake 是 prefill / decode 分离用的 KV 传输引擎； 它的 import 都是惰性的， 藏在 <code>runtime/pd/</code> 和 <code>runtime/cache/storage/mooncake_store/</code> 里， 而用 <code>--disable-kvstore</code> 起的单机聚合式服务永远走不到。 把这一条摘掉再装即可。 一般性的教训是： 仓库 <code>main</code> 可以跑在它自己的包索引能满足的范围之前。</p>
+
+  <h3><span lang="en">2.2 · xgrammar silently replaces the ROCm Triton</span><span lang="zh">2.2 · xgrammar 悄悄换掉了 ROCm 版 Triton</span></h3>
+  <p lang="en">This is the subtle one, and it fails silently. <code>torch 2.11.0+rocm7.2</code> requires <code>triton-rocm==3.6.0</code>. <code>xgrammar</code> declares a bare <code>triton</code> dependency. Both distributions install into the <em>same</em> <code>triton/</code> directory, so pip installs stock <code>triton 3.7.1</code> from PyPI on top of the ROCm build and whichever landed last wins:</p>
+  <p lang="zh">这个坑很隐蔽， 而且是静默失败。 <code>torch 2.11.0+rocm7.2</code> 要求 <code>triton-rocm==3.6.0</code>， 而 <code>xgrammar</code> 声明了一个裸的 <code>triton</code> 依赖。 两个发行包装进的是*同一个* <code>triton/</code> 目录， 于是 pip 把 PyPI 的 <code>triton 3.7.1</code> 装到 ROCm 版之上， 谁后落地谁赢：</p>
+
+<pre><code><span class="c">$</span> python -c "import triton; print(triton.__version__)"
+<span class="r">3.7.1</span>          <span class="c"># stock PyPI build — not the ROCm one torch asked for</span></code></pre>
+
+  <p lang="en">Nothing errors. You simply run a Triton that was not built for your platform. The fix is to uninstall <code>triton</code> and reinstall <code>triton-rocm==3.6.0</code> after everything else settles. The Gluon gfx950 kernels turn out to be immune, and the reason is a design decision worth stealing: <code>tokenspeed-kernel-amd</code> routes every Triton symbol through one indirection module.</p>
+  <p lang="zh">全程不报错。 你只是在跑一个并非为你的平台构建的 Triton。 解法是等其它都装完后卸掉 <code>triton</code> 再重装 <code>triton-rocm==3.6.0</code>。 而 Gluon gfx950 那批核函数对此免疫， 原因是一个值得偷师的设计： <code>tokenspeed-kernel-amd</code> 把所有 Triton 符号都收敛到一个间接层。</p>
+
+<pre><code><span class="c"># tokenspeed_kernel_amd/_triton.py</span>
+<span class="g">import</span> tokenspeed_triton <span class="g">as</span> triton
+<span class="g">import</span> tokenspeed_triton.experimental.gluon.language <span class="g">as</span> gl
+<span class="g">from</span> tokenspeed_triton.experimental.gluon.language.amd.cdna4 <span class="g">import</span> (
+    async_copy <span class="g">as</span> cdna4_async_copy,
+)</code></pre>
+
+  <p lang="en">Because <code>tokenspeed_triton</code> is a distinct top-level module name (version 3.8.10), it can never collide with whatever occupies <code>triton/</code>. Vendoring a compiler under its own namespace costs one file and buys immunity from every dependency resolver that will ever run against this environment.</p>
+  <p lang="zh">因为 <code>tokenspeed_triton</code> 是一个独立的顶层模块名（版本 3.8.10）， 它永远不会跟占据 <code>triton/</code> 的东西撞车。 把一个编译器 vendor 到自己的命名空间下， 代价是一个文件， 换来的是对将来任何一次依赖求解的免疫。</p>
+
+  <h3><span lang="en">2.3 · The documented AMD recipe OOMs on boot</span><span lang="zh">2.3 · 文档里的 AMD recipe 一启动就 OOM</span></h3>
+  <p lang="en">Following <code>docs/recipes/models.md</code> exactly, the server loads all 96 shards, captures decode graphs, and dies at 751 seconds. Prefill graph capture is what kills it, and the log lets you watch the memory drain bucket by bucket:</p>
+  <p lang="zh">严格按 <code>docs/recipes/models.md</code> 来， 服务会加载完全部 96 个 shard、 捕获完 decode graph， 然后在第 751 秒死掉。 凶手是 prefill graph 捕获， 日志里能一个 bucket 一个 bucket 看着显存被抽干：</p>
+
+<pre><code>Capturing prefill buckets (bucket=2048 avail_mem=<span class="g">19.92 GB</span>):   2%
+Capturing prefill buckets (bucket=1024 avail_mem=<span class="a">14.64 GB</span>):  22%
+Capturing prefill buckets (bucket= 704 avail_mem=<span class="a"> 4.65 GB</span>):  35%
+Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>):  42%
+<span class="r">[FATAL ERROR]: HIP failure: 'out of memory'</span></code></pre>
+
+  <p lang="en">After weights and the KV pool there are roughly 20 GB left per GPU, and capturing all 40 prefill buckets needs more. Add <code>--disable-prefill-graph</code>, which TokenSpeed's own MI35x CI perf config already passes — the docs recipe simply omits it.</p>
+  <p lang="zh">权重和 KV pool 占完之后每张卡只剩约 20 GB， 而捕获全部 40 个 prefill bucket 需要的比这多。 加 <code>--disable-prefill-graph</code> 即可—— TokenSpeed 自己的 MI35x CI perf 配置本来就带这个 flag， 只是文档 recipe 漏了。</p>
+
+  <h3><span lang="en">2.4 · It cannot share a Python environment with SGLang</span><span lang="zh">2.4 · 它没法跟 SGLang 共用一个 Python 环境</span></h3>
+  <p lang="en">TokenSpeed hard-pins <code>torch==2.11.0</code> and <code>transformers==5.12.0</code>; the container runs a custom <code>torch 2.9.1+rocm7.2.0</code> that SGLang depends on. There is no reconciling those, so TokenSpeed goes in its own venv with its own 6.2 GB torch wheel. On a shared benchmarking box this is not a detail — it means the two engines can never be A/B'd inside one process image, and every comparison is across environments by construction.</p>
+  <p lang="zh">TokenSpeed 硬钉 <code>torch==2.11.0</code> 和 <code>transformers==5.12.0</code>； 而容器里跑的是 SGLang 依赖的定制 <code>torch 2.9.1+rocm7.2.0</code>。 这两者没有调和余地， 所以 TokenSpeed 只能进自己的 venv， 带自己那个 6.2 GB 的 torch wheel。 在一台共享的 benchmark 机器上这不是细节—— 它意味着两个引擎永远无法在同一个进程镜像里做 A/B， 所有对比在构造上就是跨环境的。</p>
+
+  <p lang="en">With those handled the server boots in about 11 minutes, almost all of it reading 1.5 TB of weights, and reports <code>max_total_num_tokens=4466304</code>.</p>
+  <p lang="zh">这些处理掉之后， 服务大约 11 分钟启动完成， 时间几乎全花在读 1.5 TB 权重上， 并报告 <code>max_total_num_tokens=4466304</code>。</p>
+</section>
+
+<!-- ============================================================ 03 -->
+<section id="endtoend">
+  <span class="sec-num">03</span>
+  <h2><span lang="en">End to end</span><span lang="zh">端到端</span></h2>
+
+  <p lang="en">Exact-length random workloads, <code>temperature 0</code>, <code>ignore_eos</code>, prefix caching off, output tokens/s aggregated over all 8 GPUs. SGLang appears twice: <code>nospec</code> is the like-for-like comparison because TokenSpeed ran without speculation, and <code>DSpark</code> is SGLang's best tuned result on this box.</p>
+  <p lang="zh">精确长度的 random 负载、 <code>temperature 0</code>、 <code>ignore_eos</code>、 关前缀缓存， 单位是 8 卡聚合的输出 tokens/s。 SGLang 出现两次： <code>nospec</code> 是同类对比， 因为 TokenSpeed 没开投机； <code>DSpark</code> 是 SGLang 在这台机器上调优后的最好成绩。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta">
+      <span lang="en">Plate I · Output throughput vs concurrency · ISL 1024 / OSL 1024</span>
+      <span lang="zh">图版 I · 输出吞吐 vs 并发 · ISL 1024 / OSL 1024</span>
+      <span>tok/s · 8 GPU</span>
+    </div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 900 380" role="img" aria-label="Throughput versus concurrency for TokenSpeed and SGLang">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#67746f"/>
+          </marker>
+        </defs>
+        <!-- grid -->
+        <g>
+          <line class="gridline" x1="80" y1="300" x2="860" y2="300"/>
+          <line class="gridline" x1="80" y1="240" x2="860" y2="240"/>
+          <line class="gridline" x1="80" y1="180" x2="860" y2="180"/>
+          <line class="gridline" x1="80" y1="120" x2="860" y2="120"/>
+          <line class="gridline" x1="80" y1="60"  x2="860" y2="60"/>
+          <text class="diag-label" x="70" y="304" text-anchor="end">0</text>
+          <text class="diag-label" x="70" y="244" text-anchor="end">250</text>
+          <text class="diag-label" x="70" y="184" text-anchor="end">500</text>
+          <text class="diag-label" x="70" y="124" text-anchor="end">750</text>
+          <text class="diag-label" x="70" y="64"  text-anchor="end">1000</text>
+        </g>
+        <line class="axis" x1="80" y1="300" x2="860" y2="300"/>
+        <line class="axis" x1="80" y1="40"  x2="80"  y2="300"/>
+        <!-- x ticks: conc 1,8,32,64,128 mapped to 120,290,460,630,800 -->
+        <g>
+          <text class="diag-label" x="120" y="320" text-anchor="middle">1</text>
+          <text class="diag-label" x="290" y="320" text-anchor="middle">8</text>
+          <text class="diag-label" x="460" y="320" text-anchor="middle">32</text>
+          <text class="diag-label" x="630" y="320" text-anchor="middle">64</text>
+          <text class="diag-label" x="800" y="320" text-anchor="middle">128</text>
+          <text class="diag-label" x="470" y="345" text-anchor="middle">max concurrent requests</text>
+          <text class="diag-text" x="24" y="170" transform="rotate(-90 24 170)" text-anchor="middle">output tok/s</text>
+        </g>
+
+        <!-- SGLang DSpark: 109.84, 472.0, 949.73 -->
+        <polyline class="anim-dash" fill="none" stroke="#ffb44d" stroke-width="2" stroke-dasharray="3 3"
+          points="120,273.6 290,186.7 460,72.1"
+          stroke-dashoffset="0"/>
+        <!-- SGLang nospec: 51.40, 311.79, 847.87 -->
+        <polyline class="anim-dash" fill="none" stroke="#ffb44d" stroke-width="2.6"
+          points="120,287.7 290,225.2 460,96.5"
+          stroke-dasharray="600" stroke-dashoffset="600">
+          <animate attributeName="stroke-dashoffset" from="600" to="0" dur="1.6s" begin="0.2s" fill="freeze"/>
+        </polyline>
+        <!-- TokenSpeed: 44.73, 84.97, 226.80, 440.58, 487.19 -->
+        <polyline class="anim-dash" fill="none" stroke="#5ef2a0" stroke-width="2.6"
+          points="120,289.3 290,279.6 460,245.6 630,194.3 800,183.1"
+          stroke-dasharray="800" stroke-dashoffset="800">
+          <animate attributeName="stroke-dashoffset" from="800" to="0" dur="2.1s" begin="0.4s" fill="freeze"/>
+        </polyline>
+
+        <!-- points -->
+        <g fill="#ffb44d">
+          <circle cx="120" cy="287.7" r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="0.6s" fill="freeze"/></circle>
+          <circle cx="290" cy="225.2" r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="1.0s" fill="freeze"/></circle>
+          <circle cx="460" cy="96.5"  r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="1.5s" fill="freeze"/></circle>
+        </g>
+        <g fill="#5ef2a0">
+          <circle cx="120" cy="289.3" r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="0.8s" fill="freeze"/></circle>
+          <circle cx="290" cy="279.6" r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="1.2s" fill="freeze"/></circle>
+          <circle cx="460" cy="245.6" r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="1.6s" fill="freeze"/></circle>
+          <circle cx="630" cy="194.3" r="3.4"><animate attributeName="r" from="0" to="3.4" dur=".3s" begin="2.0s" fill="freeze"/></circle>
+          <circle cx="800" cy="183.1" r="4.6"><animate attributeName="r" from="0" to="4.6" dur=".3s" begin="2.4s" fill="freeze"/></circle>
+        </g>
+
+        <!-- the gap annotation at conc 32 -->
+        <g opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur=".6s" begin="2.6s" fill="freeze"/>
+          <line x1="474" y1="96.5" x2="474" y2="245.6" stroke="#ff5f92" stroke-width="1.2" stroke-dasharray="3 2" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <rect x="484" y="152" width="86" height="34" fill="#141a1e" stroke="#ff5f92" stroke-width="1"/>
+          <text class="diag-num" x="527" y="167" text-anchor="middle" fill="#ff5f92">3.7x</text>
+          <text class="diag-label" x="527" y="179" text-anchor="middle" fill="#ff5f92">at conc 32</text>
+        </g>
+
+        <!-- legend -->
+        <g transform="translate(600,44)">
+          <line x1="0" y1="0" x2="22" y2="0" stroke="#5ef2a0" stroke-width="2.6"/>
+          <text class="diag-text" x="28" y="4" fill="#5ef2a0">TokenSpeed</text>
+          <line x1="0" y1="18" x2="22" y2="18" stroke="#ffb44d" stroke-width="2.6"/>
+          <text class="diag-text" x="28" y="22" fill="#ffb44d">SGLang nospec</text>
+          <line x1="0" y1="36" x2="22" y2="36" stroke="#ffb44d" stroke-width="2" stroke-dasharray="3 3"/>
+          <text class="diag-text" x="28" y="40" fill="#ffb44d">SGLang DSpark</text>
+        </g>
+      </svg>
+    </div>
+    <p class="caption" lang="en">TokenSpeed's curve is flat where the other two climb. Its best point anywhere — 487 tok/s at concurrency 128 — still sits below SGLang's 848 at concurrency 32. SGLang has no measurement at 64 or 128 on this workload, so those lines stop.</p>
+    <p class="caption" lang="zh">另外两条在爬升的地方， TokenSpeed 的曲线是平的。 它全场最好的一点—— 并发 128 时的 487 tok/s—— 仍然低于 SGLang 并发 32 时的 848。 SGLang 在这个负载上没有 64 和 128 的测量点， 所以那两条线到此为止。</p>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr>
+      <th><span lang="en">Workload ISL / OSL</span><span lang="zh">负载 ISL / OSL</span></th>
+      <th class="num"><span lang="en">Conc</span><span lang="zh">并发</span></th>
+      <th class="num">TokenSpeed</th><th class="num">SGLang nospec</th><th class="num">SGLang DSpark</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">1024 / 1024</td><td class="num">1</td><td class="num">44.73</td><td class="num">51.40</td><td class="num">109.84</td></tr>
+      <tr><td class="k">1024 / 1024</td><td class="num">8</td><td class="num">84.97</td><td class="num">311.79</td><td class="num">472.00</td></tr>
+      <tr><td class="k">1024 / 1024</td><td class="num">32</td><td class="num">226.80</td><td class="num">847.87</td><td class="num">949.73</td></tr>
+      <tr><td class="k">1024 / 1024</td><td class="num">64</td><td class="num">440.58</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td class="k">1024 / 1024</td><td class="num">128</td><td class="num">487.19</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td class="k">4096 / 1024</td><td class="num">1</td><td class="num">43.98</td><td class="num">—</td><td class="num">89.30</td></tr>
+      <tr><td class="k">8192 / 1024</td><td class="num">1</td><td class="num">44.55</td><td class="num">—</td><td class="num">74.29</td></tr>
+      <tr><td class="k">8192 / 1024</td><td class="num">128</td><td class="num lose"><span lang="en">failed</span><span lang="zh">失败</span></td><td class="num">890.25</td><td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+
+  <p lang="en">Single stream is respectable. TokenSpeed's TPOT holds at 21.5–22.2 ms from 1 K to 8 K input, essentially flat, while DSpark's advantage decays as its accept length falls from 2.51 to 2.34. Concurrency is where it comes apart: 3.7x behind at both 8 and 32.</p>
+  <p lang="zh">单流表现拿得出手。 TokenSpeed 的 TPOT 从 1 K 到 8 K 输入稳在 21.5–22.2 ms， 基本是一条水平线； 而 DSpark 的优势随输入变长衰减， 接受长度从 2.51 掉到 2.34。 崩掉的是并发： 在 8 和 32 上都落后 3.7 倍。</p>
+
+  <div class="note key">
+    <span class="tag">this is not a broken build</span>
+    <p lang="en">TokenSpeed's own CI reference for this exact workload — <code>test/ci/perf/kimi-k3-mxfp4-tp8ep8-evalscope-random-4k-1k-mi35x.yaml</code> — is 43.05 tok/s per user on 8× MI350X, gated at 42. We measured 43.98 on MI355X, 2% above their number. Whatever happens at concurrency is not a misconfiguration on our side.</p>
+    <p lang="zh">TokenSpeed 自己针对这个负载的 CI 参考值—— <code>test/ci/perf/kimi-k3-mxfp4-tp8ep8-evalscope-random-4k-1k-mi35x.yaml</code>—— 是 8× MI350X 上每用户 43.05 tok/s， 门槛设在 42。 我们在 MI355X 上实测 43.98， 比他们自己的数字高 2%。 并发上出的问题不是我们这边配错了。</p>
+  </div>
+
+  <p lang="en">The more telling detail is what that CI file gates. TokenSpeed's NVIDIA perf configs carry reference curves at concurrency 1, 2, 4, 8 and 16. The AMD K3 config has one line, <code>perf_reference: {1: [42, 5.2]}</code>, and pins the server to <code>--max-num-seqs 1</code> with <code>--cudagraph-capture-sizes 1</code>. Upstream does not measure batched throughput on AMD at all, so nothing there can regress visibly — which is a reasonable prediction of exactly the shape of gap we found.</p>
+  <p lang="zh">更能说明问题的是那个 CI 文件 gate 了什么。 TokenSpeed 的 NVIDIA perf 配置带着并发 1、 2、 4、 8、 16 的完整参考曲线； AMD 的 K3 配置只有一行 <code>perf_reference: {1: [42, 5.2]}</code>， 并把服务端钉死在 <code>--max-num-seqs 1</code> 和 <code>--cudagraph-capture-sizes 1</code>。 上游在 AMD 上根本没测过批量吞吐， 所以那里的退化不可能被看见—— 这恰好能预测出我们观察到的这种形状的差距。</p>
+</section>
+
+<!-- ============================================================ 04 -->
+<section id="wedge">
+  <span class="sec-num">04</span>
+  <h2><span lang="en">The wedge at 8K × 128</span><span lang="zh">8K × 128 上的卡死</span></h2>
+
+  <p lang="en">This is the workload SGLang was tuned around on this box: 890 tok/s output, 8,012 tok/s total, at concurrency 128 with 8 K prompts. TokenSpeed completed <b>1 of 128 requests in an hour</b>. The distinction that matters is that it did not degrade — it wedged.</p>
+  <p lang="zh">这正是 SGLang 在这台机器上重点调优的负载： 并发 128、 8 K 提示词下输出 890 tok/s、 总吞吐 8,012 tok/s。 TokenSpeed <b>一小时内只完成了 128 个请求中的 1 个</b>。 关键区别在于它不是变慢， 而是卡死。</p>
+
+  <div class="plate">
+    <div class="plate-meta">
+      <span lang="en">Plate II · FlatKV page pool under 128 × 9,216-token requests</span>
+      <span lang="zh">图版 II · 128 个 9,216-token 请求下的 FlatKV 页池</span>
+      <span>live</span>
+    </div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 900 300" role="img" aria-label="Page pool saturating and the scheduler retracting">
+        <!-- pool bar -->
+        <text class="diag-strong" x="30" y="42">num_device_pages = 3,298 · block_size 128</text>
+        <text class="diag-label" x="30" y="60">shared across 4 cache groups: full_attention + 3 × linear_attention</text>
+        <rect x="30" y="76" width="620" height="42" fill="none" stroke="#2c383e" stroke-width="1.4"/>
+        <!-- fill animates to 94% -->
+        <rect x="31" y="77" width="0" height="40" fill="#ff5f92" opacity=".75">
+          <animate attributeName="width" from="0" to="582" dur="2.6s" begin="0.3s" fill="freeze"/>
+        </rect>
+        <line x1="612" y1="70" x2="612" y2="124" stroke="#ff5f92" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text class="diag-num" x="618" y="98" fill="#ff5f92">0.94</text>
+        <text class="diag-label" x="30" y="134">page ratio</text>
+
+        <!-- demand bar, far longer -->
+        <text class="diag-text" x="30" y="168">demand: 128 requests × 9,216 tokens</text>
+        <rect x="30" y="178" width="820" height="26" fill="none" stroke="#2c383e" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <rect x="31" y="179" width="0" height="24" fill="#57c7ff" opacity=".28">
+          <animate attributeName="width" from="0" to="818" dur="2.6s" begin="0.3s" fill="freeze"/>
+        </rect>
+        <text class="diag-label" x="660" y="196" fill="#57c7ff">overcommitted</text>
+
+        <!-- retract flashes -->
+        <g opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur=".4s" begin="2.9s" fill="freeze"/>
+          <text class="diag-label" x="30" y="238" fill="#ff5f92">flat retract ... to unwedge the pool</text>
+          <g fill="#ff5f92">
+            <rect x="250" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="2.9s" repeatCount="indefinite"/></rect>
+            <rect x="262" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.0s" repeatCount="indefinite"/></rect>
+            <rect x="274" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.1s" repeatCount="indefinite"/></rect>
+            <rect x="286" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.2s" repeatCount="indefinite"/></rect>
+            <rect x="298" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.3s" repeatCount="indefinite"/></rect>
+          </g>
+          <text class="diag-num" x="316" y="239" fill="#ff5f92">× 9,256</text>
+        </g>
+
+        <!-- outcome stats -->
+        <g opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur=".6s" begin="3.4s" fill="freeze"/>
+          <line class="axis" x1="30" y1="256" x2="850" y2="256"/>
+          <text class="diag-num" x="30"  y="282" fill="#ff5f92">0.02 tok/s</text>
+          <text class="diag-label" x="30"  y="294">decode while wedged</text>
+          <text class="diag-num" x="230" y="282" fill="#ff5f92">106</text>
+          <text class="diag-label" x="230" y="294">requests queued</text>
+          <text class="diag-num" x="410" y="282" fill="#ff5f92">1 / 128</text>
+          <text class="diag-label" x="410" y="294">completed in 3,600 s</text>
+          <text class="diag-num" x="620" y="282" fill="#5ef2a0">1.29 M tokens</text>
+          <text class="diag-label" x="620" y="294">SGLang pool, same workload, 0 retracts</text>
+        </g>
+      </svg>
+    </div>
+    <p class="caption" lang="en">The scheduler advertises one capacity and enforces another. The engine reports <code>max_total_num_tokens=3556992</code>; the scheduler's own config says 3,298 device pages at block size 128, shared across four cache groups because 69 of 93 layers are KDA and each needs its own paged recurrent state.</p>
+    <p class="caption" lang="zh">调度器对外宣称的容量和它实际执行的容量不是一个。 引擎报告 <code>max_total_num_tokens=3556992</code>； 而调度器自己的配置写的是 3,298 个 device page、 block size 128， 并且要被四个 cache group 共享—— 因为 93 层里有 69 层是 KDA， 每层都要自己的 paged recurrent state。</p>
+  </div>
+
+  <p lang="en">Overcommitting a pool is normal; every engine does it and resolves it by queueing. What makes this a wedge rather than a queue is that the retraction path is itself blocked — the scheduler frees a request to make room, admits one, and immediately needs to free again, so it converges to admitting a single request at a time while decode falls to 0.02 tok/s. A queue degrades linearly with load. This degrades to a standstill, which is a different failure and needs a different fix: admission control that refuses work it cannot hold, rather than eviction that fights itself.</p>
+  <p lang="zh">超订一个池子是正常的， 每个引擎都会， 然后靠排队化解。 让这件事从「排队」变成「卡死」的， 是回收路径本身也被堵住了—— 调度器释放一个请求腾出空间、 放进来一个、 然后立刻又需要释放， 于是收敛到一次只接纳一个请求， 解码掉到 0.02 tok/s。 排队是随负载线性劣化， 而这是劣化到停滞， 属于另一类失败， 需要另一类修法： 用「拒绝装不下的请求」的准入控制， 而不是自己跟自己打架的驱逐。</p>
+
+  <p lang="en">One thing that is not a limit: the <code>--max-model-len 8192</code> in the documented AMD recipe. Raising it to 16384 boots cleanly and reports <code>max_req_input_len=16383</code>, so the 8 K-in / 1 K-out shape itself fits. The wedge is about concurrency, not context.</p>
+  <p lang="zh">有一点不是限制： 文档 AMD recipe 里的 <code>--max-model-len 8192</code>。 改成 16384 能正常启动并报告 <code>max_req_input_len=16383</code>， 所以 8 K 进 / 1 K 出这个形状本身装得下。 卡死是并发问题， 不是上下文问题。</p>
+</section>
+
+<!-- ============================================================ 05 -->
+<section id="method">
+  <span class="sec-num">05</span>
+  <h2><span lang="en">How the traces were taken</span><span lang="zh">trace 是怎么抓的</span></h2>
+
+  <p lang="en">A kernel comparison is only worth as much as its methodology, so here is the whole of it. Both sides: batch 1, ISL 4096, TP8, no speculative decoding, <b>graph off</b>, device-kernel duration summed per decode step, collectives excluded.</p>
+  <p lang="zh">一个核函数对比的价值完全取决于它的方法学， 所以这里把方法学全部摊开。 两边都是： batch 1、 ISL 4096、 TP8、 无投机解码、 <b>关 graph</b>、 按 decode step 求和 device kernel 时长、 排除 collective。</p>
+
+  <p lang="en"><b>Why graph off.</b> Inside a replayed HIP graph the individual kernels are not separately attributable — you get one opaque replay. The SGLang baseline was captured graph-off for the same reason, so the two remain comparable. The cost is that eager wall-clock time is meaningless here; only the summed device time is.</p>
+  <p lang="zh"><b>为什么关 graph。</b> 在一次被 replay 的 HIP graph 内部， 单个核函数无法单独归因—— 你只会得到一次不透明的 replay。 SGLang 那份 baseline 也正是出于同样原因用 graph-off 抓的， 所以两者保持可比。 代价是 eager 的墙钟时间在这里没有意义， 只有 device 时间的加总有意义。</p>
+
+  <p lang="en"><b>Why collectives are excluded.</b> In eager decode the all-reduce payload is a few kilobytes and the kernel busy-waits for its peers, so its recorded duration measures rank skew, not work. Leaving it in would have put 67.6 ms/step of pure waiting into a 17 ms compute budget. The SGLang baseline excluded it for the same reason. The dispatch <em>count</em> is still meaningful and is compared directly in §08.</p>
+  <p lang="zh"><b>为什么排除 collective。</b> 在 eager 解码下 all-reduce 的 payload 只有几 KB， 核函数是在忙等其它 rank， 所以它记录的时长量的是 rank 之间的偏斜而不是工作量。 留着它会把 67.6 ms/step 的纯等待塞进一个 17 ms 的计算预算里。 SGLang 的 baseline 出于同样原因排除了它。 dispatch *次数*仍然有意义， 在 §08 里直接对比。</p>
+
+  <div class="note warn">
+    <span class="tag">Proton does not attach on ROCm</span>
+    <p lang="en">TokenSpeed ships Proton, its semantic kernel profiler, and the guide recommends it. On ROCm it calls <code>rocprofiler_force_configure</code>, which must run before HIP initialises, so attaching it to a live server fails with <code>error 16</code> on every rank. The torch/roctracer profiler attaches fine at runtime — and conveniently produces the same chrome-trace artifact the SGLang baseline used, which makes the two directly comparable rather than merely similar.</p>
+    <p lang="zh">TokenSpeed 自带语义级核函数 profiler Proton， 官方指南也推荐用它。 但在 ROCm 上它会调 <code>rocprofiler_force_configure</code>， 而这个调用必须发生在 HIP 初始化之前， 所以挂到运行中的服务上会在每个 rank 上以 <code>error 16</code> 失败。 torch / roctracer 那条路可以正常运行时挂载—— 而且顺带的好处是， 它产出的 chrome trace 跟 SGLang baseline 是同一种产物， 于是两者是直接可比而不只是相似。</p>
+  </div>
+
+  <p lang="en"><b>How kernels were attributed.</b> By the source module that launches them, not by name matching. Name matching is actively wrong here: <code>iris_stage_one_shot_allreduce_two_gluon_kernel</code> contains "gluon" but is a collective, and <code>_stage1_a16w4_situ_warp_gemv</code> contains "stage1" but is MoE, not attention. Every kernel was traced to its defining file.</p>
+  <p lang="zh"><b>核函数是怎么归因的。</b> 按发起它的源码模块归因， 不按名字匹配。 名字匹配在这里是实打实错的： <code>iris_stage_one_shot_allreduce_two_gluon_kernel</code> 名字里有 "gluon" 但它是个 collective； <code>_stage1_a16w4_situ_warp_gemv</code> 名字里有 "stage1" 但它属于 MoE 而不是 attention。 每个核函数都追到了定义它的文件。</p>
+
+  <p lang="en">One kernel genuinely spans blocks. <code>_kimi3_projection_gemv_kernel</code> backs four call sites in every MoE layer — the two latent H↔L projections, the shared-expert down projection and the router — plus <code>kimi3_qkvfab_projection</code> inside <code>KimiLinearKDA</code>. That predicts 4 × 92 + 69 = <b>437</b> dispatches per step, and the trace measured exactly 437. Getting the predicted dispatch count to match the measured one to the unit is the check that the attribution is right; its time is then split by dispatch share. The 93-dispatch vendor GEMM is the attention output projection, issued once per layer, split 69/24 between the two attention types — the same structure SGLang's own study found, where exactly one compute kernel is shared between KDA and MLA.</p>
+  <p lang="zh">确实有一个核函数跨 block。 <code>_kimi3_projection_gemv_kernel</code> 支撑每个 MoE 层里的四个调用点—— 两个 latent H↔L projection、 shared expert 的 down projection、 以及 router—— 外加 <code>KimiLinearKDA</code> 里的 <code>kimi3_qkvfab_projection</code>。 这预测出每 step 有 4 × 92 + 69 = <b>437</b> 次 dispatch， 而 trace 实测正好 437。 预测的 dispatch 数与实测数精确到个位对上， 就是归因正确的校验； 它的时间随后按 dispatch 占比拆分。 那个 93 次 dispatch 的 vendor GEMM 是每层一次的 attention 输出投影， 按 69 / 24 拆给两种注意力—— 这跟 SGLang 自己的研究发现的结构一致： 恰好有一个计算核函数被 KDA 和 MLA 共享。</p>
+</section>
+
+<!-- ============================================================ 06 -->
+<section id="blocks">
+  <span class="sec-num">06</span>
+  <h2><span lang="en">Block by block</span><span lang="zh">逐块拆解</span></h2>
+
+  <div class="plate wide">
+    <div class="plate-meta">
+      <span lang="en">Plate III · One decode step, laid end to end · bs 1 · ISL 4096 · graph off</span>
+      <span lang="zh">图版 III · 一个 decode step 首尾展开 · bs 1 · ISL 4096 · 关 graph</span>
+      <span>µs / step</span>
+    </div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 900 260" role="img" aria-label="Decode step composition for both engines">
+        <!-- scale: 20769 us -> 780 px  => 0.037556 px/us -->
+        <text class="diag-label" x="30" y="26">0</text>
+        <text class="diag-label" x="405" y="26" text-anchor="middle">10,000 µs</text>
+        <text class="diag-label" x="780" y="26" text-anchor="middle">20,000 µs</text>
+        <line class="gridline" x1="30"  y1="32" x2="30"  y2="196"/>
+        <line class="gridline" x1="405" y1="32" x2="405" y2="196"/>
+        <line class="gridline" x1="780" y1="32" x2="780" y2="196"/>
+
+        <!-- SGLang track -->
+        <text class="diag-strong" x="30" y="56" fill="#ffb44d">SGLang</text>
+        <text class="diag-label" x="96" y="56">AITER MoE · Triton attention</text>
+        <g>
+          <rect x="30" y="66" width="0" height="34" fill="#ffb44d" opacity=".92"><animate attributeName="width" from="0" to="396.2" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
+          <rect x="426.2" y="66" width="0" height="34" fill="#ffb44d" opacity=".62"><animate attributeName="width" from="0" to="133.0" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
+          <rect x="559.2" y="66" width="0" height="34" fill="#ffb44d" opacity=".44"><animate attributeName="width" from="0" to="116.4" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
+          <rect x="675.6" y="66" width="0" height="34" fill="#ffb44d" opacity=".30"><animate attributeName="width" from="0" to="85.9" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
+          <rect x="761.5" y="66" width="0" height="34" fill="#67746f" opacity=".55"><animate attributeName="width" from="0" to="48.5" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
+          <line x1="810" y1="60" x2="810" y2="106" stroke="#ffb44d" stroke-width="1.6"/>
+          <text class="diag-num" x="816" y="88" fill="#ffb44d">20,769</text>
+        </g>
+        <!-- labels for SGLang segments -->
+        <g>
+          <text class="diag-label" x="34" y="88" fill="#0e1215">MoE 10,549</text>
+          <text class="diag-label" x="430" y="88" fill="#0e1215">KDA 3,542</text>
+          <text class="diag-label" x="563" y="88" fill="#0e1215">MLA 3,100</text>
+          <text class="diag-label" x="679" y="88" fill="#dfe7e4">AttnRes 2,288</text>
+        </g>
+
+        <!-- TokenSpeed track -->
+        <text class="diag-strong" x="30" y="140" fill="#5ef2a0">TokenSpeed</text>
+        <text class="diag-label" x="126" y="140">Gluon MoE · Gluon MLA</text>
+        <g>
+          <rect x="30" y="150" width="0" height="34" fill="#5ef2a0" opacity=".92"><animate attributeName="width" from="0" to="303.7" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
+          <rect x="333.7" y="150" width="0" height="34" fill="#5ef2a0" opacity=".62"><animate attributeName="width" from="0" to="109.1" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
+          <rect x="442.8" y="150" width="0" height="34" fill="#5ef2a0" opacity=".44"><animate attributeName="width" from="0" to="55.1" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
+          <rect x="497.9" y="150" width="0" height="34" fill="#5ef2a0" opacity=".30"><animate attributeName="width" from="0" to="70.0" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
+          <rect x="567.9" y="150" width="0" height="34" fill="#ff5f92" opacity=".55"><animate attributeName="width" from="0" to="104.6" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
+          <line x1="672.5" y1="144" x2="672.5" y2="190" stroke="#5ef2a0" stroke-width="1.6"/>
+          <text class="diag-num" x="678" y="172" fill="#5ef2a0">17,108</text>
+        </g>
+        <g>
+          <text class="diag-label" x="34" y="172" fill="#08090b">MoE 8,085</text>
+          <text class="diag-label" x="338" y="172" fill="#08090b">KDA 2,905</text>
+          <text class="diag-label" x="447" y="172" fill="#08090b">MLA 1,468</text>
+          <text class="diag-label" x="572" y="172" fill="#dfe7e4">glue 2,786</text>
+        </g>
+
+        <!-- delta bracket -->
+        <g opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur=".6s" begin="2.0s" fill="freeze"/>
+          <path d="M672.5,206 L672.5,214 L810,214 L810,206" fill="none" stroke="#5ef2a0" stroke-width="1.2"/>
+          <text class="diag-label" x="741" y="230" text-anchor="middle" fill="#5ef2a0">3,661 µs less compute — and 2,800 µs slower per step in reality</text>
+        </g>
+        <!-- glue legend note -->
+        <text class="diag-label" x="30" y="252">glue = RMSNorm · residual add · fp8 casts · device copies · generic GEMV</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Every model block is shorter on TokenSpeed. The one segment that grows is glue, drawn in magenta — and even after paying it, the total is 3,661 µs shorter.</p>
+    <p class="caption" lang="zh">每一个模型块在 TokenSpeed 上都更短。 唯一变长的一段是胶水， 用品红画出—— 而且即使付了这笔账， 总量仍然短 3,661 µs。</p>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr>
+      <th>Block</th><th class="num">TokenSpeed µs</th><th class="num">SGLang µs</th><th class="num">Δ</th>
+      <th><span lang="en">Verdict</span><span lang="zh">结论</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">MoE</td><td class="num">8,085</td><td class="num">10,549</td><td class="num">−2,464</td><td class="win"><span lang="en">TokenSpeed 1.30x faster</span><span lang="zh">TokenSpeed 快 1.30 倍</span></td></tr>
+      <tr><td class="k"><span lang="en">KDA linear attention</span><span lang="zh">KDA 线性注意力</span></td><td class="num">2,905</td><td class="num">3,542</td><td class="num">−637</td><td class="win"><span lang="en">TokenSpeed 1.22x faster</span><span lang="zh">TokenSpeed 快 1.22 倍</span></td></tr>
+      <tr><td class="k"><span lang="en">Full MLA attention</span><span lang="zh">Full MLA 注意力</span></td><td class="num">1,468</td><td class="num">3,100</td><td class="num">−1,632</td><td class="win"><span lang="en">TokenSpeed 2.11x faster</span><span lang="zh">TokenSpeed 快 2.11 倍</span></td></tr>
+      <tr><td class="k"><span lang="en">Attention residual</span><span lang="zh">Attention residual</span></td><td class="num">1,865</td><td class="num">2,288</td><td class="num">−423</td><td class="win"><span lang="en">TokenSpeed 1.23x faster</span><span lang="zh">TokenSpeed 快 1.23 倍</span></td></tr>
+      <tr><td class="k"><span lang="en">Glue</span><span lang="zh">胶水</span></td><td class="num">2,786</td><td class="num">1,290</td><td class="num">+1,496</td><td class="lose"><span lang="en">TokenSpeed 2.16x slower</span><span lang="zh">TokenSpeed 慢 2.16 倍</span></td></tr>
+      <tr><td class="k"><b><span lang="en">Total device compute</span><span lang="zh">device compute 合计</span></b></td><td class="num"><b>17,108</b></td><td class="num"><b>20,769</b></td><td class="num"><b>−3,661</b></td><td class="win"><b><span lang="en">TokenSpeed 1.21x faster</span><span lang="zh">TokenSpeed 快 1.21 倍</span></b></td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap" lang="en">The two stacks bucket their per-block "misc" slightly differently, so read the block rows as indicative and the total as solid. §07 compares only the kernel groups whose mapping is unambiguous.</p>
+  <p class="cap" lang="zh">两套栈对每个 block 内部 misc 的归类方式略有差异， 所以 block 那几行当指示性数字看， 合计那行才是硬的。 §07 只比较映射毫无歧义的核函数组。</p>
+
+  <p lang="en">The glue row is the one place TokenSpeed loses, and it loses by 1.5 ms. RMSNorms, <code>_add3</code>, fp8 copy kernels, <code>Memcpy DtoD</code>, a generic <code>_rowcta_gemv_kernel</code>. SGLang fuses more of this away, most visibly into <code>add_rmsnorm_quant_kernel</code>, which folds the residual add, the norm and the quantisation into one pass over the tensor. Each of those is individually trivial; the point is that at 93 layers a trivial per-layer cost is a 93x cost, and fusing three passes into one is the difference between 1.3 ms and 2.8 ms.</p>
+  <p lang="zh">胶水那一行是 TokenSpeed 唯一输的地方， 而且输了 1.5 ms。 RMSNorm、 <code>_add3</code>、 fp8 copy 核、 <code>Memcpy DtoD</code>、 一个通用的 <code>_rowcta_gemv_kernel</code>。 SGLang 把更多这类东西融掉了， 最显眼的是 <code>add_rmsnorm_quant_kernel</code>， 一趟遍历里同时做完残差加、 norm 和量化。 这些单看每一个都微不足道； 关键在于 93 层里一个微不足道的每层成本就是 93 倍的成本， 而把三趟融成一趟就是 1.3 ms 和 2.8 ms 的差别。</p>
+</section>
+
+<!-- ============================================================ 07 -->
+<section id="gluon">
+  <span class="sec-num">07</span>
+  <h2><span lang="en">Gluon vs AITER, op by op</span><span lang="zh">Gluon 对 AITER， 逐个算子</span></h2>
+
+  <p lang="en">These five groups are where the mapping between the stacks is exact — same work, same layer count, different implementation. This is the comparison the experiment exists to make.</p>
+  <p lang="zh">这五组是两套栈之间映射精确的地方—— 同样的活、 同样的层数、 不同的实现。 这就是这个实验存在的意义。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta">
+      <span lang="en">Plate IV · Matched kernel groups · decode, bs 1, ISL 4096</span>
+      <span lang="zh">图版 IV · 精确匹配的核函数组 · decode， bs 1， ISL 4096</span>
+      <span>µs / step</span>
+    </div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 900 330" role="img" aria-label="Matched kernel group comparison">
+        <!-- scale 3000us -> 300px ; center axis at x=430 -->
+        <line class="axis" x1="430" y1="34" x2="430" y2="300"/>
+        <text class="diag-label" x="430" y="24" text-anchor="middle">0</text>
+        <text class="diag-label" x="300" y="24" text-anchor="middle">SGLang ←</text>
+        <text class="diag-label" x="560" y="24" text-anchor="middle">→ TokenSpeed</text>
+
+        <!-- rows: y, label, sg, ts -->
+        <!-- 1 MoE routing 2956 / 454 -->
+        <g>
+          <text class="diag-text" x="20" y="58">MoE routing · top-16 of 896 + sort</text>
+          <rect x="430" y="64" width="0" height="18" fill="#ffb44d" opacity=".9">
+            <animate attributeName="x" from="430" to="134.4" dur="1.2s" begin="0.3s" fill="freeze"/>
+            <animate attributeName="width" from="0" to="295.6" dur="1.2s" begin="0.3s" fill="freeze"/>
+          </rect>
+          <rect x="430" y="64" width="0" height="18" fill="#5ef2a0" opacity=".9">
+            <animate attributeName="width" from="0" to="45.4" dur="1.2s" begin="0.3s" fill="freeze"/>
+          </rect>
+          <text class="diag-num" x="128" y="78" fill="#ffb44d">2,956</text>
+          <text class="diag-num" x="484" y="78" fill="#5ef2a0">454</text>
+          <text class="diag-num" x="560" y="78" fill="#5ef2a0">6.51x</text>
+        </g>
+        <!-- 2 AttnRes 2288 / 1853 -->
+        <g>
+          <text class="diag-text" x="20" y="112">Attention residual epilogue</text>
+          <rect x="430" y="118" width="0" height="18" fill="#ffb44d" opacity=".9">
+            <animate attributeName="x" from="430" to="201.2" dur="1.2s" begin="0.45s" fill="freeze"/>
+            <animate attributeName="width" from="0" to="228.8" dur="1.2s" begin="0.45s" fill="freeze"/>
+          </rect>
+          <rect x="430" y="118" width="0" height="18" fill="#5ef2a0" opacity=".9">
+            <animate attributeName="width" from="0" to="185.3" dur="1.2s" begin="0.45s" fill="freeze"/>
+          </rect>
+          <text class="diag-num" x="162" y="132" fill="#ffb44d">2,288</text>
+          <text class="diag-num" x="624" y="132" fill="#5ef2a0">1,853</text>
+          <text class="diag-num" x="700" y="132" fill="#5ef2a0">1.23x</text>
+        </g>
+        <!-- 3 MLA math 1212 / 438 -->
+        <g>
+          <text class="diag-text" x="20" y="166">MLA attention math · 24 layers</text>
+          <rect x="430" y="172" width="0" height="18" fill="#ffb44d" opacity=".9">
+            <animate attributeName="x" from="430" to="308.8" dur="1.2s" begin="0.6s" fill="freeze"/>
+            <animate attributeName="width" from="0" to="121.2" dur="1.2s" begin="0.6s" fill="freeze"/>
+          </rect>
+          <rect x="430" y="172" width="0" height="18" fill="#5ef2a0" opacity=".9">
+            <animate attributeName="width" from="0" to="43.8" dur="1.2s" begin="0.6s" fill="freeze"/>
+          </rect>
+          <text class="diag-num" x="262" y="186" fill="#ffb44d">1,212</text>
+          <text class="diag-num" x="482" y="186" fill="#5ef2a0">438</text>
+          <text class="diag-num" x="558" y="186" fill="#5ef2a0">2.77x</text>
+        </g>
+        <!-- 4 KDA recurrence 744 / 650 -->
+        <g>
+          <text class="diag-text" x="20" y="220">KDA recurrence + short conv · 69 layers</text>
+          <rect x="430" y="226" width="0" height="18" fill="#ffb44d" opacity=".9">
+            <animate attributeName="x" from="430" to="355.6" dur="1.2s" begin="0.75s" fill="freeze"/>
+            <animate attributeName="width" from="0" to="74.4" dur="1.2s" begin="0.75s" fill="freeze"/>
+          </rect>
+          <rect x="430" y="226" width="0" height="18" fill="#5ef2a0" opacity=".9">
+            <animate attributeName="width" from="0" to="65.0" dur="1.2s" begin="0.75s" fill="freeze"/>
+          </rect>
+          <text class="diag-num" x="312" y="240" fill="#ffb44d">744</text>
+          <text class="diag-num" x="504" y="240" fill="#5ef2a0">650</text>
+          <text class="diag-num" x="576" y="240" fill="#5ef2a0">1.14x</text>
+        </g>
+        <!-- 5 expert GEMM 1437 / 2391  (TokenSpeed LOSES) -->
+        <g>
+          <text class="diag-text" x="20" y="274">Routed-expert quantized GEMMs</text>
+          <rect x="430" y="280" width="0" height="18" fill="#ffb44d" opacity=".9">
+            <animate attributeName="x" from="430" to="286.3" dur="1.2s" begin="0.9s" fill="freeze"/>
+            <animate attributeName="width" from="0" to="143.7" dur="1.2s" begin="0.9s" fill="freeze"/>
+          </rect>
+          <rect x="430" y="280" width="0" height="18" fill="#ff5f92" opacity=".9">
+            <animate attributeName="width" from="0" to="239.1" dur="1.2s" begin="0.9s" fill="freeze"/>
+          </rect>
+          <text class="diag-num" x="240" y="294" fill="#ffb44d">1,437</text>
+          <text class="diag-num" x="678" y="294" fill="#ff5f92">2,391</text>
+          <text class="diag-num" x="754" y="294" fill="#ff5f92">0.60x</text>
+        </g>
+        <text class="diag-label" x="20" y="318">bars extend from the zero axis · right-hand number is TokenSpeed's speedup</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Four wins and one loss. The single largest absolute gap is routing, and the one place AITER wins is the expert GEMM itself — which is also the one row confounded by a parallelism difference.</p>
+    <p class="caption" lang="zh">四胜一负。 绝对差距最大的是 routing， 而 AITER 唯一赢的地方是 expert GEMM 本身—— 这恰好也是唯一被并行策略差异污染的一行。</p>
+  </div>
+
+  <h3><span lang="en">7.1 · Gluon MLA decode — 2.77x, and the cleanest win</span><span lang="zh">7.1 · Gluon MLA decode—— 2.77 倍， 最干净的一场胜利</span></h3>
+  <p lang="en">SGLang runs MLA decode as a two-stage split-KV Triton attention: <code>_fwd_grouped_kernel_stage1</code> scans the KV cache in splits, <code>_fwd_kernel_stage2</code> reduces them. That costs 50.5 µs per layer. TokenSpeed's <code>_mla_decode_gluon</code> plus its softmax/reduce-V companion does the same work in 18.3 µs per layer.</p>
+  <p lang="zh">SGLang 把 MLA decode 做成两阶段的 split-KV Triton attention： <code>_fwd_grouped_kernel_stage1</code> 分片扫 KV cache， <code>_fwd_kernel_stage2</code> 做归约。 每层 50.5 µs。 TokenSpeed 的 <code>_mla_decode_gluon</code> 加它的 softmax / reduce-V 伙伴， 同样的活每层 18.3 µs。</p>
+  <p lang="en">Why the gap is real and not a tuning artifact: at batch 1 with a 4 K context, decode attention has an arithmetic intensity near one — it is a pure streaming read of the KV cache, and the only thing that matters is how close to peak bandwidth the load instructions get. A split-K template must choose its split count without knowing the access pattern, materialise partial results, and reduce them in a second pass over memory. A kernel written against one architecture can size its tiles to the cache line and the LDS budget and skip the second pass. That is a structural advantage of hand-writing for a fixed target, and it is exactly the regime where it pays.</p>
+  <p lang="zh">为什么这个差距是真实的而不是调参产物： 在 batch 1、 4 K 上下文下， decode attention 的算术强度接近 1—— 它就是对 KV cache 的一次纯流式读取， 唯一重要的是 load 指令能跑到峰值带宽的多少。 一个 split-K 模板必须在不知道访问模式的情况下选定分片数、 把部分结果物化出来、 再用第二趟遍历内存去归约。 而一个针对单一架构写的核函数可以把 tile 尺寸对齐到 cache line 和 LDS 预算， 并且省掉第二趟。 这是「为固定目标手写」的结构性优势， 而这里正是它最划算的场景。</p>
+
+  <h3><span lang="en">7.2 · The router — 6.51x, and the largest prize on the board</span><span lang="zh">7.2 · Router—— 6.51 倍， 桌上最大的一笔</span></h3>
+  <p lang="en">Selecting top-16 of 896 experts and ordering tokens for the grouped GEMM costs SGLang 2.96 ms per decode step, spread across a pipeline of AITER kernels: <code>grouped_topk</code>, <code>opus_moe_sorting</code> in several phases, <code>fused_mx_quant_moe_sort</code>, <code>moe_reduction</code>. TokenSpeed does it in one <code>_kimi3_sigmoid_bias_topk_kernel</code> for 0.45 ms.</p>
+  <p lang="zh">从 896 个 expert 里选 top-16 并为 grouped GEMM 排好 token 顺序， SGLang 要花 2.96 ms/step， 摊在一串 AITER 核函数上： <code>grouped_topk</code>、 分多个 phase 的 <code>opus_moe_sorting</code>、 <code>fused_mx_quant_moe_sort</code>、 <code>moe_reduction</code>。 TokenSpeed 用一个 <code>_kimi3_sigmoid_bias_topk_kernel</code> 花 0.45 ms 做完。</p>
+
+  <div class="plate">
+    <div class="plate-meta">
+      <span lang="en">Plate V · Routing 896 experts: pipeline vs one pass</span>
+      <span lang="zh">图版 V · 给 896 个 expert 做路由： 流水线 vs 一趟</span>
+      <span>per layer × 92</span>
+    </div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 900 250" role="img" aria-label="Routing pipeline versus fused kernel">
+        <defs>
+          <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#ffb44d"/>
+          </marker>
+        </defs>
+        <!-- SGLang pipeline -->
+        <text class="diag-strong" x="24" y="34" fill="#ffb44d">SGLang · four kernels, three round trips through HBM</text>
+        <g>
+          <rect x="24"  y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
+          <text class="diag-text" x="99" y="70" text-anchor="middle" fill="#dfe7e4">grouped_topk</text>
+          <text class="diag-label" x="99" y="84" text-anchor="middle">scores → top-16</text>
+
+          <rect x="214" y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
+          <text class="diag-text" x="289" y="70" text-anchor="middle" fill="#dfe7e4">opus_moe_sorting</text>
+          <text class="diag-label" x="289" y="84" text-anchor="middle">multi-phase</text>
+
+          <rect x="404" y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
+          <text class="diag-text" x="479" y="70" text-anchor="middle" fill="#dfe7e4">fused_mx_quant</text>
+          <text class="diag-label" x="479" y="84" text-anchor="middle">quant + sort</text>
+
+          <rect x="594" y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
+          <text class="diag-text" x="669" y="70" text-anchor="middle" fill="#dfe7e4">moe_reduction</text>
+          <text class="diag-label" x="669" y="84" text-anchor="middle">combine</text>
+
+          <line x1="174" y1="71" x2="212" y2="71" stroke="#ffb44d" stroke-width="1.2" marker-end="url(#ah2)"/>
+          <line x1="364" y1="71" x2="402" y2="71" stroke="#ffb44d" stroke-width="1.2" marker-end="url(#ah2)"/>
+          <line x1="554" y1="71" x2="592" y2="71" stroke="#ffb44d" stroke-width="1.2" marker-end="url(#ah2)"/>
+
+          <!-- travelling packets = materialised metadata -->
+          <circle r="4" fill="#ffb44d">
+            <animateMotion dur="2.4s" repeatCount="indefinite" path="M174,71 L212,71"/>
+          </circle>
+          <circle r="4" fill="#ffb44d">
+            <animateMotion dur="2.4s" begin="0.35s" repeatCount="indefinite" path="M364,71 L402,71"/>
+          </circle>
+          <circle r="4" fill="#ffb44d">
+            <animateMotion dur="2.4s" begin="0.7s" repeatCount="indefinite" path="M554,71 L592,71"/>
+          </circle>
+          <text class="diag-label" x="193" y="112" text-anchor="middle" fill="#ffb44d">HBM</text>
+          <text class="diag-label" x="383" y="112" text-anchor="middle" fill="#ffb44d">HBM</text>
+          <text class="diag-label" x="573" y="112" text-anchor="middle" fill="#ffb44d">HBM</text>
+
+          <rect x="770" y="48" width="106" height="46" fill="#ffb44d" opacity=".14" stroke="#ffb44d" stroke-width="1"/>
+          <text class="diag-num" x="823" y="70" text-anchor="middle" fill="#ffb44d">2,956 µs</text>
+          <text class="diag-label" x="823" y="84" text-anchor="middle">per step</text>
+        </g>
+
+        <!-- TokenSpeed fused -->
+        <text class="diag-strong" x="24" y="160" fill="#5ef2a0">TokenSpeed · one kernel, metadata never leaves the CU</text>
+        <g>
+          <rect x="24" y="174" width="530" height="46" fill="none" stroke="#5ef2a0" stroke-width="1.5"/>
+          <text class="diag-text" x="289" y="196" text-anchor="middle" fill="#dfe7e4">_kimi3_sigmoid_bias_topk_kernel</text>
+          <text class="diag-label" x="289" y="210" text-anchor="middle">sigmoid · bias · top-16 · order — one pass</text>
+          <!-- pulse to show single pass -->
+          <rect x="25" y="175" width="60" height="44" fill="#5ef2a0" opacity=".18">
+            <animate attributeName="x" values="25;494;25" dur="2.4s" repeatCount="indefinite"/>
+          </rect>
+          <rect x="770" y="174" width="106" height="46" fill="#5ef2a0" opacity=".14" stroke="#5ef2a0" stroke-width="1"/>
+          <text class="diag-num" x="823" y="196" text-anchor="middle" fill="#5ef2a0">454 µs</text>
+          <text class="diag-label" x="823" y="210" text-anchor="middle">per step</text>
+        </g>
+        <text class="diag-label" x="24" y="240">896 experts · top-16 · 92 MoE layers per decode step</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">With 896 experts the routing metadata is large enough that writing it out and reading it back between kernels costs more than computing it. Fusing sigmoid, bias and top-k into one pass deletes those round trips.</p>
+    <p class="caption" lang="zh">在 896 个 expert 的规模下， routing 元数据已经大到「在核函数之间写出去再读回来」比「把它算出来」更贵。 把 sigmoid、 bias 和 top-k 融进一趟就把这些往返删掉了。</p>
+  </div>
+
+  <p lang="en">That single kernel is worth 2.5 ms per decode step, which is more than the entire end-to-end deficit TokenSpeed carries. Nothing about it is AMD-specific or Gluon-specific: it is the observation that when intermediate state is proportional to a large constant — here 896 — the cost of materialising it dominates the cost of producing it, so the boundary between kernels should not fall there. Delete the proper nouns and the idea still stands.</p>
+  <p lang="zh">单这一个核函数就值 2.5 ms/step， 比 TokenSpeed 背着的整个端到端赤字还大。 它跟 AMD 无关， 跟 Gluon 也无关： 它讲的是， 当中间状态正比于一个很大的常数时—— 这里是 896—— 把它物化出来的成本会压过产生它的成本， 所以核函数的边界不该切在那里。 把专有名词删掉， 这个道理照样成立。</p>
+
+  <h3><span lang="en">7.3 · Where AITER wins, and why the row is confounded</span><span lang="zh">7.3 · AITER 赢在哪里， 以及这一行为什么被污染</span></h3>
+  <p lang="en">SGLang's <code>mfma_moe1</code>/<code>mfma_moe2</code> MXFP4 kernels run the routed experts in 1.44 ms against 2.39 ms for TokenSpeed's Gluon <code>_stage1_a16w4_situ_warp_gemv</code> and <code>_stage2_a16w4_warp_gemv_combine</code>. Two caveats make this the weakest row in the table, and both should be stated rather than buried:</p>
+  <p lang="zh">SGLang 的 <code>mfma_moe1</code> / <code>mfma_moe2</code> MXFP4 核跑完 routed expert 用 1.44 ms， TokenSpeed 的 Gluon <code>_stage1_a16w4_situ_warp_gemv</code> 加 <code>_stage2_a16w4_warp_gemv_combine</code> 用 2.39 ms。 有两个前提让这成为表里最弱的一行， 都该讲清楚而不是藏起来：</p>
+  <ul>
+    <li lang="en"><b>Different parallelism, different shapes.</b> TokenSpeed runs EP8, so each rank owns 112 whole experts and at batch 1 touches only the few its tokens route to. SGLang runs pure TP8, where every rank runs all 16 experts at one-eighth width. Those are not the same GEMM, so this compares two strategies as much as two kernels.</li>
+    <li lang="zh"><b>并行方式不同， shape 就不同。</b> TokenSpeed 跑 EP8， 每个 rank 拥有 112 个完整 expert， batch 1 时只碰它的 token 路由到的那几个。 SGLang 跑纯 TP8， 每个 rank 都跑全部 16 个 expert， 但只做 1/8 的宽度。 这不是同一个 GEMM， 所以这既是在比两个核函数， 也是在比两种策略。</li>
+    <li lang="en"><b>Different activation precision.</b> AITER's path is <code>a8w4</code> — 8-bit activations — against Gluon's <code>a16w4</code>. AITER is moving half the activation bytes, which at batch 1 is most of what the kernel does.</li>
+    <li lang="zh"><b>激活精度不同。</b> AITER 那条路是 <code>a8w4</code>—— 8-bit 激活—— 而 Gluon 是 <code>a16w4</code>。 AITER 搬的激活字节数只有一半， 而在 batch 1 下这几乎就是这个核函数做的全部事情。</li>
+  </ul>
+  <p lang="en">The honest reading is not "AITER's GEMM is better" but "8-bit activations plus TP sharding beat 16-bit activations plus EP sharding at batch 1 on this shape". That is a useful finding, and it points at quantising the activations rather than rewriting the kernel.</p>
+  <p lang="zh">诚实的读法不是「AITER 的 GEMM 更好」， 而是「在 batch 1、 这个 shape 下， 8-bit 激活加 TP 切分胜过 16-bit 激活加 EP 切分」。 这仍然是个有用的结论， 而且它指向的是去量化激活， 而不是重写核函数。</p>
+
+  <h3><span lang="en">7.4 · KDA is a wash, and both are Triton</span><span lang="zh">7.4 · KDA 打平， 而且两边都是 Triton</span></h3>
+  <p lang="en">Despite the "native AMD KDA implementation" framing in the docs, TokenSpeed's batch-1 decode recurrence lives in <code>ops/attention/triton/kda.py</code> — a Triton kernel, like SGLang's. They land within 14% of each other, which is what you expect when two implementations of the same recurrence hit the same wall. That wall is occupancy: 69 layers of a fixed-size recurrent state update at batch 1 fills 48 of 256 compute units. No kernel language moves a number that is set by how much parallelism the math exposes. Only batching does, and batching is precisely what this engine currently cannot do well.</p>
+  <p lang="zh">尽管文档里写的是「原生 AMD KDA 实现」， TokenSpeed 在 batch 1 解码时的递推其实在 <code>ops/attention/triton/kda.py</code> 里—— 一个 Triton 核， 和 SGLang 一样。 两者落在彼此 14% 以内， 这正是「同一个递推的两个实现撞上同一堵墙」时该有的样子。 那堵墙是 occupancy： batch 1 下 69 层固定大小的 recurrent state 更新只填满了 256 个 CU 里的 48 个。 一个由「数学本身暴露出多少并行度」决定的数字， 换什么核函数语言都推不动。 只有加大 batch 能推动， 而加大 batch 恰恰是这个引擎目前做不好的事。</p>
+</section>
+
+<!-- ============================================================ 08 -->
+<section id="reconcile">
+  <span class="sec-num">08</span>
+  <h2><span lang="en">Where the milliseconds go</span><span lang="zh">毫秒去哪了</span></h2>
+
+  <div class="plate wide">
+    <div class="plate-meta">
+      <span lang="en">Plate VI · Four measurements that only reconcile one way</span>
+      <span lang="zh">图版 VI · 只有一种自洽解释的四个测量</span>
+      <span>bs 1 · ISL 4096</span>
+    </div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 900 300" role="img" aria-label="Reconciling compute, launches, collectives and end-to-end time">
+        <!-- four paired gauges -->
+        <!-- 1 compute -->
+        <g>
+          <text class="diag-text" x="24" y="34">device compute / step</text>
+          <rect x="24" y="42" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.2s" fill="freeze"/></rect>
+          <text class="diag-num" x="212" y="55" fill="#ffb44d">20,769 µs</text>
+          <rect x="24" y="64" width="0" height="16" fill="#5ef2a0" opacity=".85"><animate attributeName="width" from="0" to="148.3" dur="1.1s" begin="0.2s" fill="freeze"/></rect>
+          <text class="diag-num" x="180" y="77" fill="#5ef2a0">17,108 µs</text>
+          <text class="diag-label" x="330" y="66" fill="#5ef2a0">TokenSpeed does less work</text>
+        </g>
+        <!-- 2 launches -->
+        <g>
+          <text class="diag-text" x="24" y="112">kernel launches / step</text>
+          <rect x="24" y="120" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.45s" fill="freeze"/></rect>
+          <text class="diag-num" x="212" y="133" fill="#ffb44d">3,372</text>
+          <rect x="24" y="142" width="0" height="16" fill="#5ef2a0" opacity=".85"><animate attributeName="width" from="0" to="126.8" dur="1.1s" begin="0.45s" fill="freeze"/></rect>
+          <text class="diag-num" x="158" y="155" fill="#5ef2a0">2,375</text>
+          <text class="diag-label" x="330" y="144" fill="#5ef2a0">in fewer launches</text>
+        </g>
+        <!-- 3 collectives -->
+        <g>
+          <text class="diag-text" x="24" y="190">collective dispatches / step</text>
+          <rect x="24" y="198" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.7s" fill="freeze"/></rect>
+          <text class="diag-num" x="212" y="211" fill="#ffb44d">187</text>
+          <rect x="24" y="220" width="0" height="16" fill="#5ef2a0" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.7s" fill="freeze"/></rect>
+          <text class="diag-num" x="212" y="233" fill="#5ef2a0">187</text>
+          <text class="diag-label" x="330" y="222" fill="#57c7ff">with identical communication</text>
+        </g>
+        <!-- 4 end to end -->
+        <g>
+          <text class="diag-text" x="24" y="268">end-to-end step, graph ON</text>
+          <rect x="24" y="276" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="157.3" dur="1.1s" begin="0.95s" fill="freeze"/></rect>
+          <text class="diag-num" x="189" y="289" fill="#ffb44d">19.39 ms</text>
+          <rect x="24" y="298" width="0" height="0" fill="#ff5f92"/>
+        </g>
+        <!-- TokenSpeed e2e bar drawn above baseline for space -->
+        <g>
+          <rect x="270" y="276" width="0" height="16" fill="#ff5f92" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.95s" fill="freeze"/></rect>
+          <text class="diag-num" x="458" y="289" fill="#ff5f92">22.19 ms</text>
+          <text class="diag-label" x="540" y="289" fill="#ff5f92">and takes 14% longer</text>
+        </g>
+        <!-- verdict box -->
+        <g opacity="0">
+          <animate attributeName="opacity" from="0" to="1" dur=".7s" begin="2.1s" fill="freeze"/>
+          <rect x="600" y="30" width="278" height="120" fill="#141a1e" stroke="#5ef2a0" stroke-width="1"/>
+          <text class="diag-strong" x="618" y="54" fill="#5ef2a0">the only explanation left</text>
+          <text class="diag-text" x="618" y="76">not the kernels — they are faster</text>
+          <text class="diag-text" x="618" y="96">not launch overhead — 30% fewer</text>
+          <text class="diag-text" x="618" y="116">not collective count — identical</text>
+          <text class="diag-strong" x="618" y="138" fill="#dfe7e4">→ the time is between the kernels</text>
+        </g>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Two cheap hypotheses eliminated by measurement rather than argument. What remains is the host path: the scheduler, the Python execution plane, and however much collective latency is exposed rather than overlapped.</p>
+    <p class="caption" lang="zh">两个省事的假设是被测量而不是被论证排除的。 剩下的是主机侧路径： 调度器、 Python 执行平面， 以及有多少 collective 延迟是暴露出来而没被 overlap 掉的。</p>
+  </div>
+
+  <p lang="en">A per-step cost that does not amortise as the batch grows is the shape that fits all the evidence. At concurrency 1 it costs 14%. At concurrency 8 the same class of overhead costs 3.7x — because the GPU work per step grows with batch while a fixed host-side cost per step does not, so its share should shrink; when the measured gap widens instead, the host path is not keeping up with the step rate rather than paying a constant tax.</p>
+  <p lang="zh">一个不随 batch 增大而摊薄的 per-step 成本， 是唯一能同时解释所有证据的形状。 并发 1 时它值 14%； 并发 8 时同一类开销值 3.7 倍—— 因为每 step 的 GPU 工作量会随 batch 增长， 而固定的主机侧每 step 成本不会， 所以它的占比本应缩小； 当实测差距反而扩大时， 说明主机侧路径是跟不上 step 速率， 而不是在交一笔固定的税。</p>
+
+  <p lang="en">This is also why the fix is not in the kernel directory. The kernels are, measurably, the better half of this engine on this hardware. What needs profiling is the gap between them — and that requires a host-side trace, which is the natural next experiment.</p>
+  <p lang="zh">这也是为什么修复不在核函数目录里。 在这块硬件上， 这些核函数可测量地是这个引擎更强的那一半。 需要 profile 的是它们之间的空隙—— 而那需要一份主机侧的 trace， 这也是自然的下一个实验。</p>
+</section>
+
+<!-- ============================================================ 09 -->
+<section id="fix">
+  <span class="sec-num">09</span>
+  <h2><span lang="en">What to fix on each side</span><span lang="zh">两边各该修什么</span></h2>
+
+  <h3><span lang="en">For SGLang on MI355X</span><span lang="zh">SGLang on MI355X</span></h3>
+  <p lang="en">The fused router is 2.5 ms per decode step sitting on the table — larger than any other single gap in the trace, and a pure software win with no hardware dependency. The Gluon MLA decode kernel is worth another 0.8 ms. Together that is 3.3 ms off a 19.4 ms step, or roughly 17%, from adopting two ideas that are already public and MIT-licensed.</p>
+  <p lang="zh">那个融合 router 是白放在桌上的 2.5 ms/step—— 比 trace 里任何其它单项差距都大， 而且是纯软件收益、 不依赖任何硬件特性。 Gluon MLA decode 核还能再拿 0.8 ms。 加起来是 19.4 ms 的 step 里省掉 3.3 ms， 大约 17%， 而这来自采纳两个已经公开且是 MIT 协议的想法。</p>
+
+  <h3><span lang="en">For TokenSpeed on AMD</span><span lang="zh">TokenSpeed on AMD</span></h3>
+  <p lang="en">The kernels are ahead; profiling effort belongs in the scheduler and the host path. Two concrete items fall out of this trace: the glue tax (1.5 ms of unfused norms, adds and casts that SGLang folds into one pass) and the FlatKV admission path that wedges rather than queues. And before either, the CI gap — upstream measures only concurrency 1 on AMD, so a throughput regression there is currently invisible, which is how a 3.7x gap survives in a repo that clearly cares about performance.</p>
+  <p lang="zh">核函数是领先的； profiling 的力气该花在调度器和主机侧路径上。 这份 trace 里掉出两个具体条目： 胶水税（1.5 ms 未融合的 norm、 add 和 cast， SGLang 把它们折进了一趟）， 以及 FlatKV 那条卡死而非排队的准入路径。 而在这两者之前是 CI 的空缺—— 上游在 AMD 上只测并发 1， 那里的吞吐退化目前不可见， 这也解释了为什么一个 3.7 倍的差距能在一个明显在乎性能的仓库里存活下来。</p>
+
+  <h3><span lang="en">For anyone choosing today</span><span lang="zh">现在要做选择的人</span></h3>
+  <p lang="en">SGLang, and it is not close at concurrency. TokenSpeed is competitive for single-stream latency and nothing else yet on this hardware.</p>
+  <p lang="zh">选 SGLang， 而且在并发上差得不近。 在这块硬件上， TokenSpeed 目前只在单流延迟上有竞争力。</p>
+
+  <div class="note key">
+    <span class="tag"><span lang="en">the transferable part</span><span lang="zh">可迁移的部分</span></span>
+    <p lang="en">When an engine is slower, the instinct is to profile the kernels, and the kernels are usually where the answer is. Here the trace said the opposite twice — faster kernels, fewer launches, same collectives, slower engine — and the only reason that was visible is that both sides were measured with one methodology, on one machine, on one day. A benchmark that stopped at tokens per second would have concluded "TokenSpeed's AMD kernels need work", which is precisely backwards, and would have sent the next engineer to optimise the fastest part of the system.</p>
+    <p lang="zh">当一个引擎更慢时， 本能是去 profile 核函数， 而答案通常也确实在那里。 这次 trace 连着两次给出相反的答案—— 核更快、 launch 更少、 collective 一样多、 引擎更慢—— 而这之所以能被看见， 唯一的原因是两边在同一台机器、 同一天、 用同一套方法学被测量。 一个止步于 tokens per second 的 benchmark 会得出「TokenSpeed 的 AMD 核需要优化」这个结论， 而这恰好是反的， 并且会把下一个工程师送去优化整个系统里最快的那部分。</p>
+  </div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section id="reproduce">
+  <span class="sec-num">10</span>
+  <h2><span lang="en">Reproducing this</span><span lang="zh">复现</span></h2>
+
+  <p lang="en">Build into an isolated venv, in this order — <code>tokenspeed-kernel</code> resolves the AMD package during its own native build, so it must come second.</p>
+  <p lang="zh">装进独立 venv， 顺序不能乱—— <code>tokenspeed-kernel</code> 在自己的 native build 阶段会去解析 AMD 包， 所以它必须排第二。</p>
+
+<pre><code>python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install --upgrade pip <span class="a">"setuptools&lt;82"</span> wheel cmake ninja
+pip install --index-url https://download.pytorch.org/whl/rocm7.2 torch==2.11.0+rocm7.2
+
+pip install --force-reinstall --no-deps ./tokenspeed-kernel-amd --no-build-isolation
+<span class="g">TOKENSPEED_KERNEL_BACKEND=rocm</span> pip install ./tokenspeed-kernel/python/ --no-build-isolation
+pip install ./tokenspeed-scheduler/ \
+  --config-settings=cmake.define.<span class="g">TOKENSPEED_FLAT_KVCACHE=ON</span>   <span class="c"># K3 is FlatKV-only</span>
+<span class="c"># install ./python's dependencies minus tokenspeed-mooncake, then:</span>
+pip install -e ./python --no-build-isolation --no-deps
+<span class="r">pip uninstall -y triton</span> &amp;&amp; pip install --force-reinstall --no-deps \
+  triton-rocm==3.6.0 --index-url https://download.pytorch.org/whl/rocm7.2</code></pre>
+
+  <p lang="en">Serve, with the two deviations from the documented recipe marked:</p>
+  <p lang="zh">起服务， 相对文档 recipe 的两处偏离已标出：</p>
+
+<pre><code>tokenspeed serve moonshotai/Kimi-K3 --served-model-name kimi-k3 --trust-remote-code \
+  --max-model-len 8192 --kv-cache-dtype fp8 --tensor-parallel-size 8 \
+  --mm-encoder-tp-mode data --enable-expert-parallel \
+  --attention-backend mla --moe-backend auto \
+  --gpu-memory-utilization 0.92 --max-num-seqs 32 --disable-kvstore \
+  <span class="g">--disable-prefill-graph</span> <span class="g">--no-enable-prefix-caching</span> \
+  --host 127.0.0.1 --port 8100</code></pre>
+
+  <p lang="en">Benchmark with exact lengths — note the <code>0</code>, not <code>1</code>:</p>
+  <p lang="zh">用精确长度跑 benchmark—— 注意是 <code>0</code> 而不是 <code>1</code>：</p>
+
+<pre><code>tokenspeed bench serve --base-url http://127.0.0.1:8100 --model kimi-k3 \
+  --tokenizer /path/to/Kimi-K3 --dataset-name random \
+  --input-len 4096 --output-len 1024 <span class="g">--random-range-ratio 0</span> \
+  --num-prompts 3 --max-concurrency 1 --num-warmups 1 \
+  --ignore-eos --extra-body '{"temperature": 0}'</code></pre>
+
+  <p lang="en">For the traces, restart with <code>--enforce-eager</code>, then arm the profiler with GPU activities — not Proton — and drive one request through it:</p>
+  <p lang="zh">要抓 trace 的话， 带 <code>--enforce-eager</code> 重启， 然后用 GPU activities（不是 Proton）武装 profiler， 再驱动一个请求穿过去：</p>
+
+<pre><code>curl -sS -X POST http://127.0.0.1:8100/start_profile \
+  -H 'Content-Type: application/json' \
+  -d '{"num_steps": 16, <span class="g">"activities": ["GPU"]</span>,
+       "profile_by_stage": true, "profile_id": "kimi-k3-tp8"}'</code></pre>
+
+  <p lang="en">Each rank writes <code>&lt;id&gt;-TP&lt;r&gt;-{EXTEND,DECODE}.trace.json.gz</code>. Sum device-kernel duration per step, drop the collectives, and attribute the rest by launching module. The archived CSVs, the per-rank kernel tables and the analysis scripts are in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/tokenspeed-vs-sglang-kimi-k3">data/tokenspeed-vs-sglang-kimi-k3</a>; the SGLang side comes from <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share">Experiment 002</a>.</p>
+  <p lang="zh">每个 rank 会写出 <code>&lt;id&gt;-TP&lt;r&gt;-{EXTEND,DECODE}.trace.json.gz</code>。 按 step 求和 device kernel 时长、 去掉 collective、 剩下的按发起它的模块归因。 归档的 CSV、 每个 rank 的核函数表和分析脚本都在 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/tokenspeed-vs-sglang-kimi-k3">data/tokenspeed-vs-sglang-kimi-k3</a>； SGLang 那一侧来自 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/kimi-k3-kda-time-share">Experiment 002</a>。</p>
+</section>
+
+</main>
+
+<footer class="colophon">
+  <div><b><span lang="en">Measured</span><span lang="zh">测量时间</span></b> · 2026-07-31 · 8× MI355X gfx950 · ROCm 7.2</div>
+  <div><b><span lang="en">Engines</span><span lang="zh">引擎</span></b> · tokenspeed d50bb481 · sglang 3d35b45f7</div>
+  <div><b><span lang="en">Method</span><span lang="zh">方法</span></b> · <span lang="en">torch/roctracer chrome traces, graph off, collectives excluded, attribution by launching module</span><span lang="zh">torch / roctracer chrome trace， 关 graph， 排除 collective， 按发起模块归因</span></div>
+  <div><b><span lang="en">Data</span><span lang="zh">数据</span></b> · <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/tokenspeed-vs-sglang-kimi-k3">data/tokenspeed-vs-sglang-kimi-k3</a></div>
+  <div><b><span lang="en">Typography</span><span lang="zh">字体</span></b> · Anton · Sora · Reddit Mono · Noto Sans SC</div>
+  <div><b><span lang="en">Palette</span><span lang="zh">配色</span></b> · <span lang="en">phosphor green, amber, magenta on an unlit panel</span><span lang="zh">熄屏面板上的磷光绿、 琥珀、 品红</span></div>
+</footer>
+</div>
+</div>
+
+<script>
+(function() {
+  var KEY = 'tokenspeed-vs-sglang-kimi-k3-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
