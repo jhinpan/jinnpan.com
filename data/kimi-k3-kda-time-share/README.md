@@ -84,6 +84,80 @@ used: exactly 69 KDA recurrence dispatches, 24 MLA stage-1 dispatches and 92
 expert-GEMM dispatches per decode step, with an integral per-step count for every
 mapped name. All five decode points pass with no unmapped kernel names.
 
+## Verifying the traces with Perfetto
+
+Opened in Perfetto, the 32K prefill trace makes full attention look negligible,
+which does not match the 37.6% reported here. It is worth reproducing the check
+that resolved that, because it is the kind of doubt this data should be able to
+answer without appealing to its own tooling.
+
+`scripts/verify/` recomputes the published numbers along paths that share no code
+with `bucketize.py`. Perfetto's `trace_processor` is a parser we did not write:
+
+```bash
+pip install perfetto              # downloads trace_processor_shell on first use
+gunzip -c prefill-32k-TP0.trace.json.gz > pf32k.json
+python3 scripts/verify/perfetto_verify.py pf32k.json
+```
+
+It reports the GPU timeline, kernel time by name, the `_fwd_kernel` dispatches one
+by one, and — the part that matters below — the same `K3/*` ranges measured on the
+host thread and on the device.
+
+```bash
+# rebuild prefill-composition.csv from the traces, two ways, against the published file
+python3 scripts/verify/verify_composition.py traces/ --csv results/prefill-composition.csv
+
+# split the 32K trace by chunked-prefill chunk
+python3 scripts/verify/verify_chunks.py traces/pf32k/pf32k-TP-0.trace.json.gz
+
+# ground-truth counts and launch geometry, straight from the chrome JSON
+python3 scripts/verify/raw_totals.py traces/pf32k/pf32k-TP-0.trace.json.gz
+```
+
+**The composition holds.** The correlation-id walk and a second attribution built
+from the `gpu_user_annotation` ranges the PyTorch profiler itself projects onto the
+device timeline agree at every point: 37.56% versus 37.57% for full attention at
+32K, and within 0.9 points everywhere else. Kernel by kernel the two disagree on
+18.6 ms of 8961 dispatches (0.6%). Summing durations is safe here — the union of
+all kernel intervals is 3051.00 ms against a naive sum of 3052.04 ms, so 0.034% of
+the total runs concurrently.
+
+**Two things make it look otherwise in the UI.**
+
+The first is which track you are reading. Perfetto draws `K3/*` on both the CPU
+thread and the GPU stream, and they answer opposite questions:
+
+| range | CPU thread | | GPU device | |
+|---|---|---|---|---|
+| `K3/kda` | 1077.6 ms | 85.3% | 546.1 ms | 20.8% |
+| `K3/moe` | 154.2 ms | 12.2% | 1035.5 ms | 39.5% |
+| `K3/full_attn` | 31.1 ms | 2.5% | 1032.0 ms | 39.4% |
+
+The host runs ahead of the device during prefill and blocks wherever the launch
+queue happens to fill; with the GPU 99.8% busy across the 3.06 s span it is stalled
+almost throughout. Host range width measures where it stalled. Every number in this
+archive uses device-side kernel duration.
+
+The second is that a 32K prefill is two 16384-token chunks and they do not look
+alike. Chunk 1 has no prefix; chunk 2 attends to all of chunk 1.
+
+| | chunk 1 (0.00–1.14 s) | chunk 2 (1.14–3.06 s) |
+|---|---|---|
+| full attention | 120.6 ms, 10.6% | 911.8 ms, 47.6% |
+| MoE | 526.5 ms, 46.4% | 524.1 ms, 27.3% |
+| KDA | 276.8 ms, 24.4% | 272.1 ms, 14.2% |
+
+MoE and KDA barely move — both are linear in token count and both chunks carry
+16384 tokens. Only attention changes, and 37.6% is the average of 10.6% and 47.6%.
+`_fwd_kernel` occupies 6.1% of chunk 1's wall clock and 45.4% of chunk 2's.
+
+**One caveat about the tool itself.** Perfetto's Chrome-JSON importer silently
+drops slices it cannot place by nesting on a single track — 2 of 8961 dispatches
+here, one of them a 35.4 ms `_fwd_kernel`. It therefore reports 47 dispatches at
+880.73 ms where the truth is 48 at 916.14 ms, which is 24 MLA layers times 2
+chunks. Use it for queries and structure; use the raw JSON for totals.
+
 ## Three ways the measurement lied, and the corrections
 
 1. **Eager-mode collectives are not communication.** With CUDA graphs off, each

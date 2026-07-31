@@ -175,6 +175,56 @@ const CHUNK_SPLIT = {
 const ATTN_SLICE_SHARE = 0.55;
 const ATTN_TIME_SHARE = 30.0;
 
+// ---------------------------------------------------------------------------
+// Re-verification of the 32K point through Perfetto's trace_processor, i.e. a
+// parser we did not write, plus a raw re-read of the chrome JSON. Three paths
+// that share no code, so a bug in bucketize.py cannot reproduce itself.
+// scripts/verify/ in the data archive runs all of them.
+// ---------------------------------------------------------------------------
+const VERIFY: { q: Bi; pub: string; raw: string; tp: string; band: string }[] = [
+  { q: { zh: "GPU 派发数", en: "GPU dispatches" },
+    pub: "8961", raw: "8961", tp: "8959", band: "—" },
+  { q: { zh: "GPU 核函数总时间", en: "GPU kernel time" },
+    pub: "3052.04 ms", raw: "3052.04 ms", tp: "3015.70 ms", band: "—" },
+  { q: { zh: "_fwd_kernel (次数)", en: "_fwd_kernel (count)" },
+    pub: "916.14 ms (48)", raw: "916.14 ms (48)", tp: "880.73 ms (47)", band: "—" },
+  { q: { zh: "K3/full_attn 含集合通信", en: "K3/full_attn incl. collectives" },
+    pub: "1031.97 ms", raw: "—", tp: "—", band: "1031.98 ms" },
+  { q: { zh: "全注意力占计算时间", en: "full attn share of compute" },
+    pub: "37.56%", raw: "37.56%", tp: "—", band: "37.57%" },
+];
+
+// Union of kernel intervals versus the naive sum: if they differ, summing
+// durations double counts concurrent kernels. They do not.
+const GPU_SUM_MS = 3052.04;
+const GPU_UNION_MS = 3051.0;
+const GPU_SPAN_MS = 3055.65;
+const GPU_BUSY = 99.8;
+
+// The same four ranges, measured on the host thread and on the device. The host
+// blocks wherever the launch queue happens to fill, so CPU range width in prefill
+// measures stalling, not cost -- and it points the opposite way.
+const TRACK_INVERSION: { block: string; cpuMs: number; gpuMs: number }[] = [
+  { block: "K3/kda", cpuMs: 1077.56, gpuMs: 546.09 },
+  { block: "K3/moe", cpuMs: 154.2, gpuMs: 1035.54 },
+  { block: "K3/full_attn", cpuMs: 31.13, gpuMs: 1031.97 },
+  { block: "K3/dense_mlp", cpuMs: 0.82, gpuMs: 7.14 },
+];
+const CPU_TRACK_TOTAL = TRACK_INVERSION.reduce((a, r) => a + r.cpuMs, 0);
+const GPU_TRACK_TOTAL = TRACK_INVERSION.reduce((a, r) => a + r.gpuMs, 0);
+
+// Composition of each chunk on its own, GPU time inside the profiler's own
+// gpu_user_annotation bands. Everything but attention is the same in both.
+const CHUNK_COMPOSITION: { block: Bi; c1: number; c2: number }[] = [
+  { block: { zh: "全注意力 (MLA)", en: "full attention (MLA)" }, c1: 120.6, c2: 911.82 },
+  { block: { zh: "MoE FFN", en: "MoE FFN" }, c1: 526.51, c2: 524.12 },
+  { block: { zh: "KDA", en: "KDA" }, c1: 276.75, c2: 272.07 },
+];
+const CHUNK_GPU_MS = [1135.36, 1916.59];
+const CHUNK_WINDOW = ["0.00 – 1.14 s", "1.14 – 3.06 s"];
+// share of each chunk's wall-clock window occupied by _fwd_kernel alone
+const CHUNK_ATTN_DENSITY = [6.1, 45.4];
+
 // Clean wall-clock reference, measured on a server built without the ranges
 // (best of three, after a warm first call). Summed kernel time lands within 1% of
 // it at every size, so prefill is GPU-saturated throughout and the composition
@@ -969,10 +1019,237 @@ function ChunkSplit() {
       )}
       <Callout tone="info" title={t({ zh: "在 Perfetto 里为什么看不见", en: "Why you cannot see this in Perfetto" })}>
         {t({
-          zh: `在那份 trace 里注意力占 GPU 时间的 ${ATTN_TIME_SHARE}%， 却只占切片数量的 ${ATTN_SLICE_SHARE}%——8727 个核函数里只有 48 个。 而且 93% 的注意力时间集中在最后 24 个切片上， 位于 3.06 秒 trace 的 t≈1.5–3.05 秒。 在前 2.8 秒里随便放大， 几乎看不到注意力。 要按总时长排序， 不能靠眼睛看密度。`,
-          en: `Attention is ${ATTN_TIME_SHARE}% of GPU time in that trace but only ${ATTN_SLICE_SHARE}% of its slices — 48 out of 8727. And 93% of the attention time is in the last 24 of them, between t≈1.5 s and 3.05 s of a 3.06 s trace. Zoom anywhere in the first 2.8 seconds and you will see almost none of it. Sort by total duration; do not judge by visual density.`,
+          zh: `在那份 trace 里注意力占 GPU 时间的 ${ATTN_TIME_SHARE}%， 却只占切片数量的 ${ATTN_SLICE_SHARE}%——8727 个核函数里只有 48 个。 而且 92.8% 的注意力时间集中在后 24 个切片上， 位于 3.06 秒 trace 的 t≈1.17–3.05 秒。 在前 1.14 秒（chunk 1）里放大， 注意力只占那段窗口的 6.1%。 要按总时长排序， 不能靠眼睛看密度。下一节把这件事量化到底。`,
+          en: `Attention is ${ATTN_TIME_SHARE}% of GPU time in that trace but only ${ATTN_SLICE_SHARE}% of its slices — 48 out of 8727. And 92.8% of the attention time is in the later 24 of them, between t≈1.17 s and 3.05 s of a 3.06 s trace. Zoom into the first 1.14 s — chunk 1 — and attention is 6.1% of that window. Sort by total duration; do not judge by visual density. The next section quantifies this.`,
         })}
       </Callout>
+    </Stack>
+  );
+}
+
+function PerfettoCrossCheck() {
+  const { lang, t } = useT();
+  return (
+    <Stack gap={14}>
+      <H2>
+        {t({
+          zh: "用 Perfetto 复核：数字是对的，看错的是那条轨道",
+          en: "Cross-checked in Perfetto: the numbers hold, the wrong track was being read",
+        })}
+      </H2>
+      {lang === "zh" ? (
+        <Text tone="secondary">
+          在 Perfetto 里看 32K 的 trace， 全注意力显得微不足道， 和这一页说的 37.6% 对不上。
+          把同一份 trace 用三条互不共享代码的路径重算—— Perfetto 自己的 <Code>trace_processor</Code>、
+          原始 chrome JSON 直读、 以及 PyTorch 自己投影到设备时间轴上的 <Code>gpu_user_annotation</Code> 区间——
+          <b>三条路径都给出同一个数</b>。 分歧不在数据， 在于 Perfetto 里有两条都标着 <Code>K3/*</Code> 的轨道，
+          而它们给出的答案正好相反。
+        </Text>
+      ) : (
+        <Text tone="secondary">
+          Opened in Perfetto, the 32K trace makes full attention look negligible, which does not
+          match the 37.6% on this page. Recomputing the same trace along three paths that share no
+          code — Perfetto's own <Code>trace_processor</Code>, a direct re-read of the chrome JSON,
+          and the <Code>gpu_user_annotation</Code> ranges PyTorch itself projects onto the device
+          timeline — <b>all three land on the same number</b>. The disagreement is not in the data.
+          It is that Perfetto shows two tracks both labelled <Code>K3/*</Code>, and they answer
+          opposite questions.
+        </Text>
+      )}
+
+      <Grid columns={3} gap={16}>
+        <Stat
+          value="2.5%"
+          label={t({
+            zh: "K3/full_attn 占 CPU 轨道上 K3 区间的时长",
+            en: "K3/full_attn share of the CPU track's K3 ranges",
+          })}
+          tone="danger"
+        />
+        <Stat
+          value="39.4%"
+          label={t({
+            zh: "同一个区间占 GPU 轨道的时长",
+            en: "the same range's share of the GPU track",
+          })}
+          tone="success"
+        />
+        <Stat
+          value="0.03%"
+          label={t({
+            zh: "核函数区间重叠率（求和不会重复计数）",
+            en: "kernel interval overlap (summing does not double count)",
+          })}
+        />
+      </Grid>
+
+      <Stack gap={8}>
+        <H3>
+          {t({
+            zh: "同样四个区间，主机侧和设备侧的答案正好相反",
+            en: "The same four ranges, measured on the host and on the device",
+          })}
+        </H3>
+        <Table
+          headers={[
+            t({ zh: "record_function 区间", en: "record_function range" }),
+            t({ zh: "CPU 线程 (sglang::scheduler_TP0)", en: "CPU thread (sglang::scheduler_TP0)" }),
+            t({ zh: "占比", en: "share" }),
+            t({ zh: "GPU 设备时间", en: "GPU device time" }),
+            t({ zh: "占比", en: "share" }),
+          ]}
+          rows={TRACK_INVERSION.map((r) => [
+            <Code>{r.block}</Code>,
+            `${fmt(r.cpuMs, 1)} ms`,
+            `${fmt((100 * r.cpuMs) / CPU_TRACK_TOTAL, 1)}%`,
+            `${fmt(r.gpuMs, 1)} ms`,
+            `${fmt((100 * r.gpuMs) / GPU_TRACK_TOTAL, 1)}%`,
+          ])}
+          columnAlign={["left", "right", "right", "right", "right"]}
+          rowTone={TRACK_INVERSION.map((r) =>
+            r.block === "K3/full_attn" || r.block === "K3/kda" ? "warning" : undefined,
+          )}
+          striped
+        />
+        {lang === "zh" ? (
+          <Text size="small" tone="tertiary">
+            CPU 轨道上 KDA 占 85.3%、全注意力占 2.5%； GPU 轨道上正好换过来。 原因是 prefill 阶段主机跑在设备前面，
+            队列一满就阻塞在当时恰好打开的那个区间里—— 这份 trace 的 GPU 在 3.06 秒里忙了 {GPU_BUSY}%， 所以主机几乎一直在等。
+            主机侧区间的宽度衡量的是「在哪里被堵住」， 不是「花了多少算力」。 本页所有构成数字都用设备侧核函数时长，
+            从来没用过主机侧区间宽度。
+          </Text>
+        ) : (
+          <Text size="small" tone="tertiary">
+            On the CPU track KDA is 85.3% and full attention 2.5%; on the GPU track it is the other
+            way round. The host runs ahead of the device during prefill and blocks wherever the
+            launch queue happens to fill — the GPU in this trace is busy {GPU_BUSY}% of its 3.06 s
+            span, so the host is stalled almost throughout. Host-side range width measures where it
+            stalled, not what cost compute. Every composition number on this page uses device-side
+            kernel duration; none uses host range width.
+          </Text>
+        )}
+      </Stack>
+
+      <Stack gap={8}>
+        <H3>
+          {t({
+            zh: "就算看对了轨道，两个 chunk 也长得不一样",
+            en: "Even on the right track, the two chunks do not look alike",
+          })}
+        </H3>
+        <Table
+          headers={[
+            "",
+            `chunk 1 · ${CHUNK_WINDOW[0]}`,
+            `chunk 2 · ${CHUNK_WINDOW[1]}`,
+          ]}
+          rows={[
+            ...CHUNK_COMPOSITION.map((r) => [
+              t(r.block),
+              `${fmt(r.c1, 1)} ms  (${fmt((100 * r.c1) / CHUNK_GPU_MS[0], 1)}%)`,
+              `${fmt(r.c2, 1)} ms  (${fmt((100 * r.c2) / CHUNK_GPU_MS[1], 1)}%)`,
+            ]),
+            [
+              t({ zh: "该 chunk 核函数总时间", en: "kernel time in the chunk" }),
+              `${fmt(CHUNK_GPU_MS[0], 1)} ms`,
+              `${fmt(CHUNK_GPU_MS[1], 1)} ms`,
+            ],
+            [
+              t({ zh: "_fwd_kernel 占该窗口墙钟", en: "_fwd_kernel share of that window" }),
+              `${fmt(CHUNK_ATTN_DENSITY[0], 1)}%`,
+              `${fmt(CHUNK_ATTN_DENSITY[1], 1)}%`,
+            ],
+          ]}
+          columnAlign={["left", "right", "right"]}
+          rowTone={["warning", undefined, undefined, undefined, "warning"]}
+          striped
+        />
+        {lang === "zh" ? (
+          <Text size="small" tone="tertiary">
+            MoE 和 KDA 两个 chunk 几乎一模一样（526.5 对 524.1 ms、276.8 对 272.1 ms）—— 它们对 token 数线性，
+            而两个 chunk 都是 16384 个 token。 只有注意力变了。 所以 37.6% 是两个 chunk 的平均：
+            滚到 trace 开头看到的是 10.6%， 滚到后面才是 47.6%。
+          </Text>
+        ) : (
+          <Text size="small" tone="tertiary">
+            MoE and KDA are near-identical across the chunks (526.5 vs 524.1 ms, 276.8 vs 272.1 ms)
+            — both are linear in token count and both chunks carry 16384 tokens. Only attention
+            moves. So 37.6% is the average of the two: scroll to the start of the trace and you see
+            10.6%, scroll to the end and you see 47.6%.
+          </Text>
+        )}
+      </Stack>
+
+      <CollapsibleSection
+        title={t({
+          zh: "三条独立路径的复核结果，以及 Perfetto 自己丢掉的两个事件",
+          en: "The three independent paths, and the two events Perfetto itself drops",
+        })}
+      >
+        <Stack gap={10}>
+          <Table
+            headers={[
+              t({ zh: "量", en: "quantity" }),
+              t({ zh: "已发布 (bucketize.py)", en: "published (bucketize.py)" }),
+              t({ zh: "原始 JSON 直读", en: "raw JSON re-parse" }),
+              t({ zh: "Perfetto trace_processor", en: "Perfetto trace_processor" }),
+              t({ zh: "PyTorch 自己的 GPU 区间", en: "PyTorch's own GPU bands" }),
+            ]}
+            rows={VERIFY.map((r) => [t(r.q), r.pub, r.raw, r.tp, r.band])}
+            columnAlign={["left", "right", "right", "right", "right"]}
+            striped
+          />
+          {lang === "zh" ? (
+            <Text size="small">
+              最后一列值得单独说： <Code>gpu_user_annotation</Code> 是 PyTorch profiler 自己把
+              <Code>record_function</Code> 区间投影到设备时间轴的结果， 和我们的 correlation-id 归因完全无关。
+              这些区间横跨 1031.98 ms， 我们的归因累加出 1031.97 ms—— GPU 忙碌率 {GPU_BUSY}%，
+              所以区间宽度和区间内核函数时长本来就该是同一个数。 改用「哪个区间盖住这个核函数」重做整张表，
+              得到 37.57%， 已发布的是 37.56%。 逐核函数比对， 两种方法在 8961 个派发里只有 18.6 ms 分歧（0.6%），
+              全部是 correlation 归到 other、区间归到某个块的边缘核函数。
+            </Text>
+          ) : (
+            <Text size="small">
+              The last column is worth separating out: <Code>gpu_user_annotation</Code> is the
+              PyTorch profiler's own projection of the <Code>record_function</Code> ranges onto the
+              device timeline, computed independently of our correlation-id walk. Those bands span
+              1031.98 ms where our walk sums 1031.97 ms of kernels — at {GPU_BUSY}% GPU busy, a
+              band's width and the kernels inside it have to be the same number. Reattributing every
+              kernel by which band contains it and rebuilding the whole table gives 37.57% against
+              the published 37.56%. Compared kernel by kernel, the two methods disagree on 18.6 ms
+              out of 8961 dispatches (0.6%), all of it edge kernels the correlation walk leaves in{" "}
+              <Code>other</Code> and the band claims for a block.
+            </Text>
+          )}
+          <Callout
+            tone="warning"
+            title={t({
+              zh: "别拿 Perfetto 的求和当总数",
+              en: "Do not take Perfetto's sums as the totals",
+            })}
+          >
+            {t({
+              zh: "Perfetto 的 Chrome-JSON 导入器会静默丢弃无法在同一轨道上嵌套放置的切片： 8961 个派发里丢了 2 个， 其中一个正是 35.4 ms 的 _fwd_kernel。 所以它报 47 次 880.73 ms， 而真值是 48 次 916.14 ms（24 个 MLA 层 × 2 个 chunk）。 用它做查询和结构分析很好， 求总量要回原始 JSON。",
+              en: "Perfetto's Chrome-JSON importer silently drops slices it cannot place by nesting on one track: 2 of 8961 dispatches here, one of them a 35.4 ms _fwd_kernel. So it reports 47 dispatches at 880.73 ms where the truth is 48 at 916.14 ms — 24 MLA layers times 2 chunks. Excellent for querying and structure; go back to the raw JSON for totals.",
+            })}
+          </Callout>
+          {lang === "zh" ? (
+            <Text size="small" tone="tertiary">
+              另外核对了一件事： 把所有核函数区间取并集是 {fmt(GPU_UNION_MS, 2)} ms， 直接求和是{" "}
+              {fmt(GPU_SUM_MS, 2)} ms， 差 0.034%。 也就是说 GPU 上几乎没有并发， 按时长求和不会重复计数——
+              这正是本页所有构成数字的前提。 首末核函数跨度 {fmt(GPU_SPAN_MS, 2)} ms， GPU 忙碌率 {GPU_BUSY}%。
+            </Text>
+          ) : (
+            <Text size="small" tone="tertiary">
+              One more check: the union of all kernel intervals is {fmt(GPU_UNION_MS, 2)} ms against
+              a naive sum of {fmt(GPU_SUM_MS, 2)} ms, a 0.034% difference. Almost nothing runs
+              concurrently, so summing durations does not double count — which is the assumption
+              every composition number on this page rests on. First to last kernel spans{" "}
+              {fmt(GPU_SPAN_MS, 2)} ms, giving {GPU_BUSY}% GPU busy.
+            </Text>
+          )}
+        </Stack>
+      </CollapsibleSection>
     </Stack>
   );
 }
@@ -1218,6 +1495,7 @@ export default function KimiK3KdaDecodeShare() {
       <AttTrace />
       <PrefillSection />
       <ChunkSplit />
+      <PerfettoCrossCheck />
       <PrefillVsDecode />
       <Takeaways />
       <Method />
