@@ -754,7 +754,7 @@
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 003</span></div>
         <div class="entry-body">
           <h3>Faster kernels, slower engine: TokenSpeed vs SGLang on Kimi-K3</h3>
-          <p>TokenSpeed's Gluon kernels beat SGLang's on every block of Kimi-K3 — MLA decode 2.77x, MoE routing 6.51x, total device compute 1.21x — while issuing 30% fewer launches and the same 187 collectives per step. The engine is still 1.14x slower at batch 1 and 3.7x slower at concurrency 8, so the deficit is between the kernels, not inside them.</p>
+          <p>TokenSpeed uses 17.6% less non-collective device time in graph-off traces, yet is 1.14x slower in graph-on batch-1 serving and about 3.7x slower at concurrency 8/32. Pinned code links and three follow-up experiments separate what the data proves from the leading host, scheduler and FlatKV hypotheses.</p>
           <div class="tags"><span class="tag">TokenSpeed</span><span class="tag">Gluon vs AITER</span><span class="tag">MI355X</span><span class="tag">kernel trace</span></div>
         </div>
         <div class="links"><a class="link primary" href="./tokenspeed-vs-sglang-kimi-k3.html">Deep dive →</a></div>
