@@ -387,18 +387,18 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <animate attributeName="opacity" from="0" to="1" dur=".6s" begin="2.6s" fill="freeze"/>
           <line x1="474" y1="96.5" x2="474" y2="245.6" stroke="#ff5f92" stroke-width="1.2" stroke-dasharray="3 2" marker-start="url(#ah)" marker-end="url(#ah)"/>
           <rect x="484" y="152" width="86" height="34" fill="#141a1e" stroke="#ff5f92" stroke-width="1"/>
-          <text class="diag-num" x="527" y="167" text-anchor="middle" fill="#ff5f92">3.7x</text>
-          <text class="diag-label" x="527" y="179" text-anchor="middle" fill="#ff5f92">at conc 32</text>
+          <text class="diag-num" x="527" y="167" text-anchor="middle" style="fill:#ff5f92">3.7x</text>
+          <text class="diag-label" x="527" y="179" text-anchor="middle" style="fill:#ff5f92">at conc 32</text>
         </g>
 
         <!-- legend -->
         <g transform="translate(600,44)">
           <line x1="0" y1="0" x2="22" y2="0" stroke="#5ef2a0" stroke-width="2.6"/>
-          <text class="diag-text" x="28" y="4" fill="#5ef2a0">TokenSpeed</text>
+          <text class="diag-text" x="28" y="4" style="fill:#5ef2a0">TokenSpeed</text>
           <line x1="0" y1="18" x2="22" y2="18" stroke="#ffb44d" stroke-width="2.6"/>
-          <text class="diag-text" x="28" y="22" fill="#ffb44d">SGLang nospec</text>
+          <text class="diag-text" x="28" y="22" style="fill:#ffb44d">SGLang nospec</text>
           <line x1="0" y1="36" x2="22" y2="36" stroke="#ffb44d" stroke-width="2" stroke-dasharray="3 3"/>
-          <text class="diag-text" x="28" y="40" fill="#ffb44d">SGLang DSpark</text>
+          <text class="diag-text" x="28" y="40" style="fill:#ffb44d">SGLang DSpark</text>
         </g>
       </svg>
     </div>
@@ -462,7 +462,7 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <animate attributeName="width" from="0" to="582" dur="2.6s" begin="0.3s" fill="freeze"/>
         </rect>
         <line x1="612" y1="70" x2="612" y2="124" stroke="#ff5f92" stroke-width="1.5" stroke-dasharray="3 2"/>
-        <text class="diag-num" x="618" y="98" fill="#ff5f92">0.94</text>
+        <text class="diag-num" x="618" y="98" style="fill:#ff5f92">0.94</text>
         <text class="diag-label" x="30" y="134">page ratio</text>
 
         <!-- demand bar, far longer -->
@@ -471,12 +471,12 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
         <rect x="31" y="179" width="0" height="24" fill="#57c7ff" opacity=".28">
           <animate attributeName="width" from="0" to="818" dur="2.6s" begin="0.3s" fill="freeze"/>
         </rect>
-        <text class="diag-label" x="660" y="196" fill="#57c7ff">overcommitted</text>
+        <text class="diag-label" x="660" y="196" style="fill:#57c7ff">overcommitted</text>
 
         <!-- retract flashes -->
         <g opacity="0">
           <animate attributeName="opacity" from="0" to="1" dur=".4s" begin="2.9s" fill="freeze"/>
-          <text class="diag-label" x="30" y="238" fill="#ff5f92">flat retract ... to unwedge the pool</text>
+          <text class="diag-label" x="30" y="238" style="fill:#ff5f92">flat retract ... to unwedge the pool</text>
           <g fill="#ff5f92">
             <rect x="250" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="2.9s" repeatCount="indefinite"/></rect>
             <rect x="262" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.0s" repeatCount="indefinite"/></rect>
@@ -484,20 +484,20 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
             <rect x="286" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.2s" repeatCount="indefinite"/></rect>
             <rect x="298" y="228" width="7" height="12"><animate attributeName="opacity" values="1;.15;1" dur=".5s" begin="3.3s" repeatCount="indefinite"/></rect>
           </g>
-          <text class="diag-num" x="316" y="239" fill="#ff5f92">× 9,256</text>
+          <text class="diag-num" x="316" y="239" style="fill:#ff5f92">× 9,256</text>
         </g>
 
         <!-- outcome stats -->
         <g opacity="0">
           <animate attributeName="opacity" from="0" to="1" dur=".6s" begin="3.4s" fill="freeze"/>
           <line class="axis" x1="30" y1="256" x2="850" y2="256"/>
-          <text class="diag-num" x="30"  y="282" fill="#ff5f92">0.02 tok/s</text>
+          <text class="diag-num" x="30"  y="282" style="fill:#ff5f92">0.02 tok/s</text>
           <text class="diag-label" x="30"  y="294">decode while wedged</text>
-          <text class="diag-num" x="230" y="282" fill="#ff5f92">106</text>
+          <text class="diag-num" x="230" y="282" style="fill:#ff5f92">106</text>
           <text class="diag-label" x="230" y="294">requests queued</text>
-          <text class="diag-num" x="410" y="282" fill="#ff5f92">1 / 128</text>
+          <text class="diag-num" x="410" y="282" style="fill:#ff5f92">1 / 128</text>
           <text class="diag-label" x="410" y="294">completed in 3,600 s</text>
-          <text class="diag-num" x="620" y="282" fill="#5ef2a0">1.29 M tokens</text>
+          <text class="diag-num" x="620" y="282" style="fill:#5ef2a0">1.29 M tokens</text>
           <text class="diag-label" x="620" y="294">SGLang pool, same workload, 0 retracts</text>
         </g>
       </svg>
@@ -562,7 +562,7 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
         <line class="gridline" x1="780" y1="32" x2="780" y2="196"/>
 
         <!-- SGLang track -->
-        <text class="diag-strong" x="30" y="56" fill="#ffb44d">SGLang</text>
+        <text class="diag-strong" x="30" y="56" style="fill:#ffb44d">SGLang</text>
         <text class="diag-label" x="96" y="56">AITER MoE · Triton attention</text>
         <g>
           <rect x="30" y="66" width="0" height="34" fill="#ffb44d" opacity=".92"><animate attributeName="width" from="0" to="396.2" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
@@ -571,18 +571,18 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="675.6" y="66" width="0" height="34" fill="#ffb44d" opacity=".30"><animate attributeName="width" from="0" to="85.9" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
           <rect x="761.5" y="66" width="0" height="34" fill="#67746f" opacity=".55"><animate attributeName="width" from="0" to="48.5" dur="1.4s" begin="0.2s" fill="freeze"/></rect>
           <line x1="810" y1="60" x2="810" y2="106" stroke="#ffb44d" stroke-width="1.6"/>
-          <text class="diag-num" x="816" y="88" fill="#ffb44d">20,769</text>
+          <text class="diag-num" x="816" y="88" style="fill:#ffb44d">20,769</text>
         </g>
         <!-- labels for SGLang segments -->
         <g>
-          <text class="diag-label" x="34" y="88" fill="#0e1215">MoE 10,549</text>
-          <text class="diag-label" x="430" y="88" fill="#0e1215">KDA 3,542</text>
-          <text class="diag-label" x="563" y="88" fill="#0e1215">MLA 3,100</text>
-          <text class="diag-label" x="679" y="88" fill="#dfe7e4">AttnRes 2,288</text>
+          <text class="diag-label" x="34" y="88" style="fill:#0e1215">MoE 10,549</text>
+          <text class="diag-label" x="432" y="88" style="fill:#dfe7e4">KDA 3,542</text>
+          <text class="diag-label" x="563" y="88" style="fill:#dfe7e4">MLA 3,100</text>
+          <text class="diag-label" x="679" y="88" style="fill:#dfe7e4">AttnRes 2,288</text>
         </g>
 
         <!-- TokenSpeed track -->
-        <text class="diag-strong" x="30" y="140" fill="#5ef2a0">TokenSpeed</text>
+        <text class="diag-strong" x="30" y="140" style="fill:#5ef2a0">TokenSpeed</text>
         <text class="diag-label" x="126" y="140">Gluon MoE · Gluon MLA</text>
         <g>
           <rect x="30" y="150" width="0" height="34" fill="#5ef2a0" opacity=".92"><animate attributeName="width" from="0" to="303.7" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
@@ -591,20 +591,21 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="497.9" y="150" width="0" height="34" fill="#5ef2a0" opacity=".30"><animate attributeName="width" from="0" to="70.0" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
           <rect x="567.9" y="150" width="0" height="34" fill="#ff5f92" opacity=".55"><animate attributeName="width" from="0" to="104.6" dur="1.4s" begin="0.5s" fill="freeze"/></rect>
           <line x1="672.5" y1="144" x2="672.5" y2="190" stroke="#5ef2a0" stroke-width="1.6"/>
-          <text class="diag-num" x="678" y="172" fill="#5ef2a0">17,108</text>
+          <text class="diag-num" x="678" y="172" style="fill:#5ef2a0">17,108</text>
         </g>
         <g>
-          <text class="diag-label" x="34" y="172" fill="#08090b">MoE 8,085</text>
-          <text class="diag-label" x="338" y="172" fill="#08090b">KDA 2,905</text>
-          <text class="diag-label" x="447" y="172" fill="#08090b">MLA 1,468</text>
-          <text class="diag-label" x="572" y="172" fill="#dfe7e4">glue 2,786</text>
+          <text class="diag-label" x="34" y="172" style="fill:#08090b">MoE 8,085</text>
+          <text class="diag-label" x="338" y="172" style="fill:#dfe7e4">KDA 2,905</text>
+          <text class="diag-label" x="447" y="172" style="fill:#dfe7e4">MLA 1,468</text>
+          <text class="diag-label" x="501" y="172" style="fill:#dfe7e4">AR 1,865</text>
+          <text class="diag-label" x="572" y="172" style="fill:#dfe7e4">glue 2,786</text>
         </g>
 
         <!-- delta bracket -->
         <g opacity="0">
           <animate attributeName="opacity" from="0" to="1" dur=".6s" begin="2.0s" fill="freeze"/>
           <path d="M672.5,206 L672.5,214 L810,214 L810,206" fill="none" stroke="#5ef2a0" stroke-width="1.2"/>
-          <text class="diag-label" x="741" y="230" text-anchor="middle" fill="#5ef2a0">3,661 µs less compute — and 2,800 µs slower per step in reality</text>
+          <text class="diag-label" x="876" y="230" text-anchor="end" style="fill:#5ef2a0">3,661 µs less compute — yet 2,800 µs slower per step</text>
         </g>
         <!-- glue legend note -->
         <text class="diag-label" x="30" y="252">glue = RMSNorm · residual add · fp8 casts · device copies · generic GEMV</text>
@@ -668,9 +669,9 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="430" y="64" width="0" height="18" fill="#5ef2a0" opacity=".9">
             <animate attributeName="width" from="0" to="45.4" dur="1.2s" begin="0.3s" fill="freeze"/>
           </rect>
-          <text class="diag-num" x="128" y="78" fill="#ffb44d">2,956</text>
-          <text class="diag-num" x="484" y="78" fill="#5ef2a0">454</text>
-          <text class="diag-num" x="560" y="78" fill="#5ef2a0">6.51x</text>
+          <text class="diag-num" x="129" text-anchor="end" y="78" style="fill:#ffb44d">2,956</text>
+          <text class="diag-num" x="484" y="78" style="fill:#5ef2a0">454</text>
+          <text class="diag-num" x="560" y="78" style="fill:#5ef2a0">6.51x</text>
         </g>
         <!-- 2 AttnRes 2288 / 1853 -->
         <g>
@@ -682,9 +683,9 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="430" y="118" width="0" height="18" fill="#5ef2a0" opacity=".9">
             <animate attributeName="width" from="0" to="185.3" dur="1.2s" begin="0.45s" fill="freeze"/>
           </rect>
-          <text class="diag-num" x="162" y="132" fill="#ffb44d">2,288</text>
-          <text class="diag-num" x="624" y="132" fill="#5ef2a0">1,853</text>
-          <text class="diag-num" x="700" y="132" fill="#5ef2a0">1.23x</text>
+          <text class="diag-num" x="196" text-anchor="end" y="132" style="fill:#ffb44d">2,288</text>
+          <text class="diag-num" x="624" y="132" style="fill:#5ef2a0">1,853</text>
+          <text class="diag-num" x="700" y="132" style="fill:#5ef2a0">1.23x</text>
         </g>
         <!-- 3 MLA math 1212 / 438 -->
         <g>
@@ -696,9 +697,9 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="430" y="172" width="0" height="18" fill="#5ef2a0" opacity=".9">
             <animate attributeName="width" from="0" to="43.8" dur="1.2s" begin="0.6s" fill="freeze"/>
           </rect>
-          <text class="diag-num" x="262" y="186" fill="#ffb44d">1,212</text>
-          <text class="diag-num" x="482" y="186" fill="#5ef2a0">438</text>
-          <text class="diag-num" x="558" y="186" fill="#5ef2a0">2.77x</text>
+          <text class="diag-num" x="303" text-anchor="end" y="186" style="fill:#ffb44d">1,212</text>
+          <text class="diag-num" x="482" y="186" style="fill:#5ef2a0">438</text>
+          <text class="diag-num" x="558" y="186" style="fill:#5ef2a0">2.77x</text>
         </g>
         <!-- 4 KDA recurrence 744 / 650 -->
         <g>
@@ -710,9 +711,9 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="430" y="226" width="0" height="18" fill="#5ef2a0" opacity=".9">
             <animate attributeName="width" from="0" to="65.0" dur="1.2s" begin="0.75s" fill="freeze"/>
           </rect>
-          <text class="diag-num" x="312" y="240" fill="#ffb44d">744</text>
-          <text class="diag-num" x="504" y="240" fill="#5ef2a0">650</text>
-          <text class="diag-num" x="576" y="240" fill="#5ef2a0">1.14x</text>
+          <text class="diag-num" x="350" text-anchor="end" y="240" style="fill:#ffb44d">744</text>
+          <text class="diag-num" x="504" y="240" style="fill:#5ef2a0">650</text>
+          <text class="diag-num" x="576" y="240" style="fill:#5ef2a0">1.14x</text>
         </g>
         <!-- 5 expert GEMM 1437 / 2391  (TokenSpeed LOSES) -->
         <g>
@@ -724,9 +725,9 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <rect x="430" y="280" width="0" height="18" fill="#ff5f92" opacity=".9">
             <animate attributeName="width" from="0" to="239.1" dur="1.2s" begin="0.9s" fill="freeze"/>
           </rect>
-          <text class="diag-num" x="240" y="294" fill="#ffb44d">1,437</text>
-          <text class="diag-num" x="678" y="294" fill="#ff5f92">2,391</text>
-          <text class="diag-num" x="754" y="294" fill="#ff5f92">0.60x</text>
+          <text class="diag-num" x="281" text-anchor="end" y="294" style="fill:#ffb44d">1,437</text>
+          <text class="diag-num" x="678" y="294" style="fill:#ff5f92">2,391</text>
+          <text class="diag-num" x="754" y="294" style="fill:#ff5f92">0.60x</text>
         </g>
         <text class="diag-label" x="20" y="318">bars extend from the zero axis · right-hand number is TokenSpeed's speedup</text>
       </svg>
@@ -759,22 +760,22 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           </marker>
         </defs>
         <!-- SGLang pipeline -->
-        <text class="diag-strong" x="24" y="34" fill="#ffb44d">SGLang · four kernels, three round trips through HBM</text>
+        <text class="diag-strong" x="24" y="34" style="fill:#ffb44d">SGLang · four kernels, three round trips through HBM</text>
         <g>
           <rect x="24"  y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
-          <text class="diag-text" x="99" y="70" text-anchor="middle" fill="#dfe7e4">grouped_topk</text>
+          <text class="diag-text" x="99" y="70" text-anchor="middle" style="fill:#dfe7e4">grouped_topk</text>
           <text class="diag-label" x="99" y="84" text-anchor="middle">scores → top-16</text>
 
           <rect x="214" y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
-          <text class="diag-text" x="289" y="70" text-anchor="middle" fill="#dfe7e4">opus_moe_sorting</text>
+          <text class="diag-text" x="289" y="70" text-anchor="middle" style="fill:#dfe7e4">opus_moe_sorting</text>
           <text class="diag-label" x="289" y="84" text-anchor="middle">multi-phase</text>
 
           <rect x="404" y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
-          <text class="diag-text" x="479" y="70" text-anchor="middle" fill="#dfe7e4">fused_mx_quant</text>
+          <text class="diag-text" x="479" y="70" text-anchor="middle" style="fill:#dfe7e4">fused_mx_quant</text>
           <text class="diag-label" x="479" y="84" text-anchor="middle">quant + sort</text>
 
           <rect x="594" y="48" width="150" height="46" fill="none" stroke="#ffb44d" stroke-width="1.3"/>
-          <text class="diag-text" x="669" y="70" text-anchor="middle" fill="#dfe7e4">moe_reduction</text>
+          <text class="diag-text" x="669" y="70" text-anchor="middle" style="fill:#dfe7e4">moe_reduction</text>
           <text class="diag-label" x="669" y="84" text-anchor="middle">combine</text>
 
           <line x1="174" y1="71" x2="212" y2="71" stroke="#ffb44d" stroke-width="1.2" marker-end="url(#ah2)"/>
@@ -791,27 +792,27 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
           <circle r="4" fill="#ffb44d">
             <animateMotion dur="2.4s" begin="0.7s" repeatCount="indefinite" path="M554,71 L592,71"/>
           </circle>
-          <text class="diag-label" x="193" y="112" text-anchor="middle" fill="#ffb44d">HBM</text>
-          <text class="diag-label" x="383" y="112" text-anchor="middle" fill="#ffb44d">HBM</text>
-          <text class="diag-label" x="573" y="112" text-anchor="middle" fill="#ffb44d">HBM</text>
+          <text class="diag-label" x="193" y="112" text-anchor="middle" style="fill:#ffb44d">HBM</text>
+          <text class="diag-label" x="383" y="112" text-anchor="middle" style="fill:#ffb44d">HBM</text>
+          <text class="diag-label" x="573" y="112" text-anchor="middle" style="fill:#ffb44d">HBM</text>
 
           <rect x="770" y="48" width="106" height="46" fill="#ffb44d" opacity=".14" stroke="#ffb44d" stroke-width="1"/>
-          <text class="diag-num" x="823" y="70" text-anchor="middle" fill="#ffb44d">2,956 µs</text>
+          <text class="diag-num" x="823" y="70" text-anchor="middle" style="fill:#ffb44d">2,956 µs</text>
           <text class="diag-label" x="823" y="84" text-anchor="middle">per step</text>
         </g>
 
         <!-- TokenSpeed fused -->
-        <text class="diag-strong" x="24" y="160" fill="#5ef2a0">TokenSpeed · one kernel, metadata never leaves the CU</text>
+        <text class="diag-strong" x="24" y="160" style="fill:#5ef2a0">TokenSpeed · one kernel, metadata never leaves the CU</text>
         <g>
           <rect x="24" y="174" width="530" height="46" fill="none" stroke="#5ef2a0" stroke-width="1.5"/>
-          <text class="diag-text" x="289" y="196" text-anchor="middle" fill="#dfe7e4">_kimi3_sigmoid_bias_topk_kernel</text>
+          <text class="diag-text" x="289" y="196" text-anchor="middle" style="fill:#dfe7e4">_kimi3_sigmoid_bias_topk_kernel</text>
           <text class="diag-label" x="289" y="210" text-anchor="middle">sigmoid · bias · top-16 · order — one pass</text>
           <!-- pulse to show single pass -->
           <rect x="25" y="175" width="60" height="44" fill="#5ef2a0" opacity=".18">
             <animate attributeName="x" values="25;494;25" dur="2.4s" repeatCount="indefinite"/>
           </rect>
           <rect x="770" y="174" width="106" height="46" fill="#5ef2a0" opacity=".14" stroke="#5ef2a0" stroke-width="1"/>
-          <text class="diag-num" x="823" y="196" text-anchor="middle" fill="#5ef2a0">454 µs</text>
+          <text class="diag-num" x="823" y="196" text-anchor="middle" style="fill:#5ef2a0">454 µs</text>
           <text class="diag-label" x="823" y="210" text-anchor="middle">per step</text>
         </g>
         <text class="diag-label" x="24" y="240">896 experts · top-16 · 92 MoE layers per decode step</text>
@@ -853,57 +854,53 @@ Capturing prefill buckets (bucket= 512 avail_mem=<span class="r"> 0.03 GB</span>
       <span>bs 1 · ISL 4096</span>
     </div>
     <div class="plate-svg">
-      <svg viewBox="0 0 900 300" role="img" aria-label="Reconciling compute, launches, collectives and end-to-end time">
+      <svg viewBox="0 0 900 326" role="img" aria-label="Reconciling compute, launches, collectives and end-to-end time">
         <!-- four paired gauges -->
         <!-- 1 compute -->
         <g>
           <text class="diag-text" x="24" y="34">device compute / step</text>
           <rect x="24" y="42" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.2s" fill="freeze"/></rect>
-          <text class="diag-num" x="212" y="55" fill="#ffb44d">20,769 µs</text>
+          <text class="diag-num" x="212" y="55" style="fill:#ffb44d">20,769 µs</text>
           <rect x="24" y="64" width="0" height="16" fill="#5ef2a0" opacity=".85"><animate attributeName="width" from="0" to="148.3" dur="1.1s" begin="0.2s" fill="freeze"/></rect>
-          <text class="diag-num" x="180" y="77" fill="#5ef2a0">17,108 µs</text>
-          <text class="diag-label" x="330" y="66" fill="#5ef2a0">TokenSpeed does less work</text>
+          <text class="diag-num" x="180" y="77" style="fill:#5ef2a0">17,108 µs</text>
+          <text class="diag-label" x="330" y="66" style="fill:#5ef2a0">TokenSpeed does less work</text>
         </g>
         <!-- 2 launches -->
         <g>
           <text class="diag-text" x="24" y="112">kernel launches / step</text>
           <rect x="24" y="120" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.45s" fill="freeze"/></rect>
-          <text class="diag-num" x="212" y="133" fill="#ffb44d">3,372</text>
+          <text class="diag-num" x="212" y="133" style="fill:#ffb44d">3,372</text>
           <rect x="24" y="142" width="0" height="16" fill="#5ef2a0" opacity=".85"><animate attributeName="width" from="0" to="126.8" dur="1.1s" begin="0.45s" fill="freeze"/></rect>
-          <text class="diag-num" x="158" y="155" fill="#5ef2a0">2,375</text>
-          <text class="diag-label" x="330" y="144" fill="#5ef2a0">in fewer launches</text>
+          <text class="diag-num" x="158" y="155" style="fill:#5ef2a0">2,375</text>
+          <text class="diag-label" x="330" y="144" style="fill:#5ef2a0">in fewer launches</text>
         </g>
         <!-- 3 collectives -->
         <g>
           <text class="diag-text" x="24" y="190">collective dispatches / step</text>
           <rect x="24" y="198" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.7s" fill="freeze"/></rect>
-          <text class="diag-num" x="212" y="211" fill="#ffb44d">187</text>
+          <text class="diag-num" x="212" y="211" style="fill:#ffb44d">187</text>
           <rect x="24" y="220" width="0" height="16" fill="#5ef2a0" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.7s" fill="freeze"/></rect>
-          <text class="diag-num" x="212" y="233" fill="#5ef2a0">187</text>
-          <text class="diag-label" x="330" y="222" fill="#57c7ff">with identical communication</text>
+          <text class="diag-num" x="212" y="233" style="fill:#5ef2a0">187</text>
+          <text class="diag-label" x="330" y="222" style="fill:#57c7ff">with identical communication</text>
         </g>
         <!-- 4 end to end -->
         <g>
           <text class="diag-text" x="24" y="268">end-to-end step, graph ON</text>
           <rect x="24" y="276" width="0" height="16" fill="#ffb44d" opacity=".85"><animate attributeName="width" from="0" to="157.3" dur="1.1s" begin="0.95s" fill="freeze"/></rect>
-          <text class="diag-num" x="189" y="289" fill="#ffb44d">19.39 ms</text>
-          <rect x="24" y="298" width="0" height="0" fill="#ff5f92"/>
-        </g>
-        <!-- TokenSpeed e2e bar drawn above baseline for space -->
-        <g>
-          <rect x="270" y="276" width="0" height="16" fill="#ff5f92" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.95s" fill="freeze"/></rect>
-          <text class="diag-num" x="458" y="289" fill="#ff5f92">22.19 ms</text>
-          <text class="diag-label" x="540" y="289" fill="#ff5f92">and takes 14% longer</text>
+          <text class="diag-num" x="189" y="289" style="fill:#ffb44d">19.39 ms</text>
+          <rect x="24" y="298" width="0" height="16" fill="#ff5f92" opacity=".85"><animate attributeName="width" from="0" to="180" dur="1.1s" begin="0.95s" fill="freeze"/></rect>
+          <text class="diag-num" x="212" y="311" style="fill:#ff5f92">22.19 ms</text>
+          <text class="diag-label" x="330" y="311" style="fill:#ff5f92">and takes 14% longer</text>
         </g>
         <!-- verdict box -->
         <g opacity="0">
           <animate attributeName="opacity" from="0" to="1" dur=".7s" begin="2.1s" fill="freeze"/>
           <rect x="600" y="30" width="278" height="120" fill="#141a1e" stroke="#5ef2a0" stroke-width="1"/>
-          <text class="diag-strong" x="618" y="54" fill="#5ef2a0">the only explanation left</text>
+          <text class="diag-strong" x="618" y="54" style="fill:#5ef2a0">the only explanation left</text>
           <text class="diag-text" x="618" y="76">not the kernels — they are faster</text>
           <text class="diag-text" x="618" y="96">not launch overhead — 30% fewer</text>
           <text class="diag-text" x="618" y="116">not collective count — identical</text>
-          <text class="diag-strong" x="618" y="138" fill="#dfe7e4">→ the time is between the kernels</text>
+          <text class="diag-strong" x="618" y="138" style="fill:#dfe7e4">→ the time is between the kernels</text>
         </g>
       </svg>
     </div>
