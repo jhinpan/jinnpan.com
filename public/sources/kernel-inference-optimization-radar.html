@@ -73,17 +73,12 @@
     button { cursor: pointer; }
 
     .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 30;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 20px;
-      align-items: center;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
       padding: 14px clamp(14px, 2.5vw, 32px);
       border-bottom: 1px solid var(--line);
-      background: color-mix(in srgb, var(--panel) 94%, transparent);
-      backdrop-filter: blur(8px);
+      background: var(--panel);
     }
     .backlink {
       display: inline-block;
@@ -105,8 +100,29 @@
     .actions {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
+      justify-content: flex-start;
       gap: 7px;
+    }
+    .lang-switch {
+      display: inline-flex;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+    }
+    .lang-switch button {
+      min-height: 32px;
+      padding: 5px 9px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .lang-switch button:last-child { border-right: 0; }
+    body[data-lang="zh"] .lang-switch button[data-set-lang="zh"],
+    body[data-lang="en"] .lang-switch button[data-set-lang="en"] {
+      color: white;
+      background: var(--accent);
     }
     .btn {
       min-height: 34px;
@@ -122,7 +138,7 @@
     .btn.danger { color: var(--red); }
 
     main {
-      width: min(1800px, calc(100% - 24px));
+      width: calc(100% - 28px);
       margin: 0 auto;
       padding: 18px 0 50px;
     }
@@ -181,7 +197,7 @@
 
     .board {
       display: grid;
-      grid-template-columns: repeat(4, minmax(275px, 1fr));
+      grid-template-columns: repeat(4, minmax(320px, 1fr));
       gap: 10px;
       align-items: start;
       overflow-x: auto;
@@ -199,9 +215,6 @@
       background: var(--accent-soft);
     }
     .column-head {
-      position: sticky;
-      top: 91px;
-      z-index: 5;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -280,14 +293,24 @@
     .badge.direct, .badge.high { color: var(--accent); background: var(--accent-soft); }
     .card h3 {
       margin: 8px 0 5px;
+      min-height: 32px;
       font-size: 12px;
       line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .summary {
       margin: 0;
+      min-height: 43px;
       color: var(--muted);
       font-size: 10px;
       line-height: 1.42;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .card-meta {
       display: flex;
@@ -425,11 +448,8 @@
       *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
     }
     @media (max-width: 1150px) {
-      .topbar { position: static; grid-template-columns: 1fr; }
-      .actions { justify-content: flex-start; }
       .filters { grid-template-columns: repeat(3, 1fr); }
       .filters input { grid-column: 1 / -1; }
-      .column-head { top: 0; }
       .pr-grid { grid-template-columns: repeat(2, 1fr); }
       .pr:nth-child(3n) { border-right: 1px solid var(--line); }
       .pr:nth-child(2n) { border-right: 0; }
@@ -449,7 +469,7 @@
     }
   </style>
 </head>
-<body>
+<body data-lang="zh">
   <header class="topbar">
     <div>
       <a class="backlink" href="/sources/">← jinnpan.com / sources</a>
@@ -457,74 +477,77 @@
       <p class="subtitle">AITER · FlyDSL · SGLang · vLLM · Kimi · DeepSeek · Qwen · GLM · snapshot 2026-08-17</p>
     </div>
     <div class="actions">
-      <button class="btn primary" id="shareBtn" type="button">复制分享链接</button>
-      <button class="btn" id="briefBtn" type="button">复制 Agent Brief</button>
-      <button class="btn" id="exportBtn" type="button">导出 JSON</button>
-      <button class="btn" id="importBtn" type="button">导入 JSON</button>
-      <button class="btn danger" id="resetBoardBtn" type="button">重置进度</button>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-set-lang="zh">中文</button>
+        <button type="button" data-set-lang="en">EN</button>
+      </div>
+      <button class="btn primary" id="shareBtn" type="button" data-zh="复制分享链接" data-en="Copy share link">复制分享链接</button>
+      <button class="btn" id="briefBtn" type="button" data-zh="复制 Agent Brief" data-en="Copy Agent Brief">复制 Agent Brief</button>
+      <button class="btn" id="exportBtn" type="button" data-zh="导出 JSON" data-en="Export JSON">导出 JSON</button>
+      <button class="btn" id="importBtn" type="button" data-zh="导入 JSON" data-en="Import JSON">导入 JSON</button>
+      <button class="btn danger" id="resetBoardBtn" type="button" data-zh="重置进度" data-en="Reset progress">重置进度</button>
       <input id="importFile" type="file" accept="application/json,.json" hidden />
     </div>
   </header>
 
   <main>
     <section class="notice">
-      <span><strong>用法：</strong>拖动卡片或使用卡片底部的状态菜单。 进度保存在当前浏览器；“复制分享链接”会把状态快照写进 URL。</span>
-      <span>静态页面不提供多人实时同步；共享状态源建议后续接 GitHub Projects。</span>
+      <span data-zh="用法： 拖动卡片或使用卡片底部的状态菜单。 进度保存在当前浏览器；“复制分享链接”会把状态快照写进 URL。" data-en="Usage: drag cards or use the status menu. Progress is stored in this browser; “Copy share link” puts a board snapshot in the URL."><strong>用法：</strong>拖动卡片或使用卡片底部的状态菜单。 进度保存在当前浏览器；“复制分享链接”会把状态快照写进 URL。</span>
+      <span data-zh="静态页面不提供多人实时同步；共享状态源建议后续接 GitHub Projects。" data-en="This static page does not provide real-time multi-user sync; GitHub Projects is the recommended shared state source.">静态页面不提供多人实时同步；共享状态源建议后续接 GitHub Projects。</span>
     </section>
 
     <section class="stats" aria-label="Board statistics">
-      <div class="stat"><strong id="visibleCount">0</strong><span>当前可见</span></div>
-      <div class="stat"><strong id="readyCount">0</strong><span>Ready / 可开工</span></div>
-      <div class="stat"><strong id="progressCount">0</strong><span>In Progress / 进行中</span></div>
-      <div class="stat"><strong id="unassignedCount">0</strong><span>未分配 owner</span></div>
-      <div class="stat"><strong id="prCount">18</strong><span>活跃 PR 重叠</span></div>
+      <div class="stat"><strong id="visibleCount">0</strong><span data-zh="当前可见" data-en="Visible items">当前可见</span></div>
+      <div class="stat"><strong id="readyCount">0</strong><span data-zh="Ready / 可开工" data-en="Ready">Ready / 可开工</span></div>
+      <div class="stat"><strong id="progressCount">0</strong><span data-zh="In Progress / 进行中" data-en="In Progress">In Progress / 进行中</span></div>
+      <div class="stat"><strong id="unassignedCount">0</strong><span data-zh="未分配 owner" data-en="Unassigned">未分配 owner</span></div>
+      <div class="stat"><strong id="prCount">18</strong><span data-zh="活跃 PR 重叠" data-en="Active PR overlaps">活跃 PR 重叠</span></div>
     </section>
 
     <section class="filters" aria-label="Board filters">
-      <input id="search" type="search" placeholder="搜索 title、模型、layer、下一步…" />
-      <select id="repoFilter"><option value="all">全部仓库</option><option>AITER</option><option>FlyDSL</option><option>SGLang</option><option>vLLM</option></select>
-      <select id="modelFilter"><option value="all">全部模型</option><option>Kimi</option><option>DeepSeek</option><option>Qwen</option><option>GLM</option><option>Multi</option></select>
-      <select id="laneFilter"><option value="all">全部类型</option><option>Kernel</option><option>Correctness</option><option>Compiler</option><option>E2E</option><option>Infra</option></select>
-      <select id="priorityFilter"><option value="all">全部优先级</option><option>P0</option><option>P1</option><option>P2</option></select>
-      <select id="ownerFilter"><option value="all">全部 ownership</option><option value="unassigned">未分配</option><option value="assigned">已有 owner</option></select>
-      <button class="btn" id="resetFiltersBtn" type="button">清空筛选</button>
+      <input id="search" type="search" placeholder="搜索 title、模型、layer、下一步…" data-placeholder-zh="搜索 title、模型、layer、下一步…" data-placeholder-en="Search title, model, layer, next step…" />
+      <select id="repoFilter"><option value="all" data-zh="全部仓库" data-en="All repositories">全部仓库</option><option>AITER</option><option>FlyDSL</option><option>SGLang</option><option>vLLM</option></select>
+      <select id="modelFilter"><option value="all" data-zh="全部模型" data-en="All models">全部模型</option><option>Kimi</option><option>DeepSeek</option><option>Qwen</option><option>GLM</option><option>Multi</option></select>
+      <select id="laneFilter"><option value="all" data-zh="全部类型" data-en="All lanes">全部类型</option><option>Kernel</option><option>Correctness</option><option>Compiler</option><option>E2E</option><option>Infra</option></select>
+      <select id="priorityFilter"><option value="all" data-zh="全部优先级" data-en="All priorities">全部优先级</option><option>P0</option><option>P1</option><option>P2</option></select>
+      <select id="ownerFilter"><option value="all" data-zh="全部 ownership" data-en="All ownership">全部 ownership</option><option value="unassigned" data-zh="未分配" data-en="Unassigned">未分配</option><option value="assigned" data-zh="已有 owner" data-en="Assigned">已有 owner</option></select>
+      <button class="btn" id="resetFiltersBtn" type="button" data-zh="清空筛选" data-en="Clear filters">清空筛选</button>
     </section>
 
     <section class="board" id="board" aria-label="Optimization kanban board">
       <section class="column" data-status="backlog">
-        <header class="column-head"><div><div class="column-title">Backlog / 待评估</div><div class="column-sub">需要补 profile、scope 或 ownership</div></div><span class="column-count">0</span></header>
+        <header class="column-head"><div><div class="column-title" data-zh="Backlog / 待评估" data-en="Backlog">Backlog / 待评估</div><div class="column-sub" data-zh="需要补 profile、scope 或 ownership" data-en="Needs profiling, scope, or ownership">需要补 profile、scope 或 ownership</div></div><span class="column-count">0</span></header>
         <div class="dropzone"></div>
       </section>
       <section class="column" data-status="ready">
-        <header class="column-head"><div><div class="column-title">Ready / 可开工</div><div class="column-sub">边界明确， 可以写计划或最小 repro</div></div><span class="column-count">0</span></header>
+        <header class="column-head"><div><div class="column-title" data-zh="Ready / 可开工" data-en="Ready" >Ready / 可开工</div><div class="column-sub" data-zh="边界明确， 可以写计划或最小 repro" data-en="Clear boundary; ready for a plan or minimal repro">边界明确， 可以写计划或最小 repro</div></div><span class="column-count">0</span></header>
         <div class="dropzone"></div>
       </section>
       <section class="column" data-status="progress">
-        <header class="column-head"><div><div class="column-title">In Progress / 进行中</div><div class="column-sub">已有 owner 或正在实施</div></div><span class="column-count">0</span></header>
+        <header class="column-head"><div><div class="column-title" data-zh="In Progress / 进行中" data-en="In Progress">In Progress / 进行中</div><div class="column-sub" data-zh="已有 owner 或正在实施" data-en="Owned or actively being implemented">已有 owner 或正在实施</div></div><span class="column-count">0</span></header>
         <div class="dropzone"></div>
       </section>
       <section class="column" data-status="watch">
-        <header class="column-head"><div><div class="column-title">Watch / 阻塞或重叠</div><div class="column-sub">先 review 依赖、PR 或上游决定</div></div><span class="column-count">0</span></header>
+        <header class="column-head"><div><div class="column-title" data-zh="Watch / 阻塞或重叠" data-en="Watch / Blocked">Watch / 阻塞或重叠</div><div class="column-sub" data-zh="先 review 依赖、PR 或上游决定" data-en="Review dependencies, PRs, or upstream decisions first">先 review 依赖、PR 或上游决定</div></div><span class="column-count">0</span></header>
         <div class="dropzone"></div>
       </section>
     </section>
 
     <details class="overlap">
-      <summary>活跃 PR 重叠检查（18）</summary>
+      <summary data-zh="活跃 PR 重叠检查（18）" data-en="Active PR overlap check (18)">活跃 PR 重叠检查（18）</summary>
       <div class="pr-grid" id="prGrid"></div>
     </details>
 
     <section class="agent-note">
       <strong>Agent interface:</strong>
-      结构化 issue 数据位于 <code>#issue-data</code>， PR 数据位于 <code>#pr-data</code>。
-      分享链接的 <code>#board=</code> hash、导出 JSON 和“Agent Brief”都包含当前列状态， 适合交给其他 agent 继续筛选或生成执行计划。
+      <span data-zh="结构化 issue 数据位于 #issue-data， PR 数据位于 #pr-data。 分享链接的 #board= hash、导出 JSON 和 Agent Brief 都包含当前列状态， 适合交给其他 agent 继续筛选或生成执行计划。" data-en="Structured issue data lives in #issue-data and PR data in #pr-data. The #board= share hash, JSON export, and Agent Brief all include current column state for downstream agents.">结构化 issue 数据位于 <code>#issue-data</code>， PR 数据位于 <code>#pr-data</code>。 分享链接的 <code>#board=</code> hash、导出 JSON 和 Agent Brief 都包含当前列状态， 适合交给其他 agent 继续筛选或生成执行计划。</span>
     </section>
   </main>
 
   <dialog id="detailDialog">
     <div class="dialog-head">
       <h2 id="dialogTitle"></h2>
-      <button class="btn" id="dialogClose" type="button">关闭</button>
+      <button class="btn" id="dialogClose" type="button" data-zh="关闭" data-en="Close">关闭</button>
     </div>
     <div class="dialog-body" id="dialogBody"></div>
   </dialog>
@@ -533,41 +556,781 @@
 
   <script id="issue-data" type="application/json">
 [
-  {"id":"AITER-4541","repo":"AITER","number":4541,"title":"[Kimi-K3 MLA TP8] MLA performance","url":"https://github.com/ROCm/aiter/issues/4541","models":["Kimi"],"lane":"Kernel","layer":"MLA decode","priority":"P0","flydsl":"Medium","effort":"XL","owner":"Unassigned","updated":"2026-08-04","comments":0,"status":"ready","summary":"已有 production shape、KV traffic 与 head padding 分析， 是真正可能推动 Kimi-K3 TPOT 的问题。","next":"先拆分 page size、12→16 head padding 和 shared-prefix 重读占比。","overlap":"AITER PR #4758 / #4676"},
-  {"id":"AITER-4528","repo":"AITER","number":4528,"title":"Kimi-K3 A8W4 SiTUv2 token=8192 intermittently returns NaN","url":"https://github.com/ROCm/aiter/issues/4528","models":["Kimi"],"lane":"Correctness","layer":"A8W4 SiTUv2 MoE","priority":"P0","flydsl":"Direct","effort":"M","owner":"Unassigned","updated":"2026-08-03","comments":0,"status":"ready","summary":"直接命中 production FlyDSL SiTUv2 路径， 正确性必须先于大 M 调优。","next":"固定 seed 和 token bucket， 定位 quant、GEMM1、activation、GEMM2 中首个非有限值。","overlap":"SGLang #32548 · vLLM #52442"},
-  {"id":"AITER-2821","repo":"AITER","number":2821,"title":"Missing gqa_ratio=8 kernels blocks GLM-5 HiSparse on MI355X TP8","url":"https://github.com/ROCm/aiter/issues/2821","models":["GLM"],"lane":"Kernel","layer":"MLA decode","priority":"P0","flydsl":"Medium","effort":"L","owner":"Unassigned","updated":"2026-06-12","comments":2,"status":"ready","summary":"明确缺失 capability；正确 kernel 可直接解锁 GLM-5 HiSparse TP8。","next":"先实现最小 qseqlen=1 + FP8 KV 路径， 再加入精确 GLM TP8 E2E gate。","overlap":"AITER #726"},
-  {"id":"AITER-2495","repo":"AITER","number":2495,"title":"Paged attention batch=1 latency is 2x slower than FlashInfer","url":"https://github.com/ROCm/aiter/issues/2495","models":["GLM","Multi"],"lane":"Kernel","layer":"Paged attention","priority":"P1","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-03-27","comments":0,"status":"ready","summary":"batch-one decode 是 agentic serving 的核心区间， 适合拆解 metadata、gather、QK/PV 与 launch。","next":"建立 batch 1/2/4 × page size 的稳定矩阵， 再改 kernel。","overlap":"FlyDSL PR #910"},
-  {"id":"AITER-4364","repo":"AITER","number":4364,"title":"qh16 FP8 sparse decode is nondeterministic across runs","url":"https://github.com/ROCm/aiter/issues/4364","models":["GLM"],"lane":"Correctness","layer":"MLA split-K reduce","priority":"P0","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-07-27","comments":1,"status":"ready","summary":"split-K 非确定性会改变长上下文 retrieval 结果， FlyDSL reduce 可作为修复候选或 oracle。","next":"固定 partial map 与 split count， 定位 stage-1 writeback 或 reduce race。","overlap":"AITER #4350 · vLLM #52150"},
-  {"id":"AITER-2416","repo":"AITER","number":2416,"title":"SDPA decode on gfx950 uses less than 6% of HBM","url":"https://github.com/ROCm/aiter/issues/2416","models":["Kimi","DeepSeek"],"lane":"Kernel","layer":"SDPA / PA decode","priority":"P1","flydsl":"High","effort":"L","owner":"sunway513","updated":"2026-03-22","comments":0,"status":"progress","summary":"低利用率指向 gather、launch、occupancy 或 page-table overhead， 而非简单带宽上限。","next":"与 owner 协调， 并和 AITER #2495 共用 benchmark matrix。","overlap":"AITER #2495 · FlyDSL PR #910"},
-  {"id":"AITER-2407","repo":"AITER","number":2407,"title":"FP8 Triton GEMM regression on N=2112 and N=4096 shapes","url":"https://github.com/ROCm/aiter/issues/2407","models":["DeepSeek"],"lane":"Kernel","layer":"FP8 GEMM","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-03-22","comments":0,"status":"backlog","summary":"这些 projection width 会跨 DeepSeek 多层重复， 局部 regression 会被模型放大。","next":"缩到一个 shape， 对比 Triton codegen、FlyDSL tile 与 native backend。","overlap":"AITER #2408"},
-  {"id":"AITER-4318","repo":"AITER","number":4318,"title":"FlyDSL grouped MoE prefill optimization","url":"https://github.com/ROCm/aiter/issues/4318","models":["Multi"],"lane":"Kernel","layer":"Grouped MoE prefill","priority":"P1","flydsl":"Direct","effort":"M","owner":"lalala-sh","updated":"2026-07-21","comments":0,"status":"progress","summary":"可复用于四类目标模型， 但 synthetic uniform routing 不足以代表生产流量。","next":"按 TP/EP 下真实 token bucket 和 expert histogram 加权 tuning。","overlap":"FlyDSL #708 · PR #901"},
-
-  {"id":"FlyDSL-708","repo":"FlyDSL","number":708,"title":"MXFP4 MoE has low MFU at large shapes and high latency at small tokens","url":"https://github.com/ROCm/FlyDSL/issues/708","models":["Kimi","DeepSeek","Qwen","GLM"],"lane":"Kernel","layer":"MXFP4 MoE","priority":"P1","flydsl":"Direct","effort":"L","owner":"coderfeli","updated":"2026-06-25","comments":3,"status":"progress","summary":"同时覆盖 decode latency 与 prefill MFU， 是四类目标模型中复用价值最高的 FlyDSL issue。","next":"使用双目标 tuner： 小 M 看 launch/weight decode， 大 M 看 MFMA/LDS pipeline。","overlap":"AITER #4318 · FlyDSL PR #872/#901"},
-  {"id":"FlyDSL-862","repo":"FlyDSL","number":862,"title":"Reduce FlyDSL compile time","url":"https://github.com/ROCm/FlyDSL/issues/862","models":["Multi"],"lane":"Compiler","layer":"JIT / startup","priority":"P1","flydsl":"Direct","effort":"M","owner":"xudoyuan","updated":"2026-07-16","comments":0,"status":"progress","summary":"frontier model specialization 多， compile time 直接影响 cold start、扩容与恢复。","next":"分别归因 Python trace、MLIR、LLVM、link 与 cache miss。","overlap":"AITER #3566/#2336 · FlyDSL PR #669"},
-  {"id":"FlyDSL-821","repo":"FlyDSL","number":821,"title":"fx.gemm uses more VGPR than raw MFMA and fails with BufferCopy atoms","url":"https://github.com/ROCm/FlyDSL/issues/821","models":["Multi"],"lane":"Compiler","layer":"GEMM lowering / VGPR","priority":"P1","flydsl":"Direct","effort":"M","owner":"jli-melchior","updated":"2026-07-10","comments":2,"status":"progress","summary":"lowering 层资源 regression 会同时限制 GEMM、MoE 与 fused projection。","next":"对比 raw-MFMA 的 IR、ISA、VGPR、spill 与 occupancy。","overlap":"FlyDSL #400 · PR #1015"},
-  {"id":"FlyDSL-770","repo":"FlyDSL","number":770,"title":"Make autotune a safe, adopted path","url":"https://github.com/ROCm/FlyDSL/issues/770","models":["Multi"],"lane":"Infra","layer":"Autotune","priority":"P1","flydsl":"Direct","effort":"M","owner":"Unassigned","updated":"2026-07-21","comments":2,"status":"backlog","summary":"没有安全 tuner， model coverage 会退化成手写 CSV 和偶然 winner。","next":"加入 correctness gate、crash isolation、稳定 cache key、counter-ordered timing。","overlap":"FlyDSL PR #924 · AITER tuner"},
-  {"id":"FlyDSL-603","repo":"FlyDSL","number":603,"title":"FlyDSL integration testing with SGLang and vLLM","url":"https://github.com/ROCm/FlyDSL/issues/603","models":["Multi"],"lane":"Infra","layer":"Framework integration CI","priority":"P1","flydsl":"Direct","effort":"M","owner":"gyohuangxin","updated":"2026-06-02","comments":1,"status":"progress","summary":"这是 kernel microbenchmark 与 model E2E 结论之间缺失的桥梁。","next":"固定少量模型与流量矩阵， 记录 exact commit、dispatch、accuracy、TTFT、TPOT。","overlap":"AITER #3368/#2751 · vLLM #43916"},
-  {"id":"FlyDSL-1002","repo":"FlyDSL","number":1002,"title":"fx.exp2 lowers to OCML instead of native v_exp_f32","url":"https://github.com/ROCm/FlyDSL/issues/1002","models":["Multi"],"lane":"Compiler","layer":"Fast math / softmax","priority":"P1","flydsl":"Direct","effort":"M","owner":"Unassigned","updated":"2026-08-12","comments":0,"status":"ready","summary":"exp2 在 attention softmax 中反复出现， 额外 VALU/VGPR 会跨 kernel 累积。","next":"提供 native fast-math contract， 并在 attention kernel 而非 elementwise microbench 中验收。","overlap":"FlyDSL PR #1009"},
-  {"id":"FlyDSL-400","repo":"FlyDSL","number":400,"title":"SSA phi explosion wastes VGPR and causes spills across scf.IfOp","url":"https://github.com/ROCm/FlyDSL/issues/400","models":["Multi"],"lane":"Compiler","layer":"Control flow / VGPR","priority":"P1","flydsl":"Direct","effort":"L","owner":"sjfeng1999, jli-melchior","updated":"2026-04-17","comments":0,"status":"watch","summary":"大 accumulator GEMM 与 attention kernel 的系统性编译器限制。","next":"构造最小 IR repro， 并对 VGPR/spill/occupancy 做 regression gate。","overlap":"FlyDSL PR #1015"},
-  {"id":"FlyDSL-1016","repo":"FlyDSL","number":1016,"title":"Grow flydsl.extension into common GPU building blocks","url":"https://github.com/ROCm/FlyDSL/issues/1016","models":["Multi"],"lane":"Infra","layer":"Reusable GPU primitives","priority":"P2","flydsl":"Direct","effort":"XL","owner":"sjfeng1999","updated":"2026-08-17","comments":0,"status":"backlog","summary":"共享 reduction、scan、RNG 与 quant block 可减少生产 kernel 的重复正确性风险。","next":"从已在两个 production kernel 中重复的 primitive 开始， 并迁移两处实现。","overlap":"Cross-repository infrastructure"},
-
-  {"id":"SGLang-32548","repo":"SGLang","number":32548,"title":"Kimi-K3 AMD Day 0 and Performance Tracking","url":"https://github.com/sgl-project/sglang/issues/32548","models":["Kimi"],"lane":"E2E","layer":"AMD Kimi-K3 tracker","priority":"P1","flydsl":"Medium","effort":"L","owner":"Unassigned","updated":"2026-07-27","comments":1,"status":"backlog","summary":"AITER/FlyDSL Kimi 工作在 SGLang 侧最自然的 E2E 汇总入口。","next":"统一 dispatch evidence、traffic matrix 与 accuracy gate。","overlap":"AITER #4541/#4528 · SGLang PR #33838"},
-  {"id":"SGLang-34815","repo":"SGLang","number":34815,"title":"PP8 disaggregated prefill has a load-independent 30-second TTFT floor","url":"https://github.com/sgl-project/sglang/issues/34815","models":["Kimi"],"lane":"E2E","layer":"Disaggregated prefill / TTFT","priority":"P0","flydsl":"Low","effort":"L","owner":"Unassigned","updated":"2026-08-14","comments":1,"status":"ready","summary":"与负载无关的固定下限指向同步、通信或初始化， 不是 kernel throughput ceiling。","next":"建立 tokenizer、prefill、transfer、barrier 与 first decode timeline。","overlap":"Disaggregated serving roadmaps"},
-  {"id":"SGLang-33846","repo":"SGLang","number":33846,"title":"Kimi-K3 KDA prefill hangs in tolist() / hipMemcpy D2H","url":"https://github.com/sgl-project/sglang/issues/33846","models":["Kimi"],"lane":"Correctness","layer":"KDA prefill host sync","priority":"P0","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-08-06","comments":2,"status":"ready","summary":"失败位于 kernel metadata 与 host synchronization 边界， 同时可能隐藏固定同步开销。","next":"让 plan 变成 host-known 或 device-resident， 消除热路径 D2H。","overlap":"AITER / FlyDSL KDA prefill"},
-  {"id":"SGLang-32938","repo":"SGLang","number":32938,"title":"FP8 KV cache slows performance when DSpark is enabled","url":"https://github.com/sgl-project/sglang/issues/32938","models":["Kimi","DeepSeek"],"lane":"E2E","layer":"FP8 KV + DSpark","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-07-30","comments":1,"status":"backlog","summary":"更少的 KV 字节被 dequant、gather、graph bucket 或 acceptance 变化抵消。","next":"固定 acceptance， 运行 no-spec/DSpark × BF16/FP8 KV 四象限矩阵。","overlap":"vLLM #48786/#47602"},
-  {"id":"SGLang-34120","repo":"SGLang","number":34120,"title":"Wide EP for GLM-5.2 and Kimi-K3","url":"https://github.com/sgl-project/sglang/issues/34120","models":["Kimi","GLM"],"lane":"E2E","layer":"Wide EP","priority":"P1","flydsl":"High","effort":"XL","owner":"b8zhong","updated":"2026-08-11","comments":5,"status":"progress","summary":"横跨 routing、MoE kernel、all-to-all 与 scheduling， 只优化一个组件可能不动 E2E。","next":"先测 EP scaling efficiency， 再选择 routing、GEMM 或 communication overlap。","overlap":"FlyDSL #708 · AITER #4318"},
-  {"id":"SGLang-33422","repo":"SGLang","number":33422,"title":"DeepSeek-V4 prefill on SM120 is 2–7K tok/s versus 12.5K","url":"https://github.com/sgl-project/sglang/issues/33422","models":["DeepSeek"],"lane":"E2E","layer":"DSv4 prefill","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-08-04","comments":1,"status":"watch","summary":"同硬件差距明确， 可沿 dispatch 与 kernel coverage 直接追踪。","next":"对比 vLLM/Marlin 路径， 抓取 backend、shape 与 phase timing。","overlap":"vLLM #41063 · FlyDSL RDNA GEMM work"},
-  {"id":"SGLang-33706","repo":"SGLang","number":33706,"title":"Shared-to-sparse experts fusion for Qwen3.5 / Qwen3.6","url":"https://github.com/sgl-project/sglang/issues/33706","models":["Qwen"],"lane":"Kernel","layer":"Expert fusion","priority":"P1","flydsl":"High","effort":"L","owner":"Unassigned","updated":"2026-08-06","comments":2,"status":"watch","summary":"边界明确， 可同时定义 kernel acceptance gate 与 model E2E gate。","next":"先量化 shared/sparse experts 之间的 materialization 与 launch cost。","overlap":"vLLM Qwen performance issues"},
-  {"id":"SGLang-32549","repo":"SGLang","number":32549,"title":"Decode is starved under sustained chunked-prefill load","url":"https://github.com/sgl-project/sglang/issues/32549","models":["Multi"],"lane":"E2E","layer":"Scheduler fairness","priority":"P1","flydsl":"Low","effort":"M","owner":"Unassigned","updated":"2026-08-07","comments":2,"status":"backlog","summary":"每 24 秒才发一个 decode batch 的 scheduler 会抹掉所有 kernel speedup。","next":"建立 mixed prefill/decode workload， 同时约束 TTFT 与 ITL。","overlap":"Framework-first issue"},
-
-  {"id":"vLLM-50682","repo":"vLLM","number":50682,"title":"ROCm Kimi-K3 Gap and Roadmap Tracking","url":"https://github.com/vllm-project/vllm/issues/50682","models":["Kimi"],"lane":"E2E","layer":"ROCm Kimi-K3 tracker","priority":"P1","flydsl":"Medium","effort":"L","owner":"hongxiayang","updated":"2026-08-17","comments":18,"status":"watch","summary":"vLLM 侧最活跃的 Kimi kernel 集成入口， 已有明确 owner 和多个 PR。","next":"把每个 gap 映射到一个 AITER/FlyDSL issue 与固定 benchmark。","overlap":"vLLM PR #50665/#50657"},
-  {"id":"vLLM-50587","repo":"vLLM","number":50587,"title":"Kimi K3 Performance Optimization","url":"https://github.com/vllm-project/vllm/issues/50587","models":["Kimi"],"lane":"E2E","layer":"Kimi-K3 performance","priority":"P1","flydsl":"High","effort":"L","owner":"yewentao256","updated":"2026-08-14","comments":0,"status":"progress","summary":"模型级入口已有 owner， 并与更大的 Kimi tracker 重叠。","next":"协调 scope；每个 kernel 接入都要求真实 dispatch 与 concurrency matrix。","overlap":"AITER PR #4498/#4504/#4496"},
-  {"id":"vLLM-41820","repo":"vLLM","number":41820,"title":"DeepSeek-V4 support and optimization on ROCm","url":"https://github.com/vllm-project/vllm/issues/41820","models":["DeepSeek"],"lane":"E2E","layer":"ROCm DSv4 optimization","priority":"P1","flydsl":"High","effort":"L","owner":"Unassigned","updated":"2026-08-14","comments":17,"status":"ready","summary":"尚未分配、讨论充分， 适合作为 DeepSeek 跨 AITER/FlyDSL/vLLM 的落地点。","next":"从 profile 选一个高占比 op， 同时要求 micro、production-op 与 E2E 证据。","overlap":"AITER DeepSeek issues · FlyDSL #708"},
-  {"id":"vLLM-46654","repo":"vLLM","number":46654,"title":"GLM 5.2 Performance Optimization","url":"https://github.com/vllm-project/vllm/issues/46654","models":["GLM"],"lane":"E2E","layer":"GLM-5.2 optimization","priority":"P1","flydsl":"Medium","effort":"XL","owner":"yewentao256","updated":"2026-08-11","comments":21,"status":"progress","summary":"高活跃度、ownership 清晰的 umbrella， 适合作为落地点而非重复实现。","next":"通过 AITER #2821/#4364 提供有测量证据的 kernel fix。","overlap":"AITER #2821/#4364 · SGLang #34120"},
-  {"id":"vLLM-50722","repo":"vLLM","number":50722,"title":"Qwen3.5 DFlash performance is poor","url":"https://github.com/vllm-project/vllm/issues/50722","models":["Qwen"],"lane":"E2E","layer":"DFlash / attention","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-08-14","comments":7,"status":"backlog","summary":"同时有 backend 开关与 acceptance-length 信号， 容易做 attribution。","next":"固定 prompt 与 draft 设置， 比较 no-spec、DFlash 与其他 speculative backend。","overlap":"vLLM #49730 · SGLang Qwen work"},
-  {"id":"vLLM-48786","repo":"vLLM","number":48786,"title":"Qwen3.5 FP8 KV cache is slower than BF16 KV cache","url":"https://github.com/vllm-project/vllm/issues/48786","models":["Qwen"],"lane":"Kernel","layer":"FP8 KV cache","priority":"P1","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-08-09","comments":2,"status":"backlog","summary":"更少的字节被 quant/dequant 或更差 attention path 抵消。","next":"分别归因 cache write、decode attention、dequant 与 scheduling。","overlap":"SGLang #32938"},
-  {"id":"vLLM-51250","repo":"vLLM","number":51250,"title":"Prefix caching is ineffective on Mamba-2 / GDN hybrid","url":"https://github.com/vllm-project/vllm/issues/51250","models":["Qwen"],"lane":"E2E","layer":"Hybrid prefix cache","priority":"P1","flydsl":"Low","effort":"M","owner":"Unassigned","updated":"2026-08-14","comments":5,"status":"backlog","summary":"cache miss 会抹掉更快 kernel 带来的全部 TTFT 收益。","next":"追踪各 attention group 的 cache key 与 invalidation， 并测真实 prefix-hit rate。","overlap":"vLLM #45702 · SGLang HiCache"},
-  {"id":"vLLM-51853","repo":"vLLM","number":51853,"title":"Poor DeepSeek V4 Pro MTP results on MI325X — kernels untuned","url":"https://github.com/vllm-project/vllm/issues/51853","models":["DeepSeek"],"lane":"E2E","layer":"MTP / ROCm kernels","priority":"P1","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-08-13","comments":5,"status":"watch","summary":"issue 明确区分 MTP 行为与未调优 ROCm kernel， 适合做聚焦 handoff。","next":"固定 acceptance 与 batch bucket， profile 最重的 verify 或 draft shape。","overlap":"AITER DeepSeek GEMM / MoE issues"}
+  {
+    "id": "AITER-4541",
+    "repo": "AITER",
+    "number": 4541,
+    "title": "[Kimi-K3 MLA TP8] MLA performance",
+    "url": "https://github.com/ROCm/aiter/issues/4541",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "Kernel",
+    "layer": "MLA decode",
+    "priority": "P0",
+    "flydsl": "Medium",
+    "effort": "XL",
+    "owner": "Unassigned",
+    "updated": "2026-08-04",
+    "comments": 0,
+    "status": "ready",
+    "summary": "已有 production shape、KV traffic 与 head padding 分析， 是真正可能推动 Kimi-K3 TPOT 的问题。",
+    "next": "先拆分 page size、12→16 head padding 和 shared-prefix 重读占比。",
+    "overlap": "AITER PR #4758 / #4676",
+    "summary_en": "A production-grade trace already identifies the geometry, KV traffic, and head padding. This is one of the few issues large enough to move Kimi-K3 TPOT.",
+    "next_en": "Attribute page-size, head-padding, and shared-prefix costs before choosing a stage-1 kernel or addressing redesign."
+  },
+  {
+    "id": "AITER-4528",
+    "repo": "AITER",
+    "number": 4528,
+    "title": "Kimi-K3 A8W4 SiTUv2 token=8192 intermittently returns NaN",
+    "url": "https://github.com/ROCm/aiter/issues/4528",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "Correctness",
+    "layer": "A8W4 SiTUv2 MoE",
+    "priority": "P0",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-03",
+    "comments": 0,
+    "status": "ready",
+    "summary": "直接命中 production FlyDSL SiTUv2 路径， 正确性必须先于大 M 调优。",
+    "next": "固定 seed 和 token bucket， 定位 quant、GEMM1、activation、GEMM2 中首个非有限值。",
+    "overlap": "SGLang #32548 · vLLM #52442",
+    "summary_en": "This hits the production FlyDSL SiTUv2 path directly. Correctness must be fixed before further large-M tuning can be trusted.",
+    "next_en": "Fix a seed and token bucket, then find the first non-finite boundary across quant, GEMM1, activation, and GEMM2."
+  },
+  {
+    "id": "AITER-2821",
+    "repo": "AITER",
+    "number": 2821,
+    "title": "Missing gqa_ratio=8 kernels blocks GLM-5 HiSparse on MI355X TP8",
+    "url": "https://github.com/ROCm/aiter/issues/2821",
+    "models": [
+      "GLM"
+    ],
+    "lane": "Kernel",
+    "layer": "MLA decode",
+    "priority": "P0",
+    "flydsl": "Medium",
+    "effort": "L",
+    "owner": "Unassigned",
+    "updated": "2026-06-12",
+    "comments": 2,
+    "status": "ready",
+    "summary": "明确缺失 capability；正确 kernel 可直接解锁 GLM-5 HiSparse TP8。",
+    "next": "先实现最小 qseqlen=1 + FP8 KV 路径， 再加入精确 GLM TP8 E2E gate。",
+    "overlap": "AITER #726",
+    "summary_en": "This is missing capability rather than a small tuning gap. A correct kernel directly unlocks a production GLM topology.",
+    "next_en": "Build the smallest qseqlen=1 path first, cover FP8 KV, then add the exact GLM TP8 E2E gate."
+  },
+  {
+    "id": "AITER-2495",
+    "repo": "AITER",
+    "number": 2495,
+    "title": "Paged attention batch=1 latency is 2x slower than FlashInfer",
+    "url": "https://github.com/ROCm/aiter/issues/2495",
+    "models": [
+      "GLM",
+      "Multi"
+    ],
+    "lane": "Kernel",
+    "layer": "Paged attention",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-03-27",
+    "comments": 0,
+    "status": "ready",
+    "summary": "batch-one decode 是 agentic serving 的核心区间， 适合拆解 metadata、gather、QK/PV 与 launch。",
+    "next": "建立 batch 1/2/4 × page size 的稳定矩阵， 再改 kernel。",
+    "overlap": "FlyDSL PR #910",
+    "summary_en": "Batch-one decode is the agentic serving regime. The gap can be decomposed into metadata, gather, QK/PV, and launch cost.",
+    "next_en": "Create a stable batch 1/2/4 and page-size matrix before changing the kernel."
+  },
+  {
+    "id": "AITER-4364",
+    "repo": "AITER",
+    "number": 4364,
+    "title": "qh16 FP8 sparse decode is nondeterministic across runs",
+    "url": "https://github.com/ROCm/aiter/issues/4364",
+    "models": [
+      "GLM"
+    ],
+    "lane": "Correctness",
+    "layer": "MLA split-K reduce",
+    "priority": "P0",
+    "flydsl": "High",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-07-27",
+    "comments": 1,
+    "status": "ready",
+    "summary": "split-K 非确定性会改变长上下文 retrieval 结果， FlyDSL reduce 可作为修复候选或 oracle。",
+    "next": "固定 partial map 与 split count， 定位 stage-1 writeback 或 reduce race。",
+    "overlap": "AITER #4350 · vLLM #52150",
+    "summary_en": "Split-K nondeterminism changes long-context retrieval results. A FlyDSL reduce path can be both a fix candidate and an independent oracle.",
+    "next_en": "Freeze partial maps and split counts, then locate the race between stage-1 writeback and reduce."
+  },
+  {
+    "id": "AITER-2416",
+    "repo": "AITER",
+    "number": 2416,
+    "title": "SDPA decode on gfx950 uses less than 6% of HBM",
+    "url": "https://github.com/ROCm/aiter/issues/2416",
+    "models": [
+      "Kimi",
+      "DeepSeek"
+    ],
+    "lane": "Kernel",
+    "layer": "SDPA / PA decode",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "L",
+    "owner": "sunway513",
+    "updated": "2026-03-22",
+    "comments": 0,
+    "status": "progress",
+    "summary": "低利用率指向 gather、launch、occupancy 或 page-table overhead， 而非简单带宽上限。",
+    "next": "与 owner 协调， 并和 AITER #2495 共用 benchmark matrix。",
+    "overlap": "AITER #2495 · FlyDSL PR #910",
+    "summary_en": "Such low utilization points to gather, launch, occupancy, or page-table overhead rather than a simple bandwidth ceiling.",
+    "next_en": "Coordinate with the owner and share one benchmark matrix with AITER #2495."
+  },
+  {
+    "id": "AITER-2407",
+    "repo": "AITER",
+    "number": 2407,
+    "title": "FP8 Triton GEMM regression on N=2112 and N=4096 shapes",
+    "url": "https://github.com/ROCm/aiter/issues/2407",
+    "models": [
+      "DeepSeek"
+    ],
+    "lane": "Kernel",
+    "layer": "FP8 GEMM",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-03-22",
+    "comments": 0,
+    "status": "backlog",
+    "summary": "这些 projection width 会跨 DeepSeek 多层重复， 局部 regression 会被模型放大。",
+    "next": "缩到一个 shape， 对比 Triton codegen、FlyDSL tile 与 native backend。",
+    "overlap": "AITER #2408",
+    "summary_en": "These projection widths repeat across DeepSeek layers, so a local regression multiplies across the model.",
+    "next_en": "Reproduce one shape and compare Triton codegen, FlyDSL tiles, and the native backend under the real layout."
+  },
+  {
+    "id": "AITER-4318",
+    "repo": "AITER",
+    "number": 4318,
+    "title": "FlyDSL grouped MoE prefill optimization",
+    "url": "https://github.com/ROCm/aiter/issues/4318",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Kernel",
+    "layer": "Grouped MoE prefill",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "lalala-sh",
+    "updated": "2026-07-21",
+    "comments": 0,
+    "status": "progress",
+    "summary": "可复用于四类目标模型， 但 synthetic uniform routing 不足以代表生产流量。",
+    "next": "按 TP/EP 下真实 token bucket 和 expert histogram 加权 tuning。",
+    "overlap": "FlyDSL #708 · PR #901",
+    "summary_en": "The kernel family is reusable across all four target model lines, but synthetic uniform routing is not enough.",
+    "next_en": "Weight tuning by real token buckets and expert histograms under TP and EP."
+  },
+  {
+    "id": "FlyDSL-708",
+    "repo": "FlyDSL",
+    "number": 708,
+    "title": "MXFP4 MoE has low MFU at large shapes and high latency at small tokens",
+    "url": "https://github.com/ROCm/FlyDSL/issues/708",
+    "models": [
+      "Kimi",
+      "DeepSeek",
+      "Qwen",
+      "GLM"
+    ],
+    "lane": "Kernel",
+    "layer": "MXFP4 MoE",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "L",
+    "owner": "coderfeli",
+    "updated": "2026-06-25",
+    "comments": 3,
+    "status": "progress",
+    "summary": "同时覆盖 decode latency 与 prefill MFU， 是四类目标模型中复用价值最高的 FlyDSL issue。",
+    "next": "使用双目标 tuner： 小 M 看 launch/weight decode， 大 M 看 MFMA/LDS pipeline。",
+    "overlap": "AITER #4318 · FlyDSL PR #872/#901",
+    "summary_en": "It spans both decode latency and prefill MFU, making it the most reusable FlyDSL issue for the target models.",
+    "next_en": "Use a dual-objective tuner: launch and weight-decode cost for small M, MFMA and LDS pipeline for large M."
+  },
+  {
+    "id": "FlyDSL-862",
+    "repo": "FlyDSL",
+    "number": 862,
+    "title": "Reduce FlyDSL compile time",
+    "url": "https://github.com/ROCm/FlyDSL/issues/862",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Compiler",
+    "layer": "JIT / startup",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "xudoyuan",
+    "updated": "2026-07-16",
+    "comments": 0,
+    "status": "progress",
+    "summary": "frontier model specialization 多， compile time 直接影响 cold start、扩容与恢复。",
+    "next": "分别归因 Python trace、MLIR、LLVM、link 与 cache miss。",
+    "overlap": "AITER #3566/#2336 · FlyDSL PR #669",
+    "summary_en": "Frontier models create many specializations. Compilation therefore affects cold start, autoscaling, and recovery, not only developer convenience.",
+    "next_en": "Attribute Python tracing, MLIR, LLVM, linking, and cache misses separately."
+  },
+  {
+    "id": "FlyDSL-821",
+    "repo": "FlyDSL",
+    "number": 821,
+    "title": "fx.gemm uses more VGPR than raw MFMA and fails with BufferCopy atoms",
+    "url": "https://github.com/ROCm/FlyDSL/issues/821",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Compiler",
+    "layer": "GEMM lowering / VGPR",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "jli-melchior",
+    "updated": "2026-07-10",
+    "comments": 2,
+    "status": "progress",
+    "summary": "lowering 层资源 regression 会同时限制 GEMM、MoE 与 fused projection。",
+    "next": "对比 raw-MFMA 的 IR、ISA、VGPR、spill 与 occupancy。",
+    "overlap": "FlyDSL #400 · PR #1015",
+    "summary_en": "A lowering-level resource regression constrains many GEMM, MoE, and fused projection kernels at once.",
+    "next_en": "Diff IR, ISA, VGPR, spills, and occupancy against the raw-MFMA implementation."
+  },
+  {
+    "id": "FlyDSL-770",
+    "repo": "FlyDSL",
+    "number": 770,
+    "title": "Make autotune a safe, adopted path",
+    "url": "https://github.com/ROCm/FlyDSL/issues/770",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Infra",
+    "layer": "Autotune",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-07-21",
+    "comments": 2,
+    "status": "backlog",
+    "summary": "没有安全 tuner， model coverage 会退化成手写 CSV 和偶然 winner。",
+    "next": "加入 correctness gate、crash isolation、稳定 cache key、counter-ordered timing。",
+    "overlap": "FlyDSL PR #924 · AITER tuner",
+    "summary_en": "Without a safe tuner, model coverage collapses into hand-edited CSVs and one-off winners.",
+    "next_en": "Add correctness-first gates, crash isolation, stable cache keys, counter-ordered timing, and production dispatch checks."
+  },
+  {
+    "id": "FlyDSL-603",
+    "repo": "FlyDSL",
+    "number": 603,
+    "title": "FlyDSL integration testing with SGLang and vLLM",
+    "url": "https://github.com/ROCm/FlyDSL/issues/603",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Infra",
+    "layer": "Framework integration CI",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "gyohuangxin",
+    "updated": "2026-06-02",
+    "comments": 1,
+    "status": "progress",
+    "summary": "这是 kernel microbenchmark 与 model E2E 结论之间缺失的桥梁。",
+    "next": "固定少量模型与流量矩阵， 记录 exact commit、dispatch、accuracy、TTFT、TPOT。",
+    "overlap": "AITER #3368/#2751 · vLLM #43916",
+    "summary_en": "This is the missing bridge between kernel microbenchmarks and model-level claims.",
+    "next_en": "Pin a small model and traffic matrix with exact commits, dispatch proof, accuracy, TTFT, TPOT, and throughput."
+  },
+  {
+    "id": "FlyDSL-1002",
+    "repo": "FlyDSL",
+    "number": 1002,
+    "title": "fx.exp2 lowers to OCML instead of native v_exp_f32",
+    "url": "https://github.com/ROCm/FlyDSL/issues/1002",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Compiler",
+    "layer": "Fast math / softmax",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-12",
+    "comments": 0,
+    "status": "ready",
+    "summary": "exp2 在 attention softmax 中反复出现， 额外 VALU/VGPR 会跨 kernel 累积。",
+    "next": "提供 native fast-math contract， 并在 attention kernel 而非 elementwise microbench 中验收。",
+    "overlap": "FlyDSL PR #1009",
+    "summary_en": "exp2 is repeated inside attention softmax. Extra VALU and VGPR cost can compound across kernels.",
+    "next_en": "Expose a native fast-math contract and validate it in an attention kernel, not only an elementwise microbench."
+  },
+  {
+    "id": "FlyDSL-400",
+    "repo": "FlyDSL",
+    "number": 400,
+    "title": "SSA phi explosion wastes VGPR and causes spills across scf.IfOp",
+    "url": "https://github.com/ROCm/FlyDSL/issues/400",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Compiler",
+    "layer": "Control flow / VGPR",
+    "priority": "P1",
+    "flydsl": "Direct",
+    "effort": "L",
+    "owner": "sjfeng1999, jli-melchior",
+    "updated": "2026-04-17",
+    "comments": 0,
+    "status": "watch",
+    "summary": "大 accumulator GEMM 与 attention kernel 的系统性编译器限制。",
+    "next": "构造最小 IR repro， 并对 VGPR/spill/occupancy 做 regression gate。",
+    "overlap": "FlyDSL PR #1015",
+    "summary_en": "This is a systemic limit on GEMM and attention kernels with large accumulators.",
+    "next_en": "Build a minimal IR reproducer and gate resource counts, not only functional output."
+  },
+  {
+    "id": "FlyDSL-1016",
+    "repo": "FlyDSL",
+    "number": 1016,
+    "title": "Grow flydsl.extension into common GPU building blocks",
+    "url": "https://github.com/ROCm/FlyDSL/issues/1016",
+    "models": [
+      "Multi"
+    ],
+    "lane": "Infra",
+    "layer": "Reusable GPU primitives",
+    "priority": "P2",
+    "flydsl": "Direct",
+    "effort": "XL",
+    "owner": "sjfeng1999",
+    "updated": "2026-08-17",
+    "comments": 0,
+    "status": "backlog",
+    "summary": "共享 reduction、scan、RNG 与 quant block 可减少生产 kernel 的重复正确性风险。",
+    "next": "从已在两个 production kernel 中重复的 primitive 开始， 并迁移两处实现。",
+    "overlap": "Cross-repository infrastructure",
+    "summary_en": "Shared reduction, scan, RNG, and quantization blocks reduce duplicated correctness risk across model kernels.",
+    "next_en": "Start with a primitive already duplicated in two production kernels and migrate both."
+  },
+  {
+    "id": "SGLang-32548",
+    "repo": "SGLang",
+    "number": 32548,
+    "title": "Kimi-K3 AMD Day 0 and Performance Tracking",
+    "url": "https://github.com/sgl-project/sglang/issues/32548",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "E2E",
+    "layer": "AMD Kimi-K3 tracker",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "L",
+    "owner": "Unassigned",
+    "updated": "2026-07-27",
+    "comments": 1,
+    "status": "backlog",
+    "summary": "AITER/FlyDSL Kimi 工作在 SGLang 侧最自然的 E2E 汇总入口。",
+    "next": "统一 dispatch evidence、traffic matrix 与 accuracy gate。",
+    "overlap": "AITER #4541/#4528 · SGLang PR #33838",
+    "summary_en": "This is the natural SGLang landing zone for AITER and FlyDSL Kimi work.",
+    "next_en": "Standardize dispatch evidence, traffic matrices, and accuracy gates inside the tracker."
+  },
+  {
+    "id": "SGLang-34815",
+    "repo": "SGLang",
+    "number": 34815,
+    "title": "PP8 disaggregated prefill has a load-independent 30-second TTFT floor",
+    "url": "https://github.com/sgl-project/sglang/issues/34815",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "E2E",
+    "layer": "Disaggregated prefill / TTFT",
+    "priority": "P0",
+    "flydsl": "Low",
+    "effort": "L",
+    "owner": "Unassigned",
+    "updated": "2026-08-14",
+    "comments": 1,
+    "status": "ready",
+    "summary": "与负载无关的固定下限指向同步、通信或初始化， 不是 kernel throughput ceiling。",
+    "next": "建立 tokenizer、prefill、transfer、barrier 与 first decode timeline。",
+    "overlap": "Disaggregated serving roadmaps",
+    "summary_en": "A load-independent floor points to synchronization, communication, or initialization—not a kernel throughput ceiling.",
+    "next_en": "Build a timeline across tokenization, prefill, transfer, barriers, and first decode."
+  },
+  {
+    "id": "SGLang-33846",
+    "repo": "SGLang",
+    "number": 33846,
+    "title": "Kimi-K3 KDA prefill hangs in tolist() / hipMemcpy D2H",
+    "url": "https://github.com/sgl-project/sglang/issues/33846",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "Correctness",
+    "layer": "KDA prefill host sync",
+    "priority": "P0",
+    "flydsl": "High",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-06",
+    "comments": 2,
+    "status": "ready",
+    "summary": "失败位于 kernel metadata 与 host synchronization 边界， 同时可能隐藏固定同步开销。",
+    "next": "让 plan 变成 host-known 或 device-resident， 消除热路径 D2H。",
+    "overlap": "AITER / FlyDSL KDA prefill",
+    "summary_en": "The failure sits exactly at the kernel-metadata and host-synchronization boundary.",
+    "next_en": "Remove hot-path D2H by making the plan host-known or device-resident, then validate graph capture."
+  },
+  {
+    "id": "SGLang-32938",
+    "repo": "SGLang",
+    "number": 32938,
+    "title": "FP8 KV cache slows performance when DSpark is enabled",
+    "url": "https://github.com/sgl-project/sglang/issues/32938",
+    "models": [
+      "Kimi",
+      "DeepSeek"
+    ],
+    "lane": "E2E",
+    "layer": "FP8 KV + DSpark",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-07-30",
+    "comments": 1,
+    "status": "backlog",
+    "summary": "更少的 KV 字节被 dequant、gather、graph bucket 或 acceptance 变化抵消。",
+    "next": "固定 acceptance， 运行 no-spec/DSpark × BF16/FP8 KV 四象限矩阵。",
+    "overlap": "vLLM #48786/#47602",
+    "summary_en": "Lower KV bytes are being outweighed by dequantization, gathers, graph buckets, or acceptance changes.",
+    "next_en": "Run a four-way no-spec / DSpark by BF16 / FP8 KV matrix at fixed acceptance."
+  },
+  {
+    "id": "SGLang-34120",
+    "repo": "SGLang",
+    "number": 34120,
+    "title": "Wide EP for GLM-5.2 and Kimi-K3",
+    "url": "https://github.com/sgl-project/sglang/issues/34120",
+    "models": [
+      "Kimi",
+      "GLM"
+    ],
+    "lane": "E2E",
+    "layer": "Wide EP",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "XL",
+    "owner": "b8zhong",
+    "updated": "2026-08-11",
+    "comments": 5,
+    "status": "progress",
+    "summary": "横跨 routing、MoE kernel、all-to-all 与 scheduling， 只优化一个组件可能不动 E2E。",
+    "next": "先测 EP scaling efficiency， 再选择 routing、GEMM 或 communication overlap。",
+    "overlap": "FlyDSL #708 · AITER #4318",
+    "summary_en": "The opportunity spans routing, MoE kernels, all-to-all, and scheduling; optimizing only one component can move nothing.",
+    "next_en": "Measure EP scaling efficiency before choosing routing, GEMM, or communication overlap."
+  },
+  {
+    "id": "SGLang-33422",
+    "repo": "SGLang",
+    "number": 33422,
+    "title": "DeepSeek-V4 prefill on SM120 is 2–7K tok/s versus 12.5K",
+    "url": "https://github.com/sgl-project/sglang/issues/33422",
+    "models": [
+      "DeepSeek"
+    ],
+    "lane": "E2E",
+    "layer": "DSv4 prefill",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-04",
+    "comments": 1,
+    "status": "watch",
+    "summary": "同硬件差距明确， 可沿 dispatch 与 kernel coverage 直接追踪。",
+    "next": "对比 vLLM/Marlin 路径， 抓取 backend、shape 与 phase timing。",
+    "overlap": "vLLM #41063 · FlyDSL RDNA GEMM work",
+    "summary_en": "The same-hardware gap is concrete enough to trace through dispatch and kernel coverage.",
+    "next_en": "Capture backend, shape, and phase timing against the vLLM / Marlin path."
+  },
+  {
+    "id": "SGLang-33706",
+    "repo": "SGLang",
+    "number": 33706,
+    "title": "Shared-to-sparse experts fusion for Qwen3.5 / Qwen3.6",
+    "url": "https://github.com/sgl-project/sglang/issues/33706",
+    "models": [
+      "Qwen"
+    ],
+    "lane": "Kernel",
+    "layer": "Expert fusion",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "L",
+    "owner": "Unassigned",
+    "updated": "2026-08-06",
+    "comments": 2,
+    "status": "watch",
+    "summary": "边界明确， 可同时定义 kernel acceptance gate 与 model E2E gate。",
+    "next": "先量化 shared/sparse experts 之间的 materialization 与 launch cost。",
+    "overlap": "vLLM Qwen performance issues",
+    "summary_en": "The boundary is explicit and can carry both a kernel acceptance gate and a model E2E gate.",
+    "next_en": "Measure materialization and launch cost before choosing the fusion boundary."
+  },
+  {
+    "id": "SGLang-32549",
+    "repo": "SGLang",
+    "number": 32549,
+    "title": "Decode is starved under sustained chunked-prefill load",
+    "url": "https://github.com/sgl-project/sglang/issues/32549",
+    "models": [
+      "Multi"
+    ],
+    "lane": "E2E",
+    "layer": "Scheduler fairness",
+    "priority": "P1",
+    "flydsl": "Low",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-07",
+    "comments": 2,
+    "status": "backlog",
+    "summary": "每 24 秒才发一个 decode batch 的 scheduler 会抹掉所有 kernel speedup。",
+    "next": "建立 mixed prefill/decode workload， 同时约束 TTFT 与 ITL。",
+    "overlap": "Framework-first issue",
+    "summary_en": "A scheduler that emits one decode batch every 24 seconds erases any kernel speedup.",
+    "next_en": "Build a mixed prefill/decode workload and constrain TTFT and ITL together."
+  },
+  {
+    "id": "vLLM-50682",
+    "repo": "vLLM",
+    "number": 50682,
+    "title": "ROCm Kimi-K3 Gap and Roadmap Tracking",
+    "url": "https://github.com/vllm-project/vllm/issues/50682",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "E2E",
+    "layer": "ROCm Kimi-K3 tracker",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "L",
+    "owner": "hongxiayang",
+    "updated": "2026-08-17",
+    "comments": 18,
+    "status": "watch",
+    "summary": "vLLM 侧最活跃的 Kimi kernel 集成入口， 已有明确 owner 和多个 PR。",
+    "next": "把每个 gap 映射到一个 AITER/FlyDSL issue 与固定 benchmark。",
+    "overlap": "vLLM PR #50665/#50657",
+    "summary_en": "This active tracker is the main vLLM integration surface for Kimi kernel work.",
+    "next_en": "Map each gap to one AITER or FlyDSL issue and one fixed benchmark."
+  },
+  {
+    "id": "vLLM-50587",
+    "repo": "vLLM",
+    "number": 50587,
+    "title": "Kimi K3 Performance Optimization",
+    "url": "https://github.com/vllm-project/vllm/issues/50587",
+    "models": [
+      "Kimi"
+    ],
+    "lane": "E2E",
+    "layer": "Kimi-K3 performance",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "L",
+    "owner": "yewentao256",
+    "updated": "2026-08-14",
+    "comments": 0,
+    "status": "progress",
+    "summary": "模型级入口已有 owner， 并与更大的 Kimi tracker 重叠。",
+    "next": "协调 scope；每个 kernel 接入都要求真实 dispatch 与 concurrency matrix。",
+    "overlap": "AITER PR #4498/#4504/#4496",
+    "summary_en": "A model-level entry exists, but it already has an owner and overlaps the broader tracker.",
+    "next_en": "Coordinate scope and require real dispatch plus a concurrency matrix for every kernel integration."
+  },
+  {
+    "id": "vLLM-41820",
+    "repo": "vLLM",
+    "number": 41820,
+    "title": "DeepSeek-V4 support and optimization on ROCm",
+    "url": "https://github.com/vllm-project/vllm/issues/41820",
+    "models": [
+      "DeepSeek"
+    ],
+    "lane": "E2E",
+    "layer": "ROCm DSv4 optimization",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "L",
+    "owner": "Unassigned",
+    "updated": "2026-08-14",
+    "comments": 17,
+    "status": "ready",
+    "summary": "尚未分配、讨论充分， 适合作为 DeepSeek 跨 AITER/FlyDSL/vLLM 的落地点。",
+    "next": "从 profile 选一个高占比 op， 同时要求 micro、production-op 与 E2E 证据。",
+    "overlap": "AITER DeepSeek issues · FlyDSL #708",
+    "summary_en": "It is unassigned, well discussed, and suitable as the DeepSeek bridge across AITER, FlyDSL, and vLLM.",
+    "next_en": "Pick one high-share operator from a profile and require micro, production-op, and E2E evidence."
+  },
+  {
+    "id": "vLLM-46654",
+    "repo": "vLLM",
+    "number": 46654,
+    "title": "GLM 5.2 Performance Optimization",
+    "url": "https://github.com/vllm-project/vllm/issues/46654",
+    "models": [
+      "GLM"
+    ],
+    "lane": "E2E",
+    "layer": "GLM-5.2 optimization",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "XL",
+    "owner": "yewentao256",
+    "updated": "2026-08-11",
+    "comments": 21,
+    "status": "progress",
+    "summary": "高活跃度、ownership 清晰的 umbrella， 适合作为落地点而非重复实现。",
+    "next": "通过 AITER #2821/#4364 提供有测量证据的 kernel fix。",
+    "overlap": "AITER #2821/#4364 · SGLang #34120",
+    "summary_en": "This is a high-activity umbrella with clear ownership; useful as a landing zone, not a duplicate implementation target.",
+    "next_en": "Contribute a measured kernel fix through AITER #2821 or #4364."
+  },
+  {
+    "id": "vLLM-50722",
+    "repo": "vLLM",
+    "number": 50722,
+    "title": "Qwen3.5 DFlash performance is poor",
+    "url": "https://github.com/vllm-project/vllm/issues/50722",
+    "models": [
+      "Qwen"
+    ],
+    "lane": "E2E",
+    "layer": "DFlash / attention",
+    "priority": "P1",
+    "flydsl": "Medium",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-14",
+    "comments": 7,
+    "status": "backlog",
+    "summary": "同时有 backend 开关与 acceptance-length 信号， 容易做 attribution。",
+    "next": "固定 prompt 与 draft 设置， 比较 no-spec、DFlash 与其他 speculative backend。",
+    "overlap": "vLLM #49730 · SGLang Qwen work",
+    "summary_en": "The issue provides both a backend switch and acceptance-length signal, which makes attribution practical.",
+    "next_en": "Compare no-spec, DFlash, and another speculative backend with fixed prompts and draft settings."
+  },
+  {
+    "id": "vLLM-48786",
+    "repo": "vLLM",
+    "number": 48786,
+    "title": "Qwen3.5 FP8 KV cache is slower than BF16 KV cache",
+    "url": "https://github.com/vllm-project/vllm/issues/48786",
+    "models": [
+      "Qwen"
+    ],
+    "lane": "Kernel",
+    "layer": "FP8 KV cache",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-09",
+    "comments": 2,
+    "status": "backlog",
+    "summary": "更少的字节被 quant/dequant 或更差 attention path 抵消。",
+    "next": "分别归因 cache write、decode attention、dequant 与 scheduling。",
+    "overlap": "SGLang #32938",
+    "summary_en": "Lower bytes are being outweighed by quantization, dequantization, or a worse attention path.",
+    "next_en": "Attribute cache write, decode attention, dequantization, and scheduling separately."
+  },
+  {
+    "id": "vLLM-51250",
+    "repo": "vLLM",
+    "number": 51250,
+    "title": "Prefix caching is ineffective on Mamba-2 / GDN hybrid",
+    "url": "https://github.com/vllm-project/vllm/issues/51250",
+    "models": [
+      "Qwen"
+    ],
+    "lane": "E2E",
+    "layer": "Hybrid prefix cache",
+    "priority": "P1",
+    "flydsl": "Low",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-14",
+    "comments": 5,
+    "status": "backlog",
+    "summary": "cache miss 会抹掉更快 kernel 带来的全部 TTFT 收益。",
+    "next": "追踪各 attention group 的 cache key 与 invalidation， 并测真实 prefix-hit rate。",
+    "overlap": "vLLM #45702 · SGLang HiCache",
+    "summary_en": "A cache miss can erase every TTFT gain from faster kernels, so this is an E2E-first issue.",
+    "next_en": "Trace group-specific cache keys and invalidation while measuring actual prefix-hit rate."
+  },
+  {
+    "id": "vLLM-51853",
+    "repo": "vLLM",
+    "number": 51853,
+    "title": "Poor DeepSeek V4 Pro MTP results on MI325X — kernels untuned",
+    "url": "https://github.com/vllm-project/vllm/issues/51853",
+    "models": [
+      "DeepSeek"
+    ],
+    "lane": "E2E",
+    "layer": "MTP / ROCm kernels",
+    "priority": "P1",
+    "flydsl": "High",
+    "effort": "M",
+    "owner": "Unassigned",
+    "updated": "2026-08-13",
+    "comments": 5,
+    "status": "watch",
+    "summary": "issue 明确区分 MTP 行为与未调优 ROCm kernel， 适合做聚焦 handoff。",
+    "next": "固定 acceptance 与 batch bucket， profile 最重的 verify 或 draft shape。",
+    "overlap": "AITER DeepSeek GEMM / MoE issues",
+    "summary_en": "The issue explicitly separates MTP behavior from untuned ROCm kernels, making a focused handoff possible.",
+    "next_en": "Fix acceptance and batch buckets, then profile the heaviest verify or draft shape."
+  }
 ]
   </script>
 
@@ -601,15 +1364,47 @@
     const prs = JSON.parse(document.getElementById("pr-data").textContent);
     const columns = ["backlog", "ready", "progress", "watch"];
     const labels = {
-      backlog: "Backlog / 待评估",
-      ready: "Ready / 可开工",
-      progress: "In Progress / 进行中",
-      watch: "Watch / 阻塞或重叠"
+      zh: {
+        backlog: "Backlog / 待评估",
+        ready: "Ready / 可开工",
+        progress: "In Progress / 进行中",
+        watch: "Watch / 阻塞或重叠"
+      },
+      en: {
+        backlog: "Backlog",
+        ready: "Ready",
+        progress: "In Progress",
+        watch: "Watch / Blocked"
+      }
     };
+    const LANG_KEY = "kernel-inference-board-lang";
     const initial = Object.fromEntries(issues.map(x => [x.id, x.status]));
     let state = loadState();
     let draggedId = null;
     let movedId = null;
+
+    function currentLang() {
+      return document.body.dataset.lang === "en" ? "en" : "zh";
+    }
+
+    function statusLabel(status) {
+      return labels[currentLang()][status];
+    }
+
+    function localized(item, field) {
+      return currentLang() === "en" ? (item[`${field}_en`] || item[field]) : item[field];
+    }
+
+    function applyLanguage(lang) {
+      document.body.dataset.lang = lang;
+      try { localStorage.setItem(LANG_KEY, lang); } catch (_) {}
+      document.querySelectorAll("[data-zh][data-en]").forEach(node => {
+        node.textContent = node.dataset[lang];
+      });
+      const search = document.getElementById("search");
+      search.placeholder = lang === "en" ? search.dataset.placeholderEn : search.dataset.placeholderZh;
+      render();
+    }
 
     function saveState() {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
@@ -628,7 +1423,7 @@
       const owner = document.getElementById("ownerFilter").value;
       const haystack = [
         item.id, item.title, item.repo, item.layer, item.summary,
-        item.next, item.owner, item.overlap, ...item.models
+        item.summary_en, item.next, item.next_en, item.owner, item.overlap, ...item.models
       ].join(" ").toLowerCase();
       return (!query || haystack.includes(query))
         && (repo === "all" || item.repo === repo)
@@ -640,7 +1435,7 @@
 
     function card(item) {
       const statusOptions = columns.map(status =>
-        `<option value="${status}" ${state[item.id] === status ? "selected" : ""}>${labels[status]}</option>`
+        `<option value="${status}" ${state[item.id] === status ? "selected" : ""}>${statusLabel(status)}</option>`
       ).join("");
       return `
         <article class="card repo-${item.repo} ${movedId === item.id ? "just-moved" : ""}" draggable="true" data-id="${item.id}">
@@ -652,16 +1447,16 @@
             </div>
           </div>
           <h3>${escapeHtml(item.title)}</h3>
-          <p class="summary">${escapeHtml(item.summary)}</p>
+          <p class="summary">${escapeHtml(localized(item, "summary"))}</p>
           <div class="card-meta">
             <span>${escapeHtml(item.models.join(" · "))}</span>
             <span>${escapeHtml(item.layer)}</span>
             <span>${item.effort}</span>
-            <span>${item.owner === "Unassigned" ? "未分配" : escapeHtml(item.owner)}</span>
+            <span>${item.owner === "Unassigned" ? (currentLang() === "en" ? "Unassigned" : "未分配") : escapeHtml(item.owner)}</span>
           </div>
           <div class="card-foot">
             <select class="status-select" data-id="${item.id}" aria-label="Move ${escapeHtml(item.title)}">${statusOptions}</select>
-            <button class="mini detail-btn" type="button" data-id="${item.id}">详情</button>
+            <button class="mini detail-btn" type="button" data-id="${item.id}">${currentLang() === "en" ? "Details" : "详情"}</button>
             <a class="mini" href="${item.url}" target="_blank" rel="noreferrer">GitHub</a>
           </div>
         </article>
@@ -678,7 +1473,7 @@
         column.querySelector(".column-count").textContent = items.length;
         column.querySelector(".dropzone").innerHTML = items.length
           ? items.map(card).join("")
-          : `<div class="empty">拖到这里</div>`;
+          : `<div class="empty">${currentLang() === "en" ? "Drop here" : "拖到这里"}</div>`;
       }
       document.getElementById("visibleCount").textContent = visible.length;
       document.getElementById("readyCount").textContent = visible.filter(x => state[x.id] === "ready").length;
@@ -737,7 +1532,7 @@
       movedId = id;
       saveState();
       render();
-      toast(`已移动到 ${labels[status]}`);
+      toast(currentLang() === "en" ? `Moved to ${statusLabel(status)}` : `已移动到 ${statusLabel(status)}`);
     }
 
     function openDetail(id) {
@@ -751,13 +1546,13 @@
           <div class="detail"><span>FlyDSL</span><b>${escapeHtml(item.flydsl)}</b></div>
           <div class="detail"><span>Effort / Owner</span><b>${item.effort} · ${escapeHtml(item.owner)}</b></div>
         </div>
-        <div class="detail-copy"><h4>为什么值得做</h4><p>${escapeHtml(item.summary)}</p></div>
-        <div class="detail-copy"><h4>第一步</h4><p>${escapeHtml(item.next)}</p></div>
-        <div class="detail-copy"><h4>重叠与依赖</h4><p>${escapeHtml(item.overlap)}</p></div>
+        <div class="detail-copy"><h4>${currentLang() === "en" ? "Why it matters" : "为什么值得做"}</h4><p>${escapeHtml(localized(item, "summary"))}</p></div>
+        <div class="detail-copy"><h4>${currentLang() === "en" ? "First useful step" : "第一步"}</h4><p>${escapeHtml(localized(item, "next"))}</p></div>
+        <div class="detail-copy"><h4>${currentLang() === "en" ? "Overlap and dependencies" : "重叠与依赖"}</h4><p>${escapeHtml(item.overlap)}</p></div>
         <div class="dialog-actions">
-          <a class="btn primary" href="${item.url}" target="_blank" rel="noreferrer">打开 GitHub issue</a>
+          <a class="btn primary" href="${item.url}" target="_blank" rel="noreferrer">${currentLang() === "en" ? "Open GitHub issue" : "打开 GitHub issue"}</a>
           <select class="status-select dialog-status" data-id="${item.id}">
-            ${columns.map(status => `<option value="${status}" ${state[item.id] === status ? "selected" : ""}>${labels[status]}</option>`).join("")}
+            ${columns.map(status => `<option value="${status}" ${state[item.id] === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
           </select>
         </div>
       `;
@@ -795,7 +1590,7 @@
       a.download = "kernel-inference-optimization-board.json";
       a.click();
       URL.revokeObjectURL(url);
-      toast("已导出 JSON");
+      toast(currentLang() === "en" ? "JSON exported" : "已导出 JSON");
     }
 
     async function importBoard(file) {
@@ -805,9 +1600,9 @@
         state = {...state, ...imported};
         saveState();
         render();
-        toast(`已导入 ${Object.keys(imported).length} 个状态`);
+        toast(currentLang() === "en" ? `Imported ${Object.keys(imported).length} statuses` : `已导入 ${Object.keys(imported).length} 个状态`);
       } catch (_) {
-        toast("导入失败： JSON 格式或状态值无效");
+        toast(currentLang() === "en" ? "Import failed: invalid JSON or status value" : "导入失败： JSON 格式或状态值无效");
       }
     }
 
@@ -828,12 +1623,12 @@
         ""
       ];
       for (const status of columns) {
-        lines.push(`## ${labels[status]}`, "");
+        lines.push(`## ${statusLabel(status)}`, "");
         for (const item of issues.filter(x => state[x.id] === status)) {
           lines.push(`- [${item.priority}] [${item.repo} #${item.number}](${item.url}) — ${item.title}`);
           lines.push(`  - Models: ${item.models.join(", ")} | Lane: ${item.lane}/${item.layer} | FlyDSL: ${item.flydsl} | Effort: ${item.effort} | Owner: ${item.owner}`);
-          lines.push(`  - Why: ${item.summary}`);
-          lines.push(`  - Next: ${item.next}`);
+          lines.push(`  - Why: ${localized(item, "summary")}`);
+          lines.push(`  - Next: ${localized(item, "next")}`);
         }
         lines.push("");
       }
@@ -858,7 +1653,7 @@
     function shareLink() {
       const url = new URL(location.href);
       url.hash = `board=${encodeState()}`;
-      copyText(url.toString(), "已复制带进度快照的分享链接");
+      copyText(url.toString(), currentLang() === "en" ? "Share link copied with board snapshot" : "已复制带进度快照的分享链接");
     }
 
     function readHash() {
@@ -905,6 +1700,9 @@
       toastTimer = setTimeout(() => node.classList.remove("show"), 1800);
     }
 
+    document.querySelectorAll("[data-set-lang]").forEach(button => {
+      button.addEventListener("click", () => applyLanguage(button.dataset.setLang));
+    });
     document.querySelectorAll(".filters input, .filters select").forEach(node => {
       node.addEventListener("input", render);
       node.addEventListener("change", render);
@@ -917,7 +1715,7 @@
       render();
     });
     document.getElementById("shareBtn").addEventListener("click", shareLink);
-    document.getElementById("briefBtn").addEventListener("click", () => copyText(agentBrief(), "已复制 Agent Brief"));
+    document.getElementById("briefBtn").addEventListener("click", () => copyText(agentBrief(), currentLang() === "en" ? "Agent Brief copied" : "已复制 Agent Brief"));
     document.getElementById("exportBtn").addEventListener("click", exportBoard);
     document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
     document.getElementById("importFile").addEventListener("change", event => {
@@ -926,20 +1724,24 @@
       event.target.value = "";
     });
     document.getElementById("resetBoardBtn").addEventListener("click", () => {
-      if (!confirm("重置所有卡片到默认列？")) return;
+      if (!confirm(currentLang() === "en" ? "Reset every card to its default column?" : "重置所有卡片到默认列？")) return;
       state = {...initial};
       saveState();
       history.replaceState(null, "", location.pathname + location.search);
       render();
-      toast("已重置看板");
+      toast(currentLang() === "en" ? "Board reset" : "已重置看板");
     });
     document.getElementById("dialogClose").addEventListener("click", () => document.getElementById("detailDialog").close());
     document.getElementById("detailDialog").addEventListener("click", event => {
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
 
+    let preferredLang = "zh";
+    try {
+      preferredLang = localStorage.getItem(LANG_KEY) || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
+    } catch (_) {}
     renderPRs();
-    render();
+    applyLanguage(preferredLang === "en" ? "en" : "zh");
   })();
   </script>
 </body>
