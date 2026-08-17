@@ -1,0 +1,56 @@
+name: Sync kernel inference radar
+
+on:
+  schedule:
+    # 08:23 PDT / 07:23 PST. GitHub Actions cron expressions use UTC.
+    - cron: "23 15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-kernel-inference-radar
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh tracked GitHub metadata
+        run: npm run sync:radar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Validate the site
+        run: |
+          git diff --check
+          npm run build
+
+      - name: Commit and deploy the successful sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/sources/kernel-inference-optimization-radar.html
+          if git diff --cached --quiet; then
+            echo "No radar changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: sync kernel inference radar"
+          git push origin HEAD:main
