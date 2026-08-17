@@ -1,842 +1,945 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Source-level · Kernel &amp; Inference Optimization Radar</title>
-  <meta name="description" content="A cross-repository radar for open kernel and model-inference optimization work across AITER, FlyDSL, SGLang, and vLLM." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+  <meta name="description" content="A sortable, draggable board of kernel and model-inference optimization work across AITER, FlyDSL, SGLang, and vLLM." />
+  <meta name="agent-data" content="#issue-data and #pr-data contain the structured board records." />
+  <title>Kernel &amp; Inference Optimization Board</title>
   <style>
     :root {
-      --night: #07110f;
-      --panel: #0d1b18;
-      --panel2: #13231f;
-      --ink: #e8efe8;
-      --muted: #91a69e;
-      --line: #315049;
-      --signal: #a8df4c;
-      --cyan: #4dc7cb;
-      --amber: #e0a53b;
-      --red: #e16962;
-      --paper: #f1f0df;
-      --mono: "IBM Plex Mono", monospace;
-      --display: "Barlow Condensed", sans-serif;
-      --serif: "Source Serif 4", Georgia, serif;
-      --aiter: #c49bef;
-      --flydsl: #4dc7cb;
-      --sglang: #a8df4c;
-      --vllm: #e0a53b;
+      color-scheme: light;
+      --bg: #f4f5f6;
+      --panel: #ffffff;
+      --panel-alt: #f8f9fa;
+      --text: #17202a;
+      --muted: #66727f;
+      --line: #d8dde3;
+      --line-strong: #b8c0c9;
+      --accent: #1769aa;
+      --accent-soft: #e8f2f9;
+      --green: #24734d;
+      --green-soft: #e8f3ed;
+      --amber: #895d09;
+      --amber-soft: #f8efd9;
+      --red: #a43d36;
+      --red-soft: #f9e9e7;
+      --purple: #76519c;
+      --aiter: #76519c;
+      --flydsl: #1769aa;
+      --sglang: #24734d;
+      --vllm: #a7611d;
+      --radius: 7px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #111418;
+        --panel: #191d22;
+        --panel-alt: #20252b;
+        --text: #edf1f5;
+        --muted: #9aa6b2;
+        --line: #343c45;
+        --line-strong: #56616d;
+        --accent: #72b7e5;
+        --accent-soft: #19364b;
+        --green: #7ac39c;
+        --green-soft: #18392a;
+        --amber: #e1b75d;
+        --amber-soft: #443719;
+        --red: #ee9188;
+        --red-soft: #452522;
+        --purple: #c39be2;
+        --aiter: #c39be2;
+        --flydsl: #72b7e5;
+        --sglang: #7ac39c;
+        --vllm: #e6a25f;
+      }
     }
 
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      color: var(--ink);
-      background:
-        repeating-linear-gradient(0deg, rgba(168, 223, 76, .025) 0, rgba(168, 223, 76, .025) 1px, transparent 1px, transparent 28px),
-        var(--night);
-      font-family: var(--serif);
-      font-size: 17px;
-      line-height: 1.62;
-      -webkit-font-smoothing: antialiased;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
     }
-    a { color: var(--cyan); text-underline-offset: 4px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
     button, input, select { font: inherit; }
+    button { cursor: pointer; }
 
-    .lang-toggle {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      z-index: 40;
-      display: flex;
-      border: 1px solid var(--signal);
-      background: var(--night);
-    }
-    .lang-toggle button {
-      border: 0;
-      padding: 7px 11px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      font: 11px var(--mono);
-    }
-    body[data-lang="en"] .lang-toggle button[data-set="en"],
-    body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
-      color: var(--night);
-      background: var(--signal);
-    }
-
-    .shell {
-      display: grid;
-      grid-template-columns: 225px minmax(0, 1fr);
-      min-height: 100vh;
-    }
-    .rail {
+    .topbar {
       position: sticky;
       top: 0;
-      height: 100vh;
-      overflow: auto;
-      padding: 25px 18px;
-      border-right: 1px solid var(--line);
-      background: #081512;
-    }
-    .rail-home {
-      display: block;
-      margin-bottom: 26px;
-      color: var(--signal);
-      font: 11px var(--mono);
-      text-decoration: none;
-    }
-    .rail-mark {
-      margin: 0 0 26px;
-      font: 800 28px/.9 var(--display);
-      letter-spacing: .035em;
-      text-transform: uppercase;
-    }
-    .rail a:not(.rail-home) {
-      display: block;
-      padding: 10px 0;
-      border-top: 1px solid rgba(145, 166, 158, .22);
-      color: var(--muted);
-      font: 11px var(--mono);
-      text-decoration: none;
-    }
-    .rail a:hover { color: var(--ink); }
-    .rail b { color: var(--signal); margin-right: 6px; }
-    .rail-note {
-      margin-top: 24px;
-      color: #71857e;
-      font: 10px/1.55 var(--mono);
-    }
-
-    .page { min-width: 0; }
-    .masthead {
-      padding: 88px clamp(22px, 6vw, 88px) 44px;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 14px clamp(14px, 2.5vw, 32px);
       border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      backdrop-filter: blur(8px);
     }
-    .kicker {
-      margin: 0 0 16px;
-      color: var(--signal);
-      font: 600 11px var(--mono);
-      letter-spacing: .13em;
-      text-transform: uppercase;
+    .backlink {
+      display: inline-block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font: 11px ui-monospace, "SFMono-Regular", Consolas, monospace;
     }
-    h1, h2, h3 { margin: 0; }
     h1 {
-      max-width: 1050px;
-      font: 800 clamp(52px, 9.3vw, 126px)/.82 var(--display);
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.08;
       letter-spacing: -.025em;
-      text-transform: uppercase;
     }
     .subtitle {
-      max-width: 830px;
-      margin: 28px 0 0;
-      color: #bbcbc5;
-      font-size: clamp(18px, 2.1vw, 24px);
-      line-height: 1.48;
-    }
-    .spec {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(130px, 1fr));
-      max-width: 1040px;
-      margin-top: 34px;
-      border: 1px solid var(--line);
-    }
-    .spec div {
-      min-height: 76px;
-      padding: 12px 14px;
-      border-right: 1px solid var(--line);
-      background: rgba(13, 27, 24, .78);
-    }
-    .spec div:last-child { border-right: 0; }
-    .lbl {
-      display: block;
+      margin: 5px 0 0;
       color: var(--muted);
-      font: 10px var(--mono);
-      text-transform: uppercase;
-      letter-spacing: .06em;
+      font-size: 12px;
     }
-    .val {
-      display: block;
-      margin-top: 7px;
-      color: var(--ink);
-      font: 12px var(--mono);
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
     }
+    .btn {
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 11px;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary { color: white; border-color: var(--accent); background: var(--accent); }
+    .btn.danger { color: var(--red); }
 
-    .article {
-      max-width: 980px;
+    main {
+      width: min(1800px, calc(100% - 24px));
       margin: 0 auto;
-      padding: 44px 24px 100px;
+      padding: 18px 0 50px;
     }
-    section { margin: 64px 0; scroll-margin-top: 24px; }
-    h2 {
-      margin-bottom: 18px;
-      font: 700 clamp(34px, 5vw, 58px)/.94 var(--display);
-      letter-spacing: -.015em;
-      text-transform: uppercase;
-    }
-    h3 {
-      margin: 22px 0 8px;
-      color: var(--signal);
-      font: 600 13px var(--mono);
-      letter-spacing: .05em;
-      text-transform: uppercase;
-    }
-    p { margin: 0 0 18px; }
-    .lead { color: #d2ddd8; font-size: 21px; }
-    .signal {
-      color: var(--signal);
-      font-family: var(--mono);
-    }
-    .callout {
-      margin: 24px 0;
-      padding: 17px 19px;
-      border-left: 4px solid var(--signal);
-      background: var(--panel);
-    }
-    .callout p:last-child { margin-bottom: 0; }
-
-    .plate {
-      margin: 30px -70px;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-    .plate-meta {
+    .notice {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
-      padding: 10px 13px;
-      border-bottom: 1px solid var(--line);
+      gap: 20px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
       color: var(--muted);
-      font: 10px var(--mono);
-      text-transform: uppercase;
-      letter-spacing: .06em;
+      font-size: 11px;
     }
-    .plate svg { display: block; width: 100%; height: auto; }
-    .caption {
-      margin: 0;
-      padding: 10px 14px 13px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 13px;
-      font-style: italic;
-    }
-    .svg-label { fill: #91a69e; font: 11px var(--mono); }
-    .svg-title { fill: #e8efe8; font: 700 17px var(--display); letter-spacing: .05em; }
-    .svg-small { fill: #d0ddd8; font: 10px var(--mono); }
-    .svg-line { stroke: #4d6b63; stroke-width: 1.4; fill: none; }
+    .notice strong { color: var(--text); }
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      margin: 28px 0;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin-bottom: 12px;
       border: 1px solid var(--line);
-    }
-    .stat {
-      padding: 14px 15px;
-      border-right: 1px solid var(--line);
-      background: rgba(13, 27, 24, .7);
-    }
-    .stat:last-child { border-right: 0; }
-    .stat strong {
-      display: block;
-      color: var(--signal);
-      font: 700 30px var(--display);
-    }
-    .stat span { display: block; color: var(--muted); font: 10px var(--mono); }
-
-    .priority-grid {
-      display: grid;
-      grid-template-columns: 1.25fr 1fr 1fr;
-      gap: 10px;
-    }
-    .priority-card {
-      min-height: 155px;
-      padding: 15px;
-      border: 1px solid var(--line);
+      border-radius: var(--radius);
       background: var(--panel);
     }
-    .priority-card:first-child {
-      grid-row: span 2;
-      padding: 20px;
+    .stat {
+      padding: 11px 13px;
+      border-right: 1px solid var(--line);
     }
-    .priority-card h4 {
-      margin: 9px 0 7px;
-      font: 700 20px/1.05 var(--display);
-      text-transform: uppercase;
-    }
-    .priority-card:first-child h4 { font-size: 30px; }
-    .priority-card p { margin: 0; color: var(--muted); font-size: 13px; }
-    .meta { display: flex; flex-wrap: wrap; gap: 5px; }
-    .badge {
-      display: inline-block;
-      padding: 2px 6px;
-      border: 1px solid var(--line);
-      color: var(--muted);
-      font: 9px var(--mono);
-      text-transform: uppercase;
-    }
-    .badge.p0 { color: var(--red); border-color: var(--red); }
-    .badge.p1 { color: var(--amber); border-color: var(--amber); }
-    .badge.free { color: var(--signal); border-color: var(--signal); }
-    .badge.direct { color: var(--cyan); border-color: var(--cyan); }
+    .stat:last-child { border-right: 0; }
+    .stat strong { display: block; font-size: 21px; line-height: 1; }
+    .stat span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
 
     .filters {
-      position: sticky;
-      top: 0;
-      z-index: 15;
       display: grid;
-      grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(105px, .7fr));
+      grid-template-columns: minmax(240px, 1.5fr) repeat(5, minmax(120px, .7fr)) auto;
       gap: 7px;
-      padding: 10px;
-      margin: 25px 0 0;
+      margin-bottom: 13px;
+      padding: 9px;
       border: 1px solid var(--line);
-      background: rgba(7, 17, 15, .95);
-      backdrop-filter: blur(7px);
+      border-radius: var(--radius);
+      background: var(--panel);
     }
     .filters input, .filters select {
       width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
       border: 1px solid var(--line);
-      border-radius: 0;
-      padding: 8px 9px;
-      background: var(--panel);
-      color: var(--ink);
+      border-radius: 5px;
       outline: none;
-      font: 11px var(--mono);
+      background: var(--panel-alt);
+      color: var(--text);
+      font-size: 11px;
     }
-    .filters input:focus, .filters select:focus { border-color: var(--signal); }
-    .result-line {
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      padding: 9px 1px;
-      color: var(--muted);
-      font: 10px var(--mono);
-    }
-    .table-wrap {
-      overflow: auto;
-      border: 1px solid var(--line);
-      background: var(--panel);
-    }
-    table {
-      width: 100%;
-      min-width: 1070px;
-      border-collapse: collapse;
-    }
-    th {
-      padding: 9px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--line);
-      background: var(--panel2);
-      color: var(--muted);
-      font: 9px var(--mono);
-      text-transform: uppercase;
-      letter-spacing: .05em;
-    }
-    td {
-      padding: 10px;
-      border-bottom: 1px solid rgba(49, 80, 73, .68);
-      vertical-align: top;
-      font: 11px/1.45 var(--mono);
-    }
-    tbody tr { cursor: pointer; }
-    tbody tr:hover { background: rgba(168, 223, 76, .055); }
-    .title-cell { max-width: 400px; color: var(--ink); font-weight: 600; }
-    .sub { margin-top: 4px; color: var(--muted); font-size: 9px; }
-    .repo-aiter { color: var(--aiter); }
-    .repo-flydsl { color: var(--flydsl); }
-    .repo-sglang { color: var(--sglang); }
-    .repo-vllm { color: var(--vllm); }
+    .filters input:focus, .filters select:focus { border-color: var(--accent); }
 
-    .route-grid {
+    .board {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, minmax(275px, 1fr));
       gap: 10px;
+      align-items: start;
+      overflow-x: auto;
+      padding-bottom: 8px;
     }
-    .route {
-      min-height: 220px;
-      padding: 16px;
-      border-top: 3px solid var(--signal);
+    .column {
+      min-height: 530px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-alt);
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+    .column.is-over {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .column-head {
+      position: sticky;
+      top: 91px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--line);
       background: var(--panel);
     }
-    .route h4 { margin: 0 0 12px; font: 700 20px var(--display); text-transform: uppercase; }
-    .route ol { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
-    .route li + li { margin-top: 8px; }
+    .column-title { font-size: 12px; font-weight: 750; }
+    .column-sub { color: var(--muted); font-size: 9px; margin-top: 2px; }
+    .column-count {
+      min-width: 25px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--panel-alt);
+      color: var(--muted);
+      text-align: center;
+      font-size: 10px;
+    }
+    .dropzone {
+      display: grid;
+      gap: 8px;
+      padding: 9px;
+    }
+    .empty {
+      padding: 22px 10px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 10px;
+    }
 
+    .card {
+      position: relative;
+      padding: 10px 10px 9px 13px;
+      border: 1px solid var(--line);
+      border-left-width: 3px;
+      border-radius: 6px;
+      background: var(--panel);
+      cursor: grab;
+      animation: card-in 150ms ease-out;
+      transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
+    }
+    .card:hover { transform: translateY(-1px); border-color: var(--line-strong); }
+    .card.dragging { opacity: .42; transform: scale(.985); cursor: grabbing; }
+    .card.just-moved { animation: moved 480ms ease-out; }
+    .card.repo-AITER { border-left-color: var(--aiter); }
+    .card.repo-FlyDSL { border-left-color: var(--flydsl); }
+    .card.repo-SGLang { border-left-color: var(--sglang); }
+    .card.repo-vLLM { border-left-color: var(--vllm); }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 7px;
+    }
+    .repo {
+      font: 700 10px ui-monospace, "SFMono-Regular", Consolas, monospace;
+    }
+    .repo-AITER .repo { color: var(--aiter); }
+    .repo-FlyDSL .repo { color: var(--flydsl); }
+    .repo-SGLang .repo { color: var(--sglang); }
+    .repo-vLLM .repo { color: var(--vllm); }
+    .badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+    .badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: var(--panel-alt);
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge.p0 { color: var(--red); background: var(--red-soft); }
+    .badge.p1 { color: var(--amber); background: var(--amber-soft); }
+    .badge.direct, .badge.high { color: var(--accent); background: var(--accent-soft); }
+    .card h3 {
+      margin: 8px 0 5px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .summary {
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.42;
+    }
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+    .card-foot {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 6px;
+      align-items: center;
+      margin-top: 9px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .status-select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 4px 5px;
+      background: var(--panel-alt);
+      color: var(--text);
+      font-size: 9px;
+    }
+    .mini {
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      padding: 3px;
+      font-size: 9px;
+    }
+
+    details.overlap {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+    details.overlap summary {
+      cursor: pointer;
+      padding: 11px 13px;
+      font-size: 11px;
+      font-weight: 700;
+    }
     .pr-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      border: 1px solid var(--line);
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
     }
     .pr {
-      padding: 11px 13px;
+      padding: 9px 11px;
+      border-right: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
+      font-size: 10px;
     }
-    .pr:nth-child(odd) { border-right: 1px solid var(--line); }
-    .pr a { font: 600 11px/1.4 var(--mono); }
-    .pr p { margin: 4px 0 0; color: var(--muted); font: 9px var(--mono); }
+    .pr:nth-child(3n) { border-right: 0; }
+    .pr p { margin: 4px 0 0; color: var(--muted); font-size: 8px; }
+
+    .agent-note {
+      margin-top: 14px;
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      color: var(--muted);
+      font: 10px/1.5 ui-monospace, "SFMono-Regular", Consolas, monospace;
+    }
+    .agent-note strong { color: var(--text); }
 
     dialog {
-      width: min(760px, calc(100% - 26px));
+      width: min(680px, calc(100% - 24px));
       padding: 0;
-      border: 1px solid var(--signal);
-      border-radius: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
       background: var(--panel);
-      color: var(--ink);
+      color: var(--text);
     }
-    dialog::backdrop { background: rgba(0, 0, 0, .72); }
+    dialog::backdrop { background: rgb(0 0 0 / .48); }
     .dialog-head {
       display: flex;
       justify-content: space-between;
-      gap: 14px;
-      padding: 16px 18px;
+      gap: 12px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--line);
     }
-    .dialog-head h4 { margin: 0; font: 700 22px/1.05 var(--display); text-transform: uppercase; }
-    .close {
-      align-self: start;
-      border: 1px solid var(--line);
-      background: transparent;
-      color: var(--ink);
-      padding: 5px 8px;
-      cursor: pointer;
-      font: 10px var(--mono);
-    }
-    .dialog-body { padding: 18px; }
-    .detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
-    .detail {
-      padding: 9px;
-      background: var(--panel2);
-    }
-    .detail span { display: block; color: var(--muted); font: 8px var(--mono); text-transform: uppercase; }
-    .detail b { display: block; margin-top: 3px; font: 11px var(--mono); }
-    .detail-copy { margin-top: 17px; }
-    .detail-copy h5 { margin: 0 0 4px; color: var(--signal); font: 10px var(--mono); text-transform: uppercase; }
-    .detail-copy p { margin: 0; font-size: 14px; }
-    .issue-link {
-      display: inline-block;
-      margin-top: 18px;
-      padding: 8px 10px;
-      color: var(--night);
-      background: var(--signal);
-      text-decoration: none;
-      font: 600 10px var(--mono);
-      text-transform: uppercase;
-    }
-
-    .method-list {
-      border-top: 1px solid var(--line);
-    }
-    .method-row {
+    .dialog-head h2 { margin: 0; font-size: 16px; line-height: 1.25; }
+    .dialog-body { padding: 15px 16px; }
+    .detail-grid {
       display: grid;
-      grid-template-columns: 110px 1fr;
-      gap: 18px;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--line);
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
     }
-    .method-row b { color: var(--signal); font: 11px var(--mono); }
-    .method-row p { margin: 0; color: var(--muted); font-size: 14px; }
-
-    .colophon {
-      padding: 25px clamp(22px, 6vw, 88px) 40px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font: 10px/1.6 var(--mono);
+    .detail {
+      padding: 8px;
+      border-radius: 5px;
+      background: var(--panel-alt);
     }
+    .detail span { display: block; color: var(--muted); font-size: 8px; text-transform: uppercase; }
+    .detail b { display: block; margin-top: 3px; font-size: 10px; }
+    .detail-copy { margin-top: 14px; }
+    .detail-copy h4 { margin: 0 0 4px; color: var(--muted); font-size: 9px; text-transform: uppercase; }
+    .detail-copy p { margin: 0; font-size: 12px; }
+    .dialog-actions { display: flex; gap: 7px; margin-top: 16px; }
 
-    body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
-    body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      z-index: 50;
+      transform: translate(-50%, 12px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: var(--text);
+      color: var(--panel);
+      font-size: 10px;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-    @media (max-width: 1060px) {
-      .shell { grid-template-columns: 1fr; }
-      .rail { position: relative; width: 100%; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
-      .rail nav { display: flex; flex-wrap: wrap; gap: 0 14px; }
-      .rail a:not(.rail-home) { border: 0; padding: 4px 0; }
-      .rail-mark, .rail-note { display: none; }
-      .plate { margin-inline: 0; }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes moved {
+      0% { background: var(--accent-soft); transform: scale(.985); }
+      100% { background: var(--panel); transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
+    @media (max-width: 1150px) {
+      .topbar { position: static; grid-template-columns: 1fr; }
+      .actions { justify-content: flex-start; }
       .filters { grid-template-columns: repeat(3, 1fr); }
       .filters input { grid-column: 1 / -1; }
+      .column-head { top: 0; }
+      .pr-grid { grid-template-columns: repeat(2, 1fr); }
+      .pr:nth-child(3n) { border-right: 1px solid var(--line); }
+      .pr:nth-child(2n) { border-right: 0; }
     }
-    @media (max-width: 700px) {
-      .masthead { padding-top: 76px; }
-      .spec, .stats, .priority-grid, .route-grid, .pr-grid { grid-template-columns: 1fr; }
-      .spec div, .stat { border-right: 0; border-bottom: 1px solid var(--line); }
-      .priority-card:first-child { grid-row: auto; }
-      .pr:nth-child(odd) { border-right: 0; }
-      .filters { position: static; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 720px) {
+      main { width: calc(100% - 14px); }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .stat { border-bottom: 1px solid var(--line); }
+      .stat:nth-child(2n) { border-right: 0; }
+      .stat:last-child { grid-column: 1 / -1; border-bottom: 0; }
+      .filters { grid-template-columns: 1fr 1fr; }
+      .board { grid-template-columns: repeat(4, 290px); }
+      .pr-grid { grid-template-columns: 1fr; }
+      .pr { border-right: 0 !important; }
       .detail-grid { grid-template-columns: 1fr 1fr; }
-      .lang-toggle { top: 9px; right: 9px; }
+      .notice { flex-direction: column; gap: 6px; }
     }
   </style>
 </head>
-<body data-lang="en">
-  <div class="lang-toggle" role="group" aria-label="Language">
-    <button type="button" data-set="en" aria-label="English">EN</button>
-    <button type="button" data-set="zh" aria-label="中文">中文</button>
-  </div>
+<body>
+  <header class="topbar">
+    <div>
+      <a class="backlink" href="/sources/">← jinnpan.com / sources</a>
+      <h1>Kernel &amp; Inference Optimization Board</h1>
+      <p class="subtitle">AITER · FlyDSL · SGLang · vLLM · Kimi · DeepSeek · Qwen · GLM · snapshot 2026-08-17</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="shareBtn" type="button">复制分享链接</button>
+      <button class="btn" id="briefBtn" type="button">复制 Agent Brief</button>
+      <button class="btn" id="exportBtn" type="button">导出 JSON</button>
+      <button class="btn" id="importBtn" type="button">导入 JSON</button>
+      <button class="btn danger" id="resetBoardBtn" type="button">重置进度</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden />
+    </div>
+  </header>
 
-  <div class="shell">
-    <aside class="rail">
-      <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回文库</span></a>
-      <div class="rail-mark">Optimization<br>Radar</div>
-      <nav aria-label="Contents">
-        <a href="#brief"><b>01</b><span lang="en">Decision frame</span><span lang="zh">决策框架</span></a>
-        <a href="#portfolio"><b>02</b><span lang="en">Portfolio map</span><span lang="zh">候选地图</span></a>
-        <a href="#radar"><b>03</b><span lang="en">Interactive radar</span><span lang="zh">交互雷达</span></a>
-        <a href="#routes"><b>04</b><span lang="en">Cross-repo routes</span><span lang="zh">跨仓库路径</span></a>
-        <a href="#overlap"><b>05</b><span lang="en">Active PR overlap</span><span lang="zh">活跃 PR 重叠</span></a>
-        <a href="#method"><b>06</b><span lang="en">Method and limits</span><span lang="zh">方法与边界</span></a>
-      </nav>
-      <p class="rail-note">AITER · FlyDSL · SGLang · vLLM<br>Kimi · DeepSeek · Qwen · GLM<br>Snapshot 2026-08-17</p>
-    </aside>
+  <main>
+    <section class="notice">
+      <span><strong>用法：</strong>拖动卡片或使用卡片底部的状态菜单。 进度保存在当前浏览器；“复制分享链接”会把状态快照写进 URL。</span>
+      <span>静态页面不提供多人实时同步；共享状态源建议后续接 GitHub Projects。</span>
+    </section>
 
-    <main class="page">
-      <header class="masthead">
-        <p class="kicker">Source-level · Open-source inference backlog</p>
-        <h1>Kernel &amp; Inference Optimization Radar</h1>
-        <p class="subtitle" lang="en">A reviewable map of open work across four repositories. It separates kernel opportunities from compiler constraints and model-serving bottlenecks, then shows the integration route required before a microbenchmark can become an end-to-end win.</p>
-        <p class="subtitle" lang="zh">一张可 review、可分享的跨仓库工作地图。 它把 kernel 机会、compiler 约束和 model-serving 瓶颈分开， 再标出从 microbenchmark 走到端到端收益所需的集成路径。</p>
-        <div class="spec">
-          <div><span class="lbl">Snapshot</span><span class="val">2026-08-17</span></div>
-          <div><span class="lbl">Repositories</span><span class="val">AITER / FlyDSL / SGLang / vLLM</span></div>
-          <div><span class="lbl">Issue set</span><span class="val">32 curated open issues</span></div>
-          <div><span class="lbl">Overlap set</span><span class="val">18 active pull requests</span></div>
-        </div>
-      </header>
+    <section class="stats" aria-label="Board statistics">
+      <div class="stat"><strong id="visibleCount">0</strong><span>当前可见</span></div>
+      <div class="stat"><strong id="readyCount">0</strong><span>Ready / 可开工</span></div>
+      <div class="stat"><strong id="progressCount">0</strong><span>In Progress / 进行中</span></div>
+      <div class="stat"><strong id="unassignedCount">0</strong><span>未分配 owner</span></div>
+      <div class="stat"><strong id="prCount">18</strong><span>活跃 PR 重叠</span></div>
+    </section>
 
-      <article class="article">
-        <section id="brief">
-          <h2><span lang="en">The Decision Frame</span><span lang="zh">先定决策框架</span></h2>
-          <p class="lead" lang="en">The scarce resource is not a kernel idea. It is a problem whose first bad stage is known, whose owner is clear, and whose model-level metric can move.</p>
-          <p class="lead" lang="zh">真正稀缺的不是一个 kernel 想法， 而是这样的问题： 首个出错或变慢的 stage 已经明确， ownership 清楚， 而且 model-level 指标确实能被它推动。</p>
-          <div class="callout">
-            <p lang="en"><strong>Why not rank by theoretical speedup?</strong> Because serving is a chain. A faster GEMM changes nothing when prefix caching misses, decode is starved by prefill, or the framework never dispatches the new kernel. The radar therefore scores evidence and integration path, not marketing headroom.</p>
-            <p lang="zh"><strong>为什么不按理论 speedup 排名？</strong> 因为 serving 是一条链。 当 prefix cache 没命中、decode 被 prefill 饿死、或者 framework 根本没有 dispatch 新 kernel 时， 更快的 GEMM 不会改变任何东西。 因此这份雷达优先看证据和集成路径， 而不是宣传口径里的 headroom。</p>
-          </div>
+    <section class="filters" aria-label="Board filters">
+      <input id="search" type="search" placeholder="搜索 title、模型、layer、下一步…" />
+      <select id="repoFilter"><option value="all">全部仓库</option><option>AITER</option><option>FlyDSL</option><option>SGLang</option><option>vLLM</option></select>
+      <select id="modelFilter"><option value="all">全部模型</option><option>Kimi</option><option>DeepSeek</option><option>Qwen</option><option>GLM</option><option>Multi</option></select>
+      <select id="laneFilter"><option value="all">全部类型</option><option>Kernel</option><option>Correctness</option><option>Compiler</option><option>E2E</option><option>Infra</option></select>
+      <select id="priorityFilter"><option value="all">全部优先级</option><option>P0</option><option>P1</option><option>P2</option></select>
+      <select id="ownerFilter"><option value="all">全部 ownership</option><option value="unassigned">未分配</option><option value="assigned">已有 owner</option></select>
+      <button class="btn" id="resetFiltersBtn" type="button">清空筛选</button>
+    </section>
 
-          <figure class="plate">
-            <div class="plate-meta"><span>Plate I · The four-repository contract</span><span>kernel → serving</span></div>
-            <svg viewBox="0 0 980 360" role="img" aria-labelledby="p1-title p1-desc">
-              <title id="p1-title">Four-repository optimization contract</title>
-              <desc id="p1-desc">FlyDSL provides compiler and kernel primitives, AITER owns operator dispatch, SGLang and vLLM own serving integration and end-to-end validation.</desc>
-              <defs><marker id="arrow1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a8df4c"/></marker></defs>
-              <rect x="35" y="55" width="205" height="220" fill="#0b2927" stroke="#4dc7cb"/>
-              <rect x="275" y="55" width="205" height="220" fill="#21172d" stroke="#c49bef"/>
-              <rect x="515" y="55" width="205" height="220" fill="#182619" stroke="#a8df4c"/>
-              <rect x="755" y="55" width="190" height="220" fill="#2c2014" stroke="#e0a53b"/>
-              <text x="55" y="90" class="svg-title">FlyDSL</text>
-              <text x="295" y="90" class="svg-title">AITER</text>
-              <text x="535" y="90" class="svg-title">SGLang</text>
-              <text x="775" y="90" class="svg-title">vLLM</text>
-              <g class="svg-small">
-                <text x="55" y="128">layout / lowering</text><text x="55" y="150">kernel families</text><text x="55" y="172">autotune / AOT</text><text x="55" y="194">resource budget</text>
-                <text x="295" y="128">operator ABI</text><text x="295" y="150">model configs</text><text x="295" y="172">backend dispatch</text><text x="295" y="194">numerical gates</text>
-                <text x="535" y="128">scheduler</text><text x="535" y="150">KV / prefix cache</text><text x="535" y="172">EP / DP / PP</text><text x="535" y="194">traffic matrix</text>
-                <text x="775" y="128">model runner</text><text x="775" y="150">CUDA graphs</text><text x="775" y="172">quantization</text><text x="775" y="194">production E2E</text>
-              </g>
-              <path d="M240 165 H270" stroke="#a8df4c" stroke-width="2" marker-end="url(#arrow1)"/>
-              <path d="M480 165 H510" stroke="#a8df4c" stroke-width="2" marker-end="url(#arrow1)"/>
-              <path d="M720 165 H750" stroke="#a8df4c" stroke-width="2" marker-end="url(#arrow1)"/>
-              <text x="36" y="318" class="svg-label">A contribution is complete only when the contract survives every boundary.</text>
-            </svg>
-            <p class="caption" lang="en">The four repositories are not substitutes. Each owns a different failure boundary; skipping one produces a benchmark result, not a production optimization.</p>
-            <p class="caption" lang="zh">四个仓库不是互相替代的 backend。 每个仓库守住不同的失败边界； 跳过任意一层， 得到的只是 benchmark 结果， 不是 production optimization。</p>
-          </figure>
-        </section>
+    <section class="board" id="board" aria-label="Optimization kanban board">
+      <section class="column" data-status="backlog">
+        <header class="column-head"><div><div class="column-title">Backlog / 待评估</div><div class="column-sub">需要补 profile、scope 或 ownership</div></div><span class="column-count">0</span></header>
+        <div class="dropzone"></div>
+      </section>
+      <section class="column" data-status="ready">
+        <header class="column-head"><div><div class="column-title">Ready / 可开工</div><div class="column-sub">边界明确， 可以写计划或最小 repro</div></div><span class="column-count">0</span></header>
+        <div class="dropzone"></div>
+      </section>
+      <section class="column" data-status="progress">
+        <header class="column-head"><div><div class="column-title">In Progress / 进行中</div><div class="column-sub">已有 owner 或正在实施</div></div><span class="column-count">0</span></header>
+        <div class="dropzone"></div>
+      </section>
+      <section class="column" data-status="watch">
+        <header class="column-head"><div><div class="column-title">Watch / 阻塞或重叠</div><div class="column-sub">先 review 依赖、PR 或上游决定</div></div><span class="column-count">0</span></header>
+        <div class="dropzone"></div>
+      </section>
+    </section>
 
-        <section id="portfolio">
-          <h2><span lang="en">Portfolio Map</span><span lang="zh">候选地图</span></h2>
-          <p lang="en">The selected set is deliberately smaller than a raw GitHub search. Parser bugs, unsupported consumer hardware, and generic feature requests were excluded unless they expose a kernel or inference bottleneck with a measurable path.</p>
-          <p lang="zh">这份候选集刻意小于 GitHub 原始搜索结果。 除非一个问题暴露了可测量的 kernel 或 inference 瓶颈， 否则 parser bug、消费级硬件适配和泛化 feature request 都不进入主表。</p>
+    <details class="overlap">
+      <summary>活跃 PR 重叠检查（18）</summary>
+      <div class="pr-grid" id="prGrid"></div>
+    </details>
 
-          <div class="stats">
-            <div class="stat"><strong id="statIssues">32</strong><span lang="en">open issues</span><span lang="zh">open issues</span></div>
-            <div class="stat"><strong id="statFree">20</strong><span lang="en">unassigned</span><span lang="zh">未分配</span></div>
-            <div class="stat"><strong id="statP0">6</strong><span lang="en">P0 blockers</span><span lang="zh">P0 blockers</span></div>
-            <div class="stat"><strong id="statDirect">0</strong><span lang="en">high / direct FlyDSL fit</span><span lang="zh">高 / 直接 FlyDSL 适配</span></div>
-            <div class="stat"><strong id="statPR">18</strong><span lang="en">active PR overlaps</span><span lang="zh">活跃 PR 重叠</span></div>
-          </div>
-
-          <figure class="plate">
-            <div class="plate-meta"><span>Plate II · Curated work by repository</span><span>32 open issues</span></div>
-            <svg viewBox="0 0 980 330" role="img" aria-labelledby="p2-title p2-desc">
-              <title id="p2-title">Curated issue counts by repository</title>
-              <desc id="p2-desc">Eight curated issues from each of AITER, FlyDSL, SGLang and vLLM.</desc>
-              <line x1="80" y1="265" x2="920" y2="265" class="svg-line"/>
-              <g class="svg-small">
-                <text x="120" y="292">AITER</text><text x="330" y="292">FlyDSL</text><text x="540" y="292">SGLang</text><text x="750" y="292">vLLM</text>
-              </g>
-              <rect x="105" y="85" width="115" height="180" fill="#c49bef"/><text x="150" y="73" class="svg-title">8</text>
-              <rect x="315" y="85" width="115" height="180" fill="#4dc7cb"/><text x="360" y="73" class="svg-title">8</text>
-              <rect x="525" y="85" width="115" height="180" fill="#a8df4c"/><text x="570" y="73" class="svg-title" fill="#07110f">8</text>
-              <rect x="735" y="85" width="115" height="180" fill="#e0a53b"/><text x="780" y="73" class="svg-title">8</text>
-              <text x="80" y="315" class="svg-label">Balanced by design: kernel supply, operator dispatch, and two serving runtimes.</text>
-            </svg>
-            <p class="caption" lang="en">Equal repository counts are a review device, not a claim that the backlogs are equally large. They prevent the framework layers from disappearing behind a kernel-only list.</p>
-            <p class="caption" lang="zh">每个仓库各取八项是一种 review 约束， 不是说四个 backlog 一样大。 它防止 framework 层的问题被 kernel-only 清单淹没。</p>
-          </figure>
-
-          <div class="priority-grid" id="priorityGrid"></div>
-        </section>
-
-        <section id="radar">
-          <h2><span lang="en">Interactive Radar</span><span lang="zh">交互雷达</span></h2>
-          <p lang="en">Filter by repository, model, optimization layer, priority, and ownership. Click a row for the causal reason, the first useful experiment, and known overlap.</p>
-          <p lang="zh">可以按 repository、model、优化层、priority 和 ownership 筛选。 点击任意一行， 查看因果判断、第一步实验和已知重叠。</p>
-
-          <div class="filters">
-            <input id="search" type="search" placeholder="Search title, model, kernel, next step…" />
-            <select id="repoFilter"><option value="all">All repos / 全部仓库</option><option>AITER</option><option>FlyDSL</option><option>SGLang</option><option>vLLM</option></select>
-            <select id="modelFilter"><option value="all">All models / 全部模型</option><option>Kimi</option><option>DeepSeek</option><option>Qwen</option><option>GLM</option><option>Multi</option></select>
-            <select id="laneFilter"><option value="all">All lanes / 全部优化层</option><option>Kernel</option><option>Correctness</option><option>Compiler</option><option>E2E</option><option>Infra</option></select>
-            <select id="priorityFilter"><option value="all">All priorities / 全部优先级</option><option>P0</option><option>P1</option><option>P2</option></select>
-            <select id="ownerFilter"><option value="all">All owners / 全部 ownership</option><option value="unassigned">Unassigned / 未分配</option><option value="assigned">Assigned / 已有 owner</option></select>
-            <select id="sortBy"><option value="score">Recommendation / 建议分数</option><option value="updated">Recently updated / 最近更新</option><option value="comments">Discussion / 讨论热度</option><option value="effort">Effort / 工作量</option></select>
-          </div>
-          <div class="result-line"><span id="resultCount"></span><span lang="en">Click a row for details</span><span lang="zh">点击行查看详情</span></div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Priority</th><th>Repo</th><th>Model</th><th>Lane</th><th>Issue</th><th>FlyDSL</th><th>Effort</th><th>Owner</th><th>Updated</th>
-                </tr>
-              </thead>
-              <tbody id="issueBody"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section id="routes">
-          <h2><span lang="en">Cross-repo Routes</span><span lang="zh">跨仓库落地路径</span></h2>
-          <p lang="en">A good issue has a route to production. These three routes cover most of the selected work.</p>
-          <p lang="zh">一个好 issue 必须有通向 production 的路径。 下面三条路径覆盖了大多数候选。</p>
-          <div class="route-grid">
-            <article class="route">
-              <h4>MLA / Attention</h4>
-              <ol lang="en"><li>Capture the production geometry and first bad stage in AITER.</li><li>Implement and resource-gate the kernel in FlyDSL / ASM / Gluon.</li><li>Wire actual dispatch in SGLang or vLLM.</li><li>Close on TPOT, TTFT, long-context accuracy, and graph replay.</li></ol>
-              <ol lang="zh"><li>先在 AITER 固定 production geometry 和首个坏 stage。</li><li>用 FlyDSL / ASM / Gluon 实现， 并检查资源预算。</li><li>在 SGLang 或 vLLM 接入真实 dispatch。</li><li>最后用 TPOT、TTFT、长上下文准确率和 graph replay 收口。</li></ol>
-            </article>
-            <article class="route">
-              <h4>MoE / GEMM</h4>
-              <ol lang="en"><li>Weight shapes by the model's real token and expert histogram.</li><li>Gate small-M latency and large-M MFU separately.</li><li>Preserve weight layout, config key, and graph-safe semantics through AITER.</li><li>Verify throughput across concurrency, not one operator cell.</li></ol>
-              <ol lang="zh"><li>按模型真实 token 和 expert histogram 给 shape 加权。</li><li>分别检查小 M latency 与大 M MFU。</li><li>通过 AITER 保持 weight layout、config key 和 graph-safe 语义。</li><li>在多并发下验证 throughput， 而不是只看一个 operator cell。</li></ol>
-            </article>
-            <article class="route">
-              <h4>Serving / Cache</h4>
-              <ol lang="en"><li>Separate scheduling, cache hit rate, communication, and kernels.</li><li>Do not optimize a kernel while decode is starved or prefixes miss.</li><li>Use fixed traffic and counter-ordered A/B.</li><li>Report P50 and tail latency together with correctness.</li></ol>
-              <ol lang="zh"><li>把 scheduling、cache hit、communication 和 kernel 分开。</li><li>当 decode 被饿死或 prefix miss 时， 不要先优化 kernel。</li><li>使用固定流量和 counter-ordered A/B。</li><li>同时报告 P50、tail latency 和正确性。</li></ol>
-            </article>
-          </div>
-
-          <figure class="plate">
-            <div class="plate-meta"><span>Plate III · Evidence funnel</span><span>why microbench is not enough</span></div>
-            <svg viewBox="0 0 980 390" role="img" aria-labelledby="p3-title p3-desc">
-              <title id="p3-title">Evidence funnel from correctness to end-to-end</title>
-              <desc id="p3-desc">A four-stage funnel: numerical correctness, production dispatch, stable operator performance, and end-to-end model benefit.</desc>
-              <polygon points="95,55 885,55 800,125 180,125" fill="#3a1718" stroke="#e16962"/>
-              <polygon points="180,138 800,138 720,208 260,208" fill="#1e2722" stroke="#e0a53b"/>
-              <polygon points="260,221 720,221 640,291 340,291" fill="#112a29" stroke="#4dc7cb"/>
-              <polygon points="340,304 640,304 570,365 410,365" fill="#26351b" stroke="#a8df4c"/>
-              <text x="120" y="96" class="svg-title">1 · Numerical correctness</text><text x="620" y="96" class="svg-small">reference · edge shapes · graph replay</text>
-              <text x="208" y="179" class="svg-title">2 · Production dispatch</text><text x="570" y="179" class="svg-small">real layout · config key · backend proof</text>
-              <text x="290" y="262" class="svg-title">3 · Stable operator win</text><text x="535" y="262" class="svg-small">idle GPU · medians · variance</text>
-              <text x="381" y="342" class="svg-title">4 · Model E2E</text><text x="520" y="342" class="svg-small">TTFT · TPOT · quality</text>
-            </svg>
-            <p class="caption" lang="en">Each stage removes candidates. That is the point: a smaller claim that survives all four stages is more useful than a large microbenchmark number.</p>
-            <p class="caption" lang="zh">每一层都会淘汰候选， 这正是它存在的意义。 一个穿过四层的小结论， 比只存在于 microbenchmark 里的大数字更有价值。</p>
-          </figure>
-        </section>
-
-        <section id="overlap">
-          <h2><span lang="en">Active PR Overlap</span><span lang="zh">活跃 PR 重叠</span></h2>
-          <p lang="en">These pull requests are not backlog candidates; they are collision warnings. Review them before claiming an issue or proposing a competing implementation.</p>
-          <p lang="zh">这些 pull request 不是待认领候选， 而是 collision warning。 在认领 issue 或提出竞争实现之前， 应先 review 它们。</p>
-          <div class="pr-grid" id="prGrid"></div>
-
-          <figure class="plate">
-            <div class="plate-meta"><span>Plate IV · Ownership and overlap</span><span>32 issues · 18 PRs</span></div>
-            <svg viewBox="0 0 980 330" role="img" aria-labelledby="p4-title p4-desc">
-              <title id="p4-title">Issue ownership and pull request overlap</title>
-              <desc id="p4-desc">Twenty selected issues are unassigned, twelve have owners, and eighteen active pull requests overlap the area.</desc>
-              <rect x="75" y="70" width="500" height="72" fill="#26351b" stroke="#a8df4c"/>
-              <rect x="75" y="168" width="300" height="72" fill="#2f2717" stroke="#e0a53b"/>
-              <rect x="635" y="70" width="270" height="170" fill="#241b25" stroke="#c49bef"/>
-              <text x="95" y="102" class="svg-title">20 unassigned issues</text><text x="95" y="125" class="svg-small">candidate pool · still verify informal ownership</text>
-              <text x="95" y="200" class="svg-title">12 assigned issues</text><text x="95" y="223" class="svg-small">coordinate before implementation</text>
-              <text x="665" y="112" class="svg-title">18 open PRs</text><text x="665" y="143" class="svg-small">overlap, dependencies,</text><text x="665" y="162" class="svg-small">and already-measured paths</text>
-              <path d="M575 106 H625" stroke="#a8df4c" stroke-width="2"/>
-              <path d="M375 204 H625" stroke="#e0a53b" stroke-width="2"/>
-              <text x="75" y="287" class="svg-label">GitHub assignee is a lower bound: roadmap and comment ownership may exist without an assignee.</text>
-            </svg>
-            <p class="caption" lang="en">“Unassigned” means no GitHub assignee, not no owner. The radar treats it as an invitation to coordinate, not permission to duplicate work.</p>
-            <p class="caption" lang="zh">“未分配”只表示 GitHub 没有 assignee， 不代表没人负责。 这份雷达把它视为协调邀请， 而不是重复开发的许可。</p>
-          </figure>
-        </section>
-
-        <section id="method">
-          <h2><span lang="en">Method and Limits</span><span lang="zh">方法与边界</span></h2>
-          <div class="method-list">
-            <div class="method-row"><b>Scope</b><p lang="en">Open issues mentioning the target models, ROCm / AMD, kernel families, or measurable inference performance. Parser-only and generic support requests were excluded.</p><p lang="zh">筛选目标模型、ROCm / AMD、kernel family 或可测量 inference performance 相关的 open issue。 纯 parser 和泛化 support request 不进入主表。</p></div>
-            <div class="method-row"><b>Priority</b><p lang="en">P0 is a correctness or production blocker. P1 is an attributable performance opportunity. P2 is enabling infrastructure or evidence that should shape other work.</p><p lang="zh">P0 是 correctness 或 production blocker； P1 是可归因的性能机会； P2 是基础设施或会改变其他工作的证据。</p></div>
-            <div class="method-row"><b>FlyDSL fit</b><p lang="en">Direct means the issue lives in FlyDSL. High means a FlyDSL kernel is a natural implementation. Medium means it is a useful alternative or cross-check. Low means the bottleneck is mainly framework-level.</p><p lang="zh">Direct 表示问题就在 FlyDSL； High 表示 FlyDSL kernel 是自然实现； Medium 表示它适合作为替代或交叉验证； Low 表示主要瓶颈在 framework。</p></div>
-            <div class="method-row"><b>Snapshot</b><p lang="en">Issue and pull-request state was checked on 2026-08-17. GitHub changes continuously; re-check state, owner, and linked work before execution.</p><p lang="zh">issue 与 pull request 状态检查于 2026-08-17。 GitHub 持续变化， 执行前必须重新确认 state、owner 和关联工作。</p></div>
-          </div>
-        </section>
-      </article>
-
-      <footer class="colophon">
-        <span lang="en">Compiled for review and sharing · Source data: public GitHub issue and pull-request metadata · No repository code was modified for this analysis.</span>
-        <span lang="zh">为 review 与分享整理 · 数据来自公开 GitHub issue 和 pull request metadata · 本分析没有修改这些项目的代码。</span>
-      </footer>
-    </main>
-  </div>
+    <section class="agent-note">
+      <strong>Agent interface:</strong>
+      结构化 issue 数据位于 <code>#issue-data</code>， PR 数据位于 <code>#pr-data</code>。
+      分享链接的 <code>#board=</code> hash、导出 JSON 和“Agent Brief”都包含当前列状态， 适合交给其他 agent 继续筛选或生成执行计划。
+    </section>
+  </main>
 
   <dialog id="detailDialog">
     <div class="dialog-head">
-      <h4 id="dialogTitle"></h4>
-      <button class="close" id="dialogClose" type="button"><span lang="en">Close</span><span lang="zh">关闭</span></button>
+      <h2 id="dialogTitle"></h2>
+      <button class="btn" id="dialogClose" type="button">关闭</button>
     </div>
     <div class="dialog-body" id="dialogBody"></div>
   </dialog>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script id="issue-data" type="application/json">
+[
+  {"id":"AITER-4541","repo":"AITER","number":4541,"title":"[Kimi-K3 MLA TP8] MLA performance","url":"https://github.com/ROCm/aiter/issues/4541","models":["Kimi"],"lane":"Kernel","layer":"MLA decode","priority":"P0","flydsl":"Medium","effort":"XL","owner":"Unassigned","updated":"2026-08-04","comments":0,"status":"ready","summary":"已有 production shape、KV traffic 与 head padding 分析， 是真正可能推动 Kimi-K3 TPOT 的问题。","next":"先拆分 page size、12→16 head padding 和 shared-prefix 重读占比。","overlap":"AITER PR #4758 / #4676"},
+  {"id":"AITER-4528","repo":"AITER","number":4528,"title":"Kimi-K3 A8W4 SiTUv2 token=8192 intermittently returns NaN","url":"https://github.com/ROCm/aiter/issues/4528","models":["Kimi"],"lane":"Correctness","layer":"A8W4 SiTUv2 MoE","priority":"P0","flydsl":"Direct","effort":"M","owner":"Unassigned","updated":"2026-08-03","comments":0,"status":"ready","summary":"直接命中 production FlyDSL SiTUv2 路径， 正确性必须先于大 M 调优。","next":"固定 seed 和 token bucket， 定位 quant、GEMM1、activation、GEMM2 中首个非有限值。","overlap":"SGLang #32548 · vLLM #52442"},
+  {"id":"AITER-2821","repo":"AITER","number":2821,"title":"Missing gqa_ratio=8 kernels blocks GLM-5 HiSparse on MI355X TP8","url":"https://github.com/ROCm/aiter/issues/2821","models":["GLM"],"lane":"Kernel","layer":"MLA decode","priority":"P0","flydsl":"Medium","effort":"L","owner":"Unassigned","updated":"2026-06-12","comments":2,"status":"ready","summary":"明确缺失 capability；正确 kernel 可直接解锁 GLM-5 HiSparse TP8。","next":"先实现最小 qseqlen=1 + FP8 KV 路径， 再加入精确 GLM TP8 E2E gate。","overlap":"AITER #726"},
+  {"id":"AITER-2495","repo":"AITER","number":2495,"title":"Paged attention batch=1 latency is 2x slower than FlashInfer","url":"https://github.com/ROCm/aiter/issues/2495","models":["GLM","Multi"],"lane":"Kernel","layer":"Paged attention","priority":"P1","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-03-27","comments":0,"status":"ready","summary":"batch-one decode 是 agentic serving 的核心区间， 适合拆解 metadata、gather、QK/PV 与 launch。","next":"建立 batch 1/2/4 × page size 的稳定矩阵， 再改 kernel。","overlap":"FlyDSL PR #910"},
+  {"id":"AITER-4364","repo":"AITER","number":4364,"title":"qh16 FP8 sparse decode is nondeterministic across runs","url":"https://github.com/ROCm/aiter/issues/4364","models":["GLM"],"lane":"Correctness","layer":"MLA split-K reduce","priority":"P0","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-07-27","comments":1,"status":"ready","summary":"split-K 非确定性会改变长上下文 retrieval 结果， FlyDSL reduce 可作为修复候选或 oracle。","next":"固定 partial map 与 split count， 定位 stage-1 writeback 或 reduce race。","overlap":"AITER #4350 · vLLM #52150"},
+  {"id":"AITER-2416","repo":"AITER","number":2416,"title":"SDPA decode on gfx950 uses less than 6% of HBM","url":"https://github.com/ROCm/aiter/issues/2416","models":["Kimi","DeepSeek"],"lane":"Kernel","layer":"SDPA / PA decode","priority":"P1","flydsl":"High","effort":"L","owner":"sunway513","updated":"2026-03-22","comments":0,"status":"progress","summary":"低利用率指向 gather、launch、occupancy 或 page-table overhead， 而非简单带宽上限。","next":"与 owner 协调， 并和 AITER #2495 共用 benchmark matrix。","overlap":"AITER #2495 · FlyDSL PR #910"},
+  {"id":"AITER-2407","repo":"AITER","number":2407,"title":"FP8 Triton GEMM regression on N=2112 and N=4096 shapes","url":"https://github.com/ROCm/aiter/issues/2407","models":["DeepSeek"],"lane":"Kernel","layer":"FP8 GEMM","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-03-22","comments":0,"status":"backlog","summary":"这些 projection width 会跨 DeepSeek 多层重复， 局部 regression 会被模型放大。","next":"缩到一个 shape， 对比 Triton codegen、FlyDSL tile 与 native backend。","overlap":"AITER #2408"},
+  {"id":"AITER-4318","repo":"AITER","number":4318,"title":"FlyDSL grouped MoE prefill optimization","url":"https://github.com/ROCm/aiter/issues/4318","models":["Multi"],"lane":"Kernel","layer":"Grouped MoE prefill","priority":"P1","flydsl":"Direct","effort":"M","owner":"lalala-sh","updated":"2026-07-21","comments":0,"status":"progress","summary":"可复用于四类目标模型， 但 synthetic uniform routing 不足以代表生产流量。","next":"按 TP/EP 下真实 token bucket 和 expert histogram 加权 tuning。","overlap":"FlyDSL #708 · PR #901"},
+
+  {"id":"FlyDSL-708","repo":"FlyDSL","number":708,"title":"MXFP4 MoE has low MFU at large shapes and high latency at small tokens","url":"https://github.com/ROCm/FlyDSL/issues/708","models":["Kimi","DeepSeek","Qwen","GLM"],"lane":"Kernel","layer":"MXFP4 MoE","priority":"P1","flydsl":"Direct","effort":"L","owner":"coderfeli","updated":"2026-06-25","comments":3,"status":"progress","summary":"同时覆盖 decode latency 与 prefill MFU， 是四类目标模型中复用价值最高的 FlyDSL issue。","next":"使用双目标 tuner： 小 M 看 launch/weight decode， 大 M 看 MFMA/LDS pipeline。","overlap":"AITER #4318 · FlyDSL PR #872/#901"},
+  {"id":"FlyDSL-862","repo":"FlyDSL","number":862,"title":"Reduce FlyDSL compile time","url":"https://github.com/ROCm/FlyDSL/issues/862","models":["Multi"],"lane":"Compiler","layer":"JIT / startup","priority":"P1","flydsl":"Direct","effort":"M","owner":"xudoyuan","updated":"2026-07-16","comments":0,"status":"progress","summary":"frontier model specialization 多， compile time 直接影响 cold start、扩容与恢复。","next":"分别归因 Python trace、MLIR、LLVM、link 与 cache miss。","overlap":"AITER #3566/#2336 · FlyDSL PR #669"},
+  {"id":"FlyDSL-821","repo":"FlyDSL","number":821,"title":"fx.gemm uses more VGPR than raw MFMA and fails with BufferCopy atoms","url":"https://github.com/ROCm/FlyDSL/issues/821","models":["Multi"],"lane":"Compiler","layer":"GEMM lowering / VGPR","priority":"P1","flydsl":"Direct","effort":"M","owner":"jli-melchior","updated":"2026-07-10","comments":2,"status":"progress","summary":"lowering 层资源 regression 会同时限制 GEMM、MoE 与 fused projection。","next":"对比 raw-MFMA 的 IR、ISA、VGPR、spill 与 occupancy。","overlap":"FlyDSL #400 · PR #1015"},
+  {"id":"FlyDSL-770","repo":"FlyDSL","number":770,"title":"Make autotune a safe, adopted path","url":"https://github.com/ROCm/FlyDSL/issues/770","models":["Multi"],"lane":"Infra","layer":"Autotune","priority":"P1","flydsl":"Direct","effort":"M","owner":"Unassigned","updated":"2026-07-21","comments":2,"status":"backlog","summary":"没有安全 tuner， model coverage 会退化成手写 CSV 和偶然 winner。","next":"加入 correctness gate、crash isolation、稳定 cache key、counter-ordered timing。","overlap":"FlyDSL PR #924 · AITER tuner"},
+  {"id":"FlyDSL-603","repo":"FlyDSL","number":603,"title":"FlyDSL integration testing with SGLang and vLLM","url":"https://github.com/ROCm/FlyDSL/issues/603","models":["Multi"],"lane":"Infra","layer":"Framework integration CI","priority":"P1","flydsl":"Direct","effort":"M","owner":"gyohuangxin","updated":"2026-06-02","comments":1,"status":"progress","summary":"这是 kernel microbenchmark 与 model E2E 结论之间缺失的桥梁。","next":"固定少量模型与流量矩阵， 记录 exact commit、dispatch、accuracy、TTFT、TPOT。","overlap":"AITER #3368/#2751 · vLLM #43916"},
+  {"id":"FlyDSL-1002","repo":"FlyDSL","number":1002,"title":"fx.exp2 lowers to OCML instead of native v_exp_f32","url":"https://github.com/ROCm/FlyDSL/issues/1002","models":["Multi"],"lane":"Compiler","layer":"Fast math / softmax","priority":"P1","flydsl":"Direct","effort":"M","owner":"Unassigned","updated":"2026-08-12","comments":0,"status":"ready","summary":"exp2 在 attention softmax 中反复出现， 额外 VALU/VGPR 会跨 kernel 累积。","next":"提供 native fast-math contract， 并在 attention kernel 而非 elementwise microbench 中验收。","overlap":"FlyDSL PR #1009"},
+  {"id":"FlyDSL-400","repo":"FlyDSL","number":400,"title":"SSA phi explosion wastes VGPR and causes spills across scf.IfOp","url":"https://github.com/ROCm/FlyDSL/issues/400","models":["Multi"],"lane":"Compiler","layer":"Control flow / VGPR","priority":"P1","flydsl":"Direct","effort":"L","owner":"sjfeng1999, jli-melchior","updated":"2026-04-17","comments":0,"status":"watch","summary":"大 accumulator GEMM 与 attention kernel 的系统性编译器限制。","next":"构造最小 IR repro， 并对 VGPR/spill/occupancy 做 regression gate。","overlap":"FlyDSL PR #1015"},
+  {"id":"FlyDSL-1016","repo":"FlyDSL","number":1016,"title":"Grow flydsl.extension into common GPU building blocks","url":"https://github.com/ROCm/FlyDSL/issues/1016","models":["Multi"],"lane":"Infra","layer":"Reusable GPU primitives","priority":"P2","flydsl":"Direct","effort":"XL","owner":"sjfeng1999","updated":"2026-08-17","comments":0,"status":"backlog","summary":"共享 reduction、scan、RNG 与 quant block 可减少生产 kernel 的重复正确性风险。","next":"从已在两个 production kernel 中重复的 primitive 开始， 并迁移两处实现。","overlap":"Cross-repository infrastructure"},
+
+  {"id":"SGLang-32548","repo":"SGLang","number":32548,"title":"Kimi-K3 AMD Day 0 and Performance Tracking","url":"https://github.com/sgl-project/sglang/issues/32548","models":["Kimi"],"lane":"E2E","layer":"AMD Kimi-K3 tracker","priority":"P1","flydsl":"Medium","effort":"L","owner":"Unassigned","updated":"2026-07-27","comments":1,"status":"backlog","summary":"AITER/FlyDSL Kimi 工作在 SGLang 侧最自然的 E2E 汇总入口。","next":"统一 dispatch evidence、traffic matrix 与 accuracy gate。","overlap":"AITER #4541/#4528 · SGLang PR #33838"},
+  {"id":"SGLang-34815","repo":"SGLang","number":34815,"title":"PP8 disaggregated prefill has a load-independent 30-second TTFT floor","url":"https://github.com/sgl-project/sglang/issues/34815","models":["Kimi"],"lane":"E2E","layer":"Disaggregated prefill / TTFT","priority":"P0","flydsl":"Low","effort":"L","owner":"Unassigned","updated":"2026-08-14","comments":1,"status":"ready","summary":"与负载无关的固定下限指向同步、通信或初始化， 不是 kernel throughput ceiling。","next":"建立 tokenizer、prefill、transfer、barrier 与 first decode timeline。","overlap":"Disaggregated serving roadmaps"},
+  {"id":"SGLang-33846","repo":"SGLang","number":33846,"title":"Kimi-K3 KDA prefill hangs in tolist() / hipMemcpy D2H","url":"https://github.com/sgl-project/sglang/issues/33846","models":["Kimi"],"lane":"Correctness","layer":"KDA prefill host sync","priority":"P0","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-08-06","comments":2,"status":"ready","summary":"失败位于 kernel metadata 与 host synchronization 边界， 同时可能隐藏固定同步开销。","next":"让 plan 变成 host-known 或 device-resident， 消除热路径 D2H。","overlap":"AITER / FlyDSL KDA prefill"},
+  {"id":"SGLang-32938","repo":"SGLang","number":32938,"title":"FP8 KV cache slows performance when DSpark is enabled","url":"https://github.com/sgl-project/sglang/issues/32938","models":["Kimi","DeepSeek"],"lane":"E2E","layer":"FP8 KV + DSpark","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-07-30","comments":1,"status":"backlog","summary":"更少的 KV 字节被 dequant、gather、graph bucket 或 acceptance 变化抵消。","next":"固定 acceptance， 运行 no-spec/DSpark × BF16/FP8 KV 四象限矩阵。","overlap":"vLLM #48786/#47602"},
+  {"id":"SGLang-34120","repo":"SGLang","number":34120,"title":"Wide EP for GLM-5.2 and Kimi-K3","url":"https://github.com/sgl-project/sglang/issues/34120","models":["Kimi","GLM"],"lane":"E2E","layer":"Wide EP","priority":"P1","flydsl":"High","effort":"XL","owner":"b8zhong","updated":"2026-08-11","comments":5,"status":"progress","summary":"横跨 routing、MoE kernel、all-to-all 与 scheduling， 只优化一个组件可能不动 E2E。","next":"先测 EP scaling efficiency， 再选择 routing、GEMM 或 communication overlap。","overlap":"FlyDSL #708 · AITER #4318"},
+  {"id":"SGLang-33422","repo":"SGLang","number":33422,"title":"DeepSeek-V4 prefill on SM120 is 2–7K tok/s versus 12.5K","url":"https://github.com/sgl-project/sglang/issues/33422","models":["DeepSeek"],"lane":"E2E","layer":"DSv4 prefill","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-08-04","comments":1,"status":"watch","summary":"同硬件差距明确， 可沿 dispatch 与 kernel coverage 直接追踪。","next":"对比 vLLM/Marlin 路径， 抓取 backend、shape 与 phase timing。","overlap":"vLLM #41063 · FlyDSL RDNA GEMM work"},
+  {"id":"SGLang-33706","repo":"SGLang","number":33706,"title":"Shared-to-sparse experts fusion for Qwen3.5 / Qwen3.6","url":"https://github.com/sgl-project/sglang/issues/33706","models":["Qwen"],"lane":"Kernel","layer":"Expert fusion","priority":"P1","flydsl":"High","effort":"L","owner":"Unassigned","updated":"2026-08-06","comments":2,"status":"watch","summary":"边界明确， 可同时定义 kernel acceptance gate 与 model E2E gate。","next":"先量化 shared/sparse experts 之间的 materialization 与 launch cost。","overlap":"vLLM Qwen performance issues"},
+  {"id":"SGLang-32549","repo":"SGLang","number":32549,"title":"Decode is starved under sustained chunked-prefill load","url":"https://github.com/sgl-project/sglang/issues/32549","models":["Multi"],"lane":"E2E","layer":"Scheduler fairness","priority":"P1","flydsl":"Low","effort":"M","owner":"Unassigned","updated":"2026-08-07","comments":2,"status":"backlog","summary":"每 24 秒才发一个 decode batch 的 scheduler 会抹掉所有 kernel speedup。","next":"建立 mixed prefill/decode workload， 同时约束 TTFT 与 ITL。","overlap":"Framework-first issue"},
+
+  {"id":"vLLM-50682","repo":"vLLM","number":50682,"title":"ROCm Kimi-K3 Gap and Roadmap Tracking","url":"https://github.com/vllm-project/vllm/issues/50682","models":["Kimi"],"lane":"E2E","layer":"ROCm Kimi-K3 tracker","priority":"P1","flydsl":"Medium","effort":"L","owner":"hongxiayang","updated":"2026-08-17","comments":18,"status":"watch","summary":"vLLM 侧最活跃的 Kimi kernel 集成入口， 已有明确 owner 和多个 PR。","next":"把每个 gap 映射到一个 AITER/FlyDSL issue 与固定 benchmark。","overlap":"vLLM PR #50665/#50657"},
+  {"id":"vLLM-50587","repo":"vLLM","number":50587,"title":"Kimi K3 Performance Optimization","url":"https://github.com/vllm-project/vllm/issues/50587","models":["Kimi"],"lane":"E2E","layer":"Kimi-K3 performance","priority":"P1","flydsl":"High","effort":"L","owner":"yewentao256","updated":"2026-08-14","comments":0,"status":"progress","summary":"模型级入口已有 owner， 并与更大的 Kimi tracker 重叠。","next":"协调 scope；每个 kernel 接入都要求真实 dispatch 与 concurrency matrix。","overlap":"AITER PR #4498/#4504/#4496"},
+  {"id":"vLLM-41820","repo":"vLLM","number":41820,"title":"DeepSeek-V4 support and optimization on ROCm","url":"https://github.com/vllm-project/vllm/issues/41820","models":["DeepSeek"],"lane":"E2E","layer":"ROCm DSv4 optimization","priority":"P1","flydsl":"High","effort":"L","owner":"Unassigned","updated":"2026-08-14","comments":17,"status":"ready","summary":"尚未分配、讨论充分， 适合作为 DeepSeek 跨 AITER/FlyDSL/vLLM 的落地点。","next":"从 profile 选一个高占比 op， 同时要求 micro、production-op 与 E2E 证据。","overlap":"AITER DeepSeek issues · FlyDSL #708"},
+  {"id":"vLLM-46654","repo":"vLLM","number":46654,"title":"GLM 5.2 Performance Optimization","url":"https://github.com/vllm-project/vllm/issues/46654","models":["GLM"],"lane":"E2E","layer":"GLM-5.2 optimization","priority":"P1","flydsl":"Medium","effort":"XL","owner":"yewentao256","updated":"2026-08-11","comments":21,"status":"progress","summary":"高活跃度、ownership 清晰的 umbrella， 适合作为落地点而非重复实现。","next":"通过 AITER #2821/#4364 提供有测量证据的 kernel fix。","overlap":"AITER #2821/#4364 · SGLang #34120"},
+  {"id":"vLLM-50722","repo":"vLLM","number":50722,"title":"Qwen3.5 DFlash performance is poor","url":"https://github.com/vllm-project/vllm/issues/50722","models":["Qwen"],"lane":"E2E","layer":"DFlash / attention","priority":"P1","flydsl":"Medium","effort":"M","owner":"Unassigned","updated":"2026-08-14","comments":7,"status":"backlog","summary":"同时有 backend 开关与 acceptance-length 信号， 容易做 attribution。","next":"固定 prompt 与 draft 设置， 比较 no-spec、DFlash 与其他 speculative backend。","overlap":"vLLM #49730 · SGLang Qwen work"},
+  {"id":"vLLM-48786","repo":"vLLM","number":48786,"title":"Qwen3.5 FP8 KV cache is slower than BF16 KV cache","url":"https://github.com/vllm-project/vllm/issues/48786","models":["Qwen"],"lane":"Kernel","layer":"FP8 KV cache","priority":"P1","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-08-09","comments":2,"status":"backlog","summary":"更少的字节被 quant/dequant 或更差 attention path 抵消。","next":"分别归因 cache write、decode attention、dequant 与 scheduling。","overlap":"SGLang #32938"},
+  {"id":"vLLM-51250","repo":"vLLM","number":51250,"title":"Prefix caching is ineffective on Mamba-2 / GDN hybrid","url":"https://github.com/vllm-project/vllm/issues/51250","models":["Qwen"],"lane":"E2E","layer":"Hybrid prefix cache","priority":"P1","flydsl":"Low","effort":"M","owner":"Unassigned","updated":"2026-08-14","comments":5,"status":"backlog","summary":"cache miss 会抹掉更快 kernel 带来的全部 TTFT 收益。","next":"追踪各 attention group 的 cache key 与 invalidation， 并测真实 prefix-hit rate。","overlap":"vLLM #45702 · SGLang HiCache"},
+  {"id":"vLLM-51853","repo":"vLLM","number":51853,"title":"Poor DeepSeek V4 Pro MTP results on MI325X — kernels untuned","url":"https://github.com/vllm-project/vllm/issues/51853","models":["DeepSeek"],"lane":"E2E","layer":"MTP / ROCm kernels","priority":"P1","flydsl":"High","effort":"M","owner":"Unassigned","updated":"2026-08-13","comments":5,"status":"watch","summary":"issue 明确区分 MTP 行为与未调优 ROCm kernel， 适合做聚焦 handoff。","next":"固定 acceptance 与 batch bucket， profile 最重的 verify 或 draft shape。","overlap":"AITER DeepSeek GEMM / MoE issues"}
+]
+  </script>
+
+  <script id="pr-data" type="application/json">
+[
+  {"repo":"AITER","number":4498,"title":"Fuse Kimi-K3 B1 BF16 pre-route projections","updated":"2026-08-02","url":"https://github.com/ROCm/aiter/pull/4498"},
+  {"repo":"AITER","number":4504,"title":"Fuse Kimi-K3 FP8 pre-route projections","updated":"2026-08-02","url":"https://github.com/ROCm/aiter/pull/4504"},
+  {"repo":"AITER","number":4496,"title":"Fuse Kimi-K3 B1 latent MoE tail","updated":"2026-08-02","url":"https://github.com/ROCm/aiter/pull/4496"},
+  {"repo":"AITER","number":4741,"title":"Add gfx950 Kimi Delta Attention prefill kernel","updated":"2026-08-14","url":"https://github.com/ROCm/aiter/pull/4741"},
+  {"repo":"AITER","number":4676,"title":"FP8 unified attention for gfx950","updated":"2026-08-17","url":"https://github.com/ROCm/aiter/pull/4676"},
+  {"repo":"AITER","number":4758,"title":"Deeper async-copy pipeline in MLA stage-1 decode","updated":"2026-08-15","url":"https://github.com/ROCm/aiter/pull/4758"},
+  {"repo":"FlyDSL","number":1009,"title":"XCD swizzle and softmax basis for gfx950 BF16 attention","updated":"2026-08-14","url":"https://github.com/ROCm/FlyDSL/pull/1009"},
+  {"repo":"FlyDSL","number":1008,"title":"Gmem to LDS async copy for preshuffle GEMM","updated":"2026-08-13","url":"https://github.com/ROCm/FlyDSL/pull/1008"},
+  {"repo":"FlyDSL","number":1007,"title":"Fix A-tile loading bugs in preshuffle GEMM","updated":"2026-08-13","url":"https://github.com/ROCm/FlyDSL/pull/1007"},
+  {"repo":"FlyDSL","number":910,"title":"Optimize paged-attention metadata decode","updated":"2026-07-28","url":"https://github.com/ROCm/FlyDSL/pull/910"},
+  {"repo":"FlyDSL","number":901,"title":"Add optimized MoE routing path","updated":"2026-08-11","url":"https://github.com/ROCm/FlyDSL/pull/901"},
+  {"repo":"FlyDSL","number":888,"title":"Cache-aware 8-wave BF16 / FP16 GEMM","updated":"2026-07-23","url":"https://github.com/ROCm/FlyDSL/pull/888"},
+  {"repo":"FlyDSL","number":872,"title":"Optimized 4-wave MXFP8 GEMM for gfx950","updated":"2026-08-12","url":"https://github.com/ROCm/FlyDSL/pull/872"},
+  {"repo":"FlyDSL","number":848,"title":"Optimize RMSNorm / LayerNorm","updated":"2026-08-12","url":"https://github.com/ROCm/FlyDSL/pull/848"},
+  {"repo":"FlyDSL","number":757,"title":"Small-M dense GEMM kernels for decode","updated":"2026-07-07","url":"https://github.com/ROCm/FlyDSL/pull/757"},
+  {"repo":"SGLang","number":33838,"title":"AMD Kimi-K3 MoE optimization","updated":"2026-08-07","url":"https://github.com/sgl-project/sglang/pull/33838"},
+  {"repo":"vLLM","number":50665,"title":"Fuse Kimi-K3 FP8 pre-route projections","updated":"2026-08-13","url":"https://github.com/vllm-project/vllm/pull/50665"},
+  {"repo":"vLLM","number":50657,"title":"Fuse and FP8-pack Kimi-K3 latent MoE tail","updated":"2026-08-08","url":"https://github.com/vllm-project/vllm/pull/50657"}
+]
+  </script>
+
   <script>
-  (function() {
-    var KEY = 'kernel-inference-radar-source-lang';
-    var body = document.body, stored = null;
-    try { stored = localStorage.getItem(KEY); } catch (e) {}
-    if (stored === 'en' || stored === 'zh') body.setAttribute('data-lang', stored);
-    else body.setAttribute('data-lang', ((navigator.language || 'en').toLowerCase().indexOf('zh') === 0) ? 'zh' : 'en');
+  (() => {
+    const STORAGE_KEY = "kernel-inference-board-v2";
+    const issues = JSON.parse(document.getElementById("issue-data").textContent);
+    const prs = JSON.parse(document.getElementById("pr-data").textContent);
+    const columns = ["backlog", "ready", "progress", "watch"];
+    const labels = {
+      backlog: "Backlog / 待评估",
+      ready: "Ready / 可开工",
+      progress: "In Progress / 进行中",
+      watch: "Watch / 阻塞或重叠"
+    };
+    const initial = Object.fromEntries(issues.map(x => [x.id, x.status]));
+    let state = loadState();
+    let draggedId = null;
+    let movedId = null;
 
-    var issues = [
-      {repo:'AITER',n:4541,p:'P0',score:98,models:['Kimi'],lane:'Kernel',layer:'MLA decode',fly:'Medium',effort:'XL',owner:'Unassigned',comments:0,updated:'2026-08-04',title:'[Kimi-K3 MLA TP8] MLA performance',url:'https://github.com/ROCm/aiter/issues/4541',hw:'MI355X / gfx950 / TP8',whyEn:'A production-grade trace already identifies the geometry, KV traffic, and head padding. This is one of the few issues large enough to move Kimi-K3 TPOT.',whyZh:'已有 production-grade trace， 包含 geometry、KV traffic 和 head padding。 这是少数真正可能推动 Kimi-K3 TPOT 的问题。',nextEn:'Attribute page-size, head-padding, and shared-prefix costs before choosing a stage-1 kernel or addressing redesign.',nextZh:'先量化 page size、head padding 和 shared-prefix 重读， 再决定做 stage-1 kernel 还是 addressing redesign。',overlap:'AITER PR #4758 / #4676'},
-      {repo:'AITER',n:4528,p:'P0',score:97,models:['Kimi'],lane:'Correctness',layer:'A8W4 SiTUv2 MoE',fly:'Direct',effort:'M',owner:'Unassigned',comments:0,updated:'2026-08-03',title:'Kimi-K3 A8W4 SiTUv2 token=8192 intermittently returns NaN',url:'https://github.com/ROCm/aiter/issues/4528',hw:'MI355X / gfx950',whyEn:'This hits the production FlyDSL SiTUv2 path directly. Correctness must be fixed before further large-M tuning can be trusted.',whyZh:'它直接命中 production FlyDSL SiTUv2 路径。 在继续大 M 调优之前， 必须先修复正确性。',nextEn:'Fix a seed and token bucket, then find the first non-finite boundary across quant, GEMM1, activation, and GEMM2.',nextZh:'固定 seed 和 token bucket， 在 quant、GEMM1、activation、GEMM2 边界找到首个非有限值。',overlap:'SGLang #32548 · vLLM #52442'},
-      {repo:'AITER',n:2821,p:'P0',score:96,models:['GLM'],lane:'Kernel',layer:'MLA decode',fly:'Medium',effort:'L',owner:'Unassigned',comments:2,updated:'2026-06-12',title:'Missing gqa_ratio=8 kernels blocks GLM-5 HiSparse on MI355X TP8',url:'https://github.com/ROCm/aiter/issues/2821',hw:'MI355X / gfx950 / TP8',whyEn:'This is missing capability rather than a small tuning gap. A correct kernel directly unlocks a production GLM topology.',whyZh:'这不是小幅 tuning gap， 而是明确缺失 capability。 正确 kernel 可以直接解锁 production GLM topology。',nextEn:'Build the smallest qseqlen=1 path first, cover FP8 KV, then add the exact GLM TP8 E2E gate.',nextZh:'先完成最小 qseqlen=1 路径并覆盖 FP8 KV， 再加入精确的 GLM TP8 E2E gate。',overlap:'AITER #726'},
-      {repo:'AITER',n:2495,p:'P1',score:91,models:['GLM','Multi'],lane:'Kernel',layer:'Paged attention',fly:'High',effort:'M',owner:'Unassigned',comments:0,updated:'2026-03-27',title:'Paged attention batch=1 latency is 2x slower than FlashInfer',url:'https://github.com/ROCm/aiter/issues/2495',hw:'ROCm decode',whyEn:'Batch-one decode is the agentic serving regime. The gap can be decomposed into metadata, gather, QK/PV, and launch cost.',whyZh:'batch-one decode 是 agentic serving 的核心区间。 差距可以拆成 metadata、gather、QK/PV 和 launch cost。',nextEn:'Create a stable batch 1/2/4 and page-size matrix before changing the kernel.',nextZh:'在改 kernel 之前， 先建立稳定的 batch 1/2/4 与 page-size matrix。',overlap:'FlyDSL PR #910'},
-      {repo:'AITER',n:4364,p:'P0',score:94,models:['GLM'],lane:'Correctness',layer:'MLA split-K reduce',fly:'High',effort:'M',owner:'Unassigned',comments:1,updated:'2026-07-27',title:'qh16 FP8 sparse decode is nondeterministic across runs',url:'https://github.com/ROCm/aiter/issues/4364',hw:'gfx942 / gfx950',whyEn:'Split-K nondeterminism changes long-context retrieval results. A FlyDSL reduce path can be both a fix candidate and an independent oracle.',whyZh:'split-K 非确定性会改变长上下文 retrieval 结果。 FlyDSL reduce 既可以是修复候选， 也可以是独立 oracle。',nextEn:'Freeze partial maps and split counts, then locate the race between stage-1 writeback and reduce.',nextZh:'固定 partial map 和 split count， 再定位 race 位于 stage-1 writeback 还是 reduce。',overlap:'AITER #4350 · vLLM #52150'},
-      {repo:'AITER',n:2416,p:'P1',score:86,models:['Kimi','DeepSeek'],lane:'Kernel',layer:'SDPA / PA decode',fly:'High',effort:'L',owner:'sunway513',comments:0,updated:'2026-03-22',title:'SDPA decode on gfx950 uses less than 6% of HBM',url:'https://github.com/ROCm/aiter/issues/2416',hw:'MI350 / MI355',whyEn:'Such low utilization points to gather, launch, occupancy, or page-table overhead rather than a simple bandwidth ceiling.',whyZh:'如此低的利用率说明瓶颈更可能是 gather、launch、occupancy 或 page-table overhead， 而不是简单带宽上限。',nextEn:'Coordinate with the owner and share one benchmark matrix with AITER #2495.',nextZh:'先与 owner 协调， 并与 AITER #2495 共用同一套 benchmark matrix。',overlap:'AITER #2495 · FlyDSL PR #910'},
-      {repo:'AITER',n:2407,p:'P1',score:84,models:['DeepSeek'],lane:'Kernel',layer:'FP8 GEMM',fly:'Medium',effort:'M',owner:'Unassigned',comments:0,updated:'2026-03-22',title:'FP8 Triton GEMM regression on N=2112 and N=4096 shapes',url:'https://github.com/ROCm/aiter/issues/2407',hw:'gfx950',whyEn:'These projection widths repeat across DeepSeek layers, so a local regression multiplies across the model.',whyZh:'这些 projection width 会在 DeepSeek 各层重复， 因此局部 regression 会被整个模型放大。',nextEn:'Reproduce one shape and compare Triton codegen, FlyDSL tiles, and the native backend under the real layout.',nextZh:'先复现一个 shape， 在真实 layout 下比较 Triton codegen、FlyDSL tile 和 native backend。',overlap:'AITER #2408'},
-      {repo:'AITER',n:4318,p:'P1',score:82,models:['Multi'],lane:'Kernel',layer:'Grouped MoE prefill',fly:'Direct',effort:'M',owner:'lalala-sh',comments:0,updated:'2026-07-21',title:'FlyDSL grouped MoE prefill optimization',url:'https://github.com/ROCm/aiter/issues/4318',hw:'ROCm MoE prefill',whyEn:'The kernel family is reusable across all four target model lines, but synthetic uniform routing is not enough.',whyZh:'这个 kernel family 可以复用于四类目标模型， 但只测 synthetic uniform routing 不够。',nextEn:'Weight tuning by real token buckets and expert histograms under TP and EP.',nextZh:'按 TP / EP 下真实 token bucket 和 expert histogram 加权 tuning。',overlap:'FlyDSL #708 · PR #901'},
-
-      {repo:'FlyDSL',n:708,p:'P1',score:95,models:['Kimi','DeepSeek','Qwen','GLM'],lane:'Kernel',layer:'MXFP4 MoE',fly:'Direct',effort:'L',owner:'coderfeli',comments:3,updated:'2026-06-25',title:'MXFP4 MoE has low MFU at large shapes and high latency at small tokens',url:'https://github.com/ROCm/FlyDSL/issues/708',hw:'CDNA MoE',whyEn:'It spans both decode latency and prefill MFU, making it the most reusable FlyDSL issue for the target models.',whyZh:'它同时覆盖 decode latency 和 prefill MFU， 是目标模型中复用价值最高的 FlyDSL issue。',nextEn:'Use a dual-objective tuner: launch and weight-decode cost for small M, MFMA and LDS pipeline for large M.',nextZh:'采用双目标 tuner： 小 M 看 launch 和 weight decode， 大 M 看 MFMA 与 LDS pipeline。',overlap:'AITER #4318 · FlyDSL PR #872/#901'},
-      {repo:'FlyDSL',n:862,p:'P1',score:88,models:['Multi'],lane:'Compiler',layer:'JIT / startup',fly:'Direct',effort:'M',owner:'xudoyuan',comments:0,updated:'2026-07-16',title:'Reduce FlyDSL compile time',url:'https://github.com/ROCm/FlyDSL/issues/862',hw:'All FlyDSL targets',whyEn:'Frontier models create many specializations. Compilation therefore affects cold start, autoscaling, and recovery, not only developer convenience.',whyZh:'frontier model 会创建大量 specialization。 因此 compilation 影响 cold start、autoscaling 和 recovery， 不只是开发体验。',nextEn:'Attribute Python tracing, MLIR, LLVM, linking, and cache misses separately.',nextZh:'分别归因 Python tracing、MLIR、LLVM、link 和 cache miss。',overlap:'AITER #3566/#2336 · FlyDSL PR #669'},
-      {repo:'FlyDSL',n:821,p:'P1',score:87,models:['Multi'],lane:'Compiler',layer:'GEMM lowering / VGPR',fly:'Direct',effort:'M',owner:'jli-melchior',comments:2,updated:'2026-07-10',title:'fx.gemm uses more VGPR than raw MFMA and fails with BufferCopy atoms',url:'https://github.com/ROCm/FlyDSL/issues/821',hw:'FP8 GEMM',whyEn:'A lowering-level resource regression constrains many GEMM, MoE, and fused projection kernels at once.',whyZh:'lowering 层的资源 regression 会同时限制 GEMM、MoE 和 fused projection kernel。',nextEn:'Diff IR, ISA, VGPR, spills, and occupancy against the raw-MFMA implementation.',nextZh:'对比 raw-MFMA 实现的 IR、ISA、VGPR、spill 和 occupancy。',overlap:'FlyDSL #400 · PR #1015'},
-      {repo:'FlyDSL',n:770,p:'P1',score:86,models:['Multi'],lane:'Infra',layer:'Autotune',fly:'Direct',effort:'M',owner:'Unassigned',comments:2,updated:'2026-07-21',title:'Make autotune a safe, adopted path',url:'https://github.com/ROCm/FlyDSL/issues/770',hw:'All FlyDSL targets',whyEn:'Without a safe tuner, model coverage collapses into hand-edited CSVs and one-off winners.',whyZh:'没有安全 tuner， model coverage 最终会退化成手写 CSV 和偶然 winner。',nextEn:'Add correctness-first gates, crash isolation, stable cache keys, counter-ordered timing, and production dispatch checks.',nextZh:'加入 correctness-first gate、crash isolation、稳定 cache key、counter-ordered timing 和 production dispatch 检查。',overlap:'FlyDSL PR #924 · AITER tuner'},
-      {repo:'FlyDSL',n:603,p:'P1',score:92,models:['Multi'],lane:'Infra',layer:'SGLang / vLLM integration CI',fly:'Direct',effort:'M',owner:'gyohuangxin',comments:1,updated:'2026-06-02',title:'FlyDSL integration testing with SGLang and vLLM',url:'https://github.com/ROCm/FlyDSL/issues/603',hw:'ROCm serving',whyEn:'This is the missing bridge between kernel microbenchmarks and model-level claims.',whyZh:'这是 kernel microbenchmark 与 model-level 结论之间缺失的桥梁。',nextEn:'Pin a small model and traffic matrix with exact commits, dispatch proof, accuracy, TTFT, TPOT, and throughput.',nextZh:'固定少量模型和流量矩阵， 记录 exact commit、dispatch、accuracy、TTFT、TPOT 和 throughput。',overlap:'AITER #3368/#2751 · vLLM #43916'},
-      {repo:'FlyDSL',n:1002,p:'P1',score:89,models:['Multi'],lane:'Compiler',layer:'Fast math / softmax',fly:'Direct',effort:'M',owner:'Unassigned',comments:0,updated:'2026-08-12',title:'fx.exp2 lowers to OCML instead of native v_exp_f32',url:'https://github.com/ROCm/FlyDSL/issues/1002',hw:'AMDGPU',whyEn:'exp2 is repeated inside attention softmax. Extra VALU and VGPR cost can compound across kernels.',whyZh:'exp2 会在 attention softmax 中反复出现。 额外 VALU 和 VGPR 成本会跨 kernel 累积。',nextEn:'Expose a native fast-math contract and validate it in an attention kernel, not only an elementwise microbench.',nextZh:'提供明确的 native fast-math contract， 并在 attention kernel 中验证， 而不只测 elementwise microbench。',overlap:'FlyDSL PR #1009'},
-      {repo:'FlyDSL',n:400,p:'P1',score:84,models:['Multi'],lane:'Compiler',layer:'Control flow / VGPR',fly:'Direct',effort:'L',owner:'sjfeng1999, jli-melchior',comments:0,updated:'2026-04-17',title:'SSA phi explosion wastes VGPR and causes spills across scf.IfOp',url:'https://github.com/ROCm/FlyDSL/issues/400',hw:'Large-accumulator kernels',whyEn:'This is a systemic limit on GEMM and attention kernels with large accumulators.',whyZh:'这是大 accumulator GEMM 和 attention kernel 的系统性限制。',nextEn:'Build a minimal IR reproducer and gate resource counts, not only functional output.',nextZh:'构造最小 IR repro， 并对资源计数做 gate， 而不只检查 functional output。',overlap:'FlyDSL PR #1015'},
-      {repo:'FlyDSL',n:1016,p:'P2',score:72,models:['Multi'],lane:'Infra',layer:'Reusable GPU primitives',fly:'Direct',effort:'XL',owner:'sjfeng1999',comments:0,updated:'2026-08-17',title:'Grow flydsl.extension into common GPU building blocks',url:'https://github.com/ROCm/FlyDSL/issues/1016',hw:'Cross architecture',whyEn:'Shared reduction, scan, RNG, and quantization blocks reduce duplicated correctness risk across model kernels.',whyZh:'共享 reduction、scan、RNG 和 quantization block 可以降低模型 kernel 中重复的正确性风险。',nextEn:'Start with a primitive already duplicated in two production kernels and migrate both.',nextZh:'从已经在两个 production kernel 中重复的 primitive 开始， 并迁移两处实现。',overlap:'Cross-repository infrastructure'},
-
-      {repo:'SGLang',n:32548,p:'P1',score:94,models:['Kimi'],lane:'E2E',layer:'AMD Kimi-K3 tracker',fly:'Medium',effort:'L',owner:'Unassigned',comments:1,updated:'2026-07-27',title:'Kimi-K3 AMD Day 0 and Performance Tracking',url:'https://github.com/sgl-project/sglang/issues/32548',hw:'MI350 / MI355',whyEn:'This is the natural SGLang landing zone for AITER and FlyDSL Kimi work.',whyZh:'这是 AITER 与 FlyDSL Kimi 工作在 SGLang 侧最自然的落地点。',nextEn:'Standardize dispatch evidence, traffic matrices, and accuracy gates inside the tracker.',nextZh:'在 tracker 中统一 dispatch evidence、traffic matrix 和 accuracy gate。',overlap:'AITER #4541/#4528 · SGLang PR #33838'},
-      {repo:'SGLang',n:34815,p:'P0',score:97,models:['Kimi'],lane:'E2E',layer:'Disaggregated prefill / TTFT',fly:'Low',effort:'L',owner:'Unassigned',comments:1,updated:'2026-08-14',title:'PP8 disaggregated prefill has a load-independent 30-second TTFT floor',url:'https://github.com/sgl-project/sglang/issues/34815',hw:'Kimi-K3 PP8',whyEn:'A load-independent floor points to synchronization, communication, or initialization—not a kernel throughput ceiling.',whyZh:'与负载无关的固定下限指向 synchronization、communication 或 initialization， 而不是 kernel throughput ceiling。',nextEn:'Build a timeline across tokenization, prefill, transfer, barriers, and first decode.',nextZh:'建立 tokenizer、prefill、transfer、barrier 和 first decode 的 timeline。',overlap:'Disaggregated serving roadmaps'},
-      {repo:'SGLang',n:33846,p:'P0',score:96,models:['Kimi'],lane:'Correctness',layer:'KDA prefill host sync',fly:'High',effort:'M',owner:'Unassigned',comments:2,updated:'2026-08-06',title:'Kimi-K3 KDA prefill hangs in tolist() / hipMemcpy D2H',url:'https://github.com/sgl-project/sglang/issues/33846',hw:'AMD / ROCm',whyEn:'The failure sits exactly at the kernel-metadata and host-synchronization boundary.',whyZh:'这个失败正好位于 kernel metadata 与 host synchronization 边界。',nextEn:'Remove hot-path D2H by making the plan host-known or device-resident, then validate graph capture.',nextZh:'让 plan 变成 host-known 或 device-resident， 消除热路径 D2H， 再验证 graph capture。',overlap:'AITER / FlyDSL KDA prefill'},
-      {repo:'SGLang',n:32938,p:'P1',score:90,models:['Kimi','DeepSeek'],lane:'E2E',layer:'FP8 KV + DSpark',fly:'Medium',effort:'M',owner:'Unassigned',comments:1,updated:'2026-07-30',title:'FP8 KV cache slows performance when DSpark is enabled',url:'https://github.com/sgl-project/sglang/issues/32938',hw:'Speculative decode',whyEn:'Lower KV bytes are being outweighed by dequantization, gathers, graph buckets, or acceptance changes.',whyZh:'更少的 KV 字节被 dequant、gather、graph bucket 或 acceptance 变化抵消。',nextEn:'Run a four-way no-spec / DSpark by BF16 / FP8 KV matrix at fixed acceptance.',nextZh:'在固定 acceptance 下运行 no-spec / DSpark × BF16 / FP8 KV 四象限矩阵。',overlap:'vLLM #48786/#47602'},
-      {repo:'SGLang',n:34120,p:'P1',score:85,models:['Kimi','GLM'],lane:'E2E',layer:'Wide EP',fly:'High',effort:'XL',owner:'b8zhong',comments:5,updated:'2026-08-11',title:'Wide EP for GLM-5.2 and Kimi-K3',url:'https://github.com/sgl-project/sglang/issues/34120',hw:'Multi-node EP',whyEn:'The opportunity spans routing, MoE kernels, all-to-all, and scheduling; optimizing only one component can move nothing.',whyZh:'机会横跨 routing、MoE kernel、all-to-all 和 scheduling； 只优化一个组件可能完全不动 E2E。',nextEn:'Measure EP scaling efficiency before choosing routing, GEMM, or communication overlap.',nextZh:'先测 EP scaling efficiency， 再选择 routing、GEMM 或 communication overlap。',overlap:'FlyDSL #708 · AITER #4318'},
-      {repo:'SGLang',n:33422,p:'P1',score:88,models:['DeepSeek'],lane:'E2E',layer:'DSv4 prefill',fly:'Medium',effort:'M',owner:'Unassigned',comments:1,updated:'2026-08-04',title:'DeepSeek-V4 prefill on SM120 is 2–7K tok/s versus 12.5K',url:'https://github.com/sgl-project/sglang/issues/33422',hw:'4× RTX PRO 6000 / SM120',whyEn:'The same-hardware gap is concrete enough to trace through dispatch and kernel coverage.',whyZh:'同硬件差距足够明确， 可以沿 dispatch 和 kernel coverage 直接追踪。',nextEn:'Capture backend, shape, and phase timing against the vLLM / Marlin path.',nextZh:'对比 vLLM / Marlin 路径， 抓取 backend、shape 和 phase timing。',overlap:'vLLM #41063 · FlyDSL RDNA GEMM work'},
-      {repo:'SGLang',n:33706,p:'P1',score:93,models:['Qwen'],lane:'Kernel',layer:'Shared-to-sparse expert fusion',fly:'High',effort:'L',owner:'Unassigned',comments:2,updated:'2026-08-06',title:'Shared-to-sparse experts fusion for Qwen3.5 / Qwen3.6',url:'https://github.com/sgl-project/sglang/issues/33706',hw:'SM120 / blockwise FP8',whyEn:'The boundary is explicit and can carry both a kernel acceptance gate and a model E2E gate.',whyZh:'边界明确， 可以同时定义 kernel acceptance gate 和 model E2E gate。',nextEn:'Measure materialization and launch cost before choosing the fusion boundary.',nextZh:'在选择 fusion boundary 前， 先量化 materialization 和 launch cost。',overlap:'vLLM Qwen performance issues'},
-      {repo:'SGLang',n:32549,p:'P1',score:91,models:['Multi'],lane:'E2E',layer:'Scheduler fairness',fly:'Low',effort:'M',owner:'Unassigned',comments:2,updated:'2026-08-07',title:'Decode is starved under sustained chunked-prefill load',url:'https://github.com/sgl-project/sglang/issues/32549',hw:'Chunked prefill / spec decode',whyEn:'A scheduler that emits one decode batch every 24 seconds erases any kernel speedup.',whyZh:'每 24 秒才发出一个 decode batch 的 scheduler 会抹掉所有 kernel speedup。',nextEn:'Build a mixed prefill/decode workload and constrain TTFT and ITL together.',nextZh:'建立 mixed prefill/decode workload， 同时约束 TTFT 和 ITL。',overlap:'Framework-first issue'},
-
-      {repo:'vLLM',n:50682,p:'P1',score:92,models:['Kimi'],lane:'E2E',layer:'ROCm Kimi-K3 tracker',fly:'Medium',effort:'L',owner:'hongxiayang',comments:18,updated:'2026-08-17',title:'ROCm Kimi-K3 Gap and Roadmap Tracking',url:'https://github.com/vllm-project/vllm/issues/50682',hw:'AMD / ROCm',whyEn:'This active tracker is the main vLLM integration surface for Kimi kernel work.',whyZh:'这个活跃 tracker 是 Kimi kernel 工作在 vLLM 侧的主要集成面。',nextEn:'Map each gap to one AITER or FlyDSL issue and one fixed benchmark.',nextZh:'把每个 gap 映射到一个 AITER / FlyDSL issue 和一套固定 benchmark。',overlap:'vLLM PR #50665/#50657'},
-      {repo:'vLLM',n:50587,p:'P1',score:86,models:['Kimi'],lane:'E2E',layer:'Kimi-K3 performance',fly:'High',effort:'L',owner:'yewentao256',comments:0,updated:'2026-08-14',title:'Kimi K3 Performance Optimization',url:'https://github.com/vllm-project/vllm/issues/50587',hw:'Kimi-K3 serving',whyEn:'A model-level entry exists, but it already has an owner and overlaps the broader tracker.',whyZh:'model-level 入口已经存在， 但它已有 owner， 并与更大的 tracker 重叠。',nextEn:'Coordinate scope and require real dispatch plus a concurrency matrix for every kernel integration.',nextZh:'先协调 scope； 每个 kernel integration 都要求真实 dispatch 和 concurrency matrix。',overlap:'AITER PR #4498/#4504/#4496'},
-      {repo:'vLLM',n:41820,p:'P1',score:94,models:['DeepSeek'],lane:'E2E',layer:'ROCm DSv4 optimization',fly:'High',effort:'L',owner:'Unassigned',comments:17,updated:'2026-08-14',title:'DeepSeek-V4 support and optimization on ROCm',url:'https://github.com/vllm-project/vllm/issues/41820',hw:'AMD / ROCm',whyEn:'It is unassigned, well discussed, and suitable as the DeepSeek bridge across AITER, FlyDSL, and vLLM.',whyZh:'它尚未分配、讨论充分， 适合作为 DeepSeek 跨 AITER、FlyDSL 和 vLLM 的桥梁。',nextEn:'Pick one high-share operator from a profile and require micro, production-op, and E2E evidence.',nextZh:'从 profile 中选择一个高占比 operator， 同时要求 micro、production-op 和 E2E 证据。',overlap:'AITER DeepSeek issues · FlyDSL #708'},
-      {repo:'vLLM',n:46654,p:'P1',score:83,models:['GLM'],lane:'E2E',layer:'GLM-5.2 optimization',fly:'Medium',effort:'XL',owner:'yewentao256',comments:21,updated:'2026-08-11',title:'GLM 5.2 Performance Optimization',url:'https://github.com/vllm-project/vllm/issues/46654',hw:'GLM-5.2 serving',whyEn:'This is a high-activity umbrella with clear ownership; useful as a landing zone, not a duplicate implementation target.',whyZh:'这是高活跃度且 ownership 清晰的 umbrella， 适合作为落地点， 不适合重复实现。',nextEn:'Contribute a measured kernel fix through AITER #2821 or #4364.',nextZh:'通过 AITER #2821 或 #4364 提供有测量证据的 kernel fix。',overlap:'AITER #2821/#4364 · SGLang #34120'},
-      {repo:'vLLM',n:50722,p:'P1',score:90,models:['Qwen'],lane:'E2E',layer:'DFlash / attention',fly:'Medium',effort:'M',owner:'Unassigned',comments:7,updated:'2026-08-14',title:'Qwen3.5 DFlash performance is poor',url:'https://github.com/vllm-project/vllm/issues/50722',hw:'Qwen hybrid attention',whyEn:'The issue provides both a backend switch and acceptance-length signal, which makes attribution practical.',whyZh:'issue 同时提供 backend 开关和 acceptance-length 信号， 因而容易做归因。',nextEn:'Compare no-spec, DFlash, and another speculative backend with fixed prompts and draft settings.',nextZh:'固定 prompt 和 draft 设置， 比较 no-spec、DFlash 与另一种 speculative backend。',overlap:'vLLM #49730 · SGLang Qwen work'},
-      {repo:'vLLM',n:48786,p:'P1',score:88,models:['Qwen'],lane:'Kernel',layer:'FP8 KV cache',fly:'High',effort:'M',owner:'Unassigned',comments:2,updated:'2026-08-09',title:'Qwen3.5 FP8 KV cache is slower than BF16 KV cache',url:'https://github.com/vllm-project/vllm/issues/48786',hw:'SM90 / Hopper',whyEn:'Lower bytes are being outweighed by quantization, dequantization, or a worse attention path.',whyZh:'更少的字节被 quant、dequant 或更差的 attention path 抵消。',nextEn:'Attribute cache write, decode attention, dequantization, and scheduling separately.',nextZh:'分别归因 cache write、decode attention、dequant 和 scheduling。',overlap:'SGLang #32938'},
-      {repo:'vLLM',n:51250,p:'P1',score:91,models:['Qwen'],lane:'E2E',layer:'Hybrid prefix cache',fly:'Low',effort:'M',owner:'Unassigned',comments:5,updated:'2026-08-14',title:'Prefix caching is ineffective on Mamba-2 / GDN hybrid',url:'https://github.com/vllm-project/vllm/issues/51250',hw:'Qwen3.5 hybrid',whyEn:'A cache miss can erase every TTFT gain from faster kernels, so this is an E2E-first issue.',whyZh:'cache miss 会抹掉更快 kernel 带来的全部 TTFT 收益， 因而这是 E2E-first issue。',nextEn:'Trace group-specific cache keys and invalidation while measuring actual prefix-hit rate.',nextZh:'追踪各 attention group 的 cache key 与 invalidation， 同时测真实 prefix-hit rate。',overlap:'vLLM #45702 · SGLang HiCache'},
-      {repo:'vLLM',n:51853,p:'P1',score:93,models:['DeepSeek'],lane:'E2E',layer:'MTP / ROCm kernels',fly:'High',effort:'M',owner:'Unassigned',comments:5,updated:'2026-08-13',title:'Poor DeepSeek V4 Pro MTP results on MI325X — kernels untuned',url:'https://github.com/vllm-project/vllm/issues/51853',hw:'MI325X / gfx942',whyEn:'The issue explicitly separates MTP behavior from untuned ROCm kernels, making a focused handoff possible.',whyZh:'issue 明确把 MTP 行为与未调优 ROCm kernel 分开， 适合做聚焦 handoff。',nextEn:'Fix acceptance and batch buckets, then profile the heaviest verify or draft shape.',nextZh:'固定 acceptance 和 batch bucket， 再 profile 最重的 verify 或 draft shape。',overlap:'AITER DeepSeek GEMM / MoE issues'}
-    ];
-
-    var prs = [
-      ['AITER',4498,'Fuse Kimi-K3 B1 BF16 pre-route projections','2026-08-02','https://github.com/ROCm/aiter/pull/4498'],
-      ['AITER',4504,'Fuse Kimi-K3 FP8 pre-route projections','2026-08-02','https://github.com/ROCm/aiter/pull/4504'],
-      ['AITER',4496,'Fuse Kimi-K3 B1 latent MoE tail','2026-08-02','https://github.com/ROCm/aiter/pull/4496'],
-      ['AITER',4741,'Add gfx950 Kimi Delta Attention prefill kernel','2026-08-14','https://github.com/ROCm/aiter/pull/4741'],
-      ['AITER',4676,'FP8 unified attention for gfx950','2026-08-17','https://github.com/ROCm/aiter/pull/4676'],
-      ['AITER',4758,'Deeper async-copy pipeline in MLA stage-1 decode','2026-08-15','https://github.com/ROCm/aiter/pull/4758'],
-      ['FlyDSL',1009,'XCD swizzle and softmax basis for gfx950 BF16 attention','2026-08-14','https://github.com/ROCm/FlyDSL/pull/1009'],
-      ['FlyDSL',1008,'Gmem to LDS async copy for preshuffle GEMM','2026-08-13','https://github.com/ROCm/FlyDSL/pull/1008'],
-      ['FlyDSL',1007,'Fix A-tile loading bugs in preshuffle GEMM','2026-08-13','https://github.com/ROCm/FlyDSL/pull/1007'],
-      ['FlyDSL',910,'Optimize paged-attention metadata decode','2026-07-28','https://github.com/ROCm/FlyDSL/pull/910'],
-      ['FlyDSL',901,'Add optimized MoE routing path','2026-08-11','https://github.com/ROCm/FlyDSL/pull/901'],
-      ['FlyDSL',888,'Cache-aware 8-wave BF16 / FP16 GEMM','2026-07-23','https://github.com/ROCm/FlyDSL/pull/888'],
-      ['FlyDSL',872,'Optimized 4-wave MXFP8 GEMM for gfx950','2026-08-12','https://github.com/ROCm/FlyDSL/pull/872'],
-      ['FlyDSL',848,'Optimize RMSNorm / LayerNorm','2026-08-12','https://github.com/ROCm/FlyDSL/pull/848'],
-      ['FlyDSL',757,'Small-M dense GEMM kernels for decode','2026-07-07','https://github.com/ROCm/FlyDSL/pull/757'],
-      ['SGLang',33838,'AMD Kimi-K3 MoE optimization','2026-08-07','https://github.com/sgl-project/sglang/pull/33838'],
-      ['vLLM',50665,'Fuse Kimi-K3 FP8 pre-route projections','2026-08-13','https://github.com/vllm-project/vllm/pull/50665'],
-      ['vLLM',50657,'Fuse and FP8-pack Kimi-K3 latent MoE tail','2026-08-08','https://github.com/vllm-project/vllm/pull/50657']
-    ];
-
-    var repoClass = {AITER:'repo-aiter',FlyDSL:'repo-flydsl',SGLang:'repo-sglang',vLLM:'repo-vllm'};
-    var effortRank = {S:1,M:2,L:3,XL:4};
-    var featured = new Set(['AITER-4541','AITER-4528','AITER-2821','FlyDSL-708','SGLang-34815','vLLM-41820']);
-    function key(x){ return x.repo+'-'+x.n; }
-    function lang(){ return body.getAttribute('data-lang') === 'zh' ? 'zh' : 'en'; }
-    function copy(x, name){ return x[name+(lang()==='zh'?'Zh':'En')]; }
-    function ownerType(x){ return x.owner === 'Unassigned' ? 'unassigned' : 'assigned'; }
-    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-
-    function renderStats(){
-      document.getElementById('statIssues').textContent=issues.length;
-      document.getElementById('statFree').textContent=issues.filter(function(x){return ownerType(x)==='unassigned';}).length;
-      document.getElementById('statP0').textContent=issues.filter(function(x){return x.p==='P0';}).length;
-      document.getElementById('statDirect').textContent=issues.filter(function(x){return x.fly==='Direct'||x.fly==='High';}).length;
-      document.getElementById('statPR').textContent=prs.length;
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
     }
-    function renderFeatured(){
-      var rows=issues.filter(function(x){return featured.has(key(x));}).sort(function(a,b){return b.score-a.score;});
-      document.getElementById('priorityGrid').innerHTML=rows.map(function(x,i){
-        return '<article class="priority-card"><div class="meta"><span class="badge '+x.p.toLowerCase()+'">'+x.p+'</span><span class="badge '+repoClass[x.repo]+'">'+esc(x.repo)+' #'+x.n+'</span><span class="badge '+(ownerType(x)==='unassigned'?'free':'')+'">'+(ownerType(x)==='unassigned'?(lang()==='zh'?'未分配':'unassigned'):esc(x.owner))+'</span>'+(x.fly==='Direct'||x.fly==='High'?'<span class="badge direct">FlyDSL '+esc(x.fly)+'</span>':'')+'</div><h4><a href="'+x.url+'" target="_blank" rel="noreferrer">'+esc(x.title)+'</a></h4><p>'+esc(copy(x,'why'))+'</p>'+(i===0?'<p style="margin-top:11px;color:var(--ink)"><strong>'+(lang()==='zh'?'下一步：':'Next: ')+'</strong>'+esc(copy(x,'next'))+'</p>':'')+'</article>';
-      }).join('');
+
+    function ownerType(item) {
+      return item.owner === "Unassigned" ? "unassigned" : "assigned";
     }
-    function filtered(){
-      var q=document.getElementById('search').value.trim().toLowerCase();
-      var repo=document.getElementById('repoFilter').value, model=document.getElementById('modelFilter').value;
-      var lane=document.getElementById('laneFilter').value, pri=document.getElementById('priorityFilter').value;
-      var owner=document.getElementById('ownerFilter').value, sort=document.getElementById('sortBy').value;
-      var out=issues.filter(function(x){
-        var hay=[x.title,x.repo,x.layer,x.hw,x.owner,copy(x,'why'),copy(x,'next')].concat(x.models).join(' ').toLowerCase();
-        return (!q||hay.indexOf(q)>=0)&&(repo==='all'||x.repo===repo)&&(model==='all'||x.models.indexOf(model)>=0)&&(lane==='all'||x.lane===lane)&&(pri==='all'||x.p===pri)&&(owner==='all'||ownerType(x)===owner);
+
+    function filtered(item) {
+      const query = document.getElementById("search").value.trim().toLowerCase();
+      const repo = document.getElementById("repoFilter").value;
+      const model = document.getElementById("modelFilter").value;
+      const lane = document.getElementById("laneFilter").value;
+      const priority = document.getElementById("priorityFilter").value;
+      const owner = document.getElementById("ownerFilter").value;
+      const haystack = [
+        item.id, item.title, item.repo, item.layer, item.summary,
+        item.next, item.owner, item.overlap, ...item.models
+      ].join(" ").toLowerCase();
+      return (!query || haystack.includes(query))
+        && (repo === "all" || item.repo === repo)
+        && (model === "all" || item.models.includes(model))
+        && (lane === "all" || item.lane === lane)
+        && (priority === "all" || item.priority === priority)
+        && (owner === "all" || ownerType(item) === owner);
+    }
+
+    function card(item) {
+      const statusOptions = columns.map(status =>
+        `<option value="${status}" ${state[item.id] === status ? "selected" : ""}>${labels[status]}</option>`
+      ).join("");
+      return `
+        <article class="card repo-${item.repo} ${movedId === item.id ? "just-moved" : ""}" draggable="true" data-id="${item.id}">
+          <div class="card-top">
+            <span class="repo">${item.repo} #${item.number}</span>
+            <div class="badges">
+              <span class="badge ${item.priority.toLowerCase()}">${item.priority}</span>
+              <span class="badge ${item.flydsl.toLowerCase()}">FlyDSL ${item.flydsl}</span>
+            </div>
+          </div>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p class="summary">${escapeHtml(item.summary)}</p>
+          <div class="card-meta">
+            <span>${escapeHtml(item.models.join(" · "))}</span>
+            <span>${escapeHtml(item.layer)}</span>
+            <span>${item.effort}</span>
+            <span>${item.owner === "Unassigned" ? "未分配" : escapeHtml(item.owner)}</span>
+          </div>
+          <div class="card-foot">
+            <select class="status-select" data-id="${item.id}" aria-label="Move ${escapeHtml(item.title)}">${statusOptions}</select>
+            <button class="mini detail-btn" type="button" data-id="${item.id}">详情</button>
+            <a class="mini" href="${item.url}" target="_blank" rel="noreferrer">GitHub</a>
+          </div>
+        </article>
+      `;
+    }
+
+    function render() {
+      const visible = issues.filter(filtered);
+      for (const status of columns) {
+        const column = document.querySelector(`.column[data-status="${status}"]`);
+        const items = visible
+          .filter(item => state[item.id] === status)
+          .sort((a, b) => (a.priority === "P0" ? -1 : 0) - (b.priority === "P0" ? -1 : 0) || b.comments - a.comments);
+        column.querySelector(".column-count").textContent = items.length;
+        column.querySelector(".dropzone").innerHTML = items.length
+          ? items.map(card).join("")
+          : `<div class="empty">拖到这里</div>`;
+      }
+      document.getElementById("visibleCount").textContent = visible.length;
+      document.getElementById("readyCount").textContent = visible.filter(x => state[x.id] === "ready").length;
+      document.getElementById("progressCount").textContent = visible.filter(x => state[x.id] === "progress").length;
+      document.getElementById("unassignedCount").textContent = visible.filter(x => ownerType(x) === "unassigned").length;
+      bindCards();
+      movedId = null;
+    }
+
+    function bindCards() {
+      document.querySelectorAll(".card").forEach(node => {
+        node.addEventListener("dragstart", event => {
+          draggedId = node.dataset.id;
+          node.classList.add("dragging");
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", draggedId);
+        });
+        node.addEventListener("dragend", () => {
+          node.classList.remove("dragging");
+          draggedId = null;
+          document.querySelectorAll(".column").forEach(x => x.classList.remove("is-over"));
+        });
       });
-      out.sort(function(a,b){
-        if(sort==='updated')return b.updated.localeCompare(a.updated);
-        if(sort==='comments')return b.comments-a.comments||b.score-a.score;
-        if(sort==='effort')return effortRank[a.effort]-effortRank[b.effort]||b.score-a.score;
-        return b.score-a.score||b.updated.localeCompare(a.updated);
+      document.querySelectorAll(".status-select").forEach(select => {
+        select.addEventListener("click", event => event.stopPropagation());
+        select.addEventListener("change", () => move(select.dataset.id, select.value));
       });
+      document.querySelectorAll(".detail-btn").forEach(button => {
+        button.addEventListener("click", event => {
+          event.stopPropagation();
+          openDetail(button.dataset.id);
+        });
+      });
+    }
+
+    document.querySelectorAll(".column").forEach(column => {
+      column.addEventListener("dragover", event => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        column.classList.add("is-over");
+      });
+      column.addEventListener("dragleave", event => {
+        if (!column.contains(event.relatedTarget)) column.classList.remove("is-over");
+      });
+      column.addEventListener("drop", event => {
+        event.preventDefault();
+        column.classList.remove("is-over");
+        const id = draggedId || event.dataTransfer.getData("text/plain");
+        if (id) move(id, column.dataset.status);
+      });
+    });
+
+    function move(id, status) {
+      if (!initial[id] || !columns.includes(status) || state[id] === status) return;
+      state[id] = status;
+      movedId = id;
+      saveState();
+      render();
+      toast(`已移动到 ${labels[status]}`);
+    }
+
+    function openDetail(id) {
+      const item = issues.find(x => x.id === id);
+      if (!item) return;
+      document.getElementById("dialogTitle").textContent = `${item.repo} #${item.number} · ${item.title}`;
+      document.getElementById("dialogBody").innerHTML = `
+        <div class="detail-grid">
+          <div class="detail"><span>Model</span><b>${escapeHtml(item.models.join(" · "))}</b></div>
+          <div class="detail"><span>Lane</span><b>${escapeHtml(item.lane)} · ${escapeHtml(item.layer)}</b></div>
+          <div class="detail"><span>FlyDSL</span><b>${escapeHtml(item.flydsl)}</b></div>
+          <div class="detail"><span>Effort / Owner</span><b>${item.effort} · ${escapeHtml(item.owner)}</b></div>
+        </div>
+        <div class="detail-copy"><h4>为什么值得做</h4><p>${escapeHtml(item.summary)}</p></div>
+        <div class="detail-copy"><h4>第一步</h4><p>${escapeHtml(item.next)}</p></div>
+        <div class="detail-copy"><h4>重叠与依赖</h4><p>${escapeHtml(item.overlap)}</p></div>
+        <div class="dialog-actions">
+          <a class="btn primary" href="${item.url}" target="_blank" rel="noreferrer">打开 GitHub issue</a>
+          <select class="status-select dialog-status" data-id="${item.id}">
+            ${columns.map(status => `<option value="${status}" ${state[item.id] === status ? "selected" : ""}>${labels[status]}</option>`).join("")}
+          </select>
+        </div>
+      `;
+      document.querySelector(".dialog-status").addEventListener("change", event => {
+        move(item.id, event.target.value);
+        document.getElementById("detailDialog").close();
+      });
+      document.getElementById("detailDialog").showModal();
+    }
+
+    function renderPRs() {
+      document.getElementById("prGrid").innerHTML = [...prs]
+        .sort((a, b) => b.updated.localeCompare(a.updated))
+        .map(pr => `
+          <article class="pr">
+            <a href="${pr.url}" target="_blank" rel="noreferrer">${pr.repo} #${pr.number} · ${escapeHtml(pr.title)}</a>
+            <p>open · updated ${pr.updated}</p>
+          </article>
+        `).join("");
+    }
+
+    function exportBoard() {
+      const payload = {
+        schema: "jinnpan.kernel-inference-board.v1",
+        snapshot: "2026-08-17",
+        exportedAt: new Date().toISOString(),
+        status: state,
+        issues: issues.map(item => ({...item, status: state[item.id]})),
+        activePRs: prs
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "kernel-inference-optimization-board.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("已导出 JSON");
+    }
+
+    async function importBoard(file) {
+      try {
+        const payload = JSON.parse(await file.text());
+        const imported = validStatusMap(payload.status || payload);
+        state = {...state, ...imported};
+        saveState();
+        render();
+        toast(`已导入 ${Object.keys(imported).length} 个状态`);
+      } catch (_) {
+        toast("导入失败： JSON 格式或状态值无效");
+      }
+    }
+
+    function validStatusMap(value) {
+      const out = {};
+      if (!value || typeof value !== "object") return out;
+      for (const [id, status] of Object.entries(value)) {
+        if (initial[id] && columns.includes(status)) out[id] = status;
+      }
       return out;
     }
-    function renderIssues(){
-      var rows=filtered();
-      document.getElementById('resultCount').textContent=rows.length+(lang()==='zh'?' 个结果':' results');
-      document.getElementById('issueBody').innerHTML=rows.map(function(x){
-        return '<tr data-key="'+key(x)+'" tabindex="0"><td><span class="badge '+x.p.toLowerCase()+'">'+x.p+'</span></td><td><b class="'+repoClass[x.repo]+'">'+esc(x.repo)+'</b><div class="sub">#'+x.n+'</div></td><td>'+esc(x.models.join(' · '))+'</td><td>'+esc(x.lane)+'<div class="sub">'+esc(x.layer)+'</div></td><td class="title-cell">'+esc(x.title)+'<div class="sub">'+esc(x.hw)+'</div></td><td><span class="badge '+(x.fly==='Direct'||x.fly==='High'?'direct':'')+'">'+esc(x.fly)+'</span></td><td>'+esc(x.effort)+'</td><td><span class="badge '+(ownerType(x)==='unassigned'?'free':'')+'">'+(ownerType(x)==='unassigned'?(lang()==='zh'?'未分配':'unassigned'):esc(x.owner))+'</span></td><td>'+esc(x.updated)+'<div class="sub">'+x.comments+' comments</div></td></tr>';
-      }).join('');
-    }
-    function renderPRs(){
-      document.getElementById('prGrid').innerHTML=prs.sort(function(a,b){return b[3].localeCompare(a[3]);}).map(function(x){
-        return '<article class="pr"><a href="'+x[4]+'" target="_blank" rel="noreferrer"><span class="'+repoClass[x[0]]+'">'+esc(x[0])+'</span> #'+x[1]+' · '+esc(x[2])+'</a><p>open · updated '+x[3]+'</p></article>';
-      }).join('');
-    }
-    function openDetail(k){
-      var x=issues.find(function(i){return key(i)===k;}); if(!x)return;
-      document.getElementById('dialogTitle').textContent=x.repo+' #'+x.n+' · '+x.title;
-      document.getElementById('dialogBody').innerHTML='<div class="detail-grid"><div class="detail"><span>Model</span><b>'+esc(x.models.join(' · '))+'</b></div><div class="detail"><span>Lane</span><b>'+esc(x.lane+' · '+x.layer)+'</b></div><div class="detail"><span>FlyDSL</span><b>'+esc(x.fly)+'</b></div><div class="detail"><span>Effort / Owner</span><b>'+esc(x.effort+' · '+x.owner)+'</b></div></div><div class="detail-copy"><h5>'+(lang()==='zh'?'为什么值得做':'Why it matters')+'</h5><p>'+esc(copy(x,'why'))+'</p></div><div class="detail-copy"><h5>'+(lang()==='zh'?'第一步':'First useful step')+'</h5><p>'+esc(copy(x,'next'))+'</p></div><div class="detail-copy"><h5>'+(lang()==='zh'?'重叠与依赖':'Overlap and dependencies')+'</h5><p>'+esc(x.overlap)+'</p></div><a class="issue-link" href="'+x.url+'" target="_blank" rel="noreferrer">'+(lang()==='zh'?'打开 GitHub issue':'Open GitHub issue')+'</a>';
-      document.getElementById('detailDialog').showModal();
-    }
-    function renderAll(){renderStats();renderFeatured();renderIssues();renderPRs();document.getElementById('search').placeholder=lang()==='zh'?'搜索标题、模型、kernel、下一步…':'Search title, model, kernel, next step…';}
 
-    document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn){
-      btn.addEventListener('click',function(){var v=btn.getAttribute('data-set');body.setAttribute('data-lang',v);try{localStorage.setItem(KEY,v);}catch(e){}renderAll();});
+    function agentBrief() {
+      const lines = [
+        "# Kernel & Inference Optimization Board",
+        "",
+        `Snapshot: 2026-08-17 | Issues: ${issues.length} | Active PR overlaps: ${prs.length}`,
+        ""
+      ];
+      for (const status of columns) {
+        lines.push(`## ${labels[status]}`, "");
+        for (const item of issues.filter(x => state[x.id] === status)) {
+          lines.push(`- [${item.priority}] [${item.repo} #${item.number}](${item.url}) — ${item.title}`);
+          lines.push(`  - Models: ${item.models.join(", ")} | Lane: ${item.lane}/${item.layer} | FlyDSL: ${item.flydsl} | Effort: ${item.effort} | Owner: ${item.owner}`);
+          lines.push(`  - Why: ${item.summary}`);
+          lines.push(`  - Next: ${item.next}`);
+        }
+        lines.push("");
+      }
+      return lines.join("\n");
+    }
+
+    async function copyText(text, message) {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast(message);
+      } catch (_) {
+        const area = document.createElement("textarea");
+        area.value = text;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+        toast(message);
+      }
+    }
+
+    function shareLink() {
+      const url = new URL(location.href);
+      url.hash = `board=${encodeState()}`;
+      copyText(url.toString(), "已复制带进度快照的分享链接");
+    }
+
+    function readHash() {
+      if (!location.hash.startsWith("#board=")) return null;
+      try {
+        let raw = location.hash.slice(7).replaceAll("-", "+").replaceAll("_", "/");
+        while (raw.length % 4) raw += "=";
+        return validStatusMap(JSON.parse(decodeURIComponent(escape(atob(raw)))));
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function encodeState() {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(state))))
+        .replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+    }
+
+    function loadState() {
+      const hash = readHash();
+      if (hash && Object.keys(hash).length) return {...initial, ...hash};
+      try {
+        return {...initial, ...validStatusMap(JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"))};
+      } catch (_) {
+        return {...initial};
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    let toastTimer;
+    function toast(message) {
+      const node = document.getElementById("toast");
+      node.textContent = message;
+      node.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => node.classList.remove("show"), 1800);
+    }
+
+    document.querySelectorAll(".filters input, .filters select").forEach(node => {
+      node.addEventListener("input", render);
+      node.addEventListener("change", render);
     });
-    document.querySelectorAll('.filters input,.filters select').forEach(function(el){el.addEventListener('input',renderIssues);el.addEventListener('change',renderIssues);});
-    document.getElementById('issueBody').addEventListener('click',function(e){var r=e.target.closest('tr[data-key]');if(r)openDetail(r.dataset.key);});
-    document.getElementById('issueBody').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){var r=e.target.closest('tr[data-key]');if(r){e.preventDefault();openDetail(r.dataset.key);}}});
-    document.getElementById('dialogClose').addEventListener('click',function(){document.getElementById('detailDialog').close();});
-    document.getElementById('detailDialog').addEventListener('click',function(e){if(e.target===e.currentTarget)e.currentTarget.close();});
-    renderAll();
+    document.getElementById("resetFiltersBtn").addEventListener("click", () => {
+      document.getElementById("search").value = "";
+      ["repoFilter", "modelFilter", "laneFilter", "priorityFilter", "ownerFilter"].forEach(id => {
+        document.getElementById(id).value = "all";
+      });
+      render();
+    });
+    document.getElementById("shareBtn").addEventListener("click", shareLink);
+    document.getElementById("briefBtn").addEventListener("click", () => copyText(agentBrief(), "已复制 Agent Brief"));
+    document.getElementById("exportBtn").addEventListener("click", exportBoard);
+    document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (file) importBoard(file);
+      event.target.value = "";
+    });
+    document.getElementById("resetBoardBtn").addEventListener("click", () => {
+      if (!confirm("重置所有卡片到默认列？")) return;
+      state = {...initial};
+      saveState();
+      history.replaceState(null, "", location.pathname + location.search);
+      render();
+      toast("已重置看板");
+    });
+    document.getElementById("dialogClose").addEventListener("click", () => document.getElementById("detailDialog").close());
+    document.getElementById("detailDialog").addEventListener("click", event => {
+      if (event.target === event.currentTarget) event.currentTarget.close();
+    });
+
+    renderPRs();
+    render();
   })();
   </script>
 </body>
