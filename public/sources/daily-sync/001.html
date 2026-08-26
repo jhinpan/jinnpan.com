@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Daily Sync-Up 001 — 5 pull requests authored and merged and 2 reviewed to merge in ROCm/FlyDSL: what each does, the key tradeoffs, and the review angles." />
+  <meta name="agent-data" content="#sync-meta, #pr-data and #notes-data hold the structured records. scripts/sync-daily-sync.mjs rewrites only the measured fields of #pr-data; every editorial field is hand-authored." />
+  <title>Daily Sync-Up 001</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #faf8f4;
+      --panel: #ffffff;
+      --panel-alt: #f5f2ec;
+      --text: #1b1815;
+      --muted: #6f6760;
+      --faint: #a49b91;
+      --line: #e2ddd4;
+      --line-strong: #cdc5b9;
+      --accent: #b8452a;
+      --accent-soft: #f6e9e4;
+      --authored: #c2562f;
+      --reviewed: #2f5d8a;
+      --add: #2c6e4b;
+      --del: #a8402f;
+      --code-bg: #f1ece3;
+      --radius: 6px;
+      --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Consolas, monospace;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #14120f;
+        --panel: #1c1a16;
+        --panel-alt: #23201b;
+        --text: #efe9e0;
+        --muted: #b0a598;
+        --faint: #7d7368;
+        --line: #332f28;
+        --line-strong: #4d473d;
+        --accent: #e08363;
+        --accent-soft: #3a251d;
+        --authored: #e08a5c;
+        --reviewed: #7fb0dd;
+        --add: #74c096;
+        --del: #e08d7c;
+        --code-bg: #262219;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font: inherit; cursor: pointer; }
+    code {
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--code-bg);
+      font: 0.88em var(--mono);
+    }
+
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px clamp(16px, 4vw, 32px) 96px;
+    }
+
+    /* ---------- masthead ---------- */
+    .masthead {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .backlink {
+      display: inline-block;
+      margin-bottom: 18px;
+      color: var(--faint);
+      font: 11px var(--mono);
+    }
+    .kicker {
+      margin: 0;
+      color: var(--accent);
+      font: 11px var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 6px 0 0;
+      font-size: clamp(30px, 5.2vw, 46px);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+      font-weight: 700;
+    }
+    .lang-switch {
+      display: inline-flex;
+      flex: none;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+    }
+    .lang-switch button {
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font: 10px var(--mono);
+      letter-spacing: .06em;
+    }
+    .lang-switch button:last-child { border-right: 0; }
+    body[data-lang="zh"] .lang-switch button[data-set-lang="zh"],
+    body[data-lang="en"] .lang-switch button[data-set-lang="en"] {
+      color: #fff;
+      background: var(--text);
+    }
+
+    /* ---------- section rail ---------- */
+    .rail {
+      margin: 14px 0 0;
+      color: var(--faint);
+      font: 12px var(--mono);
+    }
+    .rail a { color: var(--faint); }
+    .rail a.on { color: var(--text); font-weight: 700; }
+    .rail .sep { margin: 0 4px; opacity: .55; }
+    .rail .note { margin-left: 8px; font-style: italic; }
+
+    .lede {
+      margin: 18px 0 0;
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 14.5px;
+    }
+    .lede strong { color: var(--text); }
+
+    /* ---------- stat cards ---------- */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 26px;
+    }
+    .stat {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+    .stat .label { color: var(--muted); font-size: 11px; }
+    .stat .value {
+      margin-top: 6px;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1.1;
+    }
+    .stat .value.mono { font-family: var(--mono); font-size: 19px; }
+    .stat .unit { margin-top: 3px; color: var(--faint); font: 10px var(--mono); }
+    .add { color: var(--add); }
+    .del { color: var(--del); }
+
+    /* ---------- timeline ---------- */
+    .timeline { margin-top: 30px; padding: 6px 0 0; }
+    .timeline svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .tl-axis { stroke: var(--line-strong); stroke-width: 1; }
+    .tl-tick { fill: var(--faint); font: 10px var(--mono); text-anchor: middle; }
+    .tl-lane { fill: var(--muted); font: 11px var(--mono); }
+    .tl-num { fill: var(--faint); font: 9px var(--mono); text-anchor: middle; }
+    .tl-dot { cursor: pointer; }
+    .tl-dot:hover { stroke: var(--text); stroke-width: 1.5; }
+    .legend {
+      display: flex;
+      gap: 18px;
+      margin-top: 4px;
+      color: var(--muted);
+      font: 11px var(--mono);
+    }
+    .legend i {
+      display: inline-block;
+      width: 8px; height: 8px;
+      margin-right: 6px;
+      border-radius: 50%;
+      vertical-align: 1px;
+    }
+    .caption {
+      margin: 12px 0 0;
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ---------- table ---------- */
+    table {
+      width: 100%;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    thead th {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-alt);
+      color: var(--faint);
+      font: 10px var(--mono);
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    td.pr a { font: 12px var(--mono); font-weight: 700; }
+    td.what { line-height: 1.35; }
+    td.num { font: 12px var(--mono); white-space: nowrap; }
+    .role {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 3px;
+      font: 10px var(--mono);
+      letter-spacing: .04em;
+    }
+    .role.authored { color: var(--authored); background: var(--accent-soft); }
+    .role.reviewed { color: var(--reviewed); background: var(--panel-alt); }
+    .jump { color: var(--faint); font: 10px var(--mono); white-space: nowrap; }
+
+    /* ---------- prose sections ---------- */
+    section.block { margin-top: 46px; }
+    section.block > h2 {
+      margin: 0 0 4px;
+      font: 11px var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 400;
+    }
+    section.block > .h2sub {
+      margin: 0 0 16px;
+      color: var(--faint);
+      font-size: 12px;
+    }
+
+    /* ---------- per-PR entries ---------- */
+    article.pr {
+      padding: 20px 0 22px;
+      border-top: 1px solid var(--line);
+      scroll-margin-top: 18px;
+    }
+    article.pr:first-of-type { border-top: 0; padding-top: 6px; }
+    .pr-head {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pr-head h3 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.01em; }
+    .pr-head h3 a { color: inherit; }
+    .pr-head h3 a:hover { color: var(--accent); }
+    .pr-figs { color: var(--faint); font: 10px var(--mono); }
+    .pr-byline {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-style: italic;
+    }
+    .pr-summary {
+      margin: 9px 0 0;
+      max-width: 68ch;
+      font-size: 14px;
+      line-height: 1.62;
+    }
+    ul.points { margin: 12px 0 0; padding: 0; list-style: none; max-width: 68ch; }
+    ul.points > li {
+      position: relative;
+      padding: 0 0 0 18px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.62;
+    }
+    ul.points > li::before {
+      content: "";
+      position: absolute;
+      left: 2px; top: .62em;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--line-strong);
+    }
+    ul.points strong { color: var(--text); }
+
+    /* ---------- simple lists ---------- */
+    ol.items { margin: 0; padding: 0; list-style: none; counter-reset: item; }
+    ol.items > li {
+      position: relative;
+      padding: 12px 0 12px 30px;
+      border-top: 1px solid var(--line);
+      counter-increment: item;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.62;
+    }
+    ol.items > li::before {
+      content: counter(item, decimal-leading-zero);
+      position: absolute;
+      left: 0; top: 14px;
+      color: var(--faint);
+      font: 10px var(--mono);
+    }
+    ol.items strong { color: var(--text); }
+    .empty {
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    footer.colophon {
+      margin-top: 56px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font: 11px var(--mono);
+      line-height: 1.7;
+    }
+    footer.colophon .sig { margin-bottom: 6px; font-style: italic; }
+
+    @media (max-width: 620px) {
+      .hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+  <main>
+    <a class="backlink" href="../daily-sync/">← jinnpan.com / sources / daily-sync</a>
+
+    <div class="masthead">
+      <div>
+        <p class="kicker" id="kicker">Daily Sync-Up · 001</p>
+        <h1 id="title">August 26, 2026</h1>
+      </div>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-set-lang="en">EN</button>
+        <button type="button" data-set-lang="zh">中文</button>
+      </div>
+    </div>
+
+    <nav class="rail" id="rail" aria-label="Sections"></nav>
+
+    <p class="lede" id="lede"></p>
+
+    <section class="stats" id="stats" aria-label="Headline numbers"></section>
+
+    <section class="timeline" aria-label="Merge timeline">
+      <div class="legend">
+        <span><i style="background:var(--authored)"></i><span data-en="Authored" data-zh="我提交">Authored</span></span>
+        <span><i style="background:var(--reviewed)"></i><span data-en="Reviewed" data-zh="我评审">Reviewed</span></span>
+      </div>
+      <div id="tlChart"></div>
+      <p class="caption" id="tlCaption"></p>
+    </section>
+
+    <section class="block" id="results">
+      <h2 data-en="The week in one table" data-zh="一张表看完这周">The week in one table</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>PR</th>
+            <th>What</th>
+            <th>Role</th>
+            <th>Merged</th>
+            <th class="hide-sm">&Delta; Lines</th>
+            <th class="hide-sm">Files</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="prBody"></tbody>
+      </table>
+    </section>
+
+    <section class="block" id="authored">
+      <h2 data-en="Results — authored" data-zh="结果 — 我提交的">Results — authored</h2>
+      <div id="authoredBody"></div>
+    </section>
+
+    <section class="block" id="reviewed">
+      <h2 data-en="Results — reviewed" data-zh="结果 — 我评审的">Results — reviewed</h2>
+      <div id="reviewedBody"></div>
+    </section>
+
+    <section class="block" id="blockers">
+      <h2>Blockers</h2>
+      <p class="h2sub" data-en="What is actually stopping the next result." data-zh="真正挡住下一个结果的东西。">What is actually stopping the next result.</p>
+      <div id="blockersBody"></div>
+    </section>
+
+    <section class="block" id="questions">
+      <h2>Questions</h2>
+      <p class="h2sub" data-en="Open calls that need another person to settle." data-zh="需要别人一起拍板的开放问题。">Open calls that need another person to settle.</p>
+      <div id="questionsBody"></div>
+    </section>
+
+    <section class="block" id="ideas">
+      <h2>Ideas</h2>
+      <p class="h2sub" data-en="Worth discussing, not yet committed to." data-zh="值得讨论、但还没决定要做的方向。">Worth discussing, not yet committed to.</p>
+      <div id="ideasBody"></div>
+    </section>
+
+    <footer class="colophon">
+      <div class="sig" id="signature"></div>
+      <div id="colophon"></div>
+    </footer>
+  </main>
+
+  <script id="sync-meta" type="application/json">
+{
+  "issue": 1,
+  "title": "August 26, 2026",
+  "windowStart": "2026-08-19",
+  "windowEnd": "2026-08-26",
+  "githubLogin": "jhinpan",
+  "repositories": [
+    "ROCm/FlyDSL"
+  ],
+  "hardware": "gfx950 · MI355X",
+  "timeZone": "America/Los_Angeles",
+  "lastSuccessfulSync": "2026-08-26T22:08:39.255Z",
+  "source": "GitHub REST API (search/issues + pulls)",
+  "generatedBy": "scripts/sync-daily-sync.mjs"
+}
+  </script>
+
+  <script id="pr-data" type="application/json">
+[
+  {
+    "number": 1020,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1020",
+    "title": "[Bugfix][Kernel] Fix fp8 dense attention: softmax normalisation and an int32 dim overflow",
+    "short": "fp8 attention: softmax mass + int32 overflow",
+    "role": "reviewed",
+    "mergedAt": "2026-08-26T16:07:48Z",
+    "additions": 364,
+    "deletions": 10,
+    "changedFiles": 4,
+    "commits": 11,
+    "byline": {
+      "en": "by JohnQinAMD · 2× request-changes → approvals",
+      "zh": "作者 JohnQinAMD · 两轮 request-changes 后 approve"
+    },
+    "summary": {
+      "en": "P casts to e4m3 (floor 2⁻⁹) after `l_row` is summed — peaked rows kept as little as 64% of their weight; plus an int32 shape-packing crash at B·S·H·D ≥ 2³¹.",
+      "zh": "P 在 `l_row` 求和之后才 cast 成 e4m3（下限 2⁻⁹），尖锐的行只保住了 64% 的权重； 另有一处 int32 shape packing 崩溃，条件是 B·S·H·D ≥ 2³¹。"
+    },
+    "points": [
+      {
+        "lead": {
+          "en": "Reproduce before blocking",
+          "zh": "先复现再拦"
+        },
+        "body": {
+          "en": "both round-1 blockers reproduced — silent `bias` / `alibi_slopes` / `sink` dropping, and a cross-stream output race with `out=None`.",
+          "zh": "第一轮两个 blocker 都复现了——`bias` / `alibi_slopes` / `sink` 被静默丢弃，以及 `out=None` 时的跨 stream 输出竞争。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Defaults must be reachable",
+          "zh": "默认值必须真的走得到"
+        },
+        "body": {
+          "en": "held until an omitted-keyword test matched explicit eager bit-for-bit (the CLI had been forcing the old value).",
+          "zh": "一直卡着，直到「省略关键字」的用例与显式 eager 逐比特一致为止——此前 CLI 一直在强制传旧值。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Exact-head discipline",
+          "zh": "锁定 commit 复验"
+        },
+        "body": {
+          "en": "re-validated after every force-push (17/17 → 110/110 → 116/116 on gfx950), stating each time which local evidence was actually claimable.",
+          "zh": "每次 force-push 之后重跑一遍（gfx950 上 17/17 → 110/110 → 116/116），并每次说明哪些本地证据是真的可以拿来背书的。"
+        }
+      }
+    ]
+  },
+  {
+    "number": 1022,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1022",
+    "title": "[Kernel] Add opt-in autotuning for Softmax",
+    "short": "Softmax autotune, opt-in",
+    "role": "authored",
+    "mergedAt": "2026-08-25T03:20:21Z",
+    "additions": 2039,
+    "deletions": 84,
+    "changedFiles": 10,
+    "commits": 8,
+    "summary": {
+      "en": "Opt-in autotune search (`BLOCK_THREADS` × `waves_per_eu`) behind a numerical validation gate; the default path stays byte-identical. A forced search disagrees with the hard-coded 256 in 5 of 6 cases.",
+      "zh": "opt-in 的 autotune 搜索（`BLOCK_THREADS` × `waves_per_eu`），后面挂一道数值校验闸； 默认路径保持逐字节不变。 强制搜索的结果在 6 个用例里有 5 个与写死的 256 不一致。"
+    },
+    "points": [
+      {
+        "lead": {
+          "en": "No shipped winner",
+          "zh": "不发布「赢家」"
+        },
+        "body": {
+          "en": "f32 64×4096 flips between 64 and 512 under shared timing — publishing a winner would institutionalize noise.",
+          "zh": "f32 64×4096 在共享机器上计时会在 64 和 512 之间反复横跳——把某个配置定为赢家，等于把噪声固化进代码。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Scale-aware gate",
+          "zh": "让容差跟着量级走"
+        },
+        "body": {
+          "en": "the inherited absolute atol had ~5000× slack — an all-zero output would have passed. Tolerances re-pinned from measured worst-case error.",
+          "zh": "继承下来的绝对 atol 有约 5000 倍的余量——全零输出都能过。 容差按实测最坏误差重新钉死。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Self-review caught the Navi failure",
+          "zh": "自审先于人审抓到 Navi 崩溃"
+        },
+        "body": {
+          "en": "multi-wave LDS scratch reuse needing a barrier, plus cross-device stream rejection and hook arg binding — all before human review. Final CI: 2,206 / 5,315 / 6,556 green.",
+          "zh": "多 wave 复用 LDS scratch 缺 barrier，以及跨设备 stream 拒绝、hook 参数绑定——都在人工评审之前自己找出来。 最终 CI：2,206 / 5,315 / 6,556 全绿。"
+        }
+      }
+    ]
+  },
+  {
+    "number": 1026,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1026",
+    "title": "[CI] Track Softmax backward in the benchmark dashboard",
+    "short": "softmax_bwd → CI dashboard",
+    "role": "authored",
+    "mergedAt": "2026-08-20T05:24:00Z",
+    "additions": 43,
+    "deletions": 2,
+    "changedFiles": 2,
+    "commits": 1,
+    "summary": {
+      "en": "One dashboard row per register-residency tier, with shapes chosen for occupancy rather than tier coverage alone.",
+      "zh": "每个寄存器驻留档位在看板上占一行，形状按 occupancy 选，而不是只求覆盖到档位。"
+    },
+    "points": [
+      {
+        "body": {
+          "en": "The natural 64×65536 swings 24.6% run-to-run at 0.25 blocks/CU — it would flap the dashboard red and train people to ignore it. 1024×65536 sits in the same tier with a 1.0% spread.",
+          "zh": "最自然的 64×65536 在 0.25 blocks/CU 下逐次波动 24.6%——它会让看板反复飘红，最后把人训练成无视告警。 1024×65536 属于同一档位，波动只有 1.0%。"
+        }
+      },
+      {
+        "body": {
+          "en": "Benchmarked ⊆ tested (`_BWD_CONFIGS`); report-only until [#924](https://github.com/ROCm/FlyDSL/issues/924) calibrates the gates. The `--only` flag-eating bug was documented, not smuggled in.",
+          "zh": "被压测的是被测试的子集（`_BWD_CONFIGS`）； 在 [#924](https://github.com/ROCm/FlyDSL/issues/924) 校准闸门之前只报告、不拦截。 `--only` 吞参数的 bug 是记录下来，而不是顺手夹带修掉。"
+        }
+      }
+    ]
+  },
+  {
+    "number": 1027,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1027",
+    "title": "[Skills] Fix silently-ignored frontmatter, de-drift kernel skills and CLAUDE.md",
+    "short": "Skills de-drift + docs CI gate",
+    "role": "authored",
+    "mergedAt": "2026-08-24T06:42:21Z",
+    "additions": 993,
+    "deletions": 199,
+    "changedFiles": 18,
+    "commits": 15,
+    "summary": {
+      "en": "All 16 agent skills plus CLAUDE.md audited: silently-dropped frontmatter, phantom APIs, wrong-arch guidance, and one developer's ssh environment sitting in a shared skill.",
+      "zh": "把 16 个 agent skill 连同 CLAUDE.md 全部审了一遍：被静默丢弃的 frontmatter、不存在的 API、架构写错的指导，以及某位开发者的 ssh 环境混进了共享 skill 里。"
+    },
+    "points": [
+      {
+        "lead": {
+          "en": "Reviewed the branch until dry",
+          "zh": "把自己的分支审到没东西可审"
+        },
+        "body": {
+          "en": "15 issues in round 1 — two of the rewrites were worse than the original and got reverted — then 15 more in round 2, roughly two thirds of them self-introduced.",
+          "zh": "第一轮 15 个问题，其中两处重写比原文更差、已回退； 第二轮又 15 个，大约三分之二是自己引入的。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Measured instead of flagging",
+          "zh": "用实测代替「标记可疑」"
+        },
+        "body": {
+          "en": "the combined-512 VGPR model matches the compiler 13/13; the LDS padding formula turned out to be harmful — a +32 pad is a 16-way conflict, 26% slower than +1 — so it became a gcd rule.",
+          "zh": "combined-512 的 VGPR 模型与编译器 13/13 吻合； LDS padding 公式则被证明是有害的——+32 的 pad 会造成 16 路冲突，比 +1 慢 26%——于是改成 gcd 规则。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Enforcement",
+          "zh": "把结论变成闸门"
+        },
+        "body": {
+          "en": "a new `check_docs_api.py` CI gate finds 25 problems on `main`, 23 of them the hand-found ones. Stated limits: it cannot catch wrong-arch guidance or contradictory hardware claims.",
+          "zh": "新增的 `check_docs_api.py` CI 闸门在 `main` 上找到 25 个问题，其中 23 个正是人工找出来的那批。 局限也写清楚了：它抓不到架构写错和自相矛盾的硬件说法。"
+        }
+      }
+    ]
+  },
+  {
+    "number": 1033,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1033",
+    "title": "[Bugfix][Kernel] Fix NaN from the lazy rescale on a wide score range",
+    "short": "lazy-rescale NaN on wide scores",
+    "role": "reviewed",
+    "mergedAt": "2026-08-24T06:50:39Z",
+    "additions": 118,
+    "deletions": 22,
+    "changedFiles": 2,
+    "commits": 10,
+    "byline": {
+      "en": "by JohnQinAMD · 2× request-changes → approve",
+      "zh": "作者 JohnQinAMD · 两轮 request-changes 后 approve"
+    },
+    "summary": {
+      "en": "The rescale branch is wave-uniform (ballot), so dragged lanes computed `corr = exp2(+)` and produced inf/inf. The fix takes `max(m_row, m_tile_max)`, which turns those lanes into `exp2(0) = 1`.",
+      "zh": "rescale 分支是 wave 内统一的（ballot），被拖进来的 lane 于是算出 `corr = exp2(+)`，得到 inf/inf。 修法是取 `max(m_row, m_tile_max)`，让这些 lane 变成 `exp2(0) = 1`。"
+    },
+    "points": [
+      {
+        "lead": {
+          "en": "Falsify the guard",
+          "zh": "证伪那道保护"
+        },
+        "body": {
+          "en": "a deterministic fp8 case with exactly 1,048,576 NaNs; raising the cap to 1e9 produced the same NaNs, so the proposed cap never fires. A monotonic `rescale_from_tile_max` invariant replaced it.",
+          "zh": "构造了一个确定性的 fp8 用例，恰好 1,048,576 个 NaN； 把上限抬到 1e9 之后 NaN 数量不变，说明提议的这道 cap 根本不会触发。 最终换成单调的 `rescale_from_tile_max` 不变量。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Test the test",
+          "zh": "先测这个测试本身"
+        },
+        "body": {
+          "en": "the new regression also passed on the defective head — so the final coverage adds a structural check that actually fails the cap-based implementation.",
+          "zh": "新加的回归用例在有缺陷的版本上同样能过——所以最终补了一个结构性检查，它在基于 cap 的实现上会真的失败。"
+        }
+      },
+      {
+        "lead": {
+          "en": "Fastmath semantics",
+          "zh": "fastmath 语义"
+        },
+        "body": {
+          "en": "the restored max carries `nnan` but not `ninf`, because masked rows feed −inf — the invariant that spawned [#1050](https://github.com/ROCm/FlyDSL/pull/1050).",
+          "zh": "恢复回来的 max 带 `nnan` 但不带 `ninf`，因为被 mask 的行会喂进 −inf——这条不变量催生了 [#1050](https://github.com/ROCm/FlyDSL/pull/1050)。"
+        }
+      }
+    ]
+  },
+  {
+    "number": 1037,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1037",
+    "title": "[ROCDL] Lower approximate exp2 to native intrinsic",
+    "short": "exp2 → native intrinsic",
+    "role": "authored",
+    "mergedAt": "2026-08-24T06:39:35Z",
+    "additions": 213,
+    "deletions": 2,
+    "changedFiles": 10,
+    "commits": 7,
+    "summary": {
+      "en": "Fast `exp2` lowers to native `v_exp_f32` before GPUToROCDL turns the flag into an OCML libcall — byte-identical to hand-written intrinsic ISA (6 VGPR against 9), and 0 error versus `torch.exp2` across the reproducer domain. Closes [#1002](https://github.com/ROCm/FlyDSL/issues/1002).",
+      "zh": "在 GPUToROCDL 把 fast 标记变成 OCML libcall 之前，先把 `exp2` 下降到原生 `v_exp_f32`——生成的 ISA 与手写 intrinsic 逐字节一致（6 VGPR 对 9），在复现域上与 `torch.exp2` 误差为 0。 关闭 [#1002](https://github.com/ROCm/FlyDSL/issues/1002)。"
+    },
+    "points": [
+      {
+        "body": {
+          "en": "Deliberately narrow legality: only `gpu.module` + afn + scalar or fixed-1-D f32; everything else stays on OCML. FileCheck covers the preserved paths as well as the new one.",
+          "zh": "合法性范围刻意收窄：只接受 `gpu.module` + afn + 标量或定长一维 f32，其余一律留在 OCML。 FileCheck 不只覆盖新路径，也覆盖了被保留的旧路径。"
+        }
+      },
+      {
+        "body": {
+          "en": "Review-shaped: two inline rounds from sjfeng1999 pushed it toward an isolated pass with a ROCDL-specific name.",
+          "zh": "形态是被评审改出来的：sjfeng1999 的两轮行内意见，把它推成了一个独立的 pass，并改用 ROCDL 专属的命名。"
+        }
+      }
+    ]
+  },
+  {
+    "number": 1046,
+    "repository": "ROCm/FlyDSL",
+    "url": "https://github.com/ROCm/FlyDSL/pull/1046",
+    "title": "fix(ci): isolate self-hosted runner artifacts",
+    "short": "CI runner isolation",
+    "role": "authored",
+    "mergedAt": "2026-08-21T02:04:48Z",
+    "additions": 49,
+    "deletions": 13,
+    "changedFiles": 1,
+    "commits": 1,
+    "summary": {
+      "en": "Stale wheels on persistent self-hosted runners broke Navi CI after the 0.3.2 bump: `download-artifact` overlays a directory and never deletes from it.",
+      "zh": "常驻 self-hosted runner 上的陈旧 wheel 在 0.3.2 版本号提升之后打断了 Navi CI：`download-artifact` 只会往目录里覆盖，从不删除。"
+    },
+    "points": [
+      {
+        "body": {
+          "en": "Fix the state **and** enforce the invariant: wipe before download, then require exactly one PR wheel, so future stale state fails loudly instead of silently winning.",
+          "zh": "既修状态，**也**把不变量钉住：下载前先清空，再要求有且只有一个 PR wheel，这样以后再出现陈旧状态会直接报错，而不是悄悄生效。"
+        }
+      },
+      {
+        "body": {
+          "en": "The \"OOM\" in the logs was stale host-side `*.log` globbing — failure logs now extract into a fresh temp directory.",
+          "zh": "日志里那个「OOM」其实是宿主机上陈旧 `*.log` 被 glob 到了——现在失败日志会解压到全新的临时目录。"
+        }
+      }
+    ]
+  }
+]
+  </script>
+
+  <script id="notes-data" type="application/json">
+{
+  "lede": {
+    "en": "Opening entry — **results > blockers > questions > ideas**, with the middle two skipped this time. The past week, **{window}**, of pull requests written and reviewed as [{login}](https://github.com/jhinpan), all in [{repos}](https://github.com/ROCm/FlyDSL).",
+    "zh": "第一期——**results > blockers > questions > ideas**，中间两节本期跳过。 过去一周（**{window}**）以 [{login}](https://github.com/jhinpan) 身份提交和评审的 PR，全部在 [{repos}](https://github.com/ROCm/FlyDSL)。"
+  },
+  "railNote": {
+    "en": "— middle two skipped this time",
+    "zh": "— 中间两节本期跳过"
+  },
+  "skipped": {
+    "en": "Skipped this entry.",
+    "zh": "本期跳过。"
+  },
+  "signature": {
+    "en": "Entry 001 · series starts today · compiled from ROCm/FlyDSL PR threads.",
+    "zh": "第 001 期 · 系列自今天开始 · 内容整理自 ROCm/FlyDSL 的 PR 讨论。"
+  },
+  "blockers": [],
+  "questions": [],
+  "ideas": [
+    {
+      "en": "Re-read the dashboard now that the exp2 fix has landed — the `softmax_bwd` baseline exists precisely to price it. ([#1037](https://github.com/ROCm/FlyDSL/pull/1037), [#1026](https://github.com/ROCm/FlyDSL/pull/1026))",
+      "zh": "exp2 的修复已经合入，该回头重读看板了——`softmax_bwd` 基线的存在意义就是给它标价。（[#1037](https://github.com/ROCm/FlyDSL/pull/1037)、[#1026](https://github.com/ROCm/FlyDSL/pull/1026)）"
+    },
+    {
+      "en": "The review moves that worked — **falsify the guard**, **test the test**, **exact-head revalidation** — are codifiable; fold them into the aiter review-harness skills.",
+      "zh": "这周真正起作用的几个评审动作——**证伪那道保护**、**先测这个测试本身**、**锁定 commit 复验**——是可以固化的，应该并进 aiter 的 review-harness skill 里。"
+    },
+    {
+      "en": "Nothing lints prose against the API in most repos; the `check_docs_api.py` pattern travels — aiter next?",
+      "zh": "大多数仓库都没有任何东西会拿文档去对 API 做 lint； `check_docs_api.py` 这套是可以搬的——下一个搬到 aiter？"
+    },
+    {
+      "en": "Parallel autotune compilation stays parked, with a pre-registered trigger: revisit when a search exceeds ~2 s.",
+      "zh": "并行 autotune 编译继续搁置，但预先登记了触发条件：当一次搜索超过约 2 秒时重新评估。"
+    }
+  ]
+}
+  </script>
+
+  <script>
+    (() => {
+      const readJson = (id) => JSON.parse(document.getElementById(id).textContent);
+      const meta = readJson("sync-meta");
+      const prs = readJson("pr-data");
+      const notes = readJson("notes-data");
+
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, cls, text) => {
+        const node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text != null) node.textContent = text;
+        return node;
+      };
+
+      // Editorial strings carry links, code spans and emphasis. Escaping first keeps
+      // an untrusted PR title from smuggling markup in through the same renderer.
+      const escapeHtml = (value) =>
+        value.replace(/[&<>"]/g, (ch) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;",
+        })[ch]);
+      const inline = (value) =>
+        escapeHtml(value)
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(
+            /\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
+          )
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+      // Bilingual rich text is rendered on language change rather than swapped as
+      // textContent, because these strings contain markup.
+      const richNodes = [];
+      const rich = (node, pair) => {
+        richNodes.push({ node, pair });
+        return node;
+      };
+
+      /* Merge timestamps are UTC; the log reads in the author's own day, so every
+         date is rendered in the meta time zone rather than the visitor's. */
+      const zone = meta.timeZone || "America/Los_Angeles";
+      const dayKey = (iso) =>
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit",
+        }).format(new Date(iso));
+      const shortDay = (iso) =>
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: zone, month: "numeric", day: "numeric",
+        }).format(new Date(iso));
+
+      const authored = prs.filter((p) => p.role === "authored");
+      const reviewed = prs.filter((p) => p.role === "reviewed");
+      const sum = (list, key) => list.reduce((acc, p) => acc + (p[key] || 0), 0);
+      const fmt = (n) => n.toLocaleString("en-US");
+      const repoLabel = (meta.repositories || []).join(" · ") || "—";
+
+      /* ---------- rail ---------- */
+      const railSections = [
+        ["results", "#results", prs.length > 0],
+        ["blockers", "#blockers", (notes.blockers || []).length > 0],
+        ["questions", "#questions", (notes.questions || []).length > 0],
+        ["ideas", "#ideas", (notes.ideas || []).length > 0],
+      ];
+      const rail = $("rail");
+      railSections.forEach(([name, href, populated], i) => {
+        if (i) rail.append(el("span", "sep", ">"));
+        const a = el("a", null, name);
+        a.href = href;
+        if (populated) a.classList.add("on");
+        rail.append(a);
+      });
+      rail.append(rich(el("span", "note"), notes.railNote));
+
+      /* ---------- lede ---------- */
+      const windowLabel = `${shortDay(meta.windowStart + "T12:00:00Z")} – ${shortDay(meta.windowEnd + "T12:00:00Z")}`;
+      const fill = (tpl) =>
+        tpl
+          .replace("{window}", windowLabel)
+          .replace("{login}", meta.githubLogin)
+          .replace("{repos}", repoLabel);
+      rich($("lede"), {
+        en: fill(notes.lede.en),
+        zh: fill(notes.lede.zh),
+      });
+
+      /* ---------- stats ---------- */
+      const statCards = [
+        {
+          label: { en: "Authored & merged", zh: "我提交并合入" },
+          value: String(authored.length), unit: "PRs",
+        },
+        {
+          label: { en: "Reviewed to merge", zh: "我评审至合入" },
+          value: String(reviewed.length), unit: "PRs",
+        },
+        {
+          label: { en: "Lines, authored", zh: "我提交的行数" },
+          html: `<span class="add">+${fmt(sum(authored, "additions"))}</span> <span class="del">−${fmt(sum(authored, "deletions"))}</span>`,
+          unit: `${sum(authored, "changedFiles")} files · ${sum(authored, "commits")} commits`,
+          mono: true,
+        },
+        {
+          label: { en: "Repository", zh: "仓库" },
+          value: repoLabel, unit: meta.hardware || "", mono: true,
+        },
+      ];
+      const stats = $("stats");
+      statCards.forEach((card) => {
+        const box = el("div", "stat");
+        const label = el("div", "label");
+        label.dataset.en = card.label.en;
+        label.dataset.zh = card.label.zh;
+        box.append(label);
+        const value = el("div", "value" + (card.mono ? " mono" : ""));
+        if (card.html) value.innerHTML = card.html;
+        else value.textContent = card.value;
+        box.append(value);
+        if (card.unit) box.append(el("div", "unit", card.unit));
+        stats.append(box);
+      });
+
+      /* ---------- timeline ---------- */
+      const NS = "http://www.w3.org/2000/svg";
+      const svgEl = (tag, attrs) => {
+        const node = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+        return node;
+      };
+      const dayIndex = (key) => {
+        const start = Date.parse(meta.windowStart + "T00:00:00Z");
+        return Math.round((Date.parse(key + "T00:00:00Z") - start) / 86400000);
+      };
+      const span = dayIndex(meta.windowEnd) || 1;
+
+      const W = 760, H = 130, padL = 92, padR = 24, axisY = 96;
+      const laneY = { authored: 34, reviewed: 68 };
+      const xOf = (i) => padL + (i / span) * (W - padL - padR);
+
+      const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" });
+      svg.append(
+        svgEl("line", { class: "tl-axis", x1: padL - 12, y1: axisY, x2: W - padR + 6, y2: axisY }),
+      );
+      for (let i = 0; i <= span; i += 1) {
+        const tick = svgEl("text", { class: "tl-tick", x: xOf(i), y: axisY + 15 });
+        const d = new Date(Date.parse(meta.windowStart + "T12:00:00Z") + i * 86400000);
+        tick.textContent = new Intl.DateTimeFormat("en-US", {
+          timeZone: "UTC", month: "numeric", day: "numeric",
+        }).format(d);
+        svg.append(tick);
+      }
+      ["authored", "reviewed"].forEach((role) => {
+        const t = svgEl("text", { class: "tl-lane", x: 0, y: laneY[role] + 4 });
+        t.textContent = role;
+        svg.append(t);
+      });
+
+      /* Two merges on the same day would overlap, so collisions fan out upward. */
+      const seen = new Map();
+      prs
+        .slice()
+        .sort((a, b) => Date.parse(a.mergedAt) - Date.parse(b.mergedAt))
+        .forEach((pr) => {
+          const key = `${pr.role}:${dayKey(pr.mergedAt)}`;
+          const stack = seen.get(key) || 0;
+          seen.set(key, stack + 1);
+          const x = xOf(dayIndex(dayKey(pr.mergedAt)));
+          const y = laneY[pr.role] - stack * 17;
+          const dot = svgEl("circle", {
+            class: "tl-dot", cx: x, cy: y, r: 5, fill: `var(--${pr.role})`,
+          });
+          const tip = svgEl("title", {});
+          tip.textContent = `#${pr.number} · ${pr.title}`;
+          dot.append(tip);
+          const link = svgEl("a", { href: `#pr-${pr.number}` });
+          link.append(dot);
+          svg.append(link);
+          const num = svgEl("text", { class: "tl-num", x, y: y - 9 });
+          num.textContent = `#${pr.number}`;
+          svg.append(num);
+        });
+      $("tlChart").append(svg);
+
+      const busiest = [...seen.entries()].sort((a, b) => b[1] - a[1])[0];
+      const busiestDay = busiest ? shortDay(busiest[0].split(":")[1] + "T12:00:00Z") : "—";
+      rich($("tlCaption"), {
+        en: `${prs.length} merges across the window — authored on the top lane, reviewed below. ${busiestDay} was the dense day.`,
+        zh: `本期共 ${prs.length} 次合入，上排为我提交、下排为我评审。 ${busiestDay} 是最密集的一天。`,
+      });
+
+      /* ---------- table ---------- */
+      const body = $("prBody");
+      prs
+        .slice()
+        .sort((a, b) => a.number - b.number)
+        .forEach((pr) => {
+          const tr = el("tr");
+
+          const prCell = el("td", "pr");
+          const a = el("a", null, `#${pr.number}`);
+          a.href = pr.url;
+          a.target = "_blank";
+          a.rel = "noreferrer";
+          prCell.append(a);
+          tr.append(prCell);
+
+          tr.append(el("td", "what", pr.short || pr.title));
+
+          const roleCell = el("td");
+          roleCell.append(el("span", `role ${pr.role}`, pr.role));
+          tr.append(roleCell);
+
+          tr.append(el("td", "num", shortDay(pr.mergedAt)));
+
+          const lines = el("td", "num hide-sm");
+          lines.innerHTML = `<span class="add">+${fmt(pr.additions)}</span> <span class="del">−${fmt(pr.deletions)}</span>`;
+          tr.append(lines);
+
+          tr.append(el("td", "num hide-sm", String(pr.changedFiles)));
+
+          const jumpCell = el("td");
+          const jump = el("a", "jump");
+          jump.href = `#pr-${pr.number}`;
+          jump.dataset.en = "detail ↓";
+          jump.dataset.zh = "详情 ↓";
+          jumpCell.append(jump);
+          tr.append(jumpCell);
+
+          body.append(tr);
+        });
+
+      /* ---------- per-PR sections ---------- */
+      const renderPr = (pr, mount) => {
+        const art = el("article", "pr");
+        art.id = `pr-${pr.number}`;
+
+        const head = el("div", "pr-head");
+        const h3 = el("h3");
+        const link = el("a", null, `#${pr.number} · ${pr.short || pr.title}`);
+        link.href = pr.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        h3.append(link);
+        head.append(h3);
+        head.append(
+          el(
+            "span",
+            "pr-figs",
+            `${shortDay(pr.mergedAt)} · +${fmt(pr.additions)} −${fmt(pr.deletions)} · ${pr.changedFiles} files · ${pr.commits} commits`,
+          ),
+        );
+        art.append(head);
+
+        if (pr.byline) art.append(rich(el("p", "pr-byline"), pr.byline));
+        if (pr.summary) art.append(rich(el("p", "pr-summary"), pr.summary));
+
+        if ((pr.points || []).length) {
+          const ul = el("ul", "points");
+          pr.points.forEach((point) => {
+            const li = el("li");
+            const pair = point.lead
+              ? {
+                  en: `**${point.lead.en}:** ${point.body.en}`,
+                  zh: `**${point.lead.zh}：**${point.body.zh}`,
+                }
+              : point.body;
+            rich(li, pair);
+            ul.append(li);
+          });
+          art.append(ul);
+        }
+
+        mount.append(art);
+      };
+      authored
+        .slice()
+        .sort((a, b) => a.number - b.number)
+        .forEach((pr) => renderPr(pr, $("authoredBody")));
+      reviewed
+        .slice()
+        .sort((a, b) => a.number - b.number)
+        .forEach((pr) => renderPr(pr, $("reviewedBody")));
+
+      /* ---------- blockers / questions / ideas ---------- */
+      const renderItems = (key, mount) => {
+        const items = notes[key] || [];
+        if (!items.length) {
+          mount.append(rich(el("p", "empty"), notes.skipped));
+          return;
+        }
+        const list = el("ol", "items");
+        items.forEach((item) => list.append(rich(el("li"), item)));
+        mount.append(list);
+      };
+      renderItems("blockers", $("blockersBody"));
+      renderItems("questions", $("questionsBody"));
+      renderItems("ideas", $("ideasBody"));
+
+      /* ---------- colophon ---------- */
+      rich($("signature"), notes.signature);
+      const synced = meta.lastSuccessfulSync
+        ? new Intl.DateTimeFormat("en-CA", {
+            timeZone: zone, dateStyle: "medium", timeStyle: "short",
+          }).format(new Date(meta.lastSuccessfulSync))
+        : "not yet synced";
+      $("colophon").innerHTML =
+        `Counts, line deltas and merge dates pulled from the ${escapeHtml(meta.source)}. Dates in ${zone}.<br />` +
+        `Last successful sync: ${synced}. Generated by <code>${escapeHtml(meta.generatedBy)}</code>.`;
+
+      /* ---------- language ---------- */
+      const applyLang = (lang) => {
+        document.body.dataset.lang = lang;
+        document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+        document.querySelectorAll("[data-en][data-zh]").forEach((node) => {
+          node.textContent = node.dataset[lang];
+        });
+        richNodes.forEach(({ node, pair }) => {
+          node.innerHTML = inline(pair[lang]);
+        });
+        try {
+          localStorage.setItem("daily-sync-lang", lang);
+        } catch {
+          /* Private-mode storage denial must not break the toggle. */
+        }
+      };
+      document.querySelectorAll("[data-set-lang]").forEach((btn) => {
+        btn.addEventListener("click", () => applyLang(btn.dataset.setLang));
+      });
+      let initial = "en";
+      try {
+        initial = localStorage.getItem("daily-sync-lang") || "en";
+      } catch {
+        /* ignore */
+      }
+      applyLang(initial === "zh" ? "zh" : "en");
+    })();
+  </script>
+</body>
+</html>
