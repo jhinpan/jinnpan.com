@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Daily Sync-Up — a numbered series of result-driven status logs: what merged, what is blocked, what is worth discussing." />
+  <meta name="agent-data" content="#entry-data lists every published entry. scripts/sync-daily-sync.mjs appends to it when a new entry is minted." />
+  <title>Daily Sync-Up</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #faf8f4;
+      --panel: #ffffff;
+      --panel-alt: #f5f2ec;
+      --text: #1b1815;
+      --muted: #7a726a;
+      --faint: #a49b91;
+      --line: #e2ddd4;
+      --line-strong: #cdc5b9;
+      --accent: #b8452a;
+      --radius: 6px;
+      --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Consolas, monospace;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #14120f;
+        --panel: #1c1a16;
+        --panel-alt: #23201b;
+        --text: #efe9e0;
+        --muted: #a79d91;
+        --faint: #7d7368;
+        --line: #332f28;
+        --line-strong: #4d473d;
+        --accent: #e08363;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 28px clamp(16px, 4vw, 32px) 96px;
+    }
+    .backlink {
+      display: inline-block;
+      margin-bottom: 18px;
+      color: var(--faint);
+      font: 11px var(--mono);
+    }
+    .kicker {
+      margin: 0;
+      color: var(--accent);
+      font: 11px var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 6px 0 0;
+      font-size: clamp(28px, 4.6vw, 40px);
+      line-height: 1.06;
+      letter-spacing: -.03em;
+    }
+    .lede {
+      margin: 16px 0 0;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    ol.entries {
+      margin: 34px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    ol.entries > li { border-top: 1px solid var(--line); }
+    ol.entries > li:last-child { border-bottom: 1px solid var(--line); }
+    .entry {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) auto;
+      align-items: baseline;
+      gap: 14px;
+      padding: 16px 4px;
+      color: inherit;
+    }
+    .entry:hover { background: var(--panel-alt); text-decoration: none; }
+    .no { color: var(--faint); font: 11px var(--mono); letter-spacing: .08em; }
+    .entry h2 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -.01em;
+    }
+    .entry p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .figs {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      color: var(--faint);
+      font: 10px var(--mono);
+    }
+    .arrow { color: var(--faint); font: 13px var(--mono); }
+    .entry:hover .arrow { color: var(--accent); }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font: 11px var(--mono);
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/sources/">← jinnpan.com / sources</a>
+    <p class="kicker">Daily Sync-Up</p>
+    <h1>Sync log</h1>
+    <p class="lede">
+      A numbered series of result-driven entries: what actually merged, what is blocking
+      the next result, and what is worth arguing about. Numbers come from live GitHub
+      data, not from memory.
+    </p>
+
+    <ol class="entries" id="entries"></ol>
+
+    <footer id="colophon"></footer>
+  </main>
+
+  <script id="entry-data" type="application/json">
+[
+  {
+    "issue": 1,
+    "slug": "001",
+    "title": "August 26, 2026",
+    "windowStart": "2026-08-19",
+    "windowEnd": "2026-08-26",
+    "summary": "Softmax autotuning lands opt-in, exp2 drops to a native gfx950 intrinsic, and two fp8 attention bugfixes get reviewed through.",
+    "authored": 5,
+    "reviewed": 2,
+    "additions": 3337,
+    "deletions": 300
+  }
+]
+  </script>
+
+  <script>
+    (() => {
+      const entries = JSON.parse(document.getElementById("entry-data").textContent);
+      const list = document.getElementById("entries");
+      const fmt = (n) => n.toLocaleString("en-US");
+
+      entries
+        .slice()
+        .sort((a, b) => b.issue - a.issue)
+        .forEach((entry) => {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.className = "entry";
+          a.href = `./${entry.slug}.html`;
+
+          const no = document.createElement("span");
+          no.className = "no";
+          no.textContent = String(entry.issue).padStart(3, "0");
+          a.append(no);
+
+          const mid = document.createElement("div");
+          const h2 = document.createElement("h2");
+          h2.textContent = entry.title;
+          mid.append(h2);
+          const p = document.createElement("p");
+          p.textContent = entry.summary;
+          mid.append(p);
+          const figs = document.createElement("div");
+          figs.className = "figs";
+          [
+            `${entry.authored} authored`,
+            `${entry.reviewed} reviewed`,
+            `+${fmt(entry.additions)} −${fmt(entry.deletions)}`,
+          ].forEach((text) => {
+            const span = document.createElement("span");
+            span.textContent = text;
+            figs.append(span);
+          });
+          mid.append(figs);
+          a.append(mid);
+
+          const arrow = document.createElement("span");
+          arrow.className = "arrow";
+          arrow.textContent = "→";
+          a.append(arrow);
+
+          li.append(a);
+          list.append(li);
+        });
+
+      const latest = entries.reduce((a, b) => (a.issue > b.issue ? a : b));
+      document.getElementById("colophon").textContent =
+        `${entries.length} ${entries.length === 1 ? "entry" : "entries"}. ` +
+        `Latest covers ${latest.windowStart} → ${latest.windowEnd}.`;
+    })();
+  </script>
+</body>
+</html>

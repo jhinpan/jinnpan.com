@@ -21,6 +21,7 @@
     --tut: #315d92;    /* cobalt */
     --blog: #4e744c;   /* green  */
     --exp: #6d3f8c;    /* plum   */
+    --sync: #8a5a1f;   /* ochre  */
     --amber: #bb7a25;
     --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
     --font-serif: Georgia, "Noto Serif SC", serif;
@@ -168,6 +169,7 @@
   .filter[data-filter="tutorial"][aria-pressed="true"] { background: var(--tut); border-color: var(--tut); }
   .filter[data-filter="blog"][aria-pressed="true"] { background: var(--blog); border-color: var(--blog); }
   .filter[data-filter="experiments"][aria-pressed="true"] { background: var(--exp); border-color: var(--exp); }
+  .filter[data-filter="sync"][aria-pressed="true"] { background: var(--sync); border-color: var(--sync); }
 
   /* ---- stats ---- */
   .stats {
@@ -331,7 +333,7 @@
     <div>
       <p class="kicker">The Library · 文库</p>
       <h1>The Library</h1>
-      <p class="lede">一个分门别类的索引， 收齐了我写过的东西。 <b>代码精读</b>和<b>论文精读</b>是 /sources 下自成一体的 HTML 深读； <b>教程</b>和<b>博客</b>是中英双语的 blog 长文； <b>实验</b>是可复现的 kernel 与系统性能记录， 连原始数据一起存档。 五个栏目， 一张地图。</p>
+      <p class="lede">一个分门别类的索引， 收齐了我写过的东西。 <b>代码精读</b>和<b>论文精读</b>是 /sources 下自成一体的 HTML 深读； <b>教程</b>和<b>博客</b>是中英双语的 blog 长文； <b>实验</b>是可复现的 kernel 与系统性能记录， 连原始数据一起存档； <b>日常同步</b>是按期编号的结果记录， 数字由 GitHub 实时拉取。 六个栏目， 一张地图。</p>
     </div>
     <figure class="shelf-plate" aria-label="A visual map of the five shelves in the library">
       <svg viewBox="0 0 320 288" role="img" aria-labelledby="plate-title plate-desc">
@@ -379,6 +381,7 @@
       <button class="filter" type="button" data-filter="tutorial" aria-pressed="false">Tutorial</button>
       <button class="filter" type="button" data-filter="blog" aria-pressed="false">Blog</button>
       <button class="filter" type="button" data-filter="experiments" aria-pressed="false">Experiments</button>
+      <button class="filter" type="button" data-filter="sync" aria-pressed="false">Sync</button>
     </div>
   </section>
 
@@ -790,8 +793,31 @@
     </div>
   </section>
 
+  <!-- ============ SYNC ============ -->
+  <section class="shelf" id="sync" data-section="sync" style="--accent: var(--sync);" aria-label="Sync log">
+    <div class="shelf-head">
+      <div class="shelf-chip">06</div>
+      <div class="shelf-title">
+        <h2>Sync</h2>
+        <div class="sub"><span class="zh">日常同步</span> · numbered result-driven status entries — merged work, blockers, and open questions, counted from live GitHub data</div>
+      </div>
+      <div class="shelf-count">1 entry</div>
+    </div>
+    <div class="grid">
+      <article class="entry" data-kind="sync" data-search="daily sync-up 001 status log open source pull requests authored reviewed merged rocm flydsl softmax autotune exp2 intrinsic gfx950 fp8 attention blockers questions ideas github live data">
+        <div class="entry-top"><span class="entry-kind">Daily Sync-Up</span><span>No. 001</span></div>
+        <div class="entry-body">
+          <h3>August 26, 2026</h3>
+          <p>Seven merges in a week: Softmax autotuning lands opt-in, exp2 drops to a native gfx950 intrinsic, and two fp8 attention bugfixes get reviewed through. Counts, line deltas and merge dates are pulled from the GitHub API on a daily cron, so the numbers cannot drift from the record.</p>
+          <div class="tags"><span class="tag">open-source PRs</span><span class="tag">ROCm/FlyDSL</span><span class="tag">live GitHub data</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./daily-sync/">Open the log →</a></div>
+      </article>
+    </div>
+  </section>
+
   <div class="empty" id="empty" aria-hidden="true">No matching entry.</div>
-  <p class="note">Code, Paper &amp; Experiments open as self-contained HTML deep dives (each carries its own EN / ZH toggle). Tutorial &amp; Blog open as bilingual blog pages. Search across everything, or filter by shelf. Try: MLIR, ATT, MoE, PagedAttention, agent RL, GF(2), RLHF, Codex, RMSNorm.</p>
+  <p class="note">Code, Paper, Experiments &amp; Sync open as self-contained HTML pages (each carries its own EN / ZH toggle). Tutorial &amp; Blog open as bilingual blog pages. Search across everything, or filter by shelf. Try: MLIR, ATT, MoE, PagedAttention, agent RL, GF(2), RLHF, Codex, RMSNorm.</p>
 </main>
 
 <script>

@@ -9,6 +9,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "sync:radar": "node scripts/sync-kernel-inference-radar.mjs",
+    "sync:daily": "node scripts/sync-daily-sync.mjs",
     "deploy": "node scripts/deploy.mjs",
     "deploy:baseline": "node scripts/deploy.mjs --baseline"
   },
