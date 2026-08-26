@@ -110,17 +110,19 @@ function repoFromApiUrl(repositoryUrl) {
   return repositoryUrl.replace(/^https:\/\/api\.github\.com\/repos\//, "");
 }
 
+// Written by hand from the PR thread, never derivable from the API. The sync
+// refreshes measurements only, so these survive every later run.
+const EDITORIAL_KEYS = ["short", "byline", "summary", "points"];
+
 async function pullRequestDetail(item, role, previousByNumber) {
   const repository = repoFromApiUrl(item.repository_url);
   const live = await githubApi(`/repos/${repository}/pulls/${item.number}`);
   const previous = previousByNumber.get(`${repository}#${item.number}`) || {};
-  return {
+  const record = {
     number: live.number,
     repository,
     url: live.html_url,
     title: live.title,
-    // `short` and `note` are editorial. The sync refreshes measurements only, so a
-    // hand-written line survives every later run.
     short: previous.short || live.title,
     role,
     mergedAt: live.merged_at,
@@ -128,8 +130,11 @@ async function pullRequestDetail(item, role, previousByNumber) {
     deletions: live.deletions,
     changedFiles: live.changed_files,
     commits: live.commits,
-    note: previous.note || "",
   };
+  for (const key of EDITORIAL_KEYS) {
+    if (key !== "short" && previous[key] !== undefined) record[key] = previous[key];
+  }
+  return record;
 }
 
 async function latestEntryFile() {
