@@ -743,7 +743,7 @@
   ],
   "hardware": "gfx950 · MI355X",
   "timeZone": "America/Los_Angeles",
-  "lastSuccessfulSync": "2026-08-27T01:15:54.195Z",
+  "lastSuccessfulSync": "2026-08-27T20:26:34.380Z",
   "source": "GitHub GraphQL API (search + pullRequest)",
   "generatedBy": "scripts/sync-daily-sync.mjs",
   "showPrivate": false
@@ -796,8 +796,8 @@
       "zh": "移植这条目标的旗舰案例： 在一个 NVIDIA 优先的仓库（Dao-AILab/quack， 纯 CuTe）里合入一个 ROCm backend， 不碰 CuTe 路径， 也不给 CUDA 用户加依赖。 15k 行的 umbrella PR（#5）根本不会有人 review； 只做 forward、只支持 gfx950 的那一刀是 #190， 1.7k 行， 先在 fork 里用真机 review 过一遍（#17）。 上游放了十二天， 没有一个维护者看过——而我唯一能推动的那件事（main 自己的 workflow 造成的红色 lint job）， 到现在还没动。"
     },
     "next": {
-      "en": "Send the one-line CI fix to quack main, re-ping tridao with a green check, review zhiding512's CuTe-vocabulary rewrite (#18) on MI355X, and close the nine stale fork drafts.",
-      "zh": "把那一行的 CI 修复发到 quack main， 带着绿色的 check 再 ping 一次 tridao， 在 MI355X 上 review zhiding512 的 CuTe 词汇重写（#18）， 然后关掉 fork 里那九个过期的 draft。"
+      "en": "Send the one-line CI fix to quack main, re-ping tridao with a green check, review zhiding512's CuTe-vocabulary rewrite (#18) on MI355X, and close #5 and the eight stale drafts under it (#9–#16).",
+      "zh": "把那一行的 CI 修复发到 quack main， 带着绿色的 check 再 ping 一次 tridao， 在 MI355X 上 review zhiding512 的 CuTe 词汇重写（#18）， 然后关掉 #5 和它下面那八个过期的 draft（#9–#16）。"
     }
   },
   {
@@ -808,12 +808,12 @@
       "zh": "FlyDSL kernel 评审"
     },
     "goal": {
-      "en": "Other people's FlyDSL kernels, where I am the correctness gate before they become a serving backend: the gfx950 attention chain (fp8 softmax mass and int32 split in #1020, the lazy-rescale NaN in #1033, vLLM paged layouts in #1056), MegaMoE's A4W4 path (#972) and the norm rewrite (#848). Every review followed the same shape — reproduce on gfx950, prescribe a minimal fix, specify the regression test, re-validate on the exact head.",
-      "zh": "别人写的 FlyDSL kernel， 在它们变成 serving backend 之前， 我是那道正确性闸门： gfx950 的 attention 链（#1020 里的 fp8 softmax 概率质量和 int32 拆分， #1033 里 lazy-rescale 的 NaN， #1056 里 vLLM 的 paged 布局）， MegaMoE 的 A4W4 路径（#972）， 还有 norm 重写（#848）。 每次 review 都是同一个套路——在 gfx950 上复现， 给出最小修复， 指定 regression 测试， 在那个确切的 head 上再验一遍。"
+      "en": "Other people's FlyDSL kernels, where I am the correctness gate before they become a serving backend: the gfx950 attention chain (fp8 softmax mass and int32 split in #1020, the lazy-rescale NaN in #1033, vLLM paged layouts in #1056), MegaMoE's A4W4 path (#972) and the norm rewrite (#848). The attention reviews followed the same shape — reproduce on gfx950, prescribe a minimal fix, specify the regression test, re-validate on the exact head; #972 got a commit-level bisect, #848 a coverage audit.",
+      "zh": "别人写的 FlyDSL kernel， 在它们变成 serving backend 之前， 我是那道正确性闸门： gfx950 的 attention 链（#1020 里的 fp8 softmax 概率质量和 int32 拆分，#1033 里 lazy-rescale 的 NaN，#1056 里 vLLM 的 paged 布局）， MegaMoE 的 A4W4 路径（#972）， 还有 norm 重写（#848）。 attention 那几次 review 是同一个套路——在 gfx950 上复现， 给出最小修复， 指定 regression 测试， 在那个确切的 head 上再验一遍； #972 做的是逐 commit 的二分，#848 是一次覆盖审计。"
     },
     "next": {
-      "en": "#1056 and #972 are in their authors' courts; decide whether #848 stays on the watch list at all.",
-      "zh": "#1056 和 #972 球在作者那边； #848 到底要不要留在观察列表里， 待决定。"
+      "en": "#972 is in its author's court; #1056 is mine to re-review at bce20846 once akii96 fixes the style job; decide whether #848 stays on the watch list at all.",
+      "zh": "#972 球在作者那边； #1056 等 akii96 修好 style 那个任务之后由我在 bce20846 上重新 review； #848 到底要不要留在观察列表里， 待决定。"
     }
   },
   {
@@ -824,12 +824,12 @@
       "zh": "131K 下的 Kimi-K3 DSpark"
     },
     "goal": {
-      "en": "tokenspeed#1132: Kimi-K3 DSpark on 8×MI350X is +106% at 4K but −41% at exact 131K, because accepted length collapses to 1.0 and one M=8 verify round costs 2.16× an ordinary decode. Split into an acceptance track (a real cache-location bug fell out: #1169) and an infrastructure track (a forced-accept flag that measures round cost independent of the draft: #1170). The dominant cost — MoE W13/W2 warp-GEMV paying near per-row weight loads at M=8/EP8 — is where I go next.",
-      "zh": "tokenspeed#1132： Kimi-K3 DSpark 在 8×MI350X 上， 4K 时是 +106%， 到正好 131K 时却是 −41%， 因为接受长度塌到了 1.0， 而一轮 M=8 的 verify 要花普通 decode 的 2.16×。 拆成两条线： 接受率这条（顺手掉出来一个真的 cache 位置 bug： #1169）， 和基础设施这条（一个 forced-accept 开关， 能脱离 draft 单独量每轮成本： #1170）。 大头——MoE W13/W2 的 warp-GEMV 在 M=8/EP8 下几乎是逐行加载权重——是我接下来要去的地方。"
+      "en": "tokenspeed#1132: Kimi-K3 DSpark on 8×MI350X is +106% at 4K but −41% at exact 131K, because accepted length collapses to 1.0 and one M=8 verify round costs 2.16× an ordinary decode. Split into an acceptance track (a real cache-location bug fell out: #1169) and an infrastructure track (a forced-accept flag that measures round cost independent of the draft: #1170). The dominant cost is the M=8/EP8 MoE round — and on 8/27 I measured the obvious fix's premise: sharing an expert's weights across routes buys only 1.08× on W13 and 1.21× on W2, so the round is bound by per-route request/dequant work, not weight traffic. That is where I go next.",
+      "zh": "tokenspeed#1132： Kimi-K3 DSpark 在 8×MI350X 上， 4K 时是 +106%， 到正好 131K 时却是 −41%， 因为接受长度塌到了 1.0， 而一轮 M=8 的 verify 要花普通 decode 的 2.16×。 拆成两条线： 接受率这条（顺手掉出来一个真的 cache 位置 bug： #1169）， 和基础设施这条（一个 forced-accept 开关， 能脱离 draft 单独量每轮成本： #1170）。 大头是 M=8/EP8 的 MoE 那一轮——8/27 我把「显然的修法」的前提量了一下： 跨路由共享 expert 权重在 W13 上只换来 1.08×、W2 上 1.21×， 所以这一轮卡在逐路由的请求 / 反量化工作上， 不是权重流量。 接下来去的是那里。"
     },
     "next": {
-      "en": "Get a maintainer to approve fork-PR CI on both; answer the Codex P2 on #1170; then start on the M=8 MoE weight-reuse fix. Close sglang-fork#1 (superseded upstream).",
-      "zh": "找个维护者把两个 fork PR 的 CI 批了； 回复 #1170 上 Codex 的 P2； 然后开始做 M=8 的 MoE 权重复用修复。 关掉 sglang-fork#1（已被上游取代）。"
+      "en": "Get a maintainer to approve fork-PR CI on both; answer the Codex P1 on #1169 (null-page subpages when page_ratio > 1) and the Codex P2 on #1170; then go after the per-route request/dequant cost of the M=8 round. Close sglang-fork#1 (superseded upstream).",
+      "zh": "找个维护者把两个 fork PR 的 CI 批了； 回掉 #1169 上 Codex 的 P1（page_ratio > 1 时 null page 的 subpage）和 #1170 上 Codex 的 P2； 然后去攻 M=8 那一轮逐路由的请求 / 反量化成本。 关掉 sglang-fork#1（已被上游取代）。"
     }
   },
   {
@@ -840,8 +840,8 @@
       "zh": "Miles LoRA checkpoint"
     },
     "goal": {
-      "en": "Arist12's #2705 tracker makes Miles LoRA RL reliable on MI350X/MI355X; these four PRs are the checkpoint-and-resume slice, merge order #2733 → #2669 → #2580 → #2516. My reviews (two passes each, every finding reproduced on MI355X) found three real corruption or hang bugs the author fixed within 2.5 hours. The bottleneck is not code quality: none of the six requested maintainers has touched any of the four since 8/13.",
-      "zh": "Arist12 的 #2705 tracker 是让 Miles LoRA RL 在 MI350X / MI355X 上稳定可用的； 这四个 PR 是其中 checkpoint 与恢复那一片， 合并顺序 #2733 → #2669 → #2580 → #2516。 我的 review（每个两轮， 每条发现都在 MI355X 上复现过）找出三个真的数据损坏或挂死 bug， 作者 2.5 小时内就修了。 瓶颈不在代码质量： 被请到的六个维护者， 从 8/13 起没有一个碰过这四个中的任何一个。"
+      "en": "Arist12's #2705 tracker makes Miles LoRA RL reliable on MI350X/MI355X; these four PRs are the checkpoint-and-resume slice, merge order #2733 → #2669 → #2580 → #2516. My reviews (two passes each, every finding reproduced on MI355X) found four real corruption, hang or crash bugs the author fixed within 2.5 hours. The bottleneck is not code quality: none of the six requested maintainers has touched any of the four since 8/13.",
+      "zh": "Arist12 的 #2705 tracker 是让 Miles LoRA RL 在 MI350X / MI355X 上稳定可用的； 这四个 PR 是其中 checkpoint 与恢复那一片， 合并顺序 #2733 → #2669 → #2580 → #2516。 我的 review（每个两轮， 每条发现都在 MI355X 上复现过）找出四个真的数据损坏、挂死或崩溃 bug， 作者 2.5 小时内就修了。 瓶颈不在代码质量： 被请到的六个维护者， 从 8/13 起没有一个碰过这四个中的任何一个。"
     },
     "next": {
       "en": "Re-run my probes on the four new heads and say so on-thread; settle the Bridge-barrier disagreement on #2580; then get yushengsu-thu or Zhichenzzz (who merge most LoRA PRs) to rule on strict dtype equality and approve #2733 so the stack can move.",
@@ -856,12 +856,12 @@
       "zh": "amdpilot v2 集群"
     },
     "goal": {
-      "en": "The control plane that schedules agent kernel-optimization jobs onto the MI355X nodes. This week's four PRs all fall out of one 8/26 solbench sweep: a torn `/etc/passwd` race that killed 3 of 75 jobs while holding a GPU, brief-cell counters that reported structural zeros as measurements, a forecast line about one-node packing, and a late-evening fourth. The forecast one's premise was refuted the same evening by williamqwu's own analysis (the cap alone bounds reach; the placer tie-break only orders), so it needs rewording before it is reviewable. Private repository — titles and bodies stay off this page; the board still shows timing and state.",
-      "zh": "把 agent 的 kernel 优化任务调度到 MI355X 节点上的控制平面。 这周的四个 PR 全都出自 8/26 的一次 solbench 扫描： 一个`/etc/passwd` 半截写入的竞态， 占着 GPU 弄死了 75 个任务里的 3 个； brief-cell 计数器把结构性的零当成测量值上报； 一行关于单节点打包的预测； 还有一个深夜开的第四个。 预测那个的前提当晚就被 williamqwu 自己的分析推翻了（光靠 cap 就已经限定了 reach； placer 的 tie-break 只决定顺序）， 所以得先改措辞才谈得上 review。 私有仓库， 标题和正文不上这个页面； 看板仍然显示时间和状态。"
+      "en": "The control plane that schedules agent kernel-optimization jobs onto the MI355X nodes. This week's four PRs all fall out of one 8/26 solbench sweep: a torn `/etc/passwd` race that killed 3 of 75 jobs while holding a GPU, brief-cell counters that reported structural zeros as measurements, a forecast line about one-node packing, and a late-evening fourth. The forecast one's premise was refuted the same evening by williamqwu's own analysis (the cap alone bounds reach; the placer tie-break only orders); he merged it early on 8/27 after one changes-requested round and a fix commit. Private repository — the board shows only number, state and timing; the descriptions here are my own words, not the PRs' titles or bodies.",
+      "zh": "把 agent 的 kernel 优化任务调度到 MI355X 节点上的控制平面。 这周的四个 PR 全都出自 8/26 的一次 solbench 扫描： 一个`/etc/passwd` 半截写入的竞态， 占着 GPU 弄死了 75 个任务里的 3 个； brief-cell 计数器把结构性的零当成测量值上报； 一行关于单节点打包的预测； 还有一个深夜开的第四个。 预测那个的前提当晚就被 williamqwu 自己的分析推翻了（光靠 cap 就已经限定了 reach； placer 的 tie-break 只决定顺序）； 他 8/27 一早在一轮 request-changes 和一个修复 commit 之后把它合了。 私有仓库——看板只显示编号、状态和时间； 这里的描述是我自己的话， 不是 PR 的标题或正文。"
     },
     "next": {
-      "en": "Reword the forecast PR to williamqwu's reading and only then request review; add him as a formal reviewer on the other three (he is only @-mentioned); close the 14k-line #35 in favour of the small rebuilds (#196/#210); approve #215 once it says who creates the dev-tree root; decide house rules for the review loop before it pushes to someone else's branch again.",
-      "zh": "把预测那个 PR 按 williamqwu 的理解重写， 然后再请 review； 在另外三个上把他加成正式评审人（现在只是 @ 了一下）； 关掉 14k 行的 #35， 改用小的重建版（#196 / #210）；#215 说清楚 dev-tree 根目录由谁创建之后就 approve； 在 review 循环再往别人的分支推代码之前， 先给它定好规矩。"
+      "en": "Add williamqwu as a formal reviewer on the other three (he is only @-mentioned); close the 14k-line #35 in favour of the small rebuilds (#196/#210); approve #215 once it says who creates the dev-tree root; decide house rules for the review loop before it pushes to someone else's branch again.",
+      "zh": "在另外三个上把 williamqwu 加成正式评审人（现在只是 @ 了一下）； 关掉 14k 行的 #35， 改用小的重建版（#196 / #210）； #215 说清楚 dev-tree 根目录由谁创建之后就 approve； 在 review 循环再往别人的分支推代码之前， 先给它定好规矩。"
     }
   },
   {
@@ -908,8 +908,8 @@
       "zh": "没人在推的 open PR。 它们不是进行中， 是没做决定； 每次看列表， 每一个都要花掉一点注意力。"
     },
     "next": {
-      "en": "One housekeeping pass: close or re-cut each. That alone takes 'in flight' from 26 down to the dozen that are real.",
-      "zh": "做一遍清理： 每个要么关掉， 要么重切。 光这一步就能把「进行中」从 26 降到真正的十来个。"
+      "en": "One housekeeping pass: close or re-cut each. That alone takes 'in flight' from 28 down to the dozen that are real.",
+      "zh": "做一遍清理： 每个要么关掉， 要么重切。 光这一步就能把「进行中」从 28 降到真正的十来个。"
     }
   }
 ]
@@ -1049,20 +1049,22 @@
     "title": "(private repository)",
     "author": "jhinpan",
     "role": "authored",
-    "state": "open",
+    "state": "merged",
     "isDraft": false,
     "createdAt": "2026-08-26T21:49:12Z",
-    "updatedAt": "2026-08-26T22:29:38Z",
-    "mergedAt": null,
-    "closedAt": null,
-    "mergedBy": null,
-    "additions": 121,
-    "deletions": 0,
-    "changedFiles": 3,
-    "commits": 2,
-    "reviewDecision": null,
+    "updatedAt": "2026-08-27T07:22:15Z",
+    "mergedAt": "2026-08-27T07:22:15Z",
+    "closedAt": "2026-08-27T07:22:15Z",
+    "mergedBy": "williamqwu",
+    "additions": 210,
+    "deletions": 4,
+    "changedFiles": 4,
+    "commits": 3,
+    "reviewDecision": "APPROVED",
     "ciState": "success",
-    "approvedBy": [],
+    "approvedBy": [
+      "williamqwu"
+    ],
     "changesRequestedBy": [],
     "myReview": null,
     "base": "main",
@@ -1070,7 +1072,7 @@
     "labels": [],
     "short": "(private repository)",
     "thread": "amdpilot-fleet",
-    "status": "needs-me"
+    "status": "landed"
   },
   {
     "number": 222,
@@ -1082,8 +1084,8 @@
     "role": "authored",
     "state": "open",
     "isDraft": false,
-    "createdAt": "2026-08-27T03:52:00Z",
-    "updatedAt": "2026-08-27T03:52:00Z",
+    "createdAt": "2026-08-27T03:52:19Z",
+    "updatedAt": "2026-08-27T03:52:19Z",
     "mergedAt": null,
     "closedAt": null,
     "mergedBy": null,
@@ -1097,10 +1099,9 @@
     "changesRequestedBy": [],
     "myReview": null,
     "base": "main",
-    "head": null,
+    "head": "fix/node-census-blind-spots",
     "labels": [],
     "short": "(private repository)",
-    "seededFrom": "research",
     "thread": "amdpilot-fleet",
     "status": "flight"
   },
@@ -1142,13 +1143,13 @@
       "en": "It was meant to advance a gfx950 port of the TK tiles. It advances nothing; the target issue is labelled invalid. It is the example of what v1 shipped and what the v2 delivery pipeline is meant to replace.",
       "zh": "它本来是要推进 TK tile 往 gfx950 的移植。 结果什么都没推进； 目标 issue 已经被标成 invalid。 它就是 v1 交付出来的东西的样本， 也是 v2 投递流水线要取代的东西。"
     },
+    "related": [
+      "amdpilot-org/ThunderKittens#2 (target issue, invalid)"
+    ],
     "decision": {
       "en": "Close. The only event since July is the mirror sync force-pushing the base.",
       "zh": "关掉。 七月以来唯一的动静是镜像同步 force-push 了 base。"
-    },
-    "related": [
-      "amdpilot-org/ThunderKittens#2 (target issue, invalid)"
-    ]
+    }
   },
   {
     "number": 190,
@@ -1181,16 +1182,16 @@
     "thread": "quack-upstream",
     "status": "needs-me",
     "what": {
-      "en": "A forward-only FlyDSL RMSNorm kernel for gfx950 behind the existing `quack.rmsnorm_fwd(...) -> (out, residual_out, rstd)` signature. `quack/__init__.py` resolves it lazily via `__getattr__` — CuTe on CUDA, `rmsnorm_flydsl.py` on ROCm — so `import quack` never loads CuTe on ROCm; `flydsl_runtime.py` owns arch validation, per-device launcher caching and 16-byte row gates; a `quack::flydsl_rmsnorm_fwd` custom op keeps cold `torch.compile` to one opaque graph.",
-      "zh": "一个只有 forward 的 gfx950 FlyDSL RMSNorm kernel， 挂在现有的`quack.rmsnorm_fwd(...) -> (out, residual_out, rstd)` 签名后面。`quack/__init__.py` 通过`__getattr__` 惰性解析， CUDA 上走 CuTe， ROCm 上走`rmsnorm_flydsl.py`， 所以 ROCm 上`import quack` 永远不会加载 CuTe；`flydsl_runtime.py` 负责架构校验、按设备缓存 launcher 和 16 字节的行对齐门槛； 一个`quack::flydsl_rmsnorm_fwd` 自定义算子让冷启动的`torch.compile` 只产生一张不透明的图。"
+      "en": "A forward-only FlyDSL RMSNorm kernel for gfx950 behind the existing `quack.rmsnorm_fwd(...) -> (out, residual_out, rstd)` signature. `quack/__init__.py` resolves it lazily via `__getattr__` — CuTe on CUDA, `rmsnorm_flydsl.py` on ROCm — so `import quack` never loads CuTe on ROCm; `flydsl_runtime.py` owns arch validation, the compile-on-first-launch `Launcher` and the 16-byte row gates, while `rmsnorm_flydsl.py` keys the launcher cache by device and specialization; a `quack::flydsl_rmsnorm_fwd` custom op keeps cold `torch.compile` to one opaque graph.",
+      "zh": "一个只有 forward 的 gfx950 FlyDSL RMSNorm kernel， 挂在现有的`quack.rmsnorm_fwd(...) -> (out, residual_out, rstd)` 签名后面。`quack/__init__.py` 通过`__getattr__` 惰性解析， CUDA 上走 CuTe， ROCm 上走`rmsnorm_flydsl.py`， 所以 ROCm 上`import quack` 永远不会加载 CuTe；`flydsl_runtime.py` 负责架构校验、首次启动时编译的`Launcher` 和 16 字节的行对齐门槛， launcher 缓存则由`rmsnorm_flydsl.py` 按设备和特化版本做 key； 一个`quack::flydsl_rmsnorm_fwd` 自定义算子让冷启动的`torch.compile` 只产生一张不透明的图。"
     },
     "why": {
-      "en": "quack is CuTe/CUDA-only — none of it runs on MI355X. This is the porting goal's flagship case: land a ROCm backend inside an NVIDIA-first repo without touching CuTe paths or adding dependencies for CUDA users, the condition tridao set when he accepted the RFC (#178, 7/22). Scope cut to forward/gfx950 on purpose so the first review unit is 1.7k lines, not the 15k umbrella. Perf: the body reports one cell, 0.0155 ms vs 0.0151 ms for torch.compile at 32768×512 bf16; the 11-shape geomean of 1.036× (7 wins / 4 losses) comes from the #17 ladder at an earlier head (97d29f3, 8/10) and was not re-posted for the final head.",
-      "zh": "quack 只有 CuTe / CUDA， 在 MI355X 上一行都跑不了。 这是移植目标的旗舰案例： 在一个 NVIDIA 优先的仓库里合入一个 ROCm 后端， 不碰 CuTe 路径， 也不给 CUDA 用户增加依赖， 这是 tridao 接受 RFC 时（#178， 7/22）定下的条件。 范围刻意砍到只剩 forward / gfx950， 这样第一个 review 单元是 1.7k 行， 而不是 15k 行的总 PR。 性能： 正文只报了一个 cell， 32768×512 bf16 下 0.0155 ms 对 torch.compile 的 0.0151 ms； 11 个 shape 的几何平均 1.036×（7 赢 / 4 输）来自更早的 head（97d29f3， 8/10）上的 #17 阶梯测试， 最终 head 上没有重新贴过。"
+      "en": "quack is CuTe/CUDA-only — none of it runs on MI355X. This is the porting goal's flagship case: land a ROCm backend inside an NVIDIA-first repo without touching CuTe paths or adding dependencies for CUDA users, the condition tridao set when he accepted the RFC (#178, 7/21). Scope cut to forward/gfx950 on purpose so the first review unit is 1.7k lines, not the 15k umbrella. Perf: the body reports one cell, 0.0155 ms vs 0.0151 ms for torch.compile at 32768×512 bf16; the 11-shape geomean of 1.036× (7 wins / 4 losses) comes from the #17 ladder at an earlier head (97d29f3, 8/10) and was not re-posted for the final head.",
+      "zh": "quack 只有 CuTe / CUDA， 在 MI355X 上一行都跑不了。 这是移植目标的旗舰案例： 在一个 NVIDIA 优先的仓库里合入一个 ROCm 后端， 不碰 CuTe 路径， 也不给 CUDA 用户增加依赖， 这是 tridao 接受 RFC 时（#178， 7/21）定下的条件。 范围刻意砍到只剩 forward / gfx950， 这样第一个 review 单元是 1.7k 行， 而不是 15k 行的总 PR。 性能： 正文只报了一个 cell， 32768×512 bf16 下 0.0155 ms 对 torch.compile 的 0.0151 ms； 11 个 shape 的几何平均 1.036×（7 赢 / 4 输）来自更早的 head（97d29f3， 8/10）上的 #17 阶梯测试， 最终 head 上没有重新贴过。"
     },
     "waiting": {
-      "en": "tridao / GarlGuo — zero maintainer activity in 12 days (no review, reviewer, label or reaction; GarlGuo committed to main on 8/21 without responding). And `test / lint` is red for every fork PR because main's workflow trips the `actions/checkout@v6.1` `pull_request_target` guard; the six GPU jobs wait on the `gpu-ci` environment gate only a maintainer can approve.",
-      "zh": "tridao / GarlGuo， 12 天没有任何维护者动静（没有 review、没指定评审人、没打标签、没有 reaction； GarlGuo 8/21 往 main 提了 commit 但没回应）。 而且每个 fork PR 的`test / lint` 都是红的， 因为 main 的 workflow 触发了`actions/checkout@v6.1` 的`pull_request_target` 守卫； 六个 GPU job 卡在`gpu-ci` 环境门槛上， 只有维护者能批。"
+      "en": "tridao / GarlGuo — zero maintainer activity in 12 days (no review, reviewer, label or reaction; GarlGuo committed to main on 8/20 without responding). And `test / lint` is red for every fork PR because main's workflow trips the `actions/checkout@v6.1` `pull_request_target` guard; the six GPU jobs wait on the `gpu-ci` environment gate only a maintainer can approve.",
+      "zh": "tridao / GarlGuo， 12 天没有任何维护者动静（没有 review、没指定评审人、没打标签、没有 reaction； GarlGuo 8/20 往 main 提了 commit 但没回应）。 而且每个 fork PR 的`test / lint` 都是红的， 因为 main 的 workflow 触发了`actions/checkout@v6.1` 的`pull_request_target` 守卫； 六个 GPU job 卡在`gpu-ci` 环境门槛上， 只有维护者能批。"
     },
     "next": {
       "en": "Me: send the one-line CI fix PR against quack main that I offered on 8/19 (pin checkout, or move lint to `pull_request`) so lint goes green for every fork PR and tridao gets a trivial merge to start from; then re-ping with a green check. Decide with zhiding512 whether #18 lands into this branch before or after upstream review.",
@@ -1199,8 +1200,8 @@
     "points": [
       {
         "body": {
-          "en": "All code review happened on the fork (#17: coderfeli 8/13, plus zhiding512's 21 commits); #190 carries those 49 SHAs unchanged. The provenance claim depends on the branch staying put.",
-          "zh": "所有代码 review 都发生在 fork 上（#17： coderfeli 8/13， 外加 zhiding512 的 21 个 commit）；#190 原封不动地带着这 49 个 SHA。 「来源可追溯」这个说法成立的前提是分支不动。"
+          "en": "All code review happened on the fork (#17: coderfeli 8/12, plus zhiding512's 21 commits); #190 carries those 49 SHAs unchanged. The provenance claim depends on the branch staying put.",
+          "zh": "所有代码 review 都发生在 fork 上（#17： coderfeli 8/12， 外加 zhiding512 的 21 个 commit）；#190 原封不动地带着这 49 个 SHA。 「来源可追溯」这个说法成立的前提是分支不动。"
         }
       },
       {
@@ -1211,7 +1212,7 @@
       }
     ],
     "related": [
-      "Dao-AILab/quack#178 (RFC; scope accepted 7/22)",
+      "Dao-AILab/quack#178 (RFC; scope accepted 7/21)",
       "jhinpan/quack-FlyDSL#17 (review archive, same SHAs)",
       "jhinpan/quack-FlyDSL#18 (rewrite targeting this branch)",
       "Dao-AILab/quack#189 (sibling fork PR, identical lint failure)"
@@ -1317,10 +1318,6 @@
       "en": "One arm of the seeded-defect A/B behind #1047: a four-line PR whose only change is the defect, to measure whether the review harness (`review-pr` with vs without the new skill) catches it. Both arms caught F2, so the family was dropped from the skill.",
       "zh": "#1047 背后那组埋缺陷 A/B 的一个 arm： 一个四行的 PR， 唯一的改动就是这个缺陷， 用来测评审 harness（`review-pr` 带与不带新 skill）能不能抓到它。 两个 arm 都抓到了 F2， 所以这一族从 skill 里去掉了。"
     },
-    "decision": {
-      "en": "Close (or label `seeded-defect`). Never merge.",
-      "zh": "关掉（或者打上`seeded-defect` 标签）。 绝不合并。"
-    },
     "points": [
       {
         "body": {
@@ -1332,7 +1329,11 @@
     "related": [
       "ROCm/FlyDSL#1047 (the experiment)",
       "jhinpan/FlyDSL-lab#8 (null control)"
-    ]
+    ],
+    "decision": {
+      "en": "Close (or label `seeded-defect`). Never merge.",
+      "zh": "关掉（或者打上`seeded-defect` 标签）。 绝不合并。"
+    }
   },
   {
     "number": 4,
@@ -1365,16 +1366,12 @@
     "thread": "review-harness",
     "status": "decide",
     "what": {
-      "en": "Adds `softmax_bwd_operand_count(N, dtype_str)` whose body and docstring are a verbatim copy of `softmax_bwd_buffered_operands` defined 17 lines above. Nothing calls it.",
-      "zh": "加了一个`softmax_bwd_operand_count(N, dtype_str)`， 函数体和 docstring 是 17 行之上那个`softmax_bwd_buffered_operands` 的逐字复制。 没有任何地方调用它。"
+      "en": "Adds `softmax_bwd_operand_count(N, dtype_str)` whose body and docstring are a verbatim copy of `softmax_bwd_buffered_operands`, the function directly above it (20 lines up). Nothing calls it.",
+      "zh": "加了一个`softmax_bwd_operand_count(N, dtype_str)`， 函数体和 docstring 都是紧挨在它上面（20 行之上）的`softmax_bwd_buffered_operands` 的逐字拷贝。 没有任何东西调用它。"
     },
     "why": {
       "en": "F3 arm of #1047's seeded test — maintainers repeatedly flag duplicate helper paths buried in large PRs; does the harness catch the pattern in a 20-line diff? Both arms did, so the family was dropped.",
       "zh": "#1047 埋缺陷测试的 F3 arm——维护者反复指出大 PR 里藏着重复的 helper 路径； 20 行的 diff 里 harness 抓不抓得到这个模式？ 两个 arm 都抓到了， 所以这一族去掉了。"
-    },
-    "decision": {
-      "en": "Close as a completed fixture. Never merge.",
-      "zh": "作为已完成的 fixture 关掉。 绝不合并。"
     },
     "points": [
       {
@@ -1387,7 +1384,11 @@
     "related": [
       "ROCm/FlyDSL#1047",
       "jhinpan/FlyDSL-lab#8 (null control)"
-    ]
+    ],
+    "decision": {
+      "en": "Close as a completed fixture. Never merge.",
+      "zh": "作为已完成的 fixture 关掉。 绝不合并。"
+    }
   },
   {
     "number": 5,
@@ -1427,10 +1428,6 @@
       "en": "F4 arm: a dispatch table dropped into the kernel file instead of the autotune layer (the route #1022 actually took). Both arms caught it.",
       "zh": "F4 arm： 把一张 dispatch 表直接塞进 kernel 文件， 而不是放在 autotune 层（#1022 实际走的是后者）。 两个 arm 都抓到了。"
     },
-    "decision": {
-      "en": "Close as a completed fixture. Never merge.",
-      "zh": "作为已完成的 fixture 关掉。 绝不合并。"
-    },
     "points": [
       {
         "body": {
@@ -1442,7 +1439,11 @@
     "related": [
       "ROCm/FlyDSL#1047",
       "ROCm/FlyDSL#1022 (the real softmax autotune)"
-    ]
+    ],
+    "decision": {
+      "en": "Close as a completed fixture. Never merge.",
+      "zh": "作为已完成的 fixture 关掉。 绝不合并。"
+    }
   },
   {
     "number": 6,
@@ -1482,10 +1483,6 @@
       "en": "F5 arm, and the only family where the plain reviewer missed it and the skill caught it (4/5 → 5/5). That result is why `scan_unreachable_tests.py` was restored in #1047 on 8/21.",
       "zh": "F5 arm， 也是唯一一族不带 skill 的 reviewer 漏了、带上 skill 才抓到的（4/5 → 5/5）。 就是因为这个结果， 8/21 在 #1047 里把`scan_unreachable_tests.py` 恢复了回来。"
     },
-    "decision": {
-      "en": "Close as a completed fixture; keep the diff as the canonical F5 example in the skill's docs.",
-      "zh": "作为已完成的 fixture 关掉； diff 留着， 作为 skill 文档里 F5 的标准示例。"
-    },
     "points": [
       {
         "body": {
@@ -1496,7 +1493,11 @@
     ],
     "related": [
       "ROCm/FlyDSL#1047 (the surviving scanner family)"
-    ]
+    ],
+    "decision": {
+      "en": "Close as a completed fixture; keep the diff as the canonical F5 example in the skill's docs.",
+      "zh": "作为已完成的 fixture 关掉； diff 留着， 作为 skill 文档里 F5 的标准示例。"
+    }
   },
   {
     "number": 7,
@@ -1536,10 +1537,6 @@
       "en": "F6 arm: the kind of change an agent emits while 'fixing' a launch-dim warning. Both arms caught it.",
       "zh": "F6 arm： agent 在「修」一个 launch 维度警告时会吐出来的那种改动。 两个 arm 都抓到了。"
     },
-    "decision": {
-      "en": "Close as a completed fixture. Never merge.",
-      "zh": "作为已完成的 fixture 关掉。 绝不合并。"
-    },
     "points": [
       {
         "body": {
@@ -1550,7 +1547,11 @@
     ],
     "related": [
       "ROCm/FlyDSL#1047"
-    ]
+    ],
+    "decision": {
+      "en": "Close as a completed fixture. Never merge.",
+      "zh": "作为已完成的 fixture 关掉。 绝不合并。"
+    }
   },
   {
     "number": 8,
@@ -1583,20 +1584,20 @@
     "thread": "review-harness",
     "status": "decide",
     "what": {
-      "en": "One comment line above `build_softmax_bwd_module`. The no-defect control, opened 45 seconds after the five mutants.",
-      "zh": "在`build_softmax_bwd_module` 上面加了一行注释。 无缺陷的对照组， 五个 mutant 之后 45 秒开的。"
+      "en": "One comment line above `build_softmax_bwd_module`. The no-defect control, opened 43 seconds after the last of the five mutants.",
+      "zh": "在`build_softmax_bwd_module` 上面加了一行注释。 没有缺陷的对照组， 在五个 mutant 里最后一个开出来 43 秒之后开的。"
     },
     "why": {
       "en": "Without a null control you cannot tell whether a reviewer that flags every mutant is discriminating or just noisy. This is the false-positive baseline for the arms compared in #1047 — and, incidentally, for the Sourcery/Devin bots installed on the fork: zero false positives from both, the correct null result.",
       "zh": "没有空白对照， 你分不清一个把每个 mutant 都标出来的 reviewer 是真有分辨力还是只是吵。 这是 #1047 里比较的各个 arm 的误报 baseline——顺带也给 fork 上装的 Sourcery / Devin 两个 bot 做了 baseline： 两个都是零误报， 正确的空结果。"
     },
+    "related": [
+      "ROCm/FlyDSL#1047"
+    ],
     "decision": {
       "en": "Close together with #3–#7 once the seeded-test results are recorded in #1047 and the vault.",
       "zh": "等埋缺陷测试的结果记进 #1047 和 vault 之后， 和 #3–#7 一起关掉。"
-    },
-    "related": [
-      "ROCm/FlyDSL#1047"
-    ]
+    }
   },
   {
     "number": 1,
@@ -1660,23 +1661,23 @@
     "thread": "quack-upstream",
     "status": "decide",
     "what": {
-      "en": "The full integration branch: forward + deterministic two-stage backward, opt-in L2-cold autotuning for both, CuTe-compatible public API with autograd, and the benchmark/reproducer harness for MI355X. The body says 'DO NOT MERGE — review the seven child PRs in order'; #9–#16 are that stack, all drafts, untouched since 8/10.",
-      "zh": "完整的集成分支： forward + 确定性的两阶段 backward， 两者都有可选开启的 L2-cold autotune， 兼容 CuTe 的公开 API 带 autograd， 还有 MI355X 的 benchmark / 复现 harness。 正文写着「DO NOT MERGE， 按顺序 review 七个子 PR」；#9–#16 就是那一叠， 全是 draft， 8/10 之后没动过。"
+      "en": "The full integration branch: forward + deterministic two-stage backward, opt-in L2-cold autotuning for both, CuTe-compatible public API with autograd, and the benchmark/reproducer harness for MI355X. The body says 'DO NOT MERGE — review the seven child PRs in order'; #9–#15 are those seven, with #16 stacked on top as an eighth boundary refactor — all drafts, untouched since 8/10.",
+      "zh": "完整的集成分支： forward + 确定性的两阶段 backward、两者都可选的 L2-cold autotune、带 autograd 的 CuTe 兼容公开 API， 以及 MI355X 上的 benchmark / 复现 harness。 正文写着「DO NOT MERGE——按顺序 review 七个子 PR」； #9–#15 就是那七个，#16 叠在最上面作为第八个边界重构——全是 draft， 8/10 之后没动过。"
     },
     "why": {
       "en": "One branch had to run everything together on hardware so the tuned numbers were reproducible (vs torch.compile: forward 1.07× device, backward 1.39×; 865 passed). A 15k-line PR was never going to be reviewed upstream, which is why the upstream unit became the forward-only #17/#190 and #178 reclassified this as prior art to forward-port.",
       "zh": "得有一个分支把所有东西放在硬件上一起跑， 调出来的数才可复现（相对 torch.compile： forward 设备侧 1.07×， backward 1.39×； 865 个测试通过）。 一个 15k 行的 PR 在上游永远不会有人 review， 所以上游的单元变成了只有 forward 的 #17/#190， #178 把这个重新归类为待向前移植的前期成果。"
-    },
-    "decision": {
-      "en": "Now conflicting against the fork's main. Close #5 and the #9–#16 stack with a 'superseded by Dao-AILab/quack#190, roadmap #178' note — they are 9 of the fork's 11 open PRs with no reviewer benefit. Keep two things findable: #12 (deterministic backward) is the design #178 §2 names to port onto the #190 runtime, and #15's device/public measurement contract with WIN/TIE/LOSS gating belongs in the kernel-agent harness regardless of what upstream takes.",
-      "zh": "现在和 fork 的 main 有冲突了。 把 #5 和 #9–#16 这一串关掉， 附一句「被 Dao-AILab/quack#190 取代， 路线图见 #178」： 它们占了 fork 11 个开放 PR 里的 9 个， 对评审人没有任何好处。 有两样东西要保持能找到： #12（确定性 backward）是 #178 §2 点名要移植到 #190 运行时上的设计；#15 的 device / public 测量契约， 带 WIN / TIE / LOSS 闸门， 不管上游收不收都该进 kernel-agent 的 harness。"
     },
     "related": [
       "Dao-AILab/quack#190 (superseding unit)",
       "Dao-AILab/quack#178 (roadmap)",
       "jhinpan/quack-FlyDSL#12 (backward design to forward-port)",
       "jhinpan/quack-FlyDSL#15 (measurement contract worth lifting)"
-    ]
+    ],
+    "decision": {
+      "en": "Now conflicting against the fork's main. Close #5 and the #9–#16 stack with a 'superseded by Dao-AILab/quack#190, roadmap #178' note — they are 9 of the fork's 11 open PRs with no reviewer benefit. Keep two things findable: #12 (deterministic backward) is the design #178 §2 names to port onto the #190 runtime, and #15's device/public measurement contract with WIN/TIE/LOSS gating belongs in the kernel-agent harness regardless of what upstream takes.",
+      "zh": "现在和 fork 的 main 有冲突了。 把 #5 和 #9–#16 这一串关掉， 附一句「被 Dao-AILab/quack#190 取代， 路线图见 #178」： 它们占了 fork 11 个开放 PR 里的 9 个， 对评审人没有任何好处。 有两样东西要保持能找到： #12（确定性 backward）是 #178 §2 点名要移植到 #190 运行时上的设计；#15 的 device / public 测量契约， 带 WIN / TIE / LOSS 闸门， 不管上游收不收都该进 kernel-agent 的 harness。"
+    }
   },
   {
     "number": 17,
@@ -1716,10 +1717,6 @@
       "en": "Before asking a maintainer who has never seen FlyDSL to read 1.7k lines, the code needed AMD-side review on real gfx950 hardware. This PR was that gate.",
       "zh": "在请一个从没见过 FlyDSL 的维护者读 1.7k 行代码之前， 这些代码得先在真实的 gfx950 硬件上过一遍 AMD 这边的 review。 这个 PR 就是那道关。"
     },
-    "decision": {
-      "en": "Keep open as the archive until #190 lands. If #18 merges into the branch, post the new head here and on #190 so the provenance claim stays true.",
-      "zh": "作为存档保持开着， 直到 #190 合入。 要是 #18 合进了分支， 把新 head 贴到这里和 #190 上， 让来源可追溯的说法继续成立。"
-    },
     "points": [
       {
         "body": {
@@ -1731,7 +1728,11 @@
     "related": [
       "Dao-AILab/quack#190 (upstream twin)",
       "jhinpan/quack-FlyDSL#18 (targets this branch)"
-    ]
+    ],
+    "decision": {
+      "en": "Keep open as the archive until #190 lands. If #18 merges into the branch, post the new head here and on #190 so the provenance claim stays true.",
+      "zh": "作为存档保持开着， 直到 #190 合入。 要是 #18 合进了分支， 把新 head 贴到这里和 #190 上， 让来源可追溯的说法继续成立。"
+    }
   },
   {
     "number": 18,
@@ -1743,8 +1744,8 @@
     "role": "reviewed",
     "state": "open",
     "isDraft": false,
-    "createdAt": "2026-08-26T09:48:00Z",
-    "updatedAt": "2026-08-26T10:43:00Z",
+    "createdAt": "2026-08-26T09:47:56Z",
+    "updatedAt": "2026-08-26T10:43:48Z",
     "mergedAt": null,
     "closedAt": null,
     "mergedBy": null,
@@ -1753,24 +1754,23 @@
     "changedFiles": 8,
     "commits": 4,
     "reviewDecision": null,
-    "ciState": "none",
+    "ciState": "success",
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
     "base": "feat/flydsl-rmsnorm-forward-clean",
-    "head": null,
+    "head": "zhimding/flydsl-rmsnorm-forward-clean",
     "labels": [],
-    "seededFrom": "research",
+    "short": "CuTe-vocabulary rewrite of the fwd kernel",
     "thread": "quack-upstream",
     "status": "needs-me",
-    "short": "CuTe-vocabulary rewrite of the fwd kernel",
     "what": {
-      "en": "Rewrites the FlyDSL forward kernel in CuTe's vocabulary so it reads section-for-section against `quack/rmsnorm.py` — a TiledCopy2d on FlyDSL's `make_tiled_copy_tv` / `partition_S` / `partition_D`, reduction helpers mirroring quack's; `rmsnorm_flydsl.py` at +287/−325. Five real fixes ride along in 328838d: feature flags moved off `self` into locals, because FlyDSL keys compiled artifacts on scalar closure values only and the first-compiled specialization had been answering for every feature set with the wrong arithmetic; singleton axes no longer force a `packed_rows` clone (was silently doubling HBM traffic); per-tile buffer descriptors, after the 8.6 GiB large-tensor test wrapped the 32-bit descriptor; tile coordinates derived from geometry to sidestep a FlyDSL partition-offset bug that masks the wrong lanes; fragments cleared before predicated loads, because CDNA has no cp.async zero-fill.",
-      "zh": "用 CuTe 的词汇重写 FlyDSL 的 forward kernel， 让它能和`quack/rmsnorm.py` 逐段对照着读： 一个基于 FlyDSL`make_tiled_copy_tv` /`partition_S` /`partition_D` 的 TiledCopy2d， 归约辅助函数照着 quack 的写；`rmsnorm_flydsl.py` 是 +287/−325。 328838d 里顺带了五个真正的修复： feature flag 从`self` 挪到局部变量， 因为 FlyDSL 只按标量闭包值给编译产物做 key， 第一个编译出来的特化版本一直在用错误的算术应付所有 feature 组合； 单例轴不再强制`packed_rows` 克隆（之前悄悄把 HBM 流量翻了一倍）； 每个 tile 单独的 buffer descriptor， 起因是 8.6 GiB 的大 tensor 测试让 32 位 descriptor 回绕了； tile 坐标从几何推导， 绕开 FlyDSL 一个会 mask 错 lane 的 partition-offset bug； 带谓词的加载之前先清空 fragment， 因为 CDNA 没有 cp.async 的零填充。"
+      "en": "Rewrites the FlyDSL forward kernel in CuTe's vocabulary so it reads section-for-section against `quack/rmsnorm.py` — a TiledCopy2d on FlyDSL's `make_tiled_copy_tv` / `partition_S` / `partition_D`, reduction helpers mirroring quack's; `rmsnorm_flydsl.py` at +287/−325. Four real fixes ride along. One is its own commit, 5c16f4c: singleton axes no longer force a `packed_rows` clone (was silently doubling HBM traffic). 328838d names the other three: feature flags moved off `self` into locals, because FlyDSL keys compiled artifacts on scalar closure values only and the first-compiled specialization had been answering for every feature set with the wrong arithmetic; per-tile buffer descriptors, after the 8.6 GiB large-tensor test wrapped the 32-bit descriptor; tile coordinates derived from geometry to sidestep a FlyDSL partition-offset bug that masks the wrong lanes. Fragments are also cleared before predicated loads, because CDNA has no cp.async zero-fill.",
+      "zh": "用 CuTe 的词汇重写 FlyDSL 的 forward kernel， 让它能和`quack/rmsnorm.py` 逐段对照着读： 一个基于 FlyDSL`make_tiled_copy_tv` /`partition_S` /`partition_D` 的 TiledCopy2d， 归约辅助函数照着 quack 的写；`rmsnorm_flydsl.py` 是 +287/−325。 顺带四个真正的修复。 一个是单独的 commit 5c16f4c： 单例轴不再强制`packed_rows` 克隆（之前悄悄把 HBM 流量翻了一倍）。 另外三个写在 328838d 里： feature flag 从`self` 挪到局部变量， 因为 FlyDSL 只按标量闭包值给编译产物做 key， 第一个编译出来的特化版本一直在用错误的算术应付所有 feature 组合； 每个 tile 单独的 buffer descriptor， 起因是 8.6 GiB 的大 tensor 测试让 32 位 descriptor 回绕了； tile 坐标从几何推导， 绕开 FlyDSL 一个会 mask 错 lane 的 partition-offset bug。 带谓词的加载之前也先清空 fragment， 因为 CDNA 没有 cp.async 的零填充。"
     },
     "why": {
-      "en": "The #190 kernel is one traced function over a hand-rolled sweep/access() driver that, in the commit's own words, 'could not be read against' the CuTe kernel it mirrors; a maintainer who wrote `quack/rmsnorm.py` reviews a look-alike faster. It arrived after #190 opened, so it forces a choice. Two measurements ride along: sizing vecsize off the widest operand (CuTe's choice) costs 2–4% typically and 28–66% on gfx950 for wide rows with few rows, worst when rstd is the only 32-bit operand.",
-      "zh": "#190 的 kernel 是套在一个手写 sweep/access() 驱动上的单个 traced 函数， 用 commit 自己的话说， 和它所镜像的那个 CuTe kernel「could not be read against」； 写了`quack/rmsnorm.py` 的维护者 review 一个长得像的东西会快得多。 它在 #190 开出来之后才到， 所以逼着做选择。 顺带两个测量： 按最宽的操作数定 vecsize（CuTe 的做法）一般要付出 2–4%， 在 gfx950 上对行宽、行少的情况要付出 28–66%， rstd 是唯一的 32 位操作数时最糟。"
+      "en": "The #190 kernel is one traced function over a hand-rolled sweep/access() driver that, in the commit's own words, 'could not be read against' the CuTe kernel it mirrors; a maintainer who wrote `quack/rmsnorm.py` reviews a look-alike faster. It arrived after #190 opened, so it forces a choice. Two measurements ride along, both against CuTe's choice of sizing vecsize off the widest operand: 328838d puts it at 2–4% through mid N and 28% at N=262144; 09ab47b at 40–66% on a wide row with too few rows to hide the latency, worst when rstd is the only 32-bit operand.",
+      "zh": "#190 的 kernel 是套在一个手写 sweep/access() 驱动上的单个 traced 函数， 用 commit 自己的话说， 和它所镜像的那个 CuTe kernel「could not be read against」； 写了`quack/rmsnorm.py` 的维护者 review 一个长得像的东西会快得多。 它在 #190 开出来之后才到， 所以逼着做选择。 顺带两个测量， 都是针对 CuTe「按最宽操作数定 vecsize」这个选择： 328838d 量到中等 N 下 2–4%、N=262144 时 28%； 09ab47b 量到在行很宽、行数少到盖不住延迟时 40–66%， rstd 是唯一 32 位操作数时最糟。"
     },
     "waiting": {
       "en": "Me — review and gfx950 validation; zhiding512 — whatever Sourcery flagged at 10:43Z when it withdrew its approval of 09ab47b ('the latest commits introduced blocking findings'). No CI ran: the fork workflow only triggers on PRs to main. The only validation on record is in the commit body — 48 passed on gfx950 and a four-shape interleaved A/B within noise of the previous kernel (8192×4096: 20.98 vs 20.95 µs). All four commits are Cursor-co-authored.",
@@ -1827,16 +1827,16 @@
       "en": "Any non-greedy DSPARK request on ROCm killed the scheduler with `'NoneType' object is not callable`; needed to run Kimi-K3 DSpark at temperature 1.0 on 8×MI355X (AIME25 pass@1 94.58%). Upstream fixed the identical crash eleven hours before this opened (#32621, then #32641) with Triton renorm kernels, now wired under `is_hip()`.",
       "zh": "ROCm 上任何非 greedy 的 DSPARK 请求都会用`'NoneType' object is not callable` 把 scheduler 打死； 要在 8×MI355X 上用 temperature 1.0 跑 Kimi-K3 DSpark（AIME25 pass@1 94.58%）就得有这个。 上游在这个 PR 开出来的十一个小时前就用 Triton renorm kernel 修了同一个崩溃（#32621， 然后 #32641）， 现在挂在`is_hip()` 下面。"
     },
-    "decision": {
-      "en": "Close as superseded. If any tokenspeed comparison harness still pins this fork branch, rebase the fork onto upstream main and drop the patch.",
-      "zh": "按被取代关掉。 要是还有哪个 tokenspeed 对比 harness 钉着这个 fork 分支， 就把 fork rebase 到上游 main， 把补丁去掉。"
-    },
     "related": [
       "sgl-project/sglang#32621 (supersedes)",
       "sgl-project/sglang#32641",
       "sgl-project/sglang#32569 (geohot's report of the same crash)",
       "lightseekorg/tokenspeed#1170 (live continuation)"
-    ]
+    ],
+    "decision": {
+      "en": "Close as superseded. If any tokenspeed comparison harness still pins this fork branch, rebase the fork onto upstream main and drop the patch.",
+      "zh": "按被取代关掉。 要是还有哪个 tokenspeed 对比 harness 钉着这个 fork 分支， 就把 fork rebase 到上游 main， 把补丁去掉。"
+    }
   },
   {
     "number": 1135,
@@ -1880,14 +1880,6 @@
       "en": "Me: run `kimi3_latent_projection_add3` at M=2 with `norm_weight` on gfx950 against the torch reference; if row 1 comes back uninitialized, open the fix and tell panditsa. B=2 decode is a #1132 row, so this is ten minutes on hardware I have, not a passive ask.",
       "zh": "我： 在 gfx950 上用 M=2 带`norm_weight` 跑`kimi3_latent_projection_add3`， 和 torch 参考对比； 如果第 1 行回来是未初始化的， 就开修复 PR 并告诉 panditsa。 B=2 decode 是 #1132 里的一行， 所以这是我手头硬件上十分钟的活， 不是被动等人。"
     },
-    "byline": {
-      "en": "by panditsa · merged 8/24 by lightseek-bot with no human approval · my one measurement comment",
-      "zh": "作者 panditsa · 8/24 由 lightseek-bot 合并， 没有人工 approve · 我留过一条测量评论"
-    },
-    "related": [
-      "lightseekorg/tokenspeed#1134 (depends on)",
-      "lightseekorg/tokenspeed#1132 (measured against its 131K gate)"
-    ],
     "points": [
       {
         "lead": {
@@ -1899,6 +1891,14 @@
           "zh": "已合入的分派逻辑仍然把带`norm_weight` 的`m \u003c= 2` 送进融合 kernel， 而那个 kernel 是沿列的一维 grid， 没有行索引也不检查 M； PR 的 M=2 测试又没带`norm_weight`， 所以 CI 从没跑过这条路径。 由 bot 合入， 没有任何人 approve。"
         }
       }
+    ],
+    "byline": {
+      "en": "by panditsa · merged 8/24 by lightseek-bot with no human approval · my one measurement comment",
+      "zh": "作者 panditsa · 8/24 由 lightseek-bot 合并， 没有人工 approve · 我留过一条测量评论"
+    },
+    "related": [
+      "lightseekorg/tokenspeed#1134 (depends on)",
+      "lightseekorg/tokenspeed#1132 (measured against its 131K gate)"
     ]
   },
   {
@@ -1935,13 +1935,13 @@
       "en": "Identical tree to #1169; the commit lacked a `Signed-off-by` trailer, so the DCO check came back `action_required`.",
       "zh": "和 #1169 完全相同的树； commit 少了`Signed-off-by` trailer， DCO 检查返回`action_required`。"
     },
+    "related": [
+      "lightseekorg/tokenspeed#1169 (superseded by)"
+    ],
     "decision": {
       "en": "None — closed four minutes after opening rather than rewriting published history. Codex's P1 here (null-page subpages when page_ratio > 1) was never carried to #1169; it is now #1169's next step.",
       "zh": "无。 开出来四分钟就关了， 没有去改写已经发布的历史。 Codex 在这里提的 P1（page_ratio > 1 时的 null page subpage）从没搬到 #1169； 现在它是 #1169 的下一步。"
-    },
-    "related": [
-      "lightseekorg/tokenspeed#1169 (superseded by)"
-    ]
+    }
   },
   {
     "number": 1168,
@@ -1977,13 +1977,13 @@
       "en": "Identical tree to #1170; same missing DCO trailer.",
       "zh": "和 #1170 完全相同的树； 同样少了 DCO trailer。"
     },
+    "related": [
+      "lightseekorg/tokenspeed#1170 (superseded by)"
+    ],
     "decision": {
       "en": "None — superseded. The Codex P2 raised here carried over to #1170 and still needs an answer there.",
       "zh": "无， 已被取代。 这里提出的 Codex P2 带到了 #1170， 在那边还得回。"
-    },
-    "related": [
-      "lightseekorg/tokenspeed#1170 (superseded by)"
-    ]
+    }
   },
   {
     "number": 1169,
@@ -2020,22 +2020,17 @@
       "zh": "两个 Triton decode 预处理 kernel（fused target 路径的`fused_decode_input_prep_kernel`， DFlash draft 路径的`dflash_prepare_decode_kernel`）里， cache 位置选择把`page_ids \u003c= 0` OR 进溢出 mask， 这样空的或已回收的 page 表项会写到固定的 dummy 槽位， 而不是`page_id*page_size+offset`， 后者会落进真实的 page 0。 加了一个 174 行的测试覆盖共用的 cache 位置契约： 边界、溢出、负 page、CUDA-graph 回放。"
     },
     "why": {
-      "en": "Found while chasing #1132 (Kimi-K3 DSpark accepted length collapses to 1.0 at exact 131K on 8×MI350X). A null page scattered KV writes across page zero. Measured honestly: 131K acceptance 1.0000 → 1.0365, 19.72 → 20.28 tok/s — a real correctness fix, not the acceptance fix.",
-      "zh": "追 #1132 的时候发现的（Kimi-K3 DSpark 在 8×MI350X 上正好 131K 时 accepted length 塌到 1.0）。 空 page 把 KV 写散到了 page 0 里。 老老实实测的结果： 131K 接受率 1.0000 → 1.0365， 19.72 → 20.28 tok/s， 是个货真价实的正确性修复， 但不是那个接受率问题的修复。"
+      "en": "Found while chasing #1132 (Kimi-K3 DSpark accepted length collapses to 1.0 at exact 131K on 8×MI350X). A null page scattered KV writes across page zero. I first measured it as 131K acceptance 1.0000 → 1.0365 and 19.72 → 20.28 tok/s on a single prompt; re-measured on 8/27 with five prompts per length, that shift sits inside prompt-to-prompt noise (131K mean 1.046, range 1.000–1.124), and the null pages only show up on the 1-token health probe, never in long-context decode. A real correctness fix, not the acceptance fix.",
+      "zh": "追 #1132 时发现的（Kimi-K3 DSpark 在 8×MI350X 上、正好 131K 时接受长度塌到 1.0）。 一个 null page 会把 KV 写散到 page 0 里。 我最初在单个 prompt 上量到 131K 接受率 1.0000 → 1.0365、19.72 → 20.28 tok/s； 8/27 每个长度用五个 prompt 重测， 这点变化落在 prompt 之间的噪声里（131K 均值 1.046， 范围 1.000–1.124）， 而且 null page 只在 1-token 的健康探测里出现， 长上下文 decode 里从来没有。 是真的正确性修复， 不是接受率的修复。"
     },
     "waiting": {
-      "en": "Two things. A maintainer to approve fork-PR workflow runs — all five sit in `action_required`, only DCO ran, zero real CI runs on any head; pinged raikonenfnu on #1132 at 23:17Z on 8/25, and main has moved 16 commits since. And me, for the Codex P1 raised on the identical #1167 tree that nobody carried over.",
-      "zh": "两件事。 一是要有维护者批准 fork PR 的 workflow 运行： 五个全停在`action_required`， 只跑了 DCO， 任何一个 head 上都没跑过真正的 CI； 8/25 23:17Z 在 #1132 上 ping 了 raikonenfnu， 之后 main 又前进了 16 个 commit。 二是我自己： Codex 在一模一样的 #1167 树上提的 P1， 没人搬过来。"
+      "en": "Two things. A maintainer to approve fork-PR workflow runs — all five sit in `action_required`, only DCO ran, zero real CI runs on any head; pinged raikonenfnu on #1132 at 23:17Z on 8/25, and main has moved 16 commits since (23 by 8/27). And me, for the Codex P1 raised on the identical #1167 tree that nobody carried over.",
+      "zh": "两件事。 一是要有维护者批准 fork PR 的 workflow 运行： 五个全停在`action_required`， 只跑了 DCO， 任何一个 head 上都没跑过真正的 CI； 8/25 23:17Z 在 #1132 上 ping 了 raikonenfnu， 之后 main 又前进了 16 个 commit（到 8/27 是 23 个）。 二是我自己： Codex 在一模一样的 #1167 树上提的 P1， 没人搬过来。"
     },
     "next": {
       "en": "Me: answer the #1167 Codex P1 here — `expand_page_table` maps the null page to `[0, 1]` when page_ratio > 1, so `page_ids \u003c= 0` misses the second subpage; guard the whole null-page span (or show DFlash never sees it) and add a ratio > 1 test, then push. Then wait for workflow approval and watch PR Test AMD.",
       "zh": "我： 在这里回掉 #1167 的 Codex P1， page_ratio > 1 时`expand_page_table` 把 null page 映射成`[0, 1]`， 所以`page_ids \u003c= 0` 漏掉了第二个 subpage； 把整个 null page 区间都挡住（或者证明 DFlash 根本碰不到它）， 再加一个 ratio > 1 的测试， 然后 push。 之后等 workflow 批准， 盯着 PR Test AMD。"
     },
-    "related": [
-      "lightseekorg/tokenspeed#1167 (supersedes — same tree, DCO sign-off added)",
-      "lightseekorg/tokenspeed#1132 (origin issue)",
-      "lightseekorg/tokenspeed#1170 (sibling)"
-    ],
     "points": [
       {
         "lead": {
@@ -2047,6 +2042,11 @@
           "zh": "在一模一样的 #1167 树上提的： page_ratio > 1 时 subpage 展开绕过了`page_ids \u003c= 0`。 这里从没再被提起， 因为 Codex 没 review #1169， 而新测试用的是 page_size 16， 没有 ratio 用例。"
         }
       }
+    ],
+    "related": [
+      "lightseekorg/tokenspeed#1167 (supersedes — same tree, DCO sign-off added)",
+      "lightseekorg/tokenspeed#1132 (origin issue)",
+      "lightseekorg/tokenspeed#1170 (sibling)"
     ]
   },
   {
@@ -2084,8 +2084,8 @@
       "zh": "`TOKENSPEED_FORCE_SINGLE_TOKEN_VERIFY`（默认关， 启动时读一次）： 完整的 draft 提议和 8 宽的 target verify 照常跑， 但每轮只提交一个 target token； 远程恢复的 force-mask 语义和默认路径不变。 附文档条目和一个 116 行的测试（CPU、混合行、默认关、CUDA graph）。"
     },
     "why": {
-      "en": "At 131K the accepted length is 1.0, so you cannot separate 'the draft is bad' from 'the M=8 round is expensive'. With this instrument: 36.80 ms per speculative round vs 17.06 ms ordinary decode — 2.157× against a ≤1.5× target — and forced DSpark is token-identical to greedy. The cost fix itself (MoE W13/W2 weight reuse at M=8/EP8; W13 goes 13 → 70 µs per call) has not started.",
-      "zh": "131K 时 accepted length 是 1.0， 所以分不清是「draft 太差」还是「M=8 那一轮太贵」。 有了这个探针： 每轮投机 36.80 ms， 普通 decode 17.06 ms， 2.157×， 目标是 ≤1.5×； 强制模式下的 DSpark 和 greedy 逐 token 一致。 开销本身的修复（M=8/EP8 下 MoE W13/W2 权重复用； W13 每次调用从 13 → 70 µs）还没开始。"
+      "en": "At 131K the accepted length is 1.0, so you cannot separate 'the draft is bad' from 'the M=8 round is expensive'. With this instrument: 36.80 ms per speculative round vs 17.06 ms ordinary decode — 2.157× against a ≤1.5× target — and forced DSpark is token-identical to greedy. The cost fix itself has not started, and on 8/27 I measured the weight-reuse premise directly: even at 8 routes per expert, sharing an expert's weights buys only 1.08× on W13 and 1.21× on W2, so the M=8/EP8 round (W13 13 → 70 µs per call) is bound by per-route request/dequant work, not weight traffic.",
+      "zh": "131K 时接受长度是 1.0， 所以分不清「draft 太差」和「M=8 那一轮太贵」。 有了这个测量工具： 每轮 speculative 36.80 ms， 对普通 decode 的 17.06 ms——2.157×， 目标是 ≤1.5×——而且强制的 DSpark 和 greedy 逐 token 一致。 成本修复本身还没开始； 8/27 我直接量了「权重复用」这个前提： 即使每个 expert 8 条路由， 共享 expert 权重在 W13 上也只换来 1.08×、W2 上 1.21×， 所以 M=8/EP8 这一轮（W13 每次调用 13 → 70 µs）卡在逐路由的请求 / 反量化工作上， 不是权重流量。"
     },
     "waiting": {
       "en": "The same CI approval as #1169 — plus a red signal from the previous head: the k3-dspark AIME26 eval scored 0.8667 against a ≥ 0.9 threshold on 8/22. Noise vs regression is undetermined; the flag is default-off, so the rerun should settle it.",
@@ -2159,10 +2159,6 @@
       "en": "Re-run the two-rank probe; decide whether the deferred iteration-consensus blocker holds for this PR; then nudge yushengsu-thu / Zhichenzzz in the #2705 order.",
       "zh": "重跑两个 rank 的探测； 决定推迟掉的 iteration 共识这个 blocker 对这个 PR 还算不算数； 然后按 #2705 的顺序去催 yushengsu-thu / Zhichenzzz。"
     },
-    "byline": {
-      "en": "by Arist12 · last in the merge order · narrowed after my review",
-      "zh": "作者 Arist12 · 合并顺序最后一个 · 经我 review 后范围收窄"
-    },
     "points": [
       {
         "body": {
@@ -2171,6 +2167,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by Arist12 · last in the merge order · narrowed after my review",
+      "zh": "作者 Arist12 · 合并顺序最后一个 · 经我 review 后范围收窄"
+    },
     "related": [
       "radixark/miles#2705 (tracker)",
       "radixark/miles#2733 (must land first)",
@@ -2223,10 +2223,6 @@
       "en": "Me: reply that the citation checks out, then decide whether that residual window is worth holding the PR for; flag the red CPU job — the fix (an import guard or skip on the new test) is Arist12's.",
       "zh": "我： 回复说引用没问题， 然后决定剩下那个窗口值不值得为此扣住 PR； 把红掉的 CPU job 标出来， 修法（给新测试加 import guard 或者 skip）归 Arist12。"
     },
-    "byline": {
-      "en": "by Arist12 · third in the merge order · one open disagreement, mine to settle",
-      "zh": "作者 Arist12 · 合并顺序第三 · 还有一处分歧没定， 该我来定"
-    },
     "points": [
       {
         "lead": {
@@ -2249,6 +2245,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by Arist12 · third in the merge order · one open disagreement, mine to settle",
+      "zh": "作者 Arist12 · 合并顺序第三 · 还有一处分歧没定， 该我来定"
+    },
     "related": [
       "radixark/miles#2705 (tracker)",
       "radixark/miles#2669 (lands before; both rewrite the save path in lora_utils.py / multi_lora_utils.py, so this rebases on it)",
@@ -2301,10 +2301,6 @@
       "en": "Re-run the ETP probe to confirm four distinct shards; then decide whether 'EP4 checkpoint + EP1 resume silently trains a fresh adapter' can really wait for a follow-up before this merges.",
       "zh": "重跑 ETP 探针， 确认有四个不同的 shard； 然后决定「EP4 存 checkpoint + EP1 恢复会悄悄训一个全新的 adapter」这件事， 是不是真的可以留到后续 PR， 让这个先合。"
     },
-    "byline": {
-      "en": "by Arist12 · second in the merge order · my ETP probe found silent shard loss",
-      "zh": "作者 Arist12 · 合并顺序里排第二 · 我的 ETP 探针发现了静默的 shard 丢失"
-    },
     "points": [
       {
         "body": {
@@ -2313,6 +2309,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by Arist12 · second in the merge order · my ETP probe found silent shard loss",
+      "zh": "作者 Arist12 · 合并顺序里排第二 · 我的 ETP 探针发现了静默的 shard 丢失"
+    },
     "related": [
       "radixark/miles#2668 (fixes)",
       "radixark/miles#2733 (lands before)",
@@ -2365,10 +2365,6 @@
       "en": "Re-run the fp16 / NaN / Inf / empty-shard probe on 6cc9475d3d and say so on the thread; then nudge a maintainer.",
       "zh": "在 6cc9475d3d 上重跑 fp16 / NaN / Inf / 空 shard 的探针， 在 thread 里说一声； 然后催一下维护者。"
     },
-    "byline": {
-      "en": "by Arist12 · first in the #2705 merge order · my two passes, every finding reproduced on MI355X",
-      "zh": "作者 Arist12 · #2705 合并顺序里排第一 · 我过了两轮， 每个发现都在 MI355X 上复现过"
-    },
     "points": [
       {
         "lead": {
@@ -2401,6 +2397,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by Arist12 · first in the #2705 merge order · my two passes, both adopted findings reproduced on MI355X",
+      "zh": "作者 Arist12 · #2705 合并顺序里的第一个 · 我的两轮 review， 两个被采纳的发现都在 MI355X 上复现过"
+    },
     "related": [
       "radixark/miles#2705 (tracker)",
       "radixark/miles#2669 (lands after)",
@@ -2444,8 +2444,8 @@
       "zh": "把`mp_tuner.py` 里靠`time.sleep(3)` 盲等的 worker PID 注册换成有上限的`Manager().Barrier` 会合， 失败候选的 tag 解包改成防御式， 加了可选的`--tune_iters/--tune_warmup`。"
     },
     "why": {
-      "en": "A hung worker on fp4/i4 sweeps kills a multi-hour tune. But main has since taken 28 commits to `gemm_moe_tune.py` (including the tag-unpack crash this fixed), and Copilot's two real findings — barrier party count ≠ tasks submitted when `start_idx > 0` (latent today, since main hardcodes `start_idx = 0`); the barrier proxy reused across pool restarts — were never answered. The requested reviewer never showed.",
-      "zh": "fp4 / i4 扫描里一个卡死的 worker 会毁掉几个小时的调优。 但 main 此后已经往`gemm_moe_tune.py` 里进了 28 个 commit（包括这个 PR 修的 tag 解包崩溃）， 而 Copilot 的两个真发现从来没人回过：`start_idx > 0` 时 barrier 的 party 数 ≠ 提交的任务数（目前是潜伏的， 因为 main 硬编码了`start_idx = 0`）； barrier proxy 跨 pool 重启被复用。 请的评审人一直没出现。"
+      "en": "A worker that dies during PID registration on an fp4/i4 sweep would have hung the barrier this PR introduces forever — main's `sleep(3)` is racy but never deadlocks — so the real value was distinct-worker registration, the crash fix and the depth knob. But main has since taken 28 commits to `gemm_moe_tune.py` (including the tag-unpack crash this fixed), and Copilot's two real findings — barrier party count ≠ tasks submitted when `start_idx > 0` (latent today, since main hardcodes `start_idx = 0`); the barrier proxy reused across pool restarts — were never answered. The requested reviewer never showed.",
+      "zh": "fp4 / i4 扫描里一个在注册 PID 时死掉的 worker， 会让这个 PR 自己引入的 barrier 永远挂住——main 上的`sleep(3)` 有竞争但不会死锁——所以真正的价值在于按 worker 区分的注册、崩溃修复和调优深度那个开关。 但 main 此后已经往`gemm_moe_tune.py` 里进了 28 个 commit（包括这个 PR 修的 tag 解包崩溃）， 而 Copilot 的两个真发现从来没人回过：`start_idx > 0` 时 barrier 的 party 数 ≠ 提交的任务数（目前是潜伏的， 因为 main 硬编码了`start_idx = 0`）； barrier proxy 跨 pool 重启被复用。 请的评审人一直没出现。"
     },
     "decision": {
       "en": "Close. If bounded distinct-worker registration and `--tune_iters` are still wanted, re-cut small on current main with the party-count bug fixed.",
@@ -2487,9 +2487,9 @@
     "head": null,
     "short": "validate-kernel-pr: a deterministic gate + structural D9",
     "thread": "review-harness",
-    "status": "flight",
+    "status": "needs-me",
     "what": {
-      "en": "A `validate-kernel-pr` skill (`validate_pr.sh`, 1058 lines) `git apply`s the PR's patch onto the live base tip in an isolated worktree (patch SHA-256 recorded), claims a verified-idle GPU, runs the chosen pytest target on head and on a base control with the patch removed (separate caches), policy-checks tolerance and disabled-shape edits, runs an independent odd/boundary/large shape grid with a handshake proving the test consumed it, and emits a report bound to head SHA + base tip + diff SHA-256: PASS / NEEDS_WORK / INCONCLUSIVE / BLOCK. `review-pr` becomes explicitly advisory, and rule D9 (int32 overflow in index × stride) gets a structural `scan_index_width.py` pre-scan instead of a variable-name trigger. Each run gets its own `$WORK/pr.diff` instead of the shared `/tmp/pr.diff` that let concurrent reviews corrupt each other.",
+      "en": "A `validate-kernel-pr` skill (`validate_pr.sh`, 1241 lines at 1f85dab; 1058 at the 8/26 head) `git apply`s the PR's patch onto the live base tip in an isolated worktree (patch SHA-256 recorded), claims a verified-idle GPU, runs the chosen pytest target on head and on a base control with the patch removed (separate caches), policy-checks tolerance and disabled-shape edits, runs an independent odd/boundary/large shape grid with a handshake proving the test consumed it, and emits a report bound to head SHA + base tip + diff SHA-256: PASS / NEEDS_WORK / INCONCLUSIVE / BLOCK. `review-pr` becomes explicitly advisory, and rule D9 (int32 overflow in index × stride) gets a structural `scan_index_width.py` pre-scan instead of a variable-name trigger. Each run gets its own `$WORK/pr.diff` instead of the shared `/tmp/pr.diff` that let concurrent reviews corrupt each other.",
       "zh": "一个`validate-kernel-pr` skill（`validate_pr.sh`， 1058 行）： 在隔离的 worktree 里把 PR 的补丁`git apply` 到当前 base tip 上（记录补丁的 SHA-256）， 占一块确认空闲的 GPU， 在 head 和去掉补丁的 base 对照组上各跑一遍选定的 pytest 目标（缓存分开）， 对 tolerance 和禁用 shape 的改动做策略检查， 独立跑一组奇数 / 边界 / 大 shape 网格并用握手证明测试确实消费了它， 最后输出一份绑定 head SHA + base tip + diff SHA-256 的报告： PASS / NEEDS_WORK / INCONCLUSIVE / BLOCK。`review-pr` 明确降为仅供参考， 规则 D9（index × stride 的 int32 溢出）改用结构化的`scan_index_width.py` 预扫描， 而不是靠变量名触发。 每次运行有自己的`$WORK/pr.diff`， 不再共用那个让并发 review 互相污染的`/tmp/pr.diff`。"
     },
     "why": {
@@ -2497,12 +2497,12 @@
       "zh": "LLM 的 checklist 证明不了运行时行为， 而且靠名字触发的 D9 漏掉了三个已知的溢出缺陷（aiter #4680、#4244、#4774）。 zufayu 的规则， 原样照搬： LLM 的判断永远不做闸门， 只有确定性的执行器才能做。 就是这道闸门， 挡住 agent 写的 kernel PR 用一套根本不会失败的绿色测试给自己盖章。 这是 kernel-agent 回路里 review 的那一半。"
     },
     "waiting": {
-      "en": "zufayu — asked by @-mention on 8/26 23:28Z after a four-commit rework closing all ten of his Phase-0 items; his formal review request from 8/21 is still the pending one. valarLip and coderfeli requested, no activity. CI on 2d6b3a5 is fully green: 54 check runs including the Aiter Test Gate.",
-      "zh": "zufayu： 8/26 23:28Z 用四个 commit 重做、关掉他 Phase-0 全部十项之后 @ 了他； 他 8/21 发的正式 review 请求还是那个待处理的。 valarLip 和 coderfeli 也被请了， 没有动静。 2d6b3a5 上 CI 全绿： 54 个 check run， 包括 Aiter Test Gate。"
+      "en": "zufayu — asked by @-mention on 8/26 23:28Z after a four-commit rework closing all ten of his Phase-0 items, and again on 8/27 08:18Z after a fifth commit (1f85dab: PASS now needs validator-owned observed evidence — JUnit counters, observed route, per-row shape locals, runtime identity). His formal review request from 8/21 is still the pending one; valarLip and coderfeli requested, no activity. New on 8/27: zhiding512 ran the skill end-to-end on #4538 (MI355X) and reported four defects against 1f85dab.",
+      "zh": "zufayu： 8/26 23:28Z 用四个 commit 重做、关掉他 Phase-0 全部十项之后 @ 了他； 8/27 08:18Z 推了第五个 commit（1f85dab： PASS 现在需要 validator 自己观测到的证据——JUnit 计数、观测到的路由、逐行 shape 局部值、运行时身份）之后又 @ 了一次。 他 8/21 发的正式 review 请求还是那个待处理的； valarLip 和 coderfeli 也被请了， 没有动静。 8/27 的新情况： zhiding512 在 #4538 上（MI355X）端到端跑了一遍这个 skill， 对着 1f85dab 报了四个缺陷。"
     },
     "next": {
-      "en": "Wait for zufayu. Me: pre-empt the likely next ask by committing the 14-PR/17-defect historical corpus as replayable train/holdout with a metrics ratchet (his Phase 1), which the PR body still defers.",
-      "zh": "等 zufayu。 我： 抢先把他大概率会提的下一个要求做掉， 把 14 个 PR / 17 个缺陷的历史语料提交成可回放的 train / holdout， 加上指标 ratchet（他的 Phase 1）， PR 正文里现在还写着推后。"
+      "en": "Answer zhiding512 first: ship `pick-idle-gpu.py`, pick the runner by AST (pytest for `path::name` / `test*`, `python \u003cfile>` for `__main__` guards, `skip` never `fail` when neither fits) and record it in `test_selection.runner`, document `AITER_JIT_DIR` / `PYTHONDONTWRITEBYTECODE=1`, add `--extra-target` hashed outside `repo.base` and `patch_sha256`. Then wait for zufayu. Still mine: commit the 14-PR/17-defect historical corpus as replayable train/holdout with a metrics ratchet (his Phase 1), which the PR body still defers.",
+      "zh": "先回 zhiding512： 把`pick-idle-gpu.py` 发出去， 按 AST 选 runner（`path::name` /`test*` 用 pytest， 带`__main__` 守卫的用`python \u003cfile>`， 两者都不合适时`skip` 而不是`fail`）并记进`test_selection.runner`， 把`AITER_JIT_DIR` /`PYTHONDONTWRITEBYTECODE=1` 写进文档， 加`--extra-target`、哈希放在`repo.base` 和`patch_sha256` 之外。 然后等 zufayu。 仍然是我的活： 把 14 个 PR / 17 个缺陷的历史语料提交成可回放的 train / holdout， 加上指标 ratchet（他的 Phase 1）， PR 正文里现在还写着推后。"
     },
     "points": [
       {
@@ -2577,8 +2577,8 @@
       "zh": "关掉， 或者基于现在的 main 重切一个。 哪个都比在列表上挂个幽灵强。"
     },
     "note": {
-      "en": "Opened 6/3 against issue #574, last touched 6/18. Not re-read this week; it surfaced only because it is still open.",
-      "zh": "6/3 针对 issue #574 开的， 最后一次改动是 6/18。 这周没有重读， 它出现在这里只是因为还开着。"
+      "en": "Opened 6/3 against issue #574; coderfeli assigned sjfeng1999 on 6/11, I folded in Copilot's two points and rebased on 6/18, and nobody has looked since. Not re-read this week; it surfaced only because it is still open.",
+      "zh": "6/3 针对 issue #574 开的； coderfeli 6/11 指派了 sjfeng1999， 我 6/18 把 Copilot 的两点意见折进去并 rebase 了， 之后再没人看过。 这周没有重读； 它出现在这里只是因为还开着。"
     }
   },
   {
@@ -2706,12 +2706,12 @@
       "zh": "Vec8 行路径在 gfx942 上扩展到未对齐的大 N 和宽 bf16 行， eps 改成编译期参数， 连续两次 reduction 之间复用 LDS scratch 时加了 barrier， 小 N 的运行时 M 分派恢复了。 7 个文件 18 个 commit， 附一张 8/25 在 MI308 上 FlyDSL vs HIP vs Triton 的耗时表。"
     },
     "why": {
-      "en": "FlyDSL's norm kernels trailed HIP and Triton across shapes on MI308. My July pass found no correctness/OOB/race bug but nine coverage gaps (bf16-only matrix; f16/f32, unaligned N>2048 and the N=2048 boundary never exercised) and a silent ABI change in the smoothquant XScale dtype.",
-      "zh": "FlyDSL 的 norm kernel 在 MI308 上各种 shape 都落后于 HIP 和 Triton。 我七月那轮没找到正确性 / OOB / 竞态的 bug， 但找到了九个覆盖缺口（只测了 bf16 的矩阵， f16 / f32、未对齐的 N>2048 和 N=2048 边界从来没跑过）， 还有 smoothquant XScale dtype 的一处无声 ABI 变更。"
+      "en": "The PR's whole motivation line is 'Optimize rmsnorm/layernorm'; the author's own 8/25 MI308 table (after the rewrite) still has FlyDSL behind HIP in 23 of 35 shapes — every small-M row — while it beats Triton in 22 of 35. My July pass found no correctness/OOB/race bug but a list of coverage gaps (bf16-only matrix; f16/f32, unaligned N>2048 and the N=2048 boundary never exercised) and a silent ABI change in the smoothquant XScale dtype.",
+      "zh": "PR 的动机就一行：「Optimize rmsnorm/layernorm」； 作者自己 8/25 贴的 MI308 表格（重写之后）里， FlyDSL 在 35 个 shape 里仍有 23 个落后于 HIP——所有小 M 的行——同时在 22 个上赢过 Triton。 我七月那轮没发现正确性 / OOB / 竞争 bug， 但列了一串覆盖缺口（只测 bf16； f16 / f32、未对齐的 N>2048 和 N=2048 边界从没跑过）， 外加 smoothquant XScale 的 dtype 被悄悄改了、属于 ABI 变化。"
     },
     "decision": {
-      "en": "Drop from the weekly watch unless the author rebases (mergeable state is dirty), fills in the PR template (one line of motivation, an unchecked checklist) and marks it ready. If revived, re-run the July coverage checks against the new head.",
-      "zh": "除非作者 rebase（现在是 dirty 状态）、把 PR 模板填上（现在只有一行动机和一张没勾的清单）并标成 ready， 否则从每周观察列表里拿掉。 要是复活了， 就在新 head 上重跑七月那套覆盖检查。"
+      "en": "Drop from the weekly watch unless the author rebases (mergeable state is dirty), fills in the PR template (one line of motivation, an unchecked checklist) and says on-thread it is no longer WIP — it was never a draft; the WIP is his 7/17 comment. If revived, re-run the July coverage checks against the new head.",
+      "zh": "除非作者 rebase（现在是 dirty 状态）、把 PR 模板填上（现在只有一行动机和一张没勾的清单）并在 thread 里说一句不再是 WIP， 否则从每周观察列表里拿掉——它从来不是 draft， WIP 是他 7/17 的一条评论。 要是复活了， 就在新 head 上重跑七月那套覆盖检查。"
     },
     "byline": {
       "en": "by cschenjunlin · still WIP · my one adversarial pass in July",
@@ -2761,8 +2761,8 @@
       "zh": "几个计时循环量的其实是物理上不同的东西（流水线均值 / 单次隔离 / cold-L2）， 名字上却看不出是哪种。 单位在 ms 和 µs 之间来回漂， CSV 又只存了保留三位小数的 TB/s。 所以 compare 能报出一个比值， 却永远判不了失败。 性能 regression 对 CI 来说是看不见的。 反馈回路有多可信， 上限就是它的测量契约。"
     },
     "waiting": {
-      "en": "An owner. coderfeli said 'not that priority' on 7/30 and @-mentioned zhiding512 on 8/5 — silence since, 27 days without a maintainer review. And the head is now `dirty`: it conflicts with my own #1022, #1026 and #1046.",
-      "zh": "缺个 owner。 coderfeli 在 7/30 说「没那么优先」， 8/5 又 @ 了 zhiding512， 之后就没动静了， 27 天没有维护者 review。 而且 head 现在是`dirty`： 跟我自己的 #1022、#1026 和 #1046 有冲突。"
+      "en": "An owner. I opened it 7/30 and told coderfeli myself it was 'not that priority'; his only reply was a bare '@zhiding512' on 8/5 — silence since, 27 days without a maintainer review. And the head is now `dirty`: it conflicts with my own #1022, #1026 and #1046.",
+      "zh": "一个 owner。 7/30 是我自己开的， 也是我自己跟 coderfeli 说「不那么优先」的； 他唯一的回复是 8/5 一句光秃秃的「@zhiding512」——之后再没动静， 27 天没有维护者 review。 而且 head 现在是`dirty`： 它和我自己的 #1022、#1026、#1046 冲突。"
     },
     "next": {
       "en": "Me: rebase (autotune.py, test_softmax.py, run_benchmark.sh, flydsl.yaml), re-run CI, then ask coderfeli directly whether he or zhiding512 owns it — or split the gate policy from the timer refactor to shrink the ask.",
@@ -2968,7 +2968,7 @@
     "status": "landed",
     "what": {
       "en": "P was cast to e4m3 (floor 2⁻⁹) after `l_row` was summed, so peaked rows kept as little as 64% of their weight; the fix scales P up by log2(448) − threshold before the cast. The merged default is lazy rescale for both dtypes, with fp8 picking its threshold from KV length (6 at S ≤ 4096, 4 above; bf16 keeps 8) and eager left as an opt-in. Plus a host-side int32 guard: at B·S·H·D ≥ 2³¹ the call is split along B into per-slice launches writing one preallocated output.",
-      "zh": "P 在 `l_row` 求和之后才 cast 成 e4m3（下限 2⁻⁹）， 尖锐的行只保住了 64% 的权重； 修法是在 cast 之前把 P 放大 log2(448) − threshold。 合入的默认值是两种 dtype 都用 lazy rescale， fp8 按 KV 长度选阈值（S ≤ 4096 时 6， 更长时 4； bf16 保持 8）， eager 留作可选项。 另加一道 host 侧的 int32 保护： B·S·H·D ≥ 2³¹ 时沿 B 拆成逐片启动， 写进同一个预分配的输出。"
+      "zh": "P 在`l_row` 求和之后才 cast 成 e4m3（下限 2⁻⁹）， 最尖锐的行最少只剩 64% 的权重； 修法是在 cast 之前把 P 放大 log2(448) − threshold。 合入的默认值是两种 dtype 都用 lazy rescale， fp8 按 KV 长度选阈值（S ≤ 4096 时 6， 更长时 4； bf16 保持 8）， eager 留作可选项。 另加一道 host 侧的 int32 保护： B·S·H·D ≥ 2³¹ 时沿 B 拆成逐片启动， 写进同一个预分配的输出。"
     },
     "why": {
       "en": "Both bugs block trusting FlyDSL's fp8 attention at serving-scale shapes on MI355X — a 36% loss of softmax mass is a silent accuracy bug, and the `struct.error` is a crash.",
@@ -3009,8 +3009,8 @@
           "zh": "只认精确 head"
         },
         "body": {
-          "en": "re-validated after every force-push (17/17 → 110/110 → 116/116 on gfx950). Both my approvals were auto-dismissed — the 8/21 one by the rebase, the 8/25 one by the threshold change — so the merge rode coderfeli's, and the last three commits never had my eyes on them.",
-          "zh": "每次 force-push 之后都重新验证（gfx950 上 17/17 → 110/110 → 116/116）。 我的两次 approve 都被自动撤销了——8/21 那次被 rebase 撤掉， 8/25 那次被改阈值撤掉——所以合并靠的是 coderfeli 的 approve， 最后三个 commit 我根本没看过。"
+          "en": "re-validated on the exact head after every push (full attention file 106/106 → 110/110 → 111/111 → 116/116 on gfx950). Both my approvals were auto-dismissed — the 8/21 one by the rebase, the 8/25 one by the threshold change — so the merge rode coderfeli's, and the last three commits never had my eyes on them.",
+          "zh": "每次 push 之后都在确切的 head 上重新验证（gfx950 上整个 attention 测试文件 106/106 → 110/110 → 111/111 → 116/116）。 我的两次 approve 都被自动撤销了——8/21 那次被 rebase 撤掉， 8/25 那次被改阈值撤掉——所以合并靠的是 coderfeli 的 approve， 最后三个 commit 我根本没看过。"
         }
       }
     ],
@@ -3077,12 +3077,12 @@
       },
       {
         "lead": {
-          "en": "Self-review caught what CI didn't",
-          "zh": "自审抓到了 CI 没抓到的"
+          "en": "CI flagged Navi red; self-review found the race",
+          "zh": "CI 标红了， 自审找到了根因"
         },
         "body": {
-          "en": "the harness re-review of d50e1e4 found a Navi failure at 32768×8192 bf16 (0.52 scaled error). Root cause: LDS reduction scratch reused before every wave finished its broadcast read — a real race MI300/MI355 never surfaced. Fixed with a pre-reduction `gpu.barrier`; a cross-device `torch.cuda.Stream` is now rejected pre-compile too.",
-          "zh": "评审 harness 对 d50e1e4 的复审发现 Navi 在 32768×8192 bf16 上挂了（缩放误差 0.52）。 根因： LDS 的 reduction 暂存区在所有 wave 读完广播值之前就被复用了——一个 MI300 / MI355 从没暴露过的真实竞争。 用一个 reduction 前的`gpu.barrier` 修掉； 跨设备的`torch.cuda.Stream` 现在也会在编译前被拒。"
+          "en": "CI on d50e1e4 was green on MI325/MI355, style, docs and CodeQL but reproducibly red on Navi at 32768×8192 bf16 (0.52 scaled error); the harness re-review traced it: LDS reduction scratch reused before every wave finished its broadcast read — a real race MI300/MI355 never surfaced. Fixed with a pre-reduction `gpu.barrier`. The same pass caught two things CI didn't: a cross-device `torch.cuda.Stream` is now rejected pre-compile, and `validate_hook` arguments are bound by signature.",
+          "zh": "d50e1e4 上的 CI 在 MI325 / MI355、style、docs、CodeQL 都是绿的， 只有 Navi 稳定地红： 32768×8192 bf16 挂了（缩放误差 0.52）。 评审 harness 的复审追出了根因： LDS 的 reduction 暂存区在所有 wave 读完广播值之前就被复用了——一个 MI300 / MI355 从没暴露过的真实竞争。 用一个 reduction 前的`gpu.barrier` 修掉。 同一轮复审还抓到两件 CI 没抓到的事： 跨设备的`torch.cuda.Stream` 现在会在编译前被拒，`validate_hook` 的参数改成按签名绑定。"
         }
       },
       {
@@ -3091,8 +3091,8 @@
           "zh": "评审过程"
         },
         "body": {
-          "en": "coderfeli never commented; he handed the review to zhiding512 on 8/21, who reviewed by pushing a commit rather than by writing — d50e1e45 wraps `validate_hook` around an untimed poisoned-output launch so no-op or partial-store candidates are rejected. Two `/rerun-ci` pokes; a bare LGTM at 8/25 03:13, merged seven minutes later.",
-          "zh": "coderfeli 一句话都没评； 他 8/21 把 review 交给了 zhiding512， 而 zhiding512 的 review 方式是直接推了一个 commit， 不是写评论——d50e1e45 把`validate_hook` 包在一次不计时的「污染输出」启动外面， 这样什么都不写、或只写了一半的候选会被拒掉。 戳了两次`/rerun-ci`； 8/25 03:13 一句 LGTM， 七分钟后合并。"
+          "en": "coderfeli never commented; he handed the review to zhiding512 on 8/21, who reviewed by pushing a commit rather than by writing — d50e1e45 wraps `validate_hook` around an untimed poisoned-output launch so no-op or partial-store candidates are rejected. Two `/rerun-ci` pokes; a bare LGTM at 8/25 03:13Z (8/24 20:13 PDT), merged seven minutes later.",
+          "zh": "coderfeli 一句话都没评； 他 8/21 把 review 交给了 zhiding512， 而 zhiding512 的 review 方式是直接推了一个 commit， 不是写评论——d50e1e45 把`validate_hook` 包在一次不计时的「污染输出」启动外面， 这样什么都不写、或只写了一半的候选会被拒掉。 戳了两次`/rerun-ci`； 8/25 03:13Z（8/24 20:13 PDT）一句 LGTM， 七分钟后合并。"
         }
       }
     ],
@@ -3240,8 +3240,8 @@
           "zh": "接住了反对意见"
         },
         "body": {
-          "en": "sjfeng1999 approved but wrote 'it's not good if we keep adding such checks to the workflow' — all pre-checks folded into one diff-scoped step. Remember this before #924 adds a red-turning benchmark step.",
-          "zh": "sjfeng1999 approve 了， 但写道「一直往 workflow 里加这种检查不太好」——于是所有预检查折进了一个只看 diff 范围的步骤。 在 #924 加那个会变红的 benchmark 步骤之前， 记住这一点。"
+          "en": "sjfeng1999 approved but left a review note that the workflow should not keep accumulating checks — all pre-checks folded into one diff-scoped step (5a3f58e). Remember this before #924 adds a red-turning benchmark step.",
+          "zh": "sjfeng1999 approve 了， 但留了一条意见： workflow 不该一直往里加检查——于是所有预检查折进了一个只看 diff 范围的步骤（5a3f58e）。 在 #924 加那个会变红的 benchmark 步骤之前， 记住这一点。"
         }
       },
       {
@@ -3294,8 +3294,8 @@
     "thread": "flydsl-kernels-review",
     "status": "landed",
     "what": {
-      "en": "The rescale branch is wave-uniform (a ballot collapses the per-lane test), so one lane past the threshold dragged every lane into the rescale, where lanes whose tile max sat below their running max computed `corr = exp2(+)` and blew up the accumulators. The fix uses the monotonic `rescale_from_tile_max` invariant (m_new ≥ m_row, corr ≤ 1) through one shared `_lazy_correction` helper, in bf16 and both fp8 lazy paths.",
-      "zh": "rescale 分支是 wave 内统一的（ballot 把逐 lane 的判断折叠成一个）， 所以只要一个 lane 过了阈值， 所有 lane 都被拖进 rescale， 其中 tile max 低于自己 running max 的那些 lane 算出`corr = exp2(+)`， 把累加器炸掉了。 修法是走单调的`rescale_from_tile_max` 不变量（m_new ≥ m_row, corr ≤ 1）， 通过一个共用的`_lazy_correction` helper， 覆盖 bf16 和两条 fp8 lazy 路径。"
+      "en": "The rescale branch is wave-uniform (a ballot collapses the per-lane test), so one lane past the threshold dragged every lane into the rescale, where lanes whose tile max sat below their running max computed `corr = exp2(+)` and blew up the accumulators. The fix restores the monotonic `rescale_from_tile_max` invariant (m_new ≥ m_row, corr ≤ 1) — inline in the bf16 path, and through one shared `_lazy_correction` helper in both fp8 lazy paths.",
+      "zh": "rescale 分支是 wave 内统一的（一次 ballot 把逐 lane 的判断压成了一个）， 所以只要有一个 lane 越过阈值， 所有 lane 都会被拖进 rescale； 那些 tile max 低于自己 running max 的 lane 算出`corr = exp2(+)`， 把累加器炸掉。 修法是恢复单调的`rescale_from_tile_max` 不变量（m_new ≥ m_row， corr ≤ 1）——bf16 路径里直接内联， 两条 fp8 lazy 路径通过同一个`_lazy_correction` 辅助函数。"
     },
     "why": {
       "en": "The default bf16 path returned NaN once the logit spread widened (K scaled 32× → 9.2% NaN, 64× → all NaN) while eager rescale and aiter were finite. A silently-NaN default disqualifies the backend for serving.",
@@ -3312,8 +3312,8 @@
           "zh": "证伪那道保护"
         },
         "body": {
-          "en": "a deterministic fp8 case with exactly 1,048,576 NaNs; raising the proposed cap to 1e9 produced the same NaNs, so the cap never fires. The author agreed it 'can't be salvaged'.",
-          "zh": "一个确定性的 fp8 用例， 恰好 1,048,576 个 NaN。 把提议的 cap 提到 1e9， 出来的 NaN 一模一样， 说明这个 cap 从来没触发过。 作者也同意它「救不回来」。"
+          "en": "a deterministic fp8 case with exactly 1,048,576 NaNs; raising the proposed cap to 1e9 produced the same NaNs, so the cap never fires. The author dropped the cap for the monotonic invariant in the next push (c844840).",
+          "zh": "构造了一个确定性的 fp8 用例， 恰好 1,048,576 个 NaN； 把提议的上限抬到 1e9 之后 NaN 数量不变， 说明这道 cap 根本不会触发。 作者在下一次 push（c844840）里放弃了 cap， 改用单调不变量。"
         }
       },
       {
@@ -3332,8 +3332,8 @@
           "zh": "Fastmath 语义"
         },
         "body": {
-          "en": "the restored max carries `nnan` but not `ninf`, because masked rows feed −inf; coderfeli wanted the explicit flag dropped after #1035, the author kept it deliberately.",
-          "zh": "恢复回来的 max 带`nnan` 但不带`ninf`， 因为被 mask 的行会喂进 −inf。 coderfeli 想在 #1035 之后把显式 flag 去掉， 作者是有意保留的。"
+          "en": "the restored max carries `nnan` but not `ninf`, because masked rows feed −inf. coderfeli had the explicit flag dropped after #1035; the author then put `nnan` back on this one line on purpose — not the one coderfeli asked him to remove.",
+          "zh": "恢复回来的 max 带`nnan` 但不带`ninf`， 因为被 mask 的行会喂进 −inf。 coderfeli 在 #1035 之后让作者去掉了显式的 fastmath 标记； 作者随后特意把`nnan` 加回到这一行——不是 coderfeli 让他删的那一行。"
         }
       }
     ],
@@ -3435,8 +3435,8 @@
     "thread": "node-infra",
     "status": "landed",
     "what": {
-      "en": "Wipe the persistent `flydsl-ci-wheels` directory before each artifact download, assert exactly one PR wheel before `pip install`, and extract failure logs into a fresh temp dir so old workspace logs can't mask the real failure.",
-      "zh": "每次下载 artifact 前清空持久化的`flydsl-ci-wheels` 目录，`pip install` 前断言恰好只有一个 PR wheel， 失败日志解压到一个全新的临时目录， 这样旧 workspace 的日志盖不住真正的失败。"
+      "en": "Wipe the persistent `flydsl-ci-wheels` directory before each artifact download, assert exactly one PR wheel and one base wheel before `pip install`, and extract failure logs into a fresh temp dir so old workspace logs can't mask the real failure.",
+      "zh": "每次下载 artifact 前清空持久化的`flydsl-ci-wheels` 目录，`pip install` 前断言恰好只有一个 PR wheel 和一个 base wheel， 失败日志解压到一个全新的临时目录， 这样旧 workspace 的日志盖不住真正的失败。"
     },
     "why": {
       "en": "After #1044 bumped 0.3.1 → 0.3.2, every Navi job died with two wheels installed: `download-artifact` overlays, never deletes, and the Navi workspace persists between jobs. The 'OOM' in the logs was a stale `*.log` glob. It was blocking the Navi leg of every open PR, #1022 and #1027 included. Fix the state *and* pin the invariant, so stale state fails loudly next time instead of silently winning.",
@@ -3502,7 +3502,7 @@
     "related": [
       "ROCm/aiter#4870 (companion; fixed the shared /tmp/pr.diff race hit here)",
       "ROCm/FlyDSL#1027 (sibling skills PR)",
-      "jhinpan/FlyDSL-lab#3 (seeded fixtures F2–F6 + null control)"
+      "jhinpan/FlyDSL-lab#3 (first of the seeded fixtures #3–#8: F2–F6 + null control)"
     ]
   },
   {
@@ -3539,8 +3539,8 @@
     "thread": "flydsl-kernels-review",
     "status": "needs-me",
     "what": {
-      "en": "Lets the paged kernel read a vLLM KV cache in place: `page_size` may be a multiple of BLOCK_N (block table indexed per tile), the KV row stride is read from the tensor through a direct-stride gate instead of inferred from shape, and single-KV-head caches skip the head-spacing check. A second commit adds causal LPT q-block ordering behind a public `causal_lpt` flag.",
-      "zh": "让 paged kernel 能原地读 vLLM 的 KV cache：`page_size` 可以是 BLOCK_N 的倍数（block table 按 tile 索引）， KV 的行 stride 通过一道直接读 stride 的闸门从 tensor 上取， 不再从 shape 推断， 单 KV head 的 cache 跳过 head 间距检查。 第二个 commit 加了 causal LPT 的 q-block 排序， 放在公开的`causal_lpt` flag 后面。"
+      "en": "Lets the paged kernel read a vLLM KV cache in place: `page_size` may be a multiple of BLOCK_N (block table indexed per tile), the KV row stride is read from the tensor through a direct-stride gate instead of inferred from shape, and single-KV-head caches skip the head-spacing check. A separate commit — the first in the branch — adds causal LPT q-block ordering behind a public `causal_lpt` flag.",
+      "zh": "让 paged kernel 能原地读 vLLM 的 KV cache：`page_size` 可以是 BLOCK_N 的倍数（block table 按 tile 索引）， KV 的行 stride 通过一道直接读 stride 的闸门从 tensor 上取， 不再从 shape 推断， 单 KV head 的 cache 跳过 head 间距检查。 分支里的第一个 commit（单独一个） 加了 causal LPT 的 q-block 排序， 放在公开的`causal_lpt` flag 后面。"
     },
     "why": {
       "en": "vLLM serves MiniMax-M3 with page_size 128 and interleaved K/V; the kernel assumed one 64-token tile per page and contiguous K/V, so every call needed a full cache repack. The vLLM FlyDSL gfx950 prefill backend (vllm#53335) cannot land until this does.",
@@ -3548,11 +3548,11 @@
     },
     "waiting": {
       "en": "Me, mostly. akii96 pushed bce20846 late on 8/26 (21:14 PDT) claiming all three blockers fixed plus a measured auto-gate for varlen LPT (default `None` = on while B ≤ num_q_blocks, 0.950× → 0.999×) and 119 tests; no reply comment, no re-request, and CI is red on Python style and check-signal so the GPU jobs never ran. My CHANGES_REQUESTED still stands; the other four requested reviewers have not reviewed.",
-      "zh": "主要是我。 akii96 在 8/26 深夜（21:14 PDT）推了 bce20846， 声称三个 blocker 都修了， 还给 varlen 的 LPT 加了实测过的自动闸门（默认 `None` = 在 B ≤ num_q_blocks 时开启， 0.950× → 0.999×）， 测试 119 个； 没有回复评论， 没有重新请 review， 而且 CI 在 Python style 和 check-signal 上是红的， GPU 任务根本没跑。 我的 CHANGES_REQUESTED 还挂着； 另外四位被请的评审人没有看过。"
+      "zh": "主要是我。 akii96 在 8/26 晚上（21:14 PDT）推了 bce20846， 声称三个 blocker 都修了， 还给 varlen 的 LPT 加了实测过的自动闸门（默认`None` = 在 B ≤ num_q_blocks 时开启， 0.950× → 0.999×）， 测试 119 个； 没有回复评论， 没有重新请 review， 而且 CI 在 Python style 和 check-signal 上是红的， GPU 任务根本没跑。 我的 CHANGES_REQUESTED 还挂着； 另外四位被请的评审人没有看过。"
     },
     "next": {
       "en": "Me: once the style failure is fixed, re-review bce20846 — check the 2²⁴ boundary tests, that `causal_lpt=False` really reaches `_build_splitk` / `_build_varlen`, and whether the new auto-gate satisfies 'gate mixed varlen unless measured'.",
-      "zh": "我： 等 style 那个失败修掉之后重新 review bce20846——检查 2²⁴ 的边界测试、`causal_lpt=False` 是否真的传到了 `_build_splitk` / `_build_varlen`， 以及新的自动闸门是否满足「不实测就不放开混合 varlen」这条要求。"
+      "zh": "我： 等 style 那个失败修掉之后重新 review bce20846——检查 2²⁴ 的边界测试、`causal_lpt=False` 是否真的传到了`_build_splitk` /`_build_varlen`， 以及新的自动闸门是否满足「不实测就不放开混合 varlen」这条要求。"
     },
     "byline": {
       "en": "by akii96 · request-changes 8/25 · gates vllm-project/vllm#53335",
@@ -3639,20 +3639,20 @@
     "thread": "sglang-legacy",
     "status": "closed",
     "what": {
-      "en": "Reads `model_config.v_head_dim`, falling back to layer 0's KV buffer only when it is unset (that buffer is a GDN layer when layer 0 is not full attention); a static init-time gate routes non-MLA head_dim > 128 through Triton `extend_attention_fwd` instead of CK batch prefill — a runtime probe was tried in c4f916d and dropped three hours later for startup instability; the CUDA-only CuTe-DSL GDN import moves under `is_cuda()`.",
-      "zh": "读取`model_config.v_head_dim`， 只有未设置时才回退到第 0 层的 KV buffer（第 0 层不是 full attention 时， 那个 buffer 属于 GDN 层）； 一个初始化时的静态门控把非 MLA 且 head_dim > 128 的情况路由到 Triton 的`extend_attention_fwd`， 而不是 CK 的 batch prefill， c4f916d 里试过运行时探测， 三小时后因为启动不稳定撤掉了； 仅 CUDA 的 CuTe-DSL GDN 导入挪到`is_cuda()` 下面。"
+      "en": "Reads `model_config.v_head_dim`, falling back to layer 0's KV buffer only when it is unset (that buffer is a GDN layer when layer 0 is not full attention); routes non-MLA head_dim > 128 through Triton `extend_attention_fwd` instead of CK batch prefill — the runtime probe shipped in the first commit, became the `_ck_batch_prefill_is_supported` helper in c4f916d at sunxxuns's request, and was cut in e16fd1c two and a half hours later for JIT-probe overhead and startup instability, leaving a static gate; the CUDA-only CuTe-DSL GDN import moves under `is_cuda()`.",
+      "zh": "读`model_config.v_head_dim`， 只有它没设置时才回退到第 0 层的 KV buffer（第 0 层不是完整 attention 时， 那个 buffer 是 GDN 层）； 非 MLA 且 head_dim > 128 的走 Triton 的`extend_attention_fwd` 而不是 CK batch prefill——运行时探测在第一个 commit 里就有， 应 sunxxuns 的要求在 c4f916d 里变成`_ck_batch_prefill_is_supported` 辅助函数， 两个半小时后又在 e16fd1c 里因为 JIT 探测开销和启动不稳定被砍掉， 只留一个静态门控； 只支持 CUDA 的 CuTe-DSL GDN 导入挪到`is_cuda()` 下面。"
     },
     "why": {
       "en": "Qwen3-Coder-Next (GDN + attention hybrid) crashed on ROCm with `--attention-backend aiter`; GSM8K 0.947 on both backends after the fix — the February bring-up. sunxxuns's one review round was answered the same day, the helper he asked for was removed three hours later and never re-reviewed, then nothing for 189 days.",
       "zh": "Qwen3-Coder-Next（GDN + attention 混合）在 ROCm 上用`--attention-backend aiter` 会崩； 修完后两个后端 GSM8K 都是 0.947， 这是二月的 bring-up。 sunxxuns 的那一轮 review 当天就回了， 他要的辅助函数三小时后被删掉， 再没被重新 review， 之后 189 天没有动静。"
     },
+    "related": [
+      "sgl-project/sglang#18355 (supersedes the v_head_dim fix)"
+    ],
     "decision": {
       "en": "Drop. The v_head_dim fix landed via AMD's #18355 (merged 2/25) and the CuTe-DSL guard is moot since the GDN path moved. Only reopen the CK head_dim>128 probe if aiter prefill still fails on the current AITER build — as a fresh narrow PR, not this branch.",
       "zh": "放弃。 v_head_dim 的修复已经通过 AMD 的 #18355 合入（2/25 合的）， CuTe-DSL 的 guard 在 GDN 路径挪走之后也没意义了。 只有当前 AITER 构建上 aiter prefill 仍然失败时， 才重开 CK head_dim>128 的探测——开一个新的窄 PR， 不用这个分支。"
-    },
-    "related": [
-      "sgl-project/sglang#18355 (supersedes the v_head_dim fix)"
-    ]
+    }
   },
   {
     "number": 21369,
@@ -3691,18 +3691,19 @@
       "zh": "一个 367 行的 Triton kernel 文件， 包含 HIP 上从来编译不了的三个`sgl_kernel` 算子：`top_k_renorm_prob`、`top_p_renorm_prob` 和`tree_speculative_sampling_target_only`， 在`eagle_info.py` /`eagle_info_v2.py` 里接到`is_hip()` 下面，`spec_utils` 改成`_is_cuda or _is_hip`， 外加测试和一个微基准（11 个文件）。 8×MI355X 上 Kimi-K2.5 W4A16 实测非贪婪 44.8 tok/s， 基线 35.8。"
     },
     "why": {
-      "en": "On ROCm every temperature>0 Eagle3 request was silently verified greedily, so sampled outputs did not follow the requested distribution. The renorm half later landed independently (1am9trash's #32621, merged by HaiShaw, and #32641, merged by zcnrex); the tree-kernel half is still open on main — `eagle_utils.py` still forces argmax verify on HIP, and #33694 names 'a Triton target-only kernel' as its own follow-up.",
-      "zh": "在 ROCm 上， 每一个 temperature>0 的 Eagle3 请求都被悄悄按贪婪方式验证， 所以采样输出并不遵循请求的分布。 renorm 那一半后来独立合入了（1am9trash 的 #32621， HaiShaw 合的， 以及 #32641， zcnrex 合的）； tree kernel 那一半在 main 上仍然是空着的：`eagle_utils.py` 在 HIP 上还是强制 argmax 验证， 而 #33694 把「a Triton target-only kernel」列为自己的后续工作。"
-    },
-    "decision": {
-      "en": "Closed by the stale bot on 8/25 after 150 days with zero human reviews (five reviewers requested at open, none responded). Revive as a narrow PR carrying only the Triton tree-sampling kernel plus the HIP gates, recreated against current main (sgl-kernel/ and test/srt/ moved), with HaiShaw pinged by name as AMD merge oncall.",
-      "zh": "8/25 被 stale bot 关掉， 150 天零人工 review（开 PR 时请了五个评审人， 没人回应）。 重开成一个窄 PR， 只带 Triton 的 tree sampling kernel 加 HIP 门控， 基于当前 main 重建（sgl-kernel / 和 test/srt / 挪过位置）， 点名 ping HaiShaw 作为 AMD 的 merge oncall。"
+      "en": "On ROCm every temperature>0 Eagle3 request was silently verified greedily, so sampled outputs did not follow the requested distribution. The renorm half later landed independently (1am9trash's #32621, merged by HaiShaw, and #32641, merged by zcnrex); the tree-kernel half is still open on main — `eagle_utils.py` still forces argmax verify on HIP. #33694 lists a Triton target-only kernel as one of two follow-up options, and HaiShaw answered on 8/6 that Raiden-Makoto is building it; that became #34140 on 8/9 (a 389-line Triton `tree_speculative_sampling_target_only_triton`, `_is_hip` dropped from the greedy gate), reviewed by RolaoDenthu on 8/19.",
+      "zh": "在 ROCm 上， 每一个 temperature>0 的 Eagle3 请求都被悄悄按 greedy 验证， 采样结果不服从请求的分布。 renorm 那一半后来被独立合入了（1am9trash 的 #32621， HaiShaw 合的； #32641， zcnrex 合的）； tree kernel 那一半在 main 上仍然是空的——`eagle_utils.py` 在 HIP 上仍然强制 argmax 验证。 #33694 把「写一个 Triton 的 target-only kernel」列为两个后续选项之一， HaiShaw 8/6 回复说 Raiden-Makoto 正在做； 这在 8/9 变成了 #34140（389 行的 Triton`tree_speculative_sampling_target_only_triton`， greedy 门控里去掉了`_is_hip`）， RolaoDenthu 8/19 review 过。"
     },
     "related": [
+      "sgl-project/sglang#34140 (carries the same design; in review)",
       "sgl-project/sglang#32621 (renorm landed independently)",
       "sgl-project/sglang#32641",
       "sgl-project/sglang#33694 (documents the remaining gap)"
-    ]
+    ],
+    "decision": {
+      "en": "Closed by the stale bot on 8/24 (18:32 PDT) after 150 idle days with zero human reviews (five reviewers requested at open, none responded). Leave it closed: #34140 (Raiden-Makoto, 8/9) already carries the same design on current main — a Triton target-only tree kernel, `_is_hip` dropped from the greedy gate, top-k/top-p renorm — and is in review. If I want a hand in this, review #34140 against my test cases and the 44.8 tok/s run rather than open a duplicate.",
+      "zh": "8/24（18:32 PDT）被 stale bot 关掉， 闲置 150 天， 零人工 review（开 PR 时请了五位评审人， 没人回）。 就让它关着： #34140（Raiden-Makoto， 8/9）已经在当前 main 上带着同样的设计——Triton 的 target-only tree kernel、greedy 门控里去掉`_is_hip`、top-k / top-p renorm——而且正在 review。 我要是想参与， 就拿我的测试用例和那次 44.8 tok/s 的运行去 review #34140， 而不是再开一个重复的。"
+    }
   },
   {
     "number": 23381,
@@ -3714,8 +3715,8 @@
     "role": "authored",
     "state": "open",
     "isDraft": false,
-    "createdAt": "2026-04-21T00:00:00Z",
-    "updatedAt": "2026-06-09T00:00:00Z",
+    "createdAt": "2026-04-21T14:34:03Z",
+    "updatedAt": "2026-06-09T20:23:50Z",
     "mergedAt": null,
     "closedAt": null,
     "mergedBy": null,
@@ -3729,12 +3730,15 @@
     "changesRequestedBy": [],
     "myReview": null,
     "base": "main",
-    "head": null,
-    "labels": [],
-    "seededFrom": "research",
+    "head": "feat/kimi-k26-mi355x-moe-tuning",
+    "labels": [
+      "documentation",
+      "deepseek",
+      "run-ci"
+    ],
+    "short": "Kimi-K2.6 MI355X MoE config (unreviewed since April)",
     "thread": "sglang-legacy",
     "status": "decide",
-    "short": "Kimi-K2.6 MI355X MoE config (unreviewed since April)",
     "what": {
       "en": "A tuned Triton fused-MoE config for E=384, N=256, MI355X int4_w4a16 across 13 batch buckets, an opt-in cap on the DeepSeek-style loader thread pool, and a local-device-id fix so the tuner runs inside Ray HIP workers.",
       "zh": "一份针对 E=384、N=256、MI355X int4_w4a16、覆盖 13 个 batch 桶的 Triton fused-MoE 调优配置， 一个可选开启的 DeepSeek 式 loader 线程池上限， 以及一个 local-device-id 修复， 让 tuner 能在 Ray 的 HIP worker 里跑。"
@@ -3743,13 +3747,13 @@
       "en": "Kimi-K2.6 W4A16 on MI355X had no upstream tuned config; the body's A/B says this one cuts TTFT 39–62% and lifts decode 7–10%. The loader cap is offered as an opt-in for NFS-backed large-MoE loads.",
       "zh": "MI355X 上的 Kimi-K2.6 W4A16 在上游没有调好的配置； 正文的 A/B 说这一份把 TTFT 降了 39–62%， decode 提了 7–10%。 loader 上限作为可选项提供， 面向 NFS 后端的大 MoE 加载。"
     },
-    "decision": {
-      "en": "Four months, twelve requested reviewers, none reviewed; of the 18 red checks only one runs on AMD hardware (mi325 shard 9, untriaged) — the rest are NVIDIA/npu jobs and aggregators. 78 days silent against the ~150-day stale mark. Still worth landing now that serving moved to Kimi-K3? If yes: rebase, split the loader cap into its own PR, ping HaiShaw directly. If no: close it before the bot does.",
-      "zh": "四个月， 请了十二个评审人， 没人 review； 18 个红的检查里只有一个跑在 AMD 硬件上（mi325 shard 9， 未分诊）， 其余是 NVIDIA / npu 的 job 和聚合项。 已经沉默 78 天， 过期线大约在 150 天。 serving 已经转到 Kimi-K3 了， 这个还值得合吗？ 值得： rebase， 把 loader 上限拆成单独的 PR， 直接 ping HaiShaw。 不值得： 在 bot 动手之前自己关掉。"
-    },
     "related": [
       "sgl-project/sglang#17863 (predecessor: Kimi K2.5 day-0, merged 1/28)"
-    ]
+    ],
+    "decision": {
+      "en": "Four months, twelve requested reviewers, none reviewed; of the 18 red checks only one runs on AMD hardware (mi325 shard 9, untriaged) — the rest are NVIDIA/npu jobs and aggregators. 78 days silent. The stale sweep (close-stale-prs.yml, added 8/11) closes at 90 idle days, oldest-first, 32 a day; it is still clearing PRs 150+ days idle, which is why #21369 went at 150 and #18571 at 189 — this one crosses 90 on 9/8 and goes whenever the sweep reaches it. Still worth landing now that serving moved to Kimi-K3? If yes: rebase (the branch now conflicts with main), split the loader cap into its own PR, ping HaiShaw directly (the 4/22 cc to him and sunxxuns got no reply). If no: close it before the bot does.",
+      "zh": "四个月， 请了十二位评审人， 没人 review； 18 个红色检查里只有一个跑在 AMD 硬件上（mi325 的第 9 个分片， 没人分析过）——其余是 NVIDIA / npu 任务和汇总项。 沉默了 78 天。 stale 清理（close-stale-prs.yml， 8/11 加的）在闲置 90 天时关闭， 从最老的开始、每天 32 个； 它现在还在清闲置 150 天以上的， 所以 #21369 是在 150 天时被关、#18571 在 189 天——这个 9/8 满 90 天， 轮到就会被关。 serving 已经转到 Kimi-K3 了， 它还值得合入吗？ 值得的话： rebase（分支现在和 main 冲突了）， 把 loader 上限拆成单独的 PR， 直接 ping HaiShaw（4/22 cc 他和 sunxxuns 都没回）。 不值得就赶在 bot 之前自己关掉。"
+    }
   }
 ]
   </script>
@@ -3757,12 +3761,12 @@
   <script id="notes-data" type="application/json">
 {
   "lede": {
-    "en": "Entry 001 covers **{window}** across **{repos} repositories**. **{landed}** of my pull requests landed: the Softmax family on gfx950 is complete — backward, a search with a correctness gate, native `exp2` — and the agent skills got a mechanical docs gate. **{flight}** are still open on my side, and the honest read is that most of them wait on a *person*, not on code: quack#190 has had no maintainer look in twelve days, #924 has no owner, the tokenspeed pair cannot even run CI until someone clicks approve. **{needs}** items need me first — four re-reviews on the Miles LoRA stack, #1015, a description rewrite on #1047, a one-line CI fix I owe quack. **{decide}** more are open but not moving and each carries a call to make. And **{closed}** closed without merging: the stale bot took two SGLang PRs from February and March; both carry a decision below.",
+    "en": "Entry 001 covers **{window}** across **{repos} repositories**. **{landed}** of my pull requests landed: the Softmax family on gfx950 is complete — backward, a search with a correctness gate, native `exp2` — and the agent skills got a mechanical docs gate. **{flight}** are still open on my side, and the honest read is that most of them wait on a *person*, not on code: quack#190 has had no maintainer look in twelve days, #924 has no owner, the tokenspeed pair cannot even run CI until someone clicks approve. **{needs}** items need me first — four re-reviews on the Miles LoRA stack, #1015, a description rewrite on #1047, a one-line CI fix I owe quack. **{decide}** more are open but not moving and each carries a call to make. And **{closed}** closed without merging: two were my own DCO re-opens on tokenspeed (#1167 → #1169, #1168 → #1170); the stale bot took two SGLang PRs from February and March, and both carry a decision below.",
     "zh": "第 001 期覆盖 **{window}**， 横跨 **{repos} 个仓库**。 我的 PR 有 **{landed}** 个已合入： gfx950 上的 Softmax 一族齐了——backward、带正确性闸门的搜索、原生`exp2`——agent 的 skill 也有了一道机械化的文档闸门。 我这边还有 **{flight}** 个打开着， 老实说， 它们大多卡在*人*身上， 而不是代码： quack#190 十二天没有任何维护者看过，#924 没有 owner， tokenspeed 那两个连 CI 都跑不了， 得有人点一下 approve。 有 **{needs}** 个先等我处理——Miles LoRA 那一叠的四次复审、#1015、#1047 的描述重写， 还有欠 quack 的一行 CI 修复。 另有 **{decide}** 个打开着但没在动， 每一个都附了要做的决定。 还有 **{closed}** 个未合入即关闭： stale bot 收走了二月和三月的两个 SGLang PR， 两个都在下面附了决定。"
   },
   "signature": {
-    "en": "Entry 001 · compiled from 48 pull-request threads across 13 repositories · every state and number is machine-read; every sentence is mine.",
-    "zh": "第 001 期 · 由 13 个仓库的 48 个 PR thread 汇编而成 · 每个状态和数字都是机器读出来的； 每句话都是我写的。"
+    "en": "Entry 001 · compiled from 51 pull-request threads across 13 repositories · every state and number is machine-read; every sentence is mine.",
+    "zh": "第 001 期 · 整理自 13 个仓库的 51 个 PR 线程 · 每个状态和数字都是机器读的； 每句话都是我写的。"
   },
   "skipped": {
     "en": "Skipped this entry.",
@@ -3771,59 +3775,59 @@
   "blockers": [
     {
       "en": "**Fork-PR CI on tokenspeed.** #1169 and #1170 have never had a CI run on their current heads: all workflows sit in `action_required` until a maintainer approves them. Pinged raikonenfnu on #1132 (8/25); main has moved 16 commits since.",
-      "zh": "**tokenspeed 上的 fork PR CI。 ** #1169 和 #1170 在当前 head 上从来没跑过 CI： 所有 workflow 都停在`action_required`， 等维护者批准。 8/25 在 #1132 上 ping 了 raikonenfnu； 之后 main 又前进了 16 个 commit。"
+      "zh": "**tokenspeed 上的 fork PR CI。** #1169 和 #1170 在当前 head 上从来没跑过 CI： 所有 workflow 都停在`action_required`， 等维护者批准。 8/25 在 #1132 上 ping 了 raikonenfnu； 之后 main 又前进了 16 个 commit。"
     },
     {
-      "en": "**quack#190 has no reader.** Zero maintainer activity in twelve days, and `test / lint` is red for every fork PR because main's own workflow trips the `actions/checkout@v6.1` `pull_request_target` guard. The unblocker is a one-line PR I offered on 8/19 and have not sent.",
-      "zh": "**quack#190 没人看。 ** 十二天零维护者活动， 而且每个 fork PR 的`test / lint` 都是红的， 因为 main 自己的 workflow 就会触发`actions/checkout@v6.1` 的`pull_request_target` guard。 解法是一个一行的 PR， 8/19 我说了要发， 到现在还没发。"
+      "en": "**quack#190 has no reader.** Zero maintainer activity in twelve days, and `test / lint` is red for every fork PR because main's own workflow trips the `actions/checkout@v6.1` `pull_request_target` guard. The unblocker is a one-line PR I offered on 8/18 (PDT; 8/19 UTC) and have not sent.",
+      "zh": "**quack#190 没人看。** 十二天零维护者活动， 而且每个 fork PR 的`test / lint` 都是红的， 因为 main 自己的 workflow 就会触发`actions/checkout@v6.1` 的`pull_request_target` guard。 解法是一个一行的 PR， 8/18（太平洋时间； UTC 是 8/19） 我说了要发， 到现在还没发。"
     },
     {
       "en": "**#924 has no owner and a dirty head.** coderfeli handed it to zhiding512 on 8/5 with a bare mention; nobody has reviewed the design in 27 days, and my own #1022 / #1026 / #1046 merges now conflict with it.",
-      "zh": "**#924 没有 owner， head 也脏了。 ** coderfeli 8/5 只 @ 了一下就把它交给了 zhiding512； 27 天没人 review 过设计， 而我自己合入的 #1022 / #1026 / #1046 现在都和它冲突。"
+      "zh": "**#924 没有 owner， head 也脏了。** coderfeli 8/5 只 @ 了一下就把它交给了 zhiding512； 27 天没人 review 过设计， 而我自己合入的 #1022 / #1026 / #1046 现在都和它冲突。"
     },
     {
-      "en": "**Approval bandwidth on Miles.** My reviews found three real corruption/hang bugs on the LoRA stack and the author fixed them within hours — but none of the six requested maintainers has touched any of the four PRs since 8/13, and I am not a merger there.",
-      "zh": "**Miles 上的审批带宽。 ** 我的 review 在 LoRA 栈上找到三个真实的数据损坏 / 挂死 bug， 作者几小时内就修了——但被请来的六位维护者从 8/13 起没一个碰过这四个 PR 里的任何一个， 而我在那边没有合并权限。"
+      "en": "**Approval bandwidth on Miles.** My reviews found four real corruption/hang/crash bugs on the LoRA stack and the author fixed them within hours — but none of the six requested maintainers has touched any of the four PRs since 8/13, and I am not a merger there.",
+      "zh": "**Miles 上的 approve 带宽。** 我的 review 在 LoRA 那一叠上找出四个真的数据损坏 / 挂死 / 崩溃 bug， 作者几小时内就修了——但被请到的六个维护者从 8/13 起没有一个碰过这四个 PR， 而我在那边不是能合并的人。"
     },
     {
       "en": "**ROCm SAML on this machine.** My `gh` token is not SSO-authorized for the ROCm org, so every local GraphQL/REST call to ROCm/FlyDSL and ROCm/aiter returns 403; the nightly sync refreshes those rows only from GitHub Actions. One click at [github.com/orgs/ROCm/sso](https://github.com/orgs/ROCm/sso) fixes it.",
-      "zh": "**这台机器上的 ROCm SAML。 ** 我的`gh` token 没有给 ROCm org 做 SSO 授权， 所以本地对 ROCm/FlyDSL 和 ROCm/aiter 的每个 GraphQL / REST 调用都返回 403； 夜间同步只能从 GitHub Actions 那边刷新这些行。 去[github.com/orgs/ROCm/sso](https://github.com/orgs/ROCm/sso) 点一下就好。"
+      "zh": "**这台机器上的 ROCm SAML。** 我的`gh` token 没有给 ROCm org 做 SSO 授权， 所以本地对 ROCm/FlyDSL 和 ROCm/aiter 的每个 GraphQL / REST 调用都返回 403； 夜间同步只能从 GitHub Actions 那边刷新这些行。 去[github.com/orgs/ROCm/sso](https://github.com/orgs/ROCm/sso) 点一下就好。"
     }
   ],
   "questions": [
     {
       "en": "**#924:** split the timing-contract refactor from the gate policy to shrink the ask? And is coderfeli or zhiding512 the reviewer — someone has to say.",
-      "zh": "**#924： ** 把计时契约的重构和闸门策略拆开， 把要求的范围缩小？ 还有， 评审人到底是 coderfeli 还是 zhiding512——总得有人说一句。"
+      "zh": "**#924：** 把计时契约的重构和闸门策略拆开， 把要求的范围缩小？ 还有， 评审人到底是 coderfeli 还是 zhiding512——总得有人说一句。"
     },
     {
       "en": "**quack-FlyDSL#18:** merge zhiding512's CuTe-vocabulary rewrite into the #190 branch now (voiding the '49 unchanged SHAs' provenance and any review tridao may have started), or hold it as an upstream follow-up?",
-      "zh": "**quack-FlyDSL#18： ** 现在就把 zhiding512 用 CuTe 词汇重写的版本合进 #190 分支（这会作废「49 个未变 SHA」的溯源， 也会作废 tridao 可能已经开始的 review）， 还是先压着， 作为上游的后续 PR？"
+      "zh": "**quack-FlyDSL#18：** 现在就把 zhiding512 用 CuTe 词汇重写的版本合进 #190 分支（这会作废「49 个未变 SHA」的溯源， 也会作废 tridao 可能已经开始的 review）， 还是先压着， 作为上游的后续 PR？"
     },
     {
       "en": "**Miles #2516 / #2669:** the author deferred two of my blockers to follow-ups (cross-rank iteration consensus; EP-narrowing resume silently training a fresh adapter). Is that acceptable before the stack merges? Nobody has said so on-thread.",
-      "zh": "**Miles #2516 / #2669： ** 作者把我提的两个 blocker 推到了后续 PR（跨 rank 的 iteration 共识； EP 收窄后 resume 会悄悄训练一个全新的 adapter）。 这个栈合并之前， 这样可以接受吗？ thread 上没人说过可以。"
+      "zh": "**Miles #2516 / #2669：** 作者把我提的两个 blocker 推到了后续 PR（跨 rank 的 iteration 共识； EP 收窄后 resume 会悄悄训练一个全新的 adapter）。 这个栈合并之前， 这样可以接受吗？ thread 上没人说过可以。"
     },
     {
       "en": "**aiter#4870:** commit the 14-PR/17-defect corpus as replayable train/holdout (zufayu's Phase 1) before his re-review, or wait for the ask?",
-      "zh": "**aiter#4870： ** 在 zufayu 重新 review 之前就把 14 个 PR / 17 个缺陷的语料提交成可重放的 train / holdout（他的 Phase 1）， 还是等他开口？"
+      "zh": "**aiter#4870：** 在 zufayu 重新 review 之前就把 14 个 PR / 17 个缺陷的语料提交成可重放的 train / holdout（他的 Phase 1）， 还是等他开口？"
     },
     {
       "en": "**sglang:** revive #21369 as a narrow Triton tree-sampling PR (the gap is still open on main per #33694)? And is a Kimi-K2.6 MI355X config (#23381) still worth landing now that serving moved to Kimi-K3?",
-      "zh": "**sglang： ** 把 #21369 重开成一个只做 Triton tree-sampling 的窄 PR（按 #33694 的说法， main 上这个缺口还在）？ 还有， serving 已经换到 Kimi-K3 了， Kimi-K2.6 的 MI355X 配置（#23381）还值得合入吗？"
+      "zh": "**sglang：** 把 #21369 重开成一个只做 Triton tree-sampling 的窄 PR（按 #33694 的说法， main 上这个缺口还在）？ 还有， serving 已经换到 Kimi-K3 了， Kimi-K2.6 的 MI355X 配置（#23381）还值得合入吗？"
     },
     {
       "en": "**CI policy with sjfeng1999:** he pushed back on adding check steps in #1027; #924 adds a red-turning benchmark step. Agree the gate policy with him before rebasing, not after.",
-      "zh": "**和 sjfeng1999 的 CI 策略： ** 他在 #1027 里反对加检查步骤； #924 又加了一个会变红的 benchmark 步骤。 闸门策略得在 rebase 之前和他谈妥， 而不是之后。"
+      "zh": "**和 sjfeng1999 的 CI 策略：** 他在 #1027 里反对加检查步骤； #924 又加了一个会变红的 benchmark 步骤。 闸门策略得在 rebase 之前和他谈妥， 而不是之后。"
     },
     {
       "en": "**Private-repo PRs on this page:** the board shows number, state and timing for amdpilotv2 / amd-node-setup / KDA-internal-rocm but withholds titles. Right default, or flip `showPrivate`?",
-      "zh": "**这页上的私有仓库 PR： ** 看板对 amdpilotv2 / amd-node-setup / KDA-internal-rocm 显示编号、状态和时间， 但不显示标题。 这个默认值对吗， 还是把`showPrivate` 打开？"
+      "zh": "**这页上的私有仓库 PR：** 看板对 amdpilotv2 / amd-node-setup / KDA-internal-rocm 显示编号、状态和时间， 但不显示标题。 这个默认值对吗， 还是把`showPrivate` 打开？"
     }
   ],
   "ideas": [
     {
-      "en": "The review moves that worked this week — **reproduce before blocking**, **falsify the guard**, **test the test**, **exact-head revalidation** — showed up on four repos (FlyDSL attention, Miles LoRA, the ISA diff tool, amdpilotv2 docs). They are codifiable; #4870 and #1047 are the vehicles.",
-      "zh": "这周管用的几个 review 动作——**先复现再 block**、**证伪 guard**、**测试那个测试**、**按精确 head 重新验证**——在四个仓库上都出现了（FlyDSL attention、Miles LoRA、ISA diff 工具、amdpilotv2 文档）。 它们是可以写成规则的； #4870 和 #1047 就是载体。"
+      "en": "The review moves that worked this week — **reproduce before blocking**, **falsify the guard**, **test the test**, **exact-head revalidation** — showed up on three repos and four PR families (FlyDSL attention and the ISA diff tool, Miles LoRA, amdpilotv2 docs). They are codifiable; #4870 and #1047 are the vehicles.",
+      "zh": "这周真正起作用的几个评审动作——**先复现再拦**、**证伪那道保护**、**先测这个测试本身**、**锁定 head 复验**——出现在三个仓库、四类 PR 上（FlyDSL 的 attention 和 ISA diff 工具、Miles LoRA、amdpilotv2 文档）。 它们是可以固化的； #4870 和 #1047 就是载体。"
     },
     {
       "en": "Keep the FlyDSL-lab seeded-defect batch as a permanent regression corpus instead of closing it silently: the two bots installed on the fork caught 1 of 5 mutants, and only F5 changed an outcome with the skill. That number is worth being able to re-run.",
@@ -3842,8 +3846,8 @@
       "zh": "`check_docs_api.py` 可以搬到别处用： 大多数仓库都没有东西拿 API 去 lint 文档里的文字。 下一个是 aiter。"
     },
     {
-      "en": "Housekeeping is a result too: 9 stale drafts on quack-FlyDSL, 6 fixtures on FlyDSL-lab, TK#3, aiter#3532, FlyDSL #638/#648/#829, sglang-fork#1. One pass takes 'in flight' from 26 to the dozen that are real.",
-      "zh": "清理也算成果： quack-FlyDSL 上 9 个过期 draft、FlyDSL-lab 上 6 个 fixture、TK#3、aiter#3532、FlyDSL #638/#648/#829、sglang-fork#1。 过一遍就能把「进行中」从 26 个减到真正算数的十来个。"
+      "en": "Housekeeping is a result too: the #5 umbrella and its 8 stale drafts on quack-FlyDSL, 6 fixtures on FlyDSL-lab, TK#3, aiter#3532, FlyDSL #638/#648/#829, sglang-fork#1. One pass takes 'in flight' from 28 to the dozen that are real.",
+      "zh": "清理本身也是结果： quack-FlyDSL 上的 #5 总 PR 和它下面 8 个过期的 draft、FlyDSL-lab 上的 6 个 fixture、TK#3、aiter#3532、FlyDSL 的 #638 / #648 / #829、sglang-fork#1。 做一遍就能把「进行中」从 28 降到真正的十来个。"
     },
     {
       "en": "House rules for the review loop before it runs on other people's PRs again: on #215 it pushed a commit onto the author's branch (disclosed, with an offer to revert) and posted the same correction twice an hour apart. Findings held up 10/11; the etiquette did not.",
