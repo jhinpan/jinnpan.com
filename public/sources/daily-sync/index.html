@@ -3,46 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Daily Sync-Up — a numbered series of status entries: what landed, what is in flight and on whom, what is parked pending a decision, and why each pull request exists." />
+  <meta name="description" content="Open Source PR Tracker — a numbered series of status entries: what landed, what is in flight and on whom, what is parked pending a decision, and why each pull request exists." />
   <meta name="agent-data" content="#entry-data lists every published entry. scripts/sync-daily-sync.mjs refreshes the latest entry's figures when it runs." />
-  <title>Daily Sync-Up</title>
+  <title>Open Source PR Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Faustina:ital,wght@0,400;0,500;1,400&family=Golos+Text:wght@400;500;600;700&family=Overpass+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" />
   <style>
     :root {
       color-scheme: light;
-      --bg: #f2f4f7;
-      --panel: #ffffff;
-      --panel-alt: #e9edf2;
-      --text: #111722;
-      --text-2: #4d5866;
-      --muted: #7d8794;
-      --line: #dde2e9;
-      --line-strong: #c1c9d3;
-      --landed: #1a8a4a;
-      --flight: #2b6fd6;
-      --closed: #8a929c;
+      --bg: #f6f5f1;
+      --panel: #fdfcfa;
+      --panel-alt: #efede7;
+      --text: #2a2e35;
+      --text-2: #565c66;
+      --muted: #858b95;
+      --line: #e4e1da;
+      --line-strong: #cfcac0;
+      --landed: #2a8a55;
+      --flight: #3b74c9;
+      --closed: #8f959d;
       --display: "Instrument Serif", "Noto Serif SC", Georgia, serif;
       --prose: "Faustina", "Noto Serif SC", Georgia, serif;
       --ui: "Golos Text", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
       --mono: "Overpass Mono", ui-monospace, Menlo, Consolas, monospace;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        color-scheme: dark;
-        --bg: #0f1318;
-        --panel: #161b22;
-        --panel-alt: #1d232c;
-        --text: #e8ecf1;
-        --text-2: #aab4c0;
-        --muted: #77808c;
-        --line: #262d36;
-        --line-strong: #3a434e;
-        --landed: #2f9e5e;
-        --flight: #5b93e8;
-        --closed: #7c8590;
-      }
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); line-height: 1.5; -webkit-font-smoothing: antialiased; }
@@ -53,7 +37,7 @@
     .backlink:hover { color: var(--text); }
     .kicker { margin: 0; color: var(--text-2); font: 500 11.5px var(--mono); letter-spacing: .18em; text-transform: uppercase; }
     h1 { margin: 4px 0 0; font: italic 400 clamp(44px, 7vw, 72px)/1 var(--display); letter-spacing: -.015em; }
-    .lede { margin: 18px 0 0; max-width: 62ch; color: var(--text-2); font: 400 16px/1.6 var(--prose); }
+    .lede { margin: 18px 0 0; max-width: 62ch; color: var(--text-2); font: 400 17.5px/1.65 var(--prose); }
 
     ol.entries { margin: 36px 0 0; padding: 0; list-style: none; }
     ol.entries > li { border-top: 1px solid var(--line); }
@@ -70,10 +54,10 @@
     }
     .entry:hover { background: var(--panel); }
     .no { color: var(--muted); font: 600 11px var(--mono); letter-spacing: .1em; }
-    .entry h2 { margin: 0; font: 650 19px/1.2 var(--ui); letter-spacing: -.015em; }
+    .entry h2 { margin: 0; font: 650 21px/1.2 var(--ui); letter-spacing: -.015em; }
     .entry .win { margin-left: 10px; color: var(--muted); font: 11px var(--mono); }
-    .entry p { margin: 6px 0 0; max-width: 64ch; color: var(--text-2); font: 400 14.5px/1.55 var(--prose); }
-    .figs { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; color: var(--text-2); font: 12px var(--ui); }
+    .entry p { margin: 8px 0 0; max-width: 64ch; color: var(--text-2); font: 400 16px/1.6 var(--prose); }
+    .figs { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; color: var(--text-2); font: 13.5px var(--ui); }
     .figs span { display: inline-flex; align-items: center; gap: 6px; }
     .figs b { font-weight: 650; color: var(--text); }
     .figs i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--closed); }
@@ -88,8 +72,8 @@
 <body>
   <main>
     <a class="backlink" href="/sources/">← jinnpan.com / sources</a>
-    <p class="kicker">Daily Sync-Up</p>
-    <h1>Sync log</h1>
+    <p class="kicker">Series</p>
+    <h1>Open Source PR Tracker</h1>
     <p class="lede">
       A numbered series of status entries. Each one is a board of every pull request in its window —
       landed, in flight, blocked, parked for a decision — grouped by the thread it advances, with the
@@ -106,7 +90,7 @@
   {
     "issue": 1,
     "slug": "001",
-    "title": "August 26, 2026",
+    "title": "Aug 19 → Aug 26, 2026",
     "windowStart": "2026-08-19",
     "windowEnd": "2026-08-26",
     "summary": "The Softmax family on gfx950 is complete — backward, a gated autotune, native exp2 — and the agent skills got a mechanical docs gate. Eleven PRs stay open on my side across thirteen repositories, most of them waiting on a person rather than on code; the review harness found real bugs in four repos; the stale bot took two SGLang PRs.",
@@ -138,7 +122,7 @@
 
         const mid = el("div");
         const h2 = el("h2", null, entry.title);
-        h2.append(el("span", "win", `${shortDay(entry.windowStart)} → ${shortDay(entry.windowEnd)}`));
+        h2.append(el("span", "win", `entry ${String(entry.issue).padStart(3, "0")}`));
         mid.append(h2);
         mid.append(el("p", null, entry.summary));
 
