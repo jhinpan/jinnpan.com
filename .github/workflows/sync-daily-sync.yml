@@ -36,7 +36,10 @@ jobs:
       - name: Refresh the latest sync entry
         run: npm run sync:daily
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          # A fine-grained PAT in DAILY_SYNC_TOKEN lets the sync see private repos;
+          # the default token only reads public ones, and those records keep their
+          # previous state instead of failing the run.
+          GITHUB_TOKEN: ${{ secrets.DAILY_SYNC_TOKEN || github.token }}
 
       - name: Validate the site
         run: |
