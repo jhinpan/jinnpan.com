@@ -2735,8 +2735,8 @@
       "zh": "FlyDSL 的 norm kernel 在 MI308 上各种 shape 都落后于 HIP 和 Triton。 我七月那轮没找到正确性 / OOB / 竞态的 bug， 但找到了九个覆盖缺口（只测了 bf16 的矩阵， f16 / f32、未对齐的 N>2048 和 N=2048 边界从来没跑过）， 还有 smoothquant XScale dtype 的一处无声 ABI 变更。"
     },
     "decision": {
-      "en": "Drop from the weekly watch unless the author rebases (mergeable state is dirty), fills the empty PR template and marks it ready. If revived, re-run the July coverage checks against the new head.",
-      "zh": "从每周关注列表里撤掉， 除非作者 rebase（mergeable 状态是 dirty）、填上空着的 PR 模板、标成 ready。 要是复活了， 就在新 head 上把 7 月那轮覆盖检查重跑一遍。"
+      "en": "Drop from the weekly watch unless the author rebases (mergeable state is dirty), fills in the PR template (one line of motivation, an unchecked checklist) and marks it ready. If revived, re-run the July coverage checks against the new head.",
+      "zh": "除非作者 rebase（现在是 dirty 状态）、把 PR 模板填上（现在只有一行动机和一张没勾的清单）并标成 ready， 否则从每周观察列表里拿掉。 要是复活了， 就在新 head 上重跑七月那套覆盖检查。"
     },
     "byline": {
       "en": "by cschenjunlin · still WIP · my one adversarial pass in July",
@@ -2858,8 +2858,8 @@
       "zh": "coderfeli / yanboshao / GwilliamHu 对 8/26 那次「second review」推送的意见； CI 全绿， 包括 8-GPU 的 job。 球不在我这边。"
     },
     "next": {
-      "en": "Optional: re-run the a4w4 512/1024 golden check on the new head and post whether the #985 regression is closed — nobody has.",
-      "zh": "可选： 在新 head 上重跑 a4w4 512/1024 的 golden 检查， 把 #985 的 regression 有没有收掉贴出来， 目前没人做过。"
+      "en": "Optional: re-run the a4w4 512/1024 golden check on the new head. The body's Test Result tables were updated after #985, but they are screenshots — whether the +4.7% / +5.7% gap closed cannot be read from them, and nobody has said.",
+      "zh": "可选： 在新 head 上重跑 a4w4 512/1024 的 golden 检查。 正文的 Test Result 表格在 #985 之后更新过， 但都是截图——+4.7% / +5.7% 的差距有没有补上， 从截图里读不出来， 也没人说过。"
     },
     "byline": {
       "en": "by Yaowu-Xiong · my 8/11 bisect comment · reviewers: coderfeli, yanboshao, GwilliamHu",
@@ -2992,16 +2992,16 @@
     "thread": "flydsl-kernels-review",
     "status": "landed",
     "what": {
-      "en": "P was cast to e4m3 (floor 2⁻⁹) after `l_row` was summed, so peaked rows kept as little as 64% of their weight; the fix scales P up by log2(448) − threshold before the cast and picks the rescale threshold from KV length. Plus a host-side int32 guard: at B·S·H·D ≥ 2³¹ the call is split along B into per-slice launches writing one preallocated output.",
-      "zh": "P 是在`l_row` 求和之后才转成 e4m3 的（下限 2⁻⁹）， 所以尖峰行最少只剩 64% 的权重。 修法是在转换前把 P 按 log2(448) − threshold 放大， 并按 KV 长度选 rescale 阈值。 另外加了一个 host 侧的 int32 保护： B·S·H·D ≥ 2³¹ 时沿 B 拆成逐片 launch， 写进同一个预分配的输出。"
+      "en": "P was cast to e4m3 (floor 2⁻⁹) after `l_row` was summed, so peaked rows kept as little as 64% of their weight; the fix scales P up by log2(448) − threshold before the cast. The merged default is lazy rescale for both dtypes, with fp8 picking its threshold from KV length (6 at S ≤ 4096, 4 above; bf16 keeps 8) and eager left as an opt-in. Plus a host-side int32 guard: at B·S·H·D ≥ 2³¹ the call is split along B into per-slice launches writing one preallocated output.",
+      "zh": "P 在 `l_row` 求和之后才 cast 成 e4m3（下限 2⁻⁹）， 尖锐的行只保住了 64% 的权重； 修法是在 cast 之前把 P 放大 log2(448) − threshold。 合入的默认值是两种 dtype 都用 lazy rescale， fp8 按 KV 长度选阈值（S ≤ 4096 时 6， 更长时 4； bf16 保持 8）， eager 留作可选项。 另加一道 host 侧的 int32 保护： B·S·H·D ≥ 2³¹ 时沿 B 拆成逐片启动， 写进同一个预分配的输出。"
     },
     "why": {
       "en": "Both bugs block trusting FlyDSL's fp8 attention at serving-scale shapes on MI355X — a 36% loss of softmax mass is a silent accuracy bug, and the `struct.error` is a crash.",
       "zh": "这两个 bug 都让人没法在 MI355X 上、在 serving 规模的 shape 下信任 FlyDSL 的 fp8 attention： 丢掉 36% 的 softmax 质量是个无声的精度 bug，`struct.error` 则是直接崩溃。"
     },
     "next": {
-      "en": "Confirm the fp8 default (eager rescale) is what the tokenspeed / SGLang serving configs actually pick up.",
-      "zh": "确认 fp8 的默认值（eager rescale）确实是 tokenspeed / SGLang 的 serving 配置实际拿到的那个。"
+      "en": "Spot-check the three threshold commits (1c53c41c, 382819d2, a84b831a) that landed after my last review — the merged 11-commit head was never reviewed by me — and confirm the lazy default is what the tokenspeed / SGLang serving configs actually pick up.",
+      "zh": "抽查我最后一次 review 之后才进来的三个阈值 commit（1c53c41c、382819d2、a84b831a）——合入的 11 个 commit 的 head 我从没 review 过——并确认 tokenspeed / SGLang 的 serving 配置实际用到的就是这个 lazy 默认值。"
     },
     "byline": {
       "en": "by JohnQinAMD · two request-changes rounds → approve · merged 8/26 by the author",
@@ -3034,8 +3034,8 @@
           "zh": "只认精确 head"
         },
         "body": {
-          "en": "re-validated after every force-push (17/17 → 110/110 → 116/116 on gfx950). Both my approvals were auto-dismissed by later pushes, so the merge rode coderfeli's.",
-          "zh": "每次 force-push 之后都重新验证（gfx950 上 17/17 → 110/110 → 116/116）。 我的两次 approve 都被后来的 push 自动撤销了， 所以最后合入靠的是 coderfeli 的那一次。"
+          "en": "re-validated after every force-push (17/17 → 110/110 → 116/116 on gfx950). Both my approvals were auto-dismissed — the 8/21 one by the rebase, the 8/25 one by the threshold change — so the merge rode coderfeli's, and the last three commits never had my eyes on them.",
+          "zh": "每次 force-push 之后都重新验证（gfx950 上 17/17 → 110/110 → 116/116）。 我的两次 approve 都被自动撤销了——8/21 那次被 rebase 撤掉， 8/25 那次被改阈值撤掉——所以合并靠的是 coderfeli 的 approve， 最后三个 commit 我根本没看过。"
         }
       }
     ],
@@ -3541,18 +3541,18 @@
     "state": "open",
     "isDraft": false,
     "createdAt": "2026-08-21T23:47:09Z",
-    "updatedAt": "2026-08-25T22:39:00Z",
+    "updatedAt": "2026-08-27T04:16:17Z",
     "mergedAt": null,
     "closedAt": null,
     "labels": [],
     "seededFrom": "rest-search",
     "mergedBy": null,
-    "additions": 314,
-    "deletions": 32,
+    "additions": 561,
+    "deletions": 33,
     "changedFiles": 4,
-    "commits": 2,
+    "commits": 3,
     "reviewDecision": "CHANGES_REQUESTED",
-    "ciState": "success",
+    "ciState": "failure",
     "approvedBy": [],
     "changesRequestedBy": [
       "jhinpan"
@@ -3562,7 +3562,7 @@
     "head": null,
     "short": "vLLM paged-KV layouts on gfx950 attention",
     "thread": "flydsl-kernels-review",
-    "status": "flight",
+    "status": "needs-me",
     "what": {
       "en": "Lets the paged kernel read a vLLM KV cache in place: `page_size` may be a multiple of BLOCK_N (block table indexed per tile), the KV row stride is read from the tensor through a direct-stride gate instead of inferred from shape, and single-KV-head caches skip the head-spacing check. A second commit adds causal LPT q-block ordering behind a public `causal_lpt` flag.",
       "zh": "让 paged kernel 能原地读 vLLM 的 KV cache：`page_size` 可以是 BLOCK_N 的倍数（block table 按 tile 索引）， KV 的行 stride 通过一道直接读 stride 的闸门从 tensor 上取， 不再从 shape 推断， 单 KV head 的 cache 跳过 head 间距检查。 第二个 commit 加了 causal LPT 的 q-block 排序， 放在公开的`causal_lpt` flag 后面。"
@@ -3572,12 +3572,12 @@
       "zh": "vLLM 跑 MiniMax-M3 用的是 page_size 128 加交错的 K/V， 而 kernel 假设每个 page 一个 64-token 的 tile、K/V 连续， 所以每次调用都得把整个 cache 重新打包一遍。 这个不合入， vLLM 的 FlyDSL gfx950 prefill 后端（vllm#53335）就合不了。"
     },
     "waiting": {
-      "en": "akii96 — three blocking findings from 8/25 unanswered, no push since 8/22. The other three requested reviewers have not reviewed.",
-      "zh": "akii96： 8/25 的三条阻塞问题没有回复， 8/22 之后没有再 push。 另外三个被请的评审人都还没 review。"
+      "en": "Me, mostly. akii96 pushed bce20846 late on 8/26 (21:14 PDT) claiming all three blockers fixed plus a measured auto-gate for varlen LPT (default `None` = on while B ≤ num_q_blocks, 0.950× → 0.999×) and 119 tests; no reply comment, no re-request, and CI is red on Python style and check-signal so the GPU jobs never ran. My CHANGES_REQUESTED still stands; the other four requested reviewers have not reviewed.",
+      "zh": "主要是我。 akii96 在 8/26 深夜（21:14 PDT）推了 bce20846， 声称三个 blocker 都修了， 还给 varlen 的 LPT 加了实测过的自动闸门（默认 `None` = 在 B ≤ num_q_blocks 时开启， 0.950× → 0.999×）， 测试 119 个； 没有回复评论， 没有重新请 review， 而且 CI 在 Python style 和 check-signal 上是红的， GPU 任务根本没跑。 我的 CHANGES_REQUESTED 还挂着； 另外四位被请的评审人没有看过。"
     },
     "next": {
-      "en": "Wait for the author to fix the stride bound, the `causal_lpt=False` threading and the truncated XCD test; then re-request me.",
-      "zh": "等作者修 stride 上界、`causal_lpt=False` 的透传， 以及被截断的 XCD 测试， 然后重新请我 review。"
+      "en": "Me: once the style failure is fixed, re-review bce20846 — check the 2²⁴ boundary tests, that `causal_lpt=False` really reaches `_build_splitk` / `_build_varlen`, and whether the new auto-gate satisfies 'gate mixed varlen unless measured'.",
+      "zh": "我： 等 style 那个失败修掉之后重新 review bce20846——检查 2²⁴ 的边界测试、`causal_lpt=False` 是否真的传到了 `_build_splitk` / `_build_varlen`， 以及新的自动闸门是否满足「不实测就不放开混合 varlen」这条要求。"
     },
     "byline": {
       "en": "by akii96 · request-changes 8/25 · gates vllm-project/vllm#53335",
@@ -3626,7 +3626,7 @@
       }
     ],
     "related": [
-      "vllm-project/vllm#53335 (depends on this)",
+      "vllm-project/vllm#53335 (draft; depends on this)",
       "ROCm/FlyDSL#960 (same kernel; paged path still rejects ALiBi/sink)"
     ]
   },
