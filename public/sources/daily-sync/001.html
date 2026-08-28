@@ -743,7 +743,7 @@
   ],
   "hardware": "gfx950 · MI355X",
   "timeZone": "America/Los_Angeles",
-  "lastSuccessfulSync": "2026-08-27T20:26:34.380Z",
+  "lastSuccessfulSync": "2026-08-28T00:36:10.761Z",
   "source": "GitHub GraphQL API (search + pullRequest)",
   "generatedBy": "scripts/sync-daily-sync.mjs",
   "showPrivate": false
@@ -2422,8 +2422,6 @@
     "updatedAt": "2026-08-02T14:32:33Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 133,
     "deletions": 37,
@@ -2434,8 +2432,9 @@
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "perf/gemm-moe-tune-speedup",
+    "labels": [],
     "short": "MoE tuner barrier fix, abandoned since June",
     "thread": "backlog",
     "status": "decide",
@@ -2447,15 +2446,15 @@
       "en": "A worker that dies during PID registration on an fp4/i4 sweep would have hung the barrier this PR introduces forever — main's `sleep(3)` is racy but never deadlocks — so the real value was distinct-worker registration, the crash fix and the depth knob. But main has since taken 28 commits to `gemm_moe_tune.py` (including the tag-unpack crash this fixed), and Copilot's two real findings — barrier party count ≠ tasks submitted when `start_idx > 0` (latent today, since main hardcodes `start_idx = 0`); the barrier proxy reused across pool restarts — were never answered. The requested reviewer never showed.",
       "zh": "fp4 / i4 扫描里一个在注册 PID 时死掉的 worker， 会让这个 PR 自己引入的 barrier 永远挂住——main 上的`sleep(3)` 有竞争但不会死锁——所以真正的价值在于按 worker 区分的注册、崩溃修复和调优深度那个开关。 但 main 此后已经往`gemm_moe_tune.py` 里进了 28 个 commit（包括这个 PR 修的 tag 解包崩溃）， 而 Copilot 的两个真发现从来没人回过：`start_idx > 0` 时 barrier 的 party 数 ≠ 提交的任务数（目前是潜伏的， 因为 main 硬编码了`start_idx = 0`）； barrier proxy 跨 pool 重启被复用。 请的评审人一直没出现。"
     },
-    "decision": {
-      "en": "Close. If bounded distinct-worker registration and `--tune_iters` are still wanted, re-cut small on current main with the party-count bug fixed.",
-      "zh": "关掉。 如果还想要有上限的、按 worker 去重的注册和`--tune_iters`， 就在现在的 main 上重切一个小的， 顺便把 party 数的 bug 修掉。"
-    },
     "related": [
       "ROCm/aiter#3705 (overlaps)",
       "ROCm/aiter#4394 (conflicts)",
       "ROCm/aiter#4646 (conflicts)"
-    ]
+    ],
+    "decision": {
+      "en": "Close. If bounded distinct-worker registration and `--tune_iters` are still wanted, re-cut small on current main with the party-count bug fixed.",
+      "zh": "关掉。 如果还想要有上限的、按 worker 去重的注册和`--tune_iters`， 就在现在的 main 上重切一个小的， 顺便把 party 数的 bug 修掉。"
+    }
   },
   {
     "number": 4870,
@@ -2468,23 +2467,22 @@
     "state": "open",
     "isDraft": false,
     "createdAt": "2026-08-20T00:44:47Z",
-    "updatedAt": "2026-08-26T23:28:05Z",
+    "updatedAt": "2026-08-27T14:09:10Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
-    "additions": 2648,
+    "additions": 3601,
     "deletions": 16,
-    "changedFiles": 14,
-    "commits": 10,
+    "changedFiles": 16,
+    "commits": 11,
     "reviewDecision": null,
     "ciState": "success",
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "skill/validate-kernel-pr",
+    "labels": [],
     "short": "validate-kernel-pr: a deterministic gate + structural D9",
     "thread": "review-harness",
     "status": "needs-me",
@@ -2555,20 +2553,19 @@
     "updatedAt": "2026-06-18T22:01:32Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
-    "additions": null,
-    "deletions": null,
-    "changedFiles": null,
-    "commits": null,
+    "additions": 370,
+    "deletions": 22,
+    "changedFiles": 8,
+    "commits": 2,
     "reviewDecision": null,
-    "ciState": "none",
+    "ciState": "failure",
     "approvedBy": [],
     "changesRequestedBy": [],
-    "myReview": null,
-    "base": null,
-    "head": null,
+    "myReview": "COMMENTED",
+    "base": "main",
+    "head": "feat-issue-574-basis-inttuplebuilder",
+    "labels": [],
     "short": "BasisAttr support in IntTupleBuilder (open since 6/3)",
     "thread": "backlog",
     "status": "decide",
@@ -2595,20 +2592,19 @@
     "updatedAt": "2026-06-04T09:06:00Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
-    "additions": null,
-    "deletions": null,
-    "changedFiles": null,
-    "commits": null,
-    "reviewDecision": null,
+    "additions": 219,
+    "deletions": 3,
+    "changedFiles": 2,
+    "commits": 3,
+    "reviewDecision": "REVIEW_REQUIRED",
     "ciState": "none",
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "fix-issue-583-layout-verifiers",
+    "labels": [],
     "short": "Layout algebra inference diagnostics (draft since 6/3)",
     "thread": "backlog",
     "status": "decide",
@@ -2635,20 +2631,19 @@
     "updatedAt": "2026-07-10T15:13:02Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 233,
     "deletions": 26,
     "changedFiles": 4,
     "commits": 1,
-    "reviewDecision": null,
-    "ciState": "none",
+    "reviewDecision": "REVIEW_REQUIRED",
+    "ciState": "success",
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "feat/profile-tools",
+    "labels": [],
     "short": "flydsl.profiling: reusable do_bench (draft since 7/10)",
     "thread": "backlog",
     "status": "decide",
@@ -2660,15 +2655,15 @@
       "en": "First slice of #304 — a timer other benchmark callers can reuse without importing autotune. It stalled while attention went to RMSNorm and softmax, and #924 now covers the same ground with a fuller contract.",
       "zh": "#304 的第一块： 一个别的 benchmark 调用方不用 import autotune 也能复用的计时器。 后来注意力转到 RMSNorm 和 softmax 上， 它就停了， 现在 #924 用更完整的契约覆盖了同样的范围。"
     },
-    "decision": {
-      "en": "Fold into #924 or close both this and FlyDSL-lab#2. A draft nobody has been asked to review is not in flight.",
-      "zh": "并进 #924， 或者把这个和 FlyDSL-lab#2 一起关掉。 没人被请去 review 的 draft， 不算进行中。"
-    },
     "related": [
       "jhinpan/FlyDSL-lab#2 (lab twin)",
       "ROCm/FlyDSL#924 (overlapping, more recent)",
       "ROCm/FlyDSL#304 (issue this slices)"
-    ]
+    ],
+    "decision": {
+      "en": "Fold into #924 or close both this and FlyDSL-lab#2. A draft nobody has been asked to review is not in flight.",
+      "zh": "并进 #924， 或者把这个和 FlyDSL-lab#2 一起关掉。 没人被请去 review 的 draft， 不算进行中。"
+    }
   },
   {
     "number": 848,
@@ -2684,8 +2679,6 @@
     "updatedAt": "2026-08-25T08:21:15Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 986,
     "deletions": 266,
@@ -2695,9 +2688,10 @@
     "ciState": "success",
     "approvedBy": [],
     "changesRequestedBy": [],
-    "myReview": null,
-    "base": null,
-    "head": null,
+    "myReview": "COMMENTED",
+    "base": "main",
+    "head": "cjl/norm_perf",
+    "labels": [],
     "short": "rmsnorm/layernorm perf rewrite (WIP since 7/14)",
     "thread": "flydsl-kernels-review",
     "status": "decide",
@@ -2709,17 +2703,17 @@
       "en": "The PR's whole motivation line is 'Optimize rmsnorm/layernorm'; the author's own 8/25 MI308 table (after the rewrite) still has FlyDSL behind HIP in 23 of 35 shapes — every small-M row — while it beats Triton in 22 of 35. My July pass found no correctness/OOB/race bug but a list of coverage gaps (bf16-only matrix; f16/f32, unaligned N>2048 and the N=2048 boundary never exercised) and a silent ABI change in the smoothquant XScale dtype.",
       "zh": "PR 的动机就一行：「Optimize rmsnorm/layernorm」； 作者自己 8/25 贴的 MI308 表格（重写之后）里， FlyDSL 在 35 个 shape 里仍有 23 个落后于 HIP——所有小 M 的行——同时在 22 个上赢过 Triton。 我七月那轮没发现正确性 / OOB / 竞争 bug， 但列了一串覆盖缺口（只测 bf16； f16 / f32、未对齐的 N>2048 和 N=2048 边界从没跑过）， 外加 smoothquant XScale 的 dtype 被悄悄改了、属于 ABI 变化。"
     },
-    "decision": {
-      "en": "Drop from the weekly watch unless the author rebases (mergeable state is dirty), fills in the PR template (one line of motivation, an unchecked checklist) and says on-thread it is no longer WIP — it was never a draft; the WIP is his 7/17 comment. If revived, re-run the July coverage checks against the new head.",
-      "zh": "除非作者 rebase（现在是 dirty 状态）、把 PR 模板填上（现在只有一行动机和一张没勾的清单）并在 thread 里说一句不再是 WIP， 否则从每周观察列表里拿掉——它从来不是 draft， WIP 是他 7/17 的一条评论。 要是复活了， 就在新 head 上重跑七月那套覆盖检查。"
-    },
     "byline": {
       "en": "by cschenjunlin · still WIP · my one adversarial pass in July",
       "zh": "作者 cschenjunlin · 仍是 WIP · 我 7 月做过一轮对抗性 review"
     },
     "related": [
       "ROCm/FlyDSL#1047 (cross-referenced as a source of maintainer review comments)"
-    ]
+    ],
+    "decision": {
+      "en": "Drop from the weekly watch unless the author rebases (mergeable state is dirty), fills in the PR template (one line of motivation, an unchecked checklist) and says on-thread it is no longer WIP — it was never a draft; the WIP is his 7/17 comment. If revived, re-run the July coverage checks against the new head.",
+      "zh": "除非作者 rebase（现在是 dirty 状态）、把 PR 模板填上（现在只有一行动机和一张没勾的清单）并在 thread 里说一句不再是 WIP， 否则从每周观察列表里拿掉——它从来不是 draft， WIP 是他 7/17 的一条评论。 要是复活了， 就在新 head 上重跑七月那套覆盖检查。"
+    }
   },
   {
     "number": 924,
@@ -2735,20 +2729,19 @@
     "updatedAt": "2026-08-18T19:27:57Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 1892,
     "deletions": 402,
     "changedFiles": 26,
     "commits": 4,
-    "reviewDecision": null,
+    "reviewDecision": "REVIEW_REQUIRED",
     "ciState": "success",
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "feat/timing-umbrella",
+    "labels": [],
     "short": "One timing contract + a calibrated perf gate",
     "thread": "review-harness",
     "status": "needs-me",
@@ -2801,10 +2794,6 @@
     "updatedAt": "2026-08-26T08:43:20Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [
-      "multi-gpu"
-    ],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 1353,
     "deletions": 680,
@@ -2815,8 +2804,11 @@
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "mega_moe_a4w4",
+    "labels": [
+      "multi-gpu"
+    ],
     "short": "MegaMoE A4W4 + FP8 P2P transport",
     "thread": "flydsl-kernels-review",
     "status": "flight",
@@ -2836,10 +2828,6 @@
       "en": "Optional: re-run the a4w4 512/1024 golden check on the new head. The body's Test Result tables were updated after #985, but they are screenshots — whether the +4.7% / +5.7% gap closed cannot be read from them, and nobody has said.",
       "zh": "可选： 在新 head 上重跑 a4w4 512/1024 的 golden 检查。 正文的 Test Result 表格在 #985 之后更新过， 但都是截图——+4.7% / +5.7% 的差距有没有补上， 从截图里读不出来， 也没人说过。"
     },
-    "byline": {
-      "en": "by Yaowu-Xiong · my 8/11 bisect comment · reviewers: coderfeli, yanboshao, GwilliamHu",
-      "zh": "作者 Yaowu-Xiong · 我 8/11 的二分评论 · 评审人： coderfeli、yanboshao、GwilliamHu"
-    },
     "points": [
       {
         "body": {
@@ -2848,6 +2836,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by Yaowu-Xiong · my 8/11 bisect comment · reviewers: coderfeli, yanboshao, GwilliamHu",
+      "zh": "作者 Yaowu-Xiong · 我 8/11 的二分评论 · 评审人： coderfeli、yanboshao、GwilliamHu"
+    },
     "related": [
       "ROCm/FlyDSL#985 (regression source)",
       "ROCm/FlyDSL#999 (my closed micro-patch, not worth review bandwidth)",
@@ -2865,25 +2857,22 @@
     "state": "open",
     "isDraft": false,
     "createdAt": "2026-08-17T09:35:27Z",
-    "updatedAt": "2026-08-26T08:03:53Z",
+    "updatedAt": "2026-08-27T21:13:59Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 1929,
     "deletions": 0,
     "changedFiles": 6,
     "commits": 1,
     "reviewDecision": "CHANGES_REQUESTED",
-    "ciState": "success",
+    "ciState": "failure",
     "approvedBy": [],
-    "changesRequestedBy": [
-      "jhinpan"
-    ],
+    "changesRequestedBy": [],
     "myReview": "CHANGES_REQUESTED",
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "phil/isa-resource-diff-arch-general",
+    "labels": [],
     "short": "ISA resource diff tool, fail-closed",
     "thread": "review-harness",
     "status": "needs-me",
@@ -2902,10 +2891,6 @@
     "next": {
       "en": "Re-review aa9b7307: verify the four fixes, rule on the declined case (`n/a` on a mandatory metric — accept his argument that no producer emits it, or show a tool-made snapshot that does), then approve or hold.",
       "zh": "重新 review aa9b7307： 核对那四处修复， 对拒掉的那条做裁决（必填指标上出现`n/a`： 要么接受他「没有任何 producer 会输出这个」的说法， 要么拿出一份工具生成的、确实会输出的快照）， 然后 approve 或者继续压着。"
-    },
-    "byline": {
-      "en": "by Phil-amd · two request-changes rounds · fixes pushed 8/26, my re-review owed",
-      "zh": "作者 Phil-amd · 两轮 request-changes · 修复 8/26 已 push， 我欠他一次复审"
     },
     "points": [
       {
@@ -2929,6 +2914,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by Phil-amd · two request-changes rounds · fixes pushed 8/26, my re-review owed",
+      "zh": "作者 Phil-amd · 两轮 request-changes · 修复 8/26 已 push， 我欠他一次复审"
+    },
     "related": [
       "ROCm/FlyDSL#1047 (my review reports running the legacy-spelling scanner as a check)"
     ]
@@ -2947,9 +2936,7 @@
     "updatedAt": "2026-08-26T16:07:49Z",
     "mergedAt": "2026-08-26T16:07:48Z",
     "closedAt": "2026-08-26T16:07:48Z",
-    "labels": [],
-    "seededFrom": "rest-search",
-    "mergedBy": null,
+    "mergedBy": "JohnQinAMD",
     "additions": 364,
     "deletions": 10,
     "changedFiles": 4,
@@ -2960,9 +2947,10 @@
       "coderfeli"
     ],
     "changesRequestedBy": [],
-    "myReview": "APPROVED",
-    "base": null,
-    "head": null,
+    "myReview": "DISMISSED",
+    "base": "main",
+    "head": "fp8-softmax-normalisation",
+    "labels": [],
     "short": "fp8 attention: softmax mass + int32 split",
     "thread": "flydsl-kernels-review",
     "status": "landed",
@@ -2977,10 +2965,6 @@
     "next": {
       "en": "Spot-check the three threshold commits (1c53c41c, 382819d2, a84b831a) that landed after my last review — the merged 11-commit head was never reviewed by me — and confirm the lazy default is what the tokenspeed / SGLang serving configs actually pick up.",
       "zh": "抽查我最后一次 review 之后才进来的三个阈值 commit（1c53c41c、382819d2、a84b831a）——合入的 11 个 commit 的 head 我从没 review 过——并确认 tokenspeed / SGLang 的 serving 配置实际用到的就是这个 lazy 默认值。"
-    },
-    "byline": {
-      "en": "by JohnQinAMD · two request-changes rounds → approve · merged 8/26 by the author",
-      "zh": "作者 JohnQinAMD · 两轮 request-changes → approve · 8/26 由作者合入"
     },
     "points": [
       {
@@ -3014,6 +2998,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by JohnQinAMD · two request-changes rounds → approve · merged 8/26 by the author",
+      "zh": "作者 JohnQinAMD · 两轮 request-changes → approve · 8/26 由作者合入"
+    },
     "related": [
       "ROCm/FlyDSL#1033 (sibling: same rescale machinery)",
       "ROCm/FlyDSL#960 (the modifiers the split path was dropping)"
@@ -3033,8 +3021,6 @@
     "updatedAt": "2026-08-25T03:20:24Z",
     "mergedAt": "2026-08-25T03:20:21Z",
     "closedAt": "2026-08-25T03:20:21Z",
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": "coderfeli",
     "additions": 2039,
     "deletions": 84,
@@ -3046,9 +3032,10 @@
       "zhiding512"
     ],
     "changesRequestedBy": [],
-    "myReview": null,
-    "base": null,
-    "head": null,
+    "myReview": "COMMENTED",
+    "base": "main",
+    "head": "jhinpan/softmax-autotune",
+    "labels": [],
     "short": "Softmax autotune, opt-in, with a correctness gate",
     "thread": "softmax-family",
     "status": "landed",
@@ -3117,8 +3104,6 @@
     "updatedAt": "2026-08-20T05:24:01Z",
     "mergedAt": "2026-08-20T05:24:00Z",
     "closedAt": "2026-08-20T05:24:00Z",
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": "coderfeli",
     "additions": 43,
     "deletions": 2,
@@ -3131,8 +3116,9 @@
     ],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "jhinpan/softmax-bwd-bench",
+    "labels": [],
     "short": "softmax_bwd on the CI dashboard",
     "thread": "softmax-family",
     "status": "landed",
@@ -3182,8 +3168,6 @@
     "updatedAt": "2026-08-24T06:42:23Z",
     "mergedAt": "2026-08-24T06:42:21Z",
     "closedAt": "2026-08-24T06:42:21Z",
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": "coderfeli",
     "additions": 993,
     "deletions": 199,
@@ -3195,9 +3179,10 @@
       "coderfeli"
     ],
     "changesRequestedBy": [],
-    "myReview": null,
-    "base": null,
-    "head": null,
+    "myReview": "COMMENTED",
+    "base": "main",
+    "head": "skills/dedrift-and-fix-frontmatter",
+    "labels": [],
     "short": "Skills de-drift + docs-vs-API CI gate",
     "thread": "review-harness",
     "status": "landed",
@@ -3274,22 +3259,19 @@
     "updatedAt": "2026-08-24T06:50:42Z",
     "mergedAt": "2026-08-24T06:50:39Z",
     "closedAt": "2026-08-24T06:50:39Z",
-    "labels": [],
-    "seededFrom": "rest-search",
-    "mergedBy": null,
+    "mergedBy": "coderfeli",
     "additions": 118,
     "deletions": 22,
     "changedFiles": 2,
     "commits": 10,
     "reviewDecision": "APPROVED",
     "ciState": "success",
-    "approvedBy": [
-      "coderfeli"
-    ],
+    "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": "APPROVED",
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "john/lazy-rescale-nan",
+    "labels": [],
     "short": "lazy-rescale NaN on a wide score range",
     "thread": "flydsl-kernels-review",
     "status": "landed",
@@ -3300,10 +3282,6 @@
     "why": {
       "en": "The default bf16 path returned NaN once the logit spread widened (K scaled 32× → 9.2% NaN, 64× → all NaN) while eager rescale and aiter were finite. A silently-NaN default disqualifies the backend for serving.",
       "zh": "默认的 bf16 路径在 logit 分布一拉宽就返回 NaN（K 放大 32× → 9.2% NaN， 64× → 全是 NaN）， 而 eager rescale 和 aiter 都是有限值。 默认路径悄悄出 NaN， 这个后端就没资格上 serving。"
-    },
-    "byline": {
-      "en": "by JohnQinAMD · two request-changes rounds → approve",
-      "zh": "作者 JohnQinAMD · 两轮 request-changes → approve"
     },
     "points": [
       {
@@ -3337,6 +3315,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by JohnQinAMD · two request-changes rounds → approve",
+      "zh": "作者 JohnQinAMD · 两轮 request-changes → approve"
+    },
     "related": [
       "ROCm/FlyDSL#1035 (fastmath-resolve fix it depends on)",
       "ROCm/FlyDSL#1020 (sibling)"
@@ -3356,8 +3338,6 @@
     "updatedAt": "2026-08-24T06:39:37Z",
     "mergedAt": "2026-08-24T06:39:35Z",
     "closedAt": "2026-08-24T06:39:35Z",
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": "coderfeli",
     "additions": 213,
     "deletions": 2,
@@ -3366,13 +3346,14 @@
     "reviewDecision": "APPROVED",
     "ciState": "success",
     "approvedBy": [
-      "sjfeng1999",
-      "coderfeli"
+      "coderfeli",
+      "sjfeng1999"
     ],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "jhinpan/fix-exp2-fastmath",
+    "labels": [],
     "short": "fast exp2 → native v_exp_f32",
     "thread": "softmax-family",
     "status": "landed",
@@ -3415,8 +3396,6 @@
     "updatedAt": "2026-08-21T02:04:51Z",
     "mergedAt": "2026-08-21T02:04:48Z",
     "closedAt": "2026-08-21T02:04:48Z",
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": "coderfeli",
     "additions": 49,
     "deletions": 13,
@@ -3429,8 +3408,9 @@
     ],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "jhinpan/ci-isolate-run-artifacts",
+    "labels": [],
     "short": "Stale-wheel fix for self-hosted Navi runners",
     "thread": "node-infra",
     "status": "landed",
@@ -3466,20 +3446,19 @@
     "updatedAt": "2026-08-21T05:14:37Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 306,
     "deletions": 0,
     "changedFiles": 3,
     "commits": 3,
-    "reviewDecision": null,
+    "reviewDecision": "REVIEW_REQUIRED",
     "ciState": "success",
     "approvedBy": [],
     "changesRequestedBy": [],
     "myReview": null,
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "skill/review-flydsl-kernel",
+    "labels": [],
     "short": "review-flydsl-kernel: maintainer-taste scanners",
     "thread": "review-harness",
     "status": "needs-me",
@@ -3519,8 +3498,6 @@
     "updatedAt": "2026-08-27T04:16:17Z",
     "mergedAt": null,
     "closedAt": null,
-    "labels": [],
-    "seededFrom": "rest-search",
     "mergedBy": null,
     "additions": 561,
     "deletions": 33,
@@ -3529,12 +3506,11 @@
     "reviewDecision": "CHANGES_REQUESTED",
     "ciState": "failure",
     "approvedBy": [],
-    "changesRequestedBy": [
-      "jhinpan"
-    ],
+    "changesRequestedBy": [],
     "myReview": "CHANGES_REQUESTED",
-    "base": null,
-    "head": null,
+    "base": "main",
+    "head": "feat/gfx950-paged-attention-vllm-kv-layouts",
+    "labels": [],
     "short": "vLLM paged-KV layouts on gfx950 attention",
     "thread": "flydsl-kernels-review",
     "status": "needs-me",
@@ -3553,10 +3529,6 @@
     "next": {
       "en": "Me: once the style failure is fixed, re-review bce20846 — check the 2²⁴ boundary tests, that `causal_lpt=False` really reaches `_build_splitk` / `_build_varlen`, and whether the new auto-gate satisfies 'gate mixed varlen unless measured'.",
       "zh": "我： 等 style 那个失败修掉之后重新 review bce20846——检查 2²⁴ 的边界测试、`causal_lpt=False` 是否真的传到了`_build_splitk` /`_build_varlen`， 以及新的自动闸门是否满足「不实测就不放开混合 varlen」这条要求。"
-    },
-    "byline": {
-      "en": "by akii96 · request-changes 8/25 · gates vllm-project/vllm#53335",
-      "zh": "作者 akii96 · 8/25 request-changes · 挡着 vllm-project/vllm#53335"
     },
     "points": [
       {
@@ -3600,6 +3572,10 @@
         }
       }
     ],
+    "byline": {
+      "en": "by akii96 · request-changes 8/25 · gates vllm-project/vllm#53335",
+      "zh": "作者 akii96 · 8/25 request-changes · 挡着 vllm-project/vllm#53335"
+    },
     "related": [
       "vllm-project/vllm#53335 (draft; depends on this)",
       "ROCm/FlyDSL#960 (same kernel; paged path still rejects ALiBi/sink)"
