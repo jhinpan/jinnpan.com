@@ -1,0 +1,17 @@
+{
+  "path": "/data/GLM-5.3-Flash",
+  "num_layers": 45,
+  "num_experts": 288,
+  "top_k": 8,
+  "total_tensor_bytes": 328326771576,
+  "excluded_text_decode_bytes": 9889430144,
+  "always_active_text_bytes": 13957216504,
+  "all_routed_expert_bytes": 304480124928,
+  "estimated_active_weight_bytes": 22414997752,
+  "effective_bytes_per_active_parameter": 1.245277652888889,
+  "tensor_bytes_by_dtype": {
+    "BF16": 13852193280,
+    "F32": 77939064,
+    "F8_E4M3": 314396639232
+  }
+}

@@ -359,14 +359,14 @@
           <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" /><rect x="137" y="196" width="16" height="30" fill="#4e744c" />
           <!-- shelf 5 experiments (plum) -->
           <line x1="30" y1="274" x2="290" y2="274" stroke="#22231f" stroke-width="3" />
-          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" />
+          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" />
         </g>
         <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
           <text x="214" y="74">CODE · 12</text>
           <text x="214" y="122">PAPER · 5</text>
           <text x="214" y="170">TUTORIAL · 6</text>
           <text x="214" y="218">BLOG · 6</text>
-          <text x="214" y="266">EXPERIMENTS · 3</text>
+          <text x="214" y="266">EXPERIMENTS · 4</text>
         </g>
       </svg>
     </figure>
@@ -390,7 +390,7 @@
     <div class="stat" data-c="paper"><span class="num">5</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">7</span><span class="label">tutorials</span></div>
     <div class="stat" data-c="blog"><span class="num">6</span><span class="label">blog posts</span></div>
-    <div class="stat" data-c="experiments"><span class="num">3</span><span class="label">experiments</span></div>
+    <div class="stat" data-c="experiments"><span class="num">4</span><span class="label">experiments</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -760,9 +760,18 @@
         <h2>Experiments</h2>
         <div class="sub"><span class="zh">实验记录</span> · reproducible kernel and system measurements — raw data archived alongside the write-up</div>
       </div>
-      <div class="shelf-count">3 records</div>
+      <div class="shelf-count">4 records</div>
     </div>
     <div class="grid">
+      <article class="entry" data-kind="experiments" data-search="experiment 004 glm-5.3 glm53 mxfp4 fp8 quantization onenexus zai sglang mi355x gfx950 rocm accuracy recovery mcnemar gsm8k mmlu gpqa diamond truncation throughput tpot canary quark loader active weight stream kda split grid interim stop gate threshold">
+        <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 004</span></div>
+        <div class="entry-body">
+          <h3>GLM-5.3 MXFP4: one gate missed by 0.0202 pp</h3>
+          <p>A gated FP8 / MXFP4 A/B on 8x MI355X, stopped at a case boundary with one half finished. Flash MXFP4 returns 99.53% of the correct answers at 92% of the throughput, and breaches the truncation ceiling by one part in a hundred — on a 198-row set whose measurable grid cannot express that ceiling at all.</p>
+          <div class="tags"><span class="tag">GLM-5.3</span><span class="tag">MXFP4</span><span class="tag">MI355X</span><span class="tag">quantization A/B</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./glm53-mxfp4-mi355x.html">Deep dive →</a></div>
+      </article>
       <article class="entry" data-kind="experiments" data-search="experiment 003 tokenspeed lightseek sglang kimi k3 mi355x gfx950 gluon aiter situ moe routing top-k mla decode kernel comparison rocm triton profiler chrome trace flatkv scheduler wedge throughput concurrency ep8 tp8 mxfp4 benchmark">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 003</span></div>
         <div class="entry-body">

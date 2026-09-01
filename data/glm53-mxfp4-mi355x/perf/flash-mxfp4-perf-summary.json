@@ -1,0 +1,144 @@
+{
+  "canary": {
+    "before_total_tok_s": 61.52032854303045,
+    "after_total_tok_s": 61.806359697947194,
+    "relative_delta": 0.004649
+  },
+  "rows": [
+    {
+      "isl": 8192,
+      "osl": 1024,
+      "concurrency": 1,
+      "total_throughput": {
+        "median": 114.6633,
+        "mean": 114.7748,
+        "std": 0.3818,
+        "min": 114.373,
+        "p10": 114.431,
+        "p90": 115.1631,
+        "max": 115.288,
+        "relative_spread": 0.007973
+      },
+      "output_throughput": {
+        "median": 12.7404,
+        "mean": 12.7528,
+        "std": 0.0424,
+        "min": 12.7081,
+        "p10": 12.7146,
+        "p90": 12.7959,
+        "max": 12.8098,
+        "relative_spread": 0.007973
+      },
+      "median_ttft_ms": {
+        "median": 310.0533,
+        "mean": 310.4654,
+        "std": 2.0026,
+        "min": 308.2448,
+        "p10": 308.6065,
+        "p90": 312.4891,
+        "max": 313.098,
+        "relative_spread": 0.015632
+      },
+      "median_tpot_ms": {
+        "median": 77.9741,
+        "mean": 77.9649,
+        "std": 0.1721,
+        "min": 77.7497,
+        "p10": 77.7946,
+        "p90": 78.1316,
+        "max": 78.1709,
+        "relative_spread": 0.005403
+      }
+    },
+    {
+      "isl": 8192,
+      "osl": 1024,
+      "concurrency": 8,
+      "total_throughput": {
+        "median": 870.0619,
+        "mean": 870.7488,
+        "std": 1.6258,
+        "min": 869.1919,
+        "p10": 869.3659,
+        "p90": 872.4064,
+        "max": 872.9925,
+        "relative_spread": 0.004365
+      },
+      "output_throughput": {
+        "median": 96.6735,
+        "mean": 96.7499,
+        "std": 0.1806,
+        "min": 96.5769,
+        "p10": 96.5962,
+        "p90": 96.934,
+        "max": 96.9992,
+        "relative_spread": 0.004365
+      },
+      "median_ttft_ms": {
+        "median": 1144.0312,
+        "mean": 1148.8723,
+        "std": 7.5871,
+        "min": 1143.0,
+        "p10": 1143.2062,
+        "p90": 1156.4747,
+        "max": 1159.5856,
+        "relative_spread": 0.014436
+      },
+      "median_tpot_ms": {
+        "median": 81.6342,
+        "mean": 81.614,
+        "std": 0.1393,
+        "min": 81.4342,
+        "p10": 81.4742,
+        "p90": 81.7456,
+        "max": 81.7735,
+        "relative_spread": 0.004157
+      }
+    },
+    {
+      "isl": 8192,
+      "osl": 1024,
+      "concurrency": 32,
+      "total_throughput": {
+        "median": 3350.436,
+        "mean": 3350.698,
+        "std": 2.4929,
+        "min": 3347.7843,
+        "p10": 3348.3147,
+        "p90": 3353.1862,
+        "max": 3353.8737,
+        "relative_spread": 0.001817
+      },
+      "output_throughput": {
+        "median": 372.2707,
+        "mean": 372.2998,
+        "std": 0.277,
+        "min": 371.976,
+        "p10": 372.035,
+        "p90": 372.5762,
+        "max": 372.6526,
+        "relative_spread": 0.001817
+      },
+      "median_ttft_ms": {
+        "median": 3973.3705,
+        "mean": 3987.812,
+        "std": 23.7024,
+        "min": 3968.8357,
+        "p10": 3969.7426,
+        "p90": 4011.658,
+        "max": 4021.2298,
+        "relative_spread": 0.013139
+      },
+      "median_tpot_ms": {
+        "median": 82.077,
+        "mean": 82.1255,
+        "std": 0.0973,
+        "min": 82.0381,
+        "p10": 82.0459,
+        "p90": 82.2244,
+        "max": 82.2612,
+        "relative_spread": 0.002717
+      }
+    }
+  ]
+}

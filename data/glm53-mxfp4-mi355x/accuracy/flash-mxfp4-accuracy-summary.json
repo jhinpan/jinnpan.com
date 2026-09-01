@@ -1,0 +1,127 @@
+{
+  "gsm8k": {
+    "run_dir": "results/formal/flash-mxfp4/accuracy/gsm8k/sgl_eval_gsm8k_20260831-184221",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.98,
+        "stop_rate": 0.994,
+        "truncated_rate": 0.006
+      },
+      "base_url": "http://127.0.0.1:31102/v1",
+      "gen": {
+        "chat_template_kwargs": null,
+        "extra_body": null,
+        "max_tokens": 8192,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 874.8273038412444,
+      "model": "glm-5.3-flash-mxfp4",
+      "n_repeats": 1,
+      "name": "gsm8k",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 500,
+      "num_threads": 32,
+      "output_throughput_tps": 101.64291810459585,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-184221",
+      "total_completion_tokens": 88920,
+      "total_prompt_tokens": 46646
+    },
+    "predictions": 500,
+    "finish_reasons": {
+      "length": 3,
+      "stop": 497
+    }
+  },
+  "mmlu": {
+    "run_dir": "results/formal/flash-mxfp4/accuracy/mmlu/sgl_eval_mmlu_20260831-185656",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.868,
+        "stop_rate": 0.922,
+        "truncated_rate": 0.078
+      },
+      "base_url": "http://127.0.0.1:31102/v1",
+      "gen": {
+        "chat_template_kwargs": null,
+        "extra_body": null,
+        "max_tokens": 8192,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 1839.221001479309,
+      "model": "glm-5.3-flash-mxfp4",
+      "n_repeats": 1,
+      "name": "mmlu",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 500,
+      "num_threads": 32,
+      "output_throughput_tps": 303.67693689380883,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-185656",
+      "total_completion_tokens": 558529,
+      "total_prompt_tokens": 78977
+    },
+    "predictions": 500,
+    "finish_reasons": {
+      "length": 39,
+      "stop": 461
+    }
+  },
+  "gpqa": {
+    "run_dir": "results/formal/flash-mxfp4/accuracy/gpqa/sgl_eval_gpqa_20260831-192736",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.6818181818181818,
+        "stop_rate": 0.702020202020202,
+        "truncated_rate": 0.29797979797979796
+      },
+      "base_url": "http://127.0.0.1:31102/v1",
+      "gen": {
+        "chat_template_kwargs": {
+          "thinking": true
+        },
+        "extra_body": null,
+        "max_tokens": 16384,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 4060.0542783420533,
+      "model": "glm-5.3-flash-mxfp4",
+      "n_repeats": 1,
+      "name": "gpqa",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 198,
+      "num_threads": 32,
+      "output_throughput_tps": 344.3835732587717,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-192736",
+      "total_completion_tokens": 1398216,
+      "total_prompt_tokens": 51146
+    },
+    "predictions": 198,
+    "finish_reasons": {
+      "length": 59,
+      "stop": 139
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "hostname": "mia1-p02-g23",
+  "python": "3.10.12 (main, Jan  8 2026, 06:52:19) [GCC 11.4.0]",
+  "sglang_sha": "cc981fdebd74582b26a6e0e3c1274c910df72bc7",
+  "aiter_sha": "ea6868a02cf54e29730a38b9a3980e4342823482",
+  "imports": {
+    "sglang": "/root/glm53-mxfp4-verify.ewGQcQ/sglang/python/sglang/__init__.py",
+    "aiter": "/root/glm53-mxfp4-verify.ewGQcQ/aiter/aiter/__init__.py",
+    "sgl_kernel": "/root/glm53-mxfp4-verify.ewGQcQ/sgl-kernel-main-runtime-a874b83/sgl_kernel/__init__.py"
+  },
+  "versions": {
+    "sglang": "0.5.16.dev20260728+g32c30c0f96",
+    "sglang-kernel": "0.4.6.post1",
+    "torch": "2.9.1+rocm7.2.0.git7e1940d4",
+    "torch_hip": "7.2.26015-fc0010cf6a",
+    "triton": "3.6.0",
+    "transformers": "5.12.1",
+    "flydsl": "0.3.2.dev853"
+  },
+  "gpu": {
+    "count": 8,
+    "names": [
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X",
+      "AMD Instinct MI355X"
+    ],
+    "arch": [
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-",
+      "gfx950:sramecc+:xnack-"
+    ]
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "gsm8k": {
+    "run_dir": "results/formal/flash-fp8/accuracy/gsm8k/sgl_eval_gsm8k_20260831-155959",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.978,
+        "stop_rate": 0.998,
+        "truncated_rate": 0.002
+      },
+      "base_url": "http://127.0.0.1:31101/v1",
+      "gen": {
+        "chat_template_kwargs": null,
+        "extra_body": null,
+        "max_tokens": 8192,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 756.1852355757728,
+      "model": "glm-5.3-flash-fp8",
+      "n_repeats": 1,
+      "name": "gsm8k",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 500,
+      "num_threads": 32,
+      "output_throughput_tps": 98.83424918114663,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-155959",
+      "total_completion_tokens": 74737,
+      "total_prompt_tokens": 46646
+    },
+    "predictions": 500,
+    "finish_reasons": {
+      "length": 1,
+      "stop": 499
+    }
+  },
+  "mmlu": {
+    "run_dir": "results/formal/flash-fp8/accuracy/mmlu/sgl_eval_mmlu_20260831-161235",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.874,
+        "stop_rate": 0.926,
+        "truncated_rate": 0.074
+      },
+      "base_url": "http://127.0.0.1:31101/v1",
+      "gen": {
+        "chat_template_kwargs": null,
+        "extra_body": null,
+        "max_tokens": 8192,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 1538.0244225845672,
+      "model": "glm-5.3-flash-fp8",
+      "n_repeats": 1,
+      "name": "mmlu",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 500,
+      "num_threads": 32,
+      "output_throughput_tps": 343.0563209869892,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-161235",
+      "total_completion_tokens": 527629,
+      "total_prompt_tokens": 78977
+    },
+    "predictions": 500,
+    "finish_reasons": {
+      "length": 37,
+      "stop": 463
+    }
+  },
+  "gpqa": {
+    "run_dir": "results/formal/flash-fp8/accuracy/gpqa/sgl_eval_gpqa_20260831-163814",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.696969696969697,
+        "stop_rate": 0.7222222222222222,
+        "truncated_rate": 0.2777777777777778
+      },
+      "base_url": "http://127.0.0.1:31101/v1",
+      "gen": {
+        "chat_template_kwargs": {
+          "thinking": true
+        },
+        "extra_body": null,
+        "max_tokens": 16384,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 3841.800782676786,
+      "model": "glm-5.3-flash-fp8",
+      "n_repeats": 1,
+      "name": "gpqa",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 198,
+      "num_threads": 32,
+      "output_throughput_tps": 346.20717607154984,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-163814",
+      "total_completion_tokens": 1330059,
+      "total_prompt_tokens": 51146
+    },
+    "predictions": 198,
+    "finish_reasons": {
+      "length": 55,
+      "stop": 143
+    }
+  }
+}

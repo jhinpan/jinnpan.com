@@ -1,0 +1,89 @@
+{
+  "benchmarks": {
+    "gsm8k": {
+      "rows": 500,
+      "fp8_correct": 489,
+      "mxfp4_correct": 490,
+      "fp8_accuracy": 0.978,
+      "mxfp4_accuracy": 0.98,
+      "absolute_delta": 0.002,
+      "correct_count_recovery": 1.0020449897750512,
+      "both_correct": 485,
+      "both_wrong": 6,
+      "fp8_only_correct": 4,
+      "mxfp4_only_correct": 5,
+      "correctness_agreement": 0.982,
+      "mcnemar_exact_p": 1.0,
+      "jointly_parsed": 496,
+      "predicted_answer_agreement": 0.9173387096774194,
+      "fp8_finish_reasons": {
+        "length": 1,
+        "stop": 499
+      },
+      "mxfp4_finish_reasons": {
+        "length": 3,
+        "stop": 497
+      },
+      "length_rate_delta": 0.004
+    },
+    "mmlu": {
+      "rows": 500,
+      "fp8_correct": 437,
+      "mxfp4_correct": 434,
+      "fp8_accuracy": 0.874,
+      "mxfp4_accuracy": 0.868,
+      "absolute_delta": -0.006,
+      "correct_count_recovery": 0.9931350114416476,
+      "both_correct": 423,
+      "both_wrong": 52,
+      "fp8_only_correct": 14,
+      "mxfp4_only_correct": 11,
+      "correctness_agreement": 0.95,
+      "mcnemar_exact_p": 0.6900379657745361,
+      "jointly_parsed": 446,
+      "predicted_answer_agreement": 0.9955156950672646,
+      "fp8_finish_reasons": {
+        "length": 37,
+        "stop": 463
+      },
+      "mxfp4_finish_reasons": {
+        "length": 39,
+        "stop": 461
+      },
+      "length_rate_delta": 0.004
+    },
+    "gpqa": {
+      "rows": 198,
+      "fp8_correct": 138,
+      "mxfp4_correct": 135,
+      "fp8_accuracy": 0.696969696969697,
+      "mxfp4_accuracy": 0.6818181818181818,
+      "absolute_delta": -0.015151515151515152,
+      "correct_count_recovery": 0.9782608695652174,
+      "both_correct": 120,
+      "both_wrong": 45,
+      "fp8_only_correct": 18,
+      "mxfp4_only_correct": 15,
+      "correctness_agreement": 0.8333333333333334,
+      "mcnemar_exact_p": 0.7283324808813632,
+      "jointly_parsed": 122,
+      "predicted_answer_agreement": 1.0,
+      "fp8_finish_reasons": {
+        "length": 55,
+        "stop": 143
+      },
+      "mxfp4_finish_reasons": {
+        "length": 59,
+        "stop": 139
+      },
+      "length_rate_delta": 0.020202020202020204
+    }
+  },
+  "combined": {
+    "rows": 1198,
+    "fp8_correct": 1064,
+    "mxfp4_correct": 1059,
+    "absolute_delta": -0.004173622704507512,
+    "correct_count_recovery": 0.9953007518796992
+  }
+}

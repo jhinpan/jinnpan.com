@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "campaign": "GLM-5.3 official FP8 versus OneNexus MXFP4 on 8x MI355X",
+  "variant": "full-fp8",
+  "state": "paused_at_completed_case_boundary",
+  "stop_requested_at": "2026-09-01T04:33:36Z",
+  "last_case_completed_at": "2026-09-01T04:33:43Z",
+  "server_stopped_at": "2026-09-01T04:36:07Z",
+  "last_completed_case": "c8-r1-i8192-o1024",
+  "completed_perf_artifacts": [
+    "perf-c1-rcanary-before-i512-o128.jsonl",
+    "perf-c1-r1-i8192-o1024.jsonl",
+    "perf-c8-r1-i8192-o1024.jsonl"
+  ],
+  "not_started": [
+    "c32-r1-i8192-o1024",
+    "round-2",
+    "round-3",
+    "canary-after",
+    "post-run-quiescence-check",
+    "final-performance-summary"
+  ],
+  "publishable": false,
+  "reason": "The user requested an intermediate stop and campaign review. The parent runner was stopped while c8-r1 finished naturally, before c32-r1 could start. The server then exited through its cleanup trap and released all eight GPU locks.",
+  "resume_rule": "Do not append these partial performance records to a final table. Re-run the full full-fp8 performance sequence into a fresh output directory so that all three repeats and both canaries belong to one uninterrupted controlled run. The completed full-fp8 accuracy result may be reused only if the frozen checkpoint, SGLang, AITER, kernel runtime, datasets, and generation protocol remain unchanged."
+}

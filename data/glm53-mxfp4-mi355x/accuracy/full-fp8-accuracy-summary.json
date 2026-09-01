@@ -1,0 +1,127 @@
+{
+  "gsm8k": {
+    "run_dir": "results/formal/full-fp8/accuracy/gsm8k/sgl_eval_gsm8k_20260831-220001",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.9719484457922669,
+        "stop_rate": 0.9954510993176648,
+        "truncated_rate": 0.004548900682335102
+      },
+      "base_url": "http://127.0.0.1:31103/v1",
+      "gen": {
+        "chat_template_kwargs": null,
+        "extra_body": null,
+        "max_tokens": 16384,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 2916.300047912635,
+      "model": "glm-5.3-fp8",
+      "n_repeats": 1,
+      "name": "gsm8k",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 1319,
+      "num_threads": 32,
+      "output_throughput_tps": 88.24572086956589,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-220001",
+      "total_completion_tokens": 257351,
+      "total_prompt_tokens": 123963
+    },
+    "predictions": 1319,
+    "finish_reasons": {
+      "length": 6,
+      "stop": 1313
+    }
+  },
+  "mmlu": {
+    "run_dir": "results/formal/full-fp8/accuracy/mmlu/sgl_eval_mmlu_20260831-224838",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.852,
+        "stop_rate": 0.906,
+        "truncated_rate": 0.094
+      },
+      "base_url": "http://127.0.0.1:31103/v1",
+      "gen": {
+        "chat_template_kwargs": null,
+        "extra_body": null,
+        "max_tokens": 16384,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 4739.610641018022,
+      "model": "glm-5.3-fp8",
+      "n_repeats": 1,
+      "name": "mmlu",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 500,
+      "num_threads": 32,
+      "output_throughput_tps": 221.76505194406397,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260831-224838",
+      "total_completion_tokens": 1051080,
+      "total_prompt_tokens": 78977
+    },
+    "predictions": 500,
+    "finish_reasons": {
+      "length": 47,
+      "stop": 453
+    }
+  },
+  "gpqa": {
+    "run_dir": "results/formal/full-fp8/accuracy/gpqa/sgl_eval_gpqa_20260901-000738",
+    "metrics": {
+      "aggregate": {
+        "error_rate": 0.0,
+        "score": 0.4393939393939394,
+        "stop_rate": 0.4494949494949495,
+        "truncated_rate": 0.5505050505050505
+      },
+      "base_url": "http://127.0.0.1:31103/v1",
+      "gen": {
+        "chat_template_kwargs": {
+          "thinking": true
+        },
+        "extra_body": null,
+        "max_tokens": 16384,
+        "min_p": 0.0,
+        "reasoning_effort": "max",
+        "repetition_penalty": 1.0,
+        "seed": 0,
+        "system_message": null,
+        "temperature": 0.0,
+        "top_p": 0.95
+      },
+      "latency_seconds": 7872.227681960911,
+      "model": "glm-5.3-fp8",
+      "n_repeats": 1,
+      "name": "gpqa",
+      "ns_commit_sha": "645cf567ff08c0ae9cc3fc8e1edbb975b3067816",
+      "num_examples": 198,
+      "num_threads": 32,
+      "output_throughput_tps": 258.2688258190162,
+      "sgl_eval_version": "0.0.1",
+      "timestamp": "20260901-000738",
+      "total_completion_tokens": 2033151,
+      "total_prompt_tokens": 51146
+    },
+    "predictions": 198,
+    "finish_reasons": {
+      "length": 109,
+      "stop": 89
+    }
+  }
+}

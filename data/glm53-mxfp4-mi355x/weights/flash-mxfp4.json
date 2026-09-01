@@ -1,0 +1,17 @@
+{
+  "path": "/data/GLM-5.3-Flash-MXFP4",
+  "num_layers": 45,
+  "num_experts": 288,
+  "top_k": 8,
+  "total_tensor_bytes": 227486055288,
+  "excluded_text_decode_bytes": 17261216384,
+  "always_active_text_bytes": 16573823224,
+  "all_routed_expert_bytes": 193651015680,
+  "estimated_active_weight_bytes": 21953018104,
+  "effective_bytes_per_active_parameter": 1.219612116888889,
+  "tensor_bytes_by_dtype": {
+    "BF16": 77320401408,
+    "F32": 1182072,
+    "U8": 150164471808
+  }
+}

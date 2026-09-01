@@ -1,0 +1,48 @@
+{
+  "checkpoints": [
+    {
+      "label": "flash-fp8",
+      "repo": "zai-org/GLM-5.3-Flash",
+      "revision": "03eb5366286afd40d2221b1d9c63a6dd1ba4832e",
+      "path": "/data/GLM-5.3-Flash",
+      "index_sha256": "3c3f40366a53c3fd7974b4eab7881a365a98c2a4329150befebab99fe7c18b05",
+      "tensor_entries": 76108,
+      "referenced_shards": 62,
+      "index_total_size": 328326771576,
+      "safetensors_file_bytes": 328337455672
+    },
+    {
+      "label": "full-fp8",
+      "repo": "zai-org/GLM-5.3",
+      "revision": "187fb9fff6319062325ff825627ef6db084d9bc6",
+      "path": "/data/GLM-5.3",
+      "index_sha256": "e0fe7f28c1f853d4824e4d796374e3dacf1fe470988773952c79b063768134bf",
+      "tensor_entries": 118629,
+      "referenced_shards": 141,
+      "index_total_size": 755617140416,
+      "safetensors_file_bytes": 755632050320
+    },
+    {
+      "label": "flash-mxfp4",
+      "repo": "OneNexus/GLM-5.3-Flash-MXFP4",
+      "revision": "21e1124f735fd7b7836189d6c13d5eedfef3fb88",
+      "path": "/data/GLM-5.3-Flash-MXFP4",
+      "index_sha256": "d431acb53f5e33d4b942ebd8c4a6b6eddd3abb44c8d408e37c8143f2424ed9f4",
+      "tensor_entries": 72466,
+      "referenced_shards": 120,
+      "index_total_size": 227486055288,
+      "safetensors_file_bytes": 227496161368
+    },
+    {
+      "label": "full-mxfp4",
+      "repo": "OneNexus/GLM-5.3-MXFP4",
+      "revision": "104690ed94d48341ec9de43b1bc12d30f7eaa86e",
+      "path": "/data/GLM-5.3-MXFP4",
+      "index_sha256": "f919c3d49b7f704fcb84eef95ce348f4144b6eaeefccbb72c56c8c8b8f7fb90d",
+      "tensor_entries": 117410,
+      "referenced_shards": 282,
+      "index_total_size": 438001945864,
+      "safetensors_file_bytes": 438001945864
+    }
+  ]
+}

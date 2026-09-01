@@ -1,0 +1,17 @@
+{
+  "path": "/data/GLM-5.3-MXFP4",
+  "num_layers": 78,
+  "num_experts": 256,
+  "top_k": 8,
+  "total_tensor_bytes": 437987305472,
+  "excluded_text_decode_bytes": 21809007104,
+  "always_active_text_bytes": 31141191168,
+  "all_routed_expert_bytes": 385037107200,
+  "estimated_active_weight_bytes": 43173600768,
+  "effective_bytes_per_active_parameter": 1.1070154043076923,
+  "tensor_bytes_by_dtype": {
+    "BF16": 51446069248,
+    "F32": 77824,
+    "U8": 386541158400
+  }
+}

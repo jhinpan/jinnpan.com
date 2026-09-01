@@ -1,0 +1,1676 @@
+{
+  "path": "/data/GLM-5.3-MXFP4",
+  "model_card_claim": "dense/shared MLP projections remain in BF16",
+  "storage_ranges": {
+    "absent": [
+      "0-2"
+    ],
+    "bf16_excluded": [
+      "78"
+    ],
+    "mxfp4_u8_with_scale": [
+      "3-77"
+    ]
+  },
+  "layers": [
+    {
+      "layer": 0,
+      "storage": "absent",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 1,
+      "storage": "absent",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 2,
+      "storage": "absent",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": null,
+          "scale_dtype": null,
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 3,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 4,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 5,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 6,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 7,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 8,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 9,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 10,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 11,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 12,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 13,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 14,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 15,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 16,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 17,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 18,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 19,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 20,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 21,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 22,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 23,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 24,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 25,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 26,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 27,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 28,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 29,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 30,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 31,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 32,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 33,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 34,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 35,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 36,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 37,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 38,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 39,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 40,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 41,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 42,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 43,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 44,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 45,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 46,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 47,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 48,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 49,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 50,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 51,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 52,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 53,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 54,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 55,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 56,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 57,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 58,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 59,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 60,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 61,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 62,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 63,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 64,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 65,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 66,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 67,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 68,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 69,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 70,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 71,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 72,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 73,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 74,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 75,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 76,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 77,
+      "storage": "mxfp4_u8_with_scale",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "gate_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        },
+        "up_proj": {
+          "weight_dtype": "U8",
+          "scale_dtype": "U8",
+          "excluded_by_config": false
+        }
+      }
+    },
+    {
+      "layer": 78,
+      "storage": "bf16_excluded",
+      "projections": {
+        "down_proj": {
+          "weight_dtype": "BF16",
+          "scale_dtype": null,
+          "excluded_by_config": true
+        },
+        "gate_proj": {
+          "weight_dtype": "BF16",
+          "scale_dtype": null,
+          "excluded_by_config": true
+        },
+        "up_proj": {
+          "weight_dtype": "BF16",
+          "scale_dtype": null,
+          "excluded_by_config": true
+        }
+      }
+    }
+  ]
+}

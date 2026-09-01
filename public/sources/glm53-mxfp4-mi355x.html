@@ -1,0 +1,1376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>The gate that missed by 0.0202 pp — GLM-5.3 MXFP4 against FP8 on 8× MI355X</title>
+<meta name="description" content="A controlled SGLang A/B between the official Z.ai FP8 checkpoints and the OneNexus MXFP4 conversions of GLM-5.3, stopped at a case boundary after 21 hours. Five preset gates, one breach of 0.0202 percentage points, and the reason a checkpoint 42% smaller on disk streams more bytes per token."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,300..700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  /* laboratory logbook — a calibration sheet signed off partway */
+  --paper:#f2f4f6; --card:#fbfcfd; --sunk:#e7ebf0; --rule:#ccd3dc; --rule2:#9aa6b5;
+  --ink:#12161c; --ink2:#464f5c; --ink3:#727d8c;
+  --fp8:#1b4fa8;      /* the FP8 baseline */
+  --mxfp4:#7a3fb8;    /* the MXFP4 candidate */
+  --warn:#b8631a;     /* the boundary breach — the only loud note on the page */
+  --halt:#8d2f3f;     /* stopped, not publishable */
+  --display:'Archivo','Noto Sans SC',system-ui,sans-serif;
+  --body:'Source Serif 4','Noto Sans SC','Songti SC',Georgia,'Times New Roman',serif;
+  --ui:'Archivo','Noto Sans SC',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,'Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:17.5px; line-height:1.72;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+a{color:var(--fp8); text-underline-offset:3px; text-decoration-thickness:1px}
+a:hover{color:var(--mxfp4)}
+code{font-family:var(--mono); font-size:.8em; background:var(--sunk); border:1px solid var(--rule); padding:.06em .3em; border-radius:2px; letter-spacing:-.01em; word-break:break-word}
+:lang(zh){font-family:'Noto Sans SC','Source Serif 4',sans-serif; line-height:1.9}
+h1:lang(zh),h2:lang(zh),h3:lang(zh),.dek:lang(zh){font-family:'Noto Sans SC','Archivo',sans-serif}
+.mono,.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+.wrap{display:grid; grid-template-columns:250px minmax(0,1fr); max-width:1240px; margin:0 auto;
+  background:var(--card); border-left:1px solid var(--rule); border-right:1px solid var(--rule)}
+
+/* ---- rail ---- */
+.rail{grid-column:1; padding:38px 20px 60px 24px; font-family:var(--ui); font-size:12.5px; line-height:1.5;
+  border-right:1px solid var(--rule2); background:var(--paper);
+  background-image:repeating-linear-gradient(to bottom, transparent 0 25px, rgba(154,166,181,.13) 25px 26px)}
+.rail-inner{position:sticky; top:30px}
+.rail .back{display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+  font-weight:500; color:var(--ink2); text-decoration:none; margin-bottom:24px; border-bottom:2px solid var(--warn); padding-bottom:2px}
+.rail .back:hover{color:var(--warn)}
+.rail h4{font-family:var(--mono); font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink3); margin:0 0 11px; font-weight:500}
+.rail ul{list-style:none; margin:0 0 24px; padding:0}
+.rail ul li{margin:0 0 1px}
+.rail ul li a{display:block; padding:5px 8px; text-decoration:none; color:var(--ink2); border-left:2px solid transparent}
+.rail ul li a:hover{color:var(--ink); background:var(--sunk); border-left-color:var(--fp8)}
+.rail-stamp{font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--halt);
+  border:1px solid var(--halt); padding:6px 8px; line-height:1.45}
+
+/* ---- masthead ---- */
+.masthead{padding:52px 56px 32px; border-bottom:1px solid var(--rule2); background:var(--card);
+  background-image:repeating-linear-gradient(to bottom, transparent 0 25px, rgba(154,166,181,.09) 25px 26px)}
+.kicker{font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink3); font-weight:500; margin-bottom:18px}
+.kicker b{color:var(--warn); font-weight:600}
+.masthead h1{font-family:var(--display); font-weight:700; font-size:44px; line-height:1.08; letter-spacing:-.022em; margin:0 0 16px; max-width:19ch}
+.dek{font-size:18.5px; color:var(--ink2); max-width:62ch; margin:0 0 26px; line-height:1.6}
+.verdict{border:1.5px solid var(--halt); padding:12px 15px; margin:0 0 26px; max-width:64ch; background:rgba(141,47,63,.035)}
+.verdict .vlabel{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--halt); font-weight:600; display:block; margin-bottom:6px}
+.verdict p{margin:0; font-size:16px; color:var(--ink2)}
+.spec{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--rule2); font-family:var(--ui); background:var(--card)}
+.spec div{padding:11px 13px; border-right:1px solid var(--rule)}
+.spec div:last-child{border-right:0}
+.spec dt{font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--ink3); margin-bottom:5px; font-weight:500}
+.spec dd{margin:0; font-size:12.5px; line-height:1.4; color:var(--ink)}
+
+/* ---- article ---- */
+.article{padding:0 56px 84px; max-width:832px}
+section{padding:42px 0 10px; border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+.field{font-family:var(--mono); font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink3); font-weight:500; display:block; margin-bottom:9px}
+h2{font-family:var(--display); font-weight:700; font-size:28px; line-height:1.18; letter-spacing:-.018em; margin:0 0 14px; max-width:25ch}
+h3{font-family:var(--display); font-weight:600; font-size:18.5px; margin:32px 0 8px; letter-spacing:-.008em}
+p{max-width:70ch; margin:0 0 17px}
+.lede{font-size:19.5px; color:var(--ink2); max-width:60ch; line-height:1.6}
+ul.body-list,ol.body-list{max-width:70ch; padding-left:20px; margin:0 0 18px}
+ul.body-list li,ol.body-list li{margin-bottom:9px}
+strong{font-weight:600}
+.pp{color:var(--warn); font-weight:600}
+
+/* ---- callouts ---- */
+.note{border:1px solid var(--rule2); border-left:3px solid var(--fp8); background:var(--sunk); padding:15px 19px; margin:24px 0; max-width:72ch}
+.note.warn{border-left-color:var(--warn); background:rgba(184,99,26,.055); border-color:rgba(184,99,26,.3)}
+.note.halt{border-left-color:var(--halt); background:rgba(141,47,63,.045); border-color:rgba(141,47,63,.28)}
+.note.key{border-left-color:var(--mxfp4)}
+.note p{margin:0 0 10px; font-size:16px}
+.note p:last-child{margin-bottom:0}
+.note .tag{font-family:var(--mono); font-size:9px; letter-spacing:.17em; text-transform:uppercase; color:var(--ink3); font-weight:600; display:block; margin-bottom:7px}
+.note.warn .tag{color:var(--warn)}
+.note.halt .tag{color:var(--halt)}
+
+/* ---- tables ---- */
+.tbl{margin:24px 0; overflow-x:auto; border-top:1.5px solid var(--ink); border-bottom:1.5px solid var(--ink)}
+table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13px}
+th{text-align:left; font-family:var(--mono); font-weight:500; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink3); border-bottom:1px solid var(--rule2); padding:9px 10px 8px; vertical-align:bottom}
+td{padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top; line-height:1.45}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--sunk)}
+td.num,th.num{text-align:right; font-family:var(--mono); font-size:12px; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+td.k{font-weight:600; color:var(--ink)}
+td.fp8{color:var(--fp8)} td.mx{color:var(--mxfp4)}
+.mark{font-family:var(--mono); font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; font-weight:600; padding:2px 6px; border:1px solid currentColor; white-space:nowrap}
+.mark.pass{color:var(--fp8)} .mark.breach{color:var(--warn)} .mark.none{color:var(--halt)} .mark.na{color:var(--ink3)}
+.cap{font-size:12.5px; color:var(--ink3); font-family:var(--ui); margin:-16px 0 24px; max-width:76ch; line-height:1.55}
+
+/* ---- plates ---- */
+.plate{margin:32px 0 28px; border:1px solid var(--rule2); background:var(--card)}
+.plate.wide{margin-left:-56px; margin-right:-100px}
+.plate-meta{display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:8px 14px;
+  border-bottom:1px solid var(--rule); font-family:var(--mono); font-size:9px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink3); background:var(--sunk)}
+.plate-svg{padding:16px 14px 4px}
+.plate svg{display:block; width:100%; height:auto}
+.caption{padding:2px 16px 14px; font-family:var(--ui); font-size:12.5px; font-style:italic; color:var(--ink2); max-width:92ch; line-height:1.55}
+.diag-text{font-family:'Archivo',sans-serif; font-size:12px; fill:#464f5c}
+.diag-label{font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.07em; fill:#727d8c}
+.diag-strong{font-family:'Archivo',sans-serif; font-size:13px; font-weight:600; fill:#12161c}
+.diag-num{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:#12161c; font-variant-numeric:tabular-nums}
+.diag-node{fill:#fbfcfd; stroke:#9aa6b5; stroke-width:1}
+.diag-edge{stroke:#727d8c; stroke-width:1.3; fill:none}
+.axis{stroke:#9aa6b5; stroke-width:1}
+.gridline{stroke:#ccd3dc; stroke-width:.8; stroke-dasharray:2 3}
+.track{fill:#e7ebf0; stroke:#ccd3dc; stroke-width:.8}
+
+/* ---- code ---- */
+pre{background:var(--sunk); border:1px solid var(--rule); border-left:3px solid var(--rule2); padding:13px 16px;
+  overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.6; margin:20px 0; max-width:72ch}
+pre code{background:none; border:0; padding:0; font-size:inherit}
+
+/* ---- lang toggle ---- */
+.lang-toggle{position:fixed; top:14px; right:16px; z-index:50; display:flex; border:1.5px solid var(--ink); background:var(--card)}
+.lang-toggle button{font-family:var(--mono); font-size:10px; letter-spacing:.1em; padding:6px 11px; border:0; background:transparent; color:var(--ink2); cursor:pointer}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"]{background:var(--ink); color:var(--card)}
+
+/* ---- colophon ---- */
+.colophon{border-top:1.5px solid var(--ink); padding:24px 56px 60px; font-family:var(--ui); font-size:12.5px; color:var(--ink3);
+  display:grid; grid-template-columns:repeat(2,1fr); gap:8px 34px; max-width:1240px; margin:0 auto; background:var(--card);
+  border-left:1px solid var(--rule); border-right:1px solid var(--rule)}
+.colophon b{color:var(--ink2); font-weight:600}
+.colophon a{word-break:break-word}
+
+@media (max-width:980px){
+  .wrap{grid-template-columns:1fr}
+  .rail{border-right:0; border-bottom:1px solid var(--rule2)}
+  .rail-inner{position:static}
+  .masthead,.article,.colophon{padding-left:20px; padding-right:20px}
+  .article{max-width:none}
+  .plate.wide{margin-left:0; margin-right:0}
+  .spec{grid-template-columns:repeat(2,1fr)}
+  .masthead h1{font-size:32px}
+  .colophon{grid-template-columns:1fr}
+}
+
+/* Language visibility — must stay last so it wins */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+</style>
+</head>
+<body data-lang="en">
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<div class="wrap">
+<nav class="rail">
+  <div class="rail-inner">
+    <a class="back" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回书架</span></a>
+    <h4><span lang="en">Contents</span><span lang="zh">目录</span></h4>
+    <ul>
+      <li><a href="#stop"><span lang="en">Where it stopped</span><span lang="zh">停在哪里</span></a></li>
+      <li><a href="#ledger"><span lang="en">The gate ledger</span><span lang="zh">门槛台账</span></a></li>
+      <li><a href="#breach"><span lang="en">The breach</span><span lang="zh">越线的那一格</span></a></li>
+      <li><a href="#flash"><span lang="en">The Flash A/B</span><span lang="zh">Flash 的 A/B</span></a></li>
+      <li><a href="#stream"><span lang="en">Smaller on disk, slower per token</span><span lang="zh">盘上更小， 每 token 更慢</span></a></li>
+      <li><a href="#full"><span lang="en">The half that cannot be concluded</span><span lang="zh">不能下结论的那一半</span></a></li>
+      <li><a href="#hours"><span lang="en">Where 21 hours went</span><span lang="zh">21 小时去了哪里</span></a></li>
+      <li><a href="#findings"><span lang="en">What the runtime cost</span><span lang="zh">运行时的账单</span></a></li>
+      <li><a href="#frozen"><span lang="en">The frozen point</span><span lang="zh">冻结点</span></a></li>
+      <li><a href="#reproduce"><span lang="en">Reproducing this</span><span lang="zh">复现</span></a></li>
+      <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    </ul>
+    <div class="rail-stamp">
+      <span lang="en">Interim · signed off in part<br/>evidence through<br/>2026-09-01 04:36:07 UTC</span>
+      <span lang="zh">中期 · 部分签署<br/>证据截至<br/>2026-09-01 04:36:07 UTC</span>
+    </div>
+  </div>
+</nav>
+
+<div>
+<header class="masthead">
+  <div class="kicker">Experiment 004 · GLM-5.3 · 8× MI355X · <b>1 gate breached of 5</b></div>
+  <h1><span lang="en">The gate that missed by 0.0202 pp</span><span lang="zh">差 0.0202 pp 越线的那道门槛</span></h1>
+  <p class="dek" lang="en">A controlled A/B between the official FP8 checkpoints of GLM-5.3 and their MXFP4 conversions, on eight MI355X, against five thresholds written down before the run. Four gates pass. One misses by a fifth of a percent of itself. This page is about why that is reported as a breach, why a checkpoint 42% smaller on disk streams <em>more</em> bytes per generated token, and why half the experiment is not allowed to conclude anything.</p>
+  <p class="dek" lang="zh">GLM-5.3 官方 FP8 checkpoint 与其 MXFP4 转换版在 8 张 MI355X 上的受控 A/B， 对照的是开跑前就写下的五条门槛。 四条通过， 一条以自身的千分之二越线。 这篇要讲的是： 为什么它被记成越线而不是被四舍五入抹掉； 为什么一个盘上小 42% 的 checkpoint 每生成一个 token 反而要读<em>更多</em>字节； 以及为什么这场实验的另一半不被允许得出任何结论。</p>
+  <div class="verdict">
+    <span class="vlabel"><span lang="en">Status at stop</span><span lang="zh">停机时状态</span></span>
+    <p lang="en">Paused at a completed case boundary. Server exited through its cleanup trap, port 31103 closed, all eight GPU locks released. The Flash A/B is complete and carries one boundary warning. The Full A/B has no candidate side at all — the partial FP8 performance records are marked not publishable, and this page honours that mark.</p>
+    <p lang="zh">在一个已完成的 case 边界暂停。 服务经 cleanup trap 正常退出， 端口 31103 关闭， 八张 GPU 的锁全部释放。 Flash 的 A/B 已经完整， 带一条边界告警。 Full 的 A/B 连候选侧都没有启动—— 那批 FP8 的 partial performance 记录被标记为不可发布， 这一页遵守这个标记。</p>
+  </div>
+  <dl class="spec">
+    <div><dt><span lang="en">Silicon</span><span lang="zh">硬件</span></dt><dd>8× MI355X · gfx950 · <code>mia1-p02-g23</code></dd></div>
+    <div><dt><span lang="en">Runtime</span><span lang="zh">运行时</span></dt><dd>host ROCm 7.2.0 · torch 2.9.1 · SGLang + AITER source overlay</dd></div>
+    <div><dt><span lang="en">Window</span><span lang="zh">窗口</span></dt><dd>21:02:18 · 2026-08-31 07:33:49 → 09-01 04:36:07 UTC</dd></div>
+    <div><dt><span lang="en">Data</span><span lang="zh">数据</span></dt><dd><a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x">data/glm53-mxfp4-mi355x</a></dd></div>
+  </dl>
+</header>
+
+<main class="article">
+
+<!-- ============================================================ stop -->
+<section id="stop">
+  <span class="field"><span lang="en">Status</span><span lang="zh">状态</span></span>
+  <h2><span lang="en">Where it stopped, and what that leaves standing</span><span lang="zh">停在哪里， 以及还剩下什么</span></h2>
+
+  <p class="lede" lang="en">Four things were supposed to be measured: two model sizes, each in two numeric formats. Two of the four are finished. One is finished on the baseline side only. The fourth was never started.</p>
+  <p class="lede" lang="zh">本来要测四样东西： 两个模型规模， 每个两种数值格式。 四样里完成了两样， 第三样只完成了基线一侧， 第四样根本没有启动。</p>
+
+  <p lang="en">The point of saying that first is that it decides what the rest of the page is allowed to claim. A quantization A/B is a paired comparison; its unit of evidence is a pair. One complete side is not half an answer, it is zero answers about the format — it is only a fact about the baseline. So the campaign produced exactly one comparison, on the smaller model, and one unpaired baseline on the larger one.</p>
+  <p lang="zh">先说这个， 是因为它决定了这一页后面可以主张什么。 量化 A/B 是配对比较， 它的证据单位是「一对」。 只完成一侧不是半个答案， 而是关于这个数值格式的零个答案—— 它只是关于基线的一个事实。 所以这轮跑出来的是： 小模型上的一个完整比较， 加上大模型上的一个没有对照的基线。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Variant</span><span lang="zh">变体</span></th>
+      <th><span lang="en">Checkpoint</span><span lang="zh">Checkpoint</span></th>
+      <th><span lang="en">Accuracy</span><span lang="zh">Accuracy</span></th>
+      <th><span lang="en">Performance</span><span lang="zh">Performance</span></th>
+      <th><span lang="en">Standing</span><span lang="zh">判定</span></th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="k fp8">GLM-5.3-Flash FP8</td>
+        <td><a href="https://huggingface.co/zai-org/GLM-5.3-Flash"><code>zai-org/GLM-5.3-Flash</code></a></td>
+        <td><span lang="en">1198 rows complete</span><span lang="zh">1198 行完成</span></td>
+        <td><span lang="en">3 rounds × 3 concurrencies + 2 canaries</span><span lang="zh">3 轮 × 3 并发 + 双 canary</span></td>
+        <td><span class="mark pass"><span lang="en">usable</span><span lang="zh">可用</span></span></td>
+      </tr>
+      <tr>
+        <td class="k mx">GLM-5.3-Flash MXFP4</td>
+        <td><a href="https://huggingface.co/OneNexus/GLM-5.3-Flash-MXFP4"><code>OneNexus/GLM-5.3-Flash-MXFP4</code></a></td>
+        <td><span lang="en">1198 rows complete</span><span lang="zh">1198 行完成</span></td>
+        <td><span lang="en">3 rounds × 3 concurrencies + 2 canaries</span><span lang="zh">3 轮 × 3 并发 + 双 canary</span></td>
+        <td><span class="mark breach"><span lang="en">boundary warning</span><span lang="zh">边界告警</span></span></td>
+      </tr>
+      <tr>
+        <td class="k fp8">GLM-5.3 Full FP8</td>
+        <td><a href="https://huggingface.co/zai-org/GLM-5.3"><code>zai-org/GLM-5.3</code></a></td>
+        <td><span lang="en">2017 rows complete</span><span lang="zh">2017 行完成</span></td>
+        <td><span lang="en">stopped mid-sequence: canary-before, c1-r1, c8-r1</span><span lang="zh">中途停止： canary-before、c1-r1、c8-r1</span></td>
+        <td><span class="mark none"><span lang="en">accuracy keeps · perf not publishable</span><span lang="zh">accuracy 保留 · 性能不可发布</span></span></td>
+      </tr>
+      <tr>
+        <td class="k mx">GLM-5.3 Full MXFP4</td>
+        <td><a href="https://huggingface.co/OneNexus/GLM-5.3-MXFP4"><code>OneNexus/GLM-5.3-MXFP4</code></a></td>
+        <td><span class="mark na"><span lang="en">not started</span><span lang="zh">未启动</span></span></td>
+        <td><span class="mark na"><span lang="en">not started</span><span lang="zh">未启动</span></span></td>
+        <td><span class="mark none"><span lang="en">no Full A/B exists</span><span lang="zh">不存在 Full A/B</span></span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">The evidence matrix as it stands. Every row of this table is reconstructible from the archive: the accuracy summaries in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/accuracy"><code>accuracy/</code></a>, the perf summaries in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/perf"><code>perf/</code></a>, and the stop record in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/perf/full-fp8-partial/INTERMEDIATE_STOP.json"><code>INTERMEDIATE_STOP.json</code></a>.</p>
+  <p class="cap" lang="zh">当前的证据矩阵。 表里每一行都能从归档里重建： accuracy 汇总在 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/accuracy"><code>accuracy/</code></a>， 性能汇总在 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/perf"><code>perf/</code></a>， 停机记录在 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/perf/full-fp8-partial/INTERMEDIATE_STOP.json"><code>INTERMEDIATE_STOP.json</code></a>。</p>
+
+  <p lang="en">The stop itself was deliberate rather than a crash, and the difference matters for what can be reused. The performance runner was allowed to finish the case it was inside — <code>c8-r1</code> at ISL 8192 / OSL 1024 — and its record was written out completely before the runner exited; <code>c32-r1</code> was never launched. The server then went down through its own cleanup path, which is what released the eight per-GPU locks. A crash mid-case would have left a truncated JSONL that looks like a valid measurement, and a leaked lock that would have poisoned the next run's idle check.</p>
+  <p lang="zh">这次停机是主动的， 不是崩溃， 而这个区别决定了哪些东西还能复用。 性能 runner 被允许跑完它当时所在的那个 case—— ISL 8192 / OSL 1024 下的 <code>c8-r1</code>—— 记录完整写出后 runner 才退出； <code>c32-r1</code> 从未启动。 随后服务经自己的 cleanup 路径下线， 八个 per-GPU lock 因此被释放。 如果是 case 中途崩溃， 留下的会是一个看起来像有效测量的截断 JSONL， 外加一把泄漏的锁， 让下一次运行的空闲检查失去意义。</p>
+
+  <div class="note halt">
+    <span class="tag"><span lang="en">The rule the stop record carries</span><span lang="zh">停机记录里写下的规则</span></span>
+    <p lang="en">The stop marker does not just say when it stopped; it says what may be done with what survived. Accuracy for Full FP8 may be reused <em>only</em> if the frozen checkpoint, SGLang, AITER, kernel runtime, datasets and generation protocol are all unchanged. The partial performance records may not be appended to a final table under any circumstances — the sequence must be re-run into a fresh output directory so all three repeats and both canaries belong to one uninterrupted run.</p>
+    <p lang="zh">停机标记不只记录了何时停止， 还写明了幸存下来的东西可以怎么用。 Full FP8 的 accuracy <em>仅当</em>冻结的 checkpoint、SGLang、AITER、kernel 运行时、数据集与生成协议全部不变时才可复用。 那批 partial performance 记录在任何情况下都不得追加到最终表里—— 整段序列必须重跑进一个全新的输出目录， 使三轮重复和两次 canary 属于同一次不中断的运行。</p>
+  </div>
+</section>
+
+<!-- ============================================================ ledger -->
+<section id="ledger">
+  <span class="field"><span lang="en">Protocol</span><span lang="zh">协议</span></span>
+  <h2><span lang="en">Five lines drawn before the data existed</span><span lang="zh">在数据出现之前画好的五条线</span></h2>
+
+  <p class="lede" lang="en">A quantized checkpoint is a trade, and a trade needs a price agreed in advance. These five thresholds were written into the protocol before the first formal run started, which is the only property that makes them worth anything.</p>
+  <p class="lede" lang="zh">量化 checkpoint 是一笔交易， 而交易需要事先谈好价格。 这五条门槛是在第一次正式运行之前写进协议的—— 这是它们唯一有价值的属性。</p>
+
+  <p lang="en">Why five and not one. A single scalar — "accuracy recovery" — can be held constant by a model that has quietly changed behaviour underneath it. Each of these gates watches a different way the trade can go bad, and each one is the cheapest available detector for its own failure. Per-benchmark accuracy catches a regression concentrated in one domain that an aggregate would average away. Combined correct-count recovery catches a broad shallow loss that no single benchmark reaches significance on. Length-finish rate catches the failure where the model does not get <em>wrong</em>, it gets <em>long</em> — a slightly less confident model reasons further, hits the token cap, and is scored as wrong for running out of room rather than for being mistaken. Throughput ratio is the reason for doing any of this. And canary drift catches the case where the machine, not the model, was the variable.</p>
+  <p lang="zh">为什么是五条而不是一条。 单一标量—— 比如「accuracy recovery」—— 完全可能在模型底层行为已经改变的情况下保持不变。 这五条门槛各自盯住交易变坏的一种方式， 而且每一条都是它所对应故障的最便宜的探测器。 逐项 accuracy 抓的是集中在某一个领域的回退， 这种回退会被汇总值平均掉。 合计正确数 recovery 抓的是分散而浅的整体损失， 单个 benchmark 上达不到显著性。 length finish rate 抓的是模型没有变<em>错</em>、而是变<em>长</em>的那种故障—— 稍微不那么确定的模型会多推一段， 撞上 token 上限， 于是因为「写不下」而不是因为「答错了」被判错。 吞吐比是做这一切的理由本身。 而 canary 漂移抓的是变量其实是机器而不是模型的那种情况。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate I · The gate ledger</span><span>4 pass · 1 breach</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 566" role="img" aria-label="Five preset thresholds with the measured value placed against each, and a detail view of the single breach">
+        <text class="diag-label" x="16" y="20">GATE</text>
+        <text class="diag-label" x="180" y="20">MEASURED AGAINST THE LINE</text>
+        <text class="diag-label" x="964" y="20" text-anchor="end">VERDICT</text>
+        <line class="axis" x1="16" y1="28" x2="964" y2="28"/>
+
+        <!-- ============ row 1 : accuracy delta ============ -->
+        <text class="diag-text" x="16" y="63" font-size="11.5">accuracy delta</text>
+        <text class="diag-label" x="16" y="76">WORST BENCHMARK</text>
+        <rect class="track" x="180" y="54" width="680" height="14"/>
+        <rect x="180" y="54" width="170" height="14" fill="#8d2f3f" fill-opacity=".08"/>
+        <line x1="350" y1="45" x2="350" y2="77" stroke="#8d2f3f" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+        <line x1="724" y1="50" x2="724" y2="72" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="724" cy="61" r="4" fill="#7a3fb8"/>
+        <line x1="588" y1="50" x2="588" y2="72" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="588" cy="61" r="4" fill="#7a3fb8"/>
+        <line x1="431.6" y1="50" x2="431.6" y2="72" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="431.6" cy="61" r="4.6" fill="#7a3fb8"/>
+        <text class="diag-num" x="724" y="45" text-anchor="middle" fill="#7a3fb8">+0.20</text>
+        <text class="diag-num" x="588" y="45" text-anchor="middle" fill="#7a3fb8">−0.60</text>
+        <text class="diag-num" x="431.6" y="45" text-anchor="middle" fill="#7a3fb8">−1.52</text>
+        <text class="diag-label" x="180" y="84">−3.0 pp</text>
+        <text class="diag-label" x="350" y="84" text-anchor="middle" fill="#8d2f3f">FLOOR −2.0 pp</text>
+        <text class="diag-label" x="860" y="84" text-anchor="end">+1.0 pp</text>
+        <text class="diag-label" x="880" y="65" fill="#1b4fa8" font-size="10">PASS</text>
+
+        <!-- ============ row 2 : correct-count recovery ============ -->
+        <text class="diag-text" x="16" y="139" font-size="11.5">correct-count</text>
+        <text class="diag-label" x="16" y="152">RECOVERY, COMBINED</text>
+        <rect class="track" x="180" y="130" width="680" height="14"/>
+        <rect x="180" y="130" width="272" height="14" fill="#8d2f3f" fill-opacity=".08"/>
+        <line x1="452" y1="121" x2="452" y2="153" stroke="#8d2f3f" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+        <line x1="660.1" y1="126" x2="660.1" y2="148" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="660.1" cy="137" r="4.6" fill="#7a3fb8"/>
+        <text class="diag-num" x="660.1" y="121" text-anchor="middle" fill="#7a3fb8">99.5301%</text>
+        <text class="diag-label" x="180" y="160">96%</text>
+        <text class="diag-label" x="452" y="160" text-anchor="middle" fill="#8d2f3f">FLOOR 98%</text>
+        <text class="diag-label" x="860" y="160" text-anchor="end">101%</text>
+        <text class="diag-label" x="880" y="141" fill="#1b4fa8" font-size="10">PASS</text>
+
+        <!-- ============ row 3 : length finish rate ============ -->
+        <text class="diag-text" x="16" y="215" font-size="11.5" fill="#b8631a" font-weight="600">length-finish rate</text>
+        <text class="diag-label" x="16" y="228" fill="#b8631a">INCREASE, WORST</text>
+        <rect class="track" x="180" y="206" width="680" height="14"/>
+        <rect x="633.3" y="206" width="226.7" height="14" fill="#8d2f3f" fill-opacity=".10"/>
+        <line x1="633.3" y1="197" x2="633.3" y2="229" stroke="#8d2f3f" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+        <line x1="270.7" y1="202" x2="270.7" y2="224" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="270.7" cy="213" r="4" fill="#7a3fb8"/>
+        <line x1="637.9" y1="199" x2="637.9" y2="227" stroke="#b8631a" stroke-width="2"/>
+        <circle cx="637.9" cy="213" r="5.4" fill="#b8631a"/>
+        <text class="diag-num" x="270.7" y="197" text-anchor="middle" fill="#7a3fb8">+0.40 ×2</text>
+        <text class="diag-num" x="700" y="197" fill="#b8631a" font-weight="600">+2.0202</text>
+        <text class="diag-label" x="180" y="236">0 pp</text>
+        <text class="diag-label" x="600" y="236" text-anchor="end" fill="#8d2f3f">CEILING 2.0 pp</text>
+        <text class="diag-label" x="860" y="236" text-anchor="end">+3.0 pp</text>
+        <text class="diag-label" x="880" y="217" fill="#b8631a" font-size="10" font-weight="600">BREACH</text>
+
+        <!-- ============ row 4 : throughput ratio ============ -->
+        <text class="diag-text" x="16" y="291" font-size="11.5">throughput ratio</text>
+        <text class="diag-label" x="16" y="304">WORST CONCURRENCY</text>
+        <rect class="track" x="180" y="282" width="680" height="14"/>
+        <rect x="180" y="282" width="226.7" height="14" fill="#8d2f3f" fill-opacity=".08"/>
+        <line x1="406.7" y1="273" x2="406.7" y2="305" stroke="#8d2f3f" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+        <line x1="487.4" y1="278" x2="487.4" y2="300" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="487.4" cy="289" r="4.6" fill="#7a3fb8"/>
+        <line x1="506.9" y1="278" x2="506.9" y2="300" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="506.9" cy="289" r="4" fill="#7a3fb8"/>
+        <line x1="517.7" y1="278" x2="517.7" y2="300" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="517.7" cy="289" r="4" fill="#7a3fb8"/>
+        <text class="diag-num" x="560" y="273" fill="#7a3fb8">91.78 · 92.21 · 92.45%</text>
+        <text class="diag-label" x="180" y="312">85%</text>
+        <text class="diag-label" x="406.7" y="312" text-anchor="middle" fill="#8d2f3f">FLOOR 90%</text>
+        <text class="diag-label" x="860" y="312" text-anchor="end">100%</text>
+        <text class="diag-label" x="880" y="293" fill="#1b4fa8" font-size="10">PASS</text>
+
+        <!-- ============ row 5 : canary drift ============ -->
+        <text class="diag-text" x="16" y="367" font-size="11.5">canary drift</text>
+        <text class="diag-label" x="16" y="380">BEFORE VS AFTER</text>
+        <rect class="track" x="180" y="358" width="680" height="14"/>
+        <rect x="746.7" y="358" width="113.3" height="14" fill="#8d2f3f" fill-opacity=".08"/>
+        <line x1="746.7" y1="349" x2="746.7" y2="381" stroke="#8d2f3f" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+        <line x1="232.1" y1="354" x2="232.1" y2="376" stroke="#7a3fb8" stroke-width="1.4"/>
+        <circle cx="232.1" cy="365" r="4.4" fill="#7a3fb8"/>
+        <line x1="440.7" y1="354" x2="440.7" y2="376" stroke="#1b4fa8" stroke-width="1.4"/>
+        <circle cx="440.7" cy="365" r="4.4" fill="#1b4fa8"/>
+        <text class="diag-num" x="232.1" y="349" text-anchor="middle" fill="#7a3fb8">+0.46</text>
+        <text class="diag-num" x="440.7" y="349" text-anchor="middle" fill="#1b4fa8">+2.30</text>
+        <text class="diag-label" x="180" y="388">0%</text>
+        <text class="diag-label" x="746.7" y="388" text-anchor="middle" fill="#8d2f3f">CEILING 5%</text>
+        <text class="diag-label" x="860" y="388" text-anchor="end">6%</text>
+        <text class="diag-label" x="880" y="369" fill="#1b4fa8" font-size="10">PASS</text>
+
+        <!-- ============ detail : the breach ============ -->
+        <line class="axis" x1="16" y1="416" x2="964" y2="416"/>
+        <text class="diag-label" x="16" y="436">DETAIL · GATE 3 · THE READINGS 198 ROWS CAN ACTUALLY PRODUCE</text>
+        <text class="diag-text" x="16" y="480" font-size="11.5">GPQA Diamond</text>
+        <text class="diag-label" x="16" y="493">198 ROWS</text>
+        <line class="axis" x1="180" y1="484" x2="880" y2="484"/>
+        <line x1="245.3" y1="472" x2="245.3" y2="496" stroke="#9aa6b5" stroke-width="1"/>
+        <line x1="531.4" y1="466" x2="531.4" y2="502" stroke="#b8631a" stroke-width="2"/>
+        <line x1="817.6" y1="472" x2="817.6" y2="496" stroke="#9aa6b5" stroke-width="1"/>
+        <circle cx="245.3" cy="484" r="3.4" fill="#9aa6b5"/>
+        <circle cx="531.4" cy="484" r="5.6" fill="#b8631a"/>
+        <circle cx="817.6" cy="484" r="3.4" fill="#9aa6b5"/>
+        <line x1="520" y1="452" x2="520" y2="506" stroke="#8d2f3f" stroke-width="1.6" stroke-dasharray="3 2.5"/>
+        <text class="diag-label" x="514" y="448" text-anchor="end" fill="#8d2f3f">CEILING 2.0000 pp</text>
+        <path class="diag-edge" d="M520 512 L520 518 L531.4 518 L531.4 512" stroke="#b8631a"/>
+        <text class="diag-num" x="540" y="530" fill="#b8631a" font-weight="600">0.0202 pp — the entire breach</text>
+        <text class="diag-label" x="245.3" y="514" text-anchor="middle">1.5152 pp · 3 MORE ROWS</text>
+        <text class="diag-num" x="531.4" y="448" text-anchor="middle" fill="#b8631a">2.0202 pp · 4 MORE ROWS</text>
+        <text class="diag-label" x="817.6" y="514" text-anchor="middle">2.5253 pp · 5 MORE ROWS</text>
+        <text class="diag-text" x="16" y="556" font-size="11.5">On a 198-row sample the reading moves in steps of 0.50505 pp. The 2.0 pp ceiling falls in a gap between two attainable values — it names a number this instrument cannot report.</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Each row is drawn on its own scale, with the failing side washed in carmine and the preset line dashed. Four measurements land clear of their line. The third does not, and the detail strip below shows by how much: the ceiling was set at a value that a 198-row benchmark can never return, because truncation count is an integer and each row is worth 0.50505 pp.</p>
+    <p class="caption" lang="zh">每一行按各自的刻度绘制， 不通过的一侧用绛红色打底， 预设线用虚线标出。 四项测量落在线内。 第三项没有， 下方的细节条标出差了多少： 这条上限被设在了一个 198 行 benchmark 永远返回不了的数值上， 因为截断计数是整数， 每一行值 0.50505 pp。</p>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Gate</span><span lang="zh">门槛</span></th>
+      <th><span lang="en">What it detects</span><span lang="zh">它探测什么</span></th>
+      <th class="num"><span lang="en">Line</span><span lang="zh">线</span></th>
+      <th class="num"><span lang="en">Measured</span><span lang="zh">实测</span></th>
+      <th><span lang="en">Mark</span><span lang="zh">判定</span></th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="k"><span lang="en">Per-benchmark accuracy delta</span><span lang="zh">逐项 accuracy 差值</span></td>
+        <td><span lang="en">a regression concentrated in one domain</span><span lang="zh">集中在单一领域的回退</span></td>
+        <td class="num">≥ −2.0 pp</td>
+        <td class="num">−1.52 pp</td>
+        <td><span class="mark pass">pass</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">Combined correct-count recovery</span><span lang="zh">合计正确数 recovery</span></td>
+        <td><span lang="en">a broad shallow loss no single set resolves</span><span lang="zh">单个数据集分辨不出的广泛浅层损失</span></td>
+        <td class="num">≥ 98%</td>
+        <td class="num">99.5301%</td>
+        <td><span class="mark pass">pass</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">Length-finish-rate increase</span><span lang="zh">length finish rate 增幅</span></td>
+        <td><span lang="en">answers scored wrong for running out of room</span><span lang="zh">因为写不下而被判错的答案</span></td>
+        <td class="num">≤ 2.0 pp</td>
+        <td class="num">2.0202 pp</td>
+        <td><span class="mark breach">breach</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">Median total throughput ratio</span><span lang="zh">中位总吞吐比</span></td>
+        <td><span lang="en">the trade failing at its own purpose</span><span lang="zh">这笔交易在自己的目的上失败</span></td>
+        <td class="num">≥ 90%</td>
+        <td class="num">91.78%</td>
+        <td><span class="mark pass">pass</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">Before/after canary drift</span><span lang="zh">前后 canary 漂移</span></td>
+        <td><span lang="en">the machine, not the model, as the variable</span><span lang="zh">变量其实是机器而不是模型</span></td>
+        <td class="num">≤ 5%</td>
+        <td class="num">2.30%</td>
+        <td><span class="mark pass">pass</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Each "measured" cell is the worst reading across the benchmarks or concurrencies the gate covers, since a gate is only satisfied when every case it covers satisfies it.</p>
+  <p class="cap" lang="zh">「实测」一列取的是该门槛所覆盖的 benchmark 或并发中最差的一个读数， 因为一条门槛只有在它覆盖的每个 case 都满足时才算满足。</p>
+
+  <div class="note key">
+    <span class="tag"><span lang="en">Why the canary gate is not ceremony</span><span lang="zh">为什么 canary 这条门槛不是仪式</span></span>
+    <p lang="en">The FP8 side drifted +2.30% between its opening and closing canary — a short fixed 512/128 probe run before and after the whole sequence. That is not a small number in context: it is larger than the 1.1% round-to-round spread of the c1 measurement it brackets, and it is a third of the 7.6–8.2% effect the experiment is trying to resolve. Without the bracket there is no way to tell a real 8% difference from a machine that warmed up. With it, the two sides can be compared, because both were measured inside a window whose endpoints are known.</p>
+    <p lang="zh">FP8 一侧在开场与收场 canary 之间漂移了 +2.30%—— canary 是整段序列前后各跑一次的固定 512/128 短探针。 放在上下文里这不是小数： 它大于它所夹住的 c1 测量本身 1.1% 的轮间离散度， 也相当于这个实验试图分辨的 7.6%–8.2% 效应的三分之一。 没有这层括号， 就无法区分「真实的 8% 差异」和「机器热起来了」。 有了它， 两侧才可比， 因为它们都是在一个端点已知的窗口里测出来的。</p>
+  </div>
+</section>
+
+<!-- ============================================================ breach -->
+<section id="breach">
+  <span class="field"><span lang="en">The breach</span><span lang="zh">越线</span></span>
+  <h2><span lang="en">A threshold that bends when it is barely exceeded was never a threshold</span><span lang="zh">一碰就弯的门槛， 从来就不是门槛</span></h2>
+
+  <p class="lede" lang="en">GPQA Diamond truncated 55 of 198 answers on FP8 and 59 on MXFP4. Four more rows out of 198 is an increase of 2.0202 percentage points against a ceiling of 2.0. The overshoot is one part in a hundred of the ceiling itself.</p>
+  <p class="lede" lang="zh">GPQA Diamond 在 FP8 上有 55/198 个回答被截断， 在 MXFP4 上是 59 个。 198 里多了 4 行， 增幅 2.0202 个百分点， 上限是 2.0。 越线的幅度是上限自身的百分之一。</p>
+
+  <p lang="en">Every instinct says round it. The measurement has no error bar attached, the two numbers are indistinguishable in any practical sense, and no downstream decision changes if the gate is marked green. All of that is true, and none of it is the point.</p>
+  <p lang="zh">所有直觉都在说： 四舍五入掉吧。 这个测量本身没有附误差棒， 两个数在任何实际意义上都不可区分， 把这条门槛标绿也不会改变下游的任何决策。 这些都成立， 但都不是重点。</p>
+
+  <p lang="en">A threshold does exactly one job: it converts a number into a decision <em>without</em> the person holding the number getting to choose. Its entire value comes from being fixed before the result is known. The moment it is allowed to move after the result is known — even by a hundredth of itself, even in a case where moving it is obviously harmless — it stops being a decision rule and becomes a description of what happened. And the damage is not local. A reader who sees one gate relaxed has to assume every gate on the page was evaluated against a line that could have moved, which means none of the four passes carry information any more. The 0.0202 pp is not what is being protected. The other four gates are.</p>
+  <p lang="zh">门槛只做一件事： 在持有数字的人无权选择的前提下， 把一个数字变成一个决定。 它的全部价值来自「在结果已知之前就被固定」。 一旦它被允许在结果已知之后移动—— 哪怕只移动自身的百分之一， 哪怕在这个具体 case 里移动它显然无害—— 它就不再是决策规则， 而变成了对已发生之事的描述。 而且损害不是局部的。 一个读者只要看到有一条门槛被放宽， 就必须假设这一页上每条门槛都是对着一条可以移动的线评估的， 于是那四个「通过」也不再携带任何信息。 被保护的不是那 0.0202 pp， 是另外四条门槛。</p>
+
+  <h3><span lang="en">The threshold was mis-specified, which is a different problem</span><span lang="zh">这条门槛本身写错了， 那是另一个问题</span></h3>
+
+  <p lang="en">There is a real defect here, and it is worth separating from the reading. Truncation count on GPQA Diamond is an integer over 198 rows, so the measurable grid is 0.50505 pp wide. Between the FP8 baseline and any candidate, the attainable increases are 1.5152 pp (three more truncations) and 2.0202 pp (four). A ceiling of 2.0 pp sits in the gap between them. It cannot ever be met with equality, and the difference between "just inside" and "just outside" is decided by a single question out of 198 flipping from a complete answer to a truncated one.</p>
+  <p lang="zh">这里确实有一个真实缺陷， 值得和读数本身分开来说。 GPQA Diamond 上的截断计数是 198 行上的整数， 所以可测的格点宽度是 0.50505 pp。 在 FP8 基线与任何候选之间， 可达的增幅是 1.5152 pp（多三次截断）与 2.0202 pp（多四次）。 2.0 pp 的上限落在这两者之间的空隙里。 它永远无法被恰好取到， 而「刚好在内」与「刚好在外」之间的差别， 取决于 198 道题里的某一道从完整作答翻成截断。</p>
+
+  <p lang="en">The fix is not to loosen the number. It is to state the gate in the units the instrument actually reports — at most three additional truncations on a 198-row set — or to choose the sample size that makes 2.0 pp resolvable. Both changes have to be made before the next run, not after this one, or they are the same act of moving the line that the previous paragraph rejects.</p>
+  <p lang="zh">修法不是把数字放松， 而是用仪器实际报告的单位来陈述这条门槛—— 在 198 行的集合上最多多出三次截断—— 或者选一个能让 2.0 pp 可分辨的样本量。 这两种改动都必须在下一次运行之前做， 而不是在这一次之后做， 否则它就是上一段所拒绝的那个「移动线」的动作。</p>
+
+  <div class="note warn">
+    <span class="tag"><span lang="en">What the gate is actually watching for</span><span lang="zh">这条门槛真正在盯什么</span></span>
+    <p lang="en">Length-finish rate is the only gate here that watches a failure mode capable of hiding inside a passing accuracy score. A quantized model that has lost a little confidence does not answer wrong — it reasons for longer, hits the 16K output cap, and returns nothing scoreable. On GPQA under <code>reasoning_effort=max</code> the FP8 baseline already truncates 27.78% of the time, so the metric sits on a steep part of its own curve: small drifts in reasoning length translate directly into scored-wrong answers. That is why the ceiling on this gate is tight and why an overshoot, however small, is worth writing down rather than rounding away.</p>
+    <p lang="zh">length finish rate 是这里唯一一条盯着「能藏在及格 accuracy 分数背后」的故障模式的门槛。 一个稍微失去一点确定性的量化模型不会答错—— 它会多推一段， 撞上 16K 输出上限， 然后返回一个无法评分的东西。 在 <code>reasoning_effort=max</code> 下的 GPQA 上， FP8 基线本身就有 27.78% 的截断率， 所以这个指标正处在自己曲线的陡峭段： 推理长度上的微小漂移会直接转化成被判错的答案。 这就是为什么这条门槛的上限收得很紧， 也是为什么越线不管多小都值得写下来而不是抹平。</p>
+  </div>
+
+  <p lang="en">The resulting sentence about this checkpoint is longer than anyone would like, and it is the only accurate one available: <strong>Flash MXFP4 passes the accuracy-recovery and throughput gates and carries a boundary warning on truncation rate.</strong> It is not "equivalent to FP8". It is not "failed". Both of those are shorter, and both would be reporting a decision the data did not make.</p>
+  <p lang="zh">于是关于这个 checkpoint 的表述比谁都希望的要长， 而它是唯一准确的一句： <strong>Flash MXFP4 通过了 accuracy recovery 与吞吐门槛， 在截断率上带一条边界告警。</strong> 它不是「与 FP8 等价」， 也不是「未通过」。 那两句都更短， 而且都是在报告一个数据没有做出的决定。</p>
+</section>
+
+<!-- ============================================================ flash -->
+<section id="flash">
+  <span class="field"><span lang="en">Result</span><span lang="zh">结果</span></span>
+  <h2><span lang="en">The one comparison this campaign actually produced</span><span lang="zh">这一轮真正跑出来的那一个比较</span></h2>
+
+  <p class="lede" lang="en">Same checkpoint family, same runtime, same datasets, same generation settings, same three-round performance protocol on both sides. 1198 paired accuracy rows and nine performance runs per side, bracketed by canaries.</p>
+  <p class="lede" lang="zh">同一 checkpoint 家族、同一运行时、同一数据集、同一生成参数、两侧同一套三轮性能协议。 每侧 1198 行配对 accuracy 和九次性能运行， 前后由 canary 夹住。</p>
+
+  <h3><span lang="en">Accuracy, and what the delta hides</span><span lang="zh">Accuracy， 以及差值掩盖了什么</span></h3>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Dataset</span><span lang="zh">数据集</span></th>
+      <th class="num">FP8</th>
+      <th class="num">MXFP4</th>
+      <th class="num"><span lang="en">Delta</span><span lang="zh">差值</span></th>
+      <th class="num"><span lang="en">McNemar p</span><span lang="zh">McNemar p</span></th>
+      <th class="num"><span lang="en">truncated</span><span lang="zh">截断</span></th>
+      <th><span lang="en">Gate 3</span><span lang="zh">门槛 3</span></th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="k">GSM8K · 500</td>
+        <td class="num fp8">489 · 97.80%</td>
+        <td class="num mx">490 · 98.00%</td>
+        <td class="num">+0.20 pp</td>
+        <td class="num">1.000</td>
+        <td class="num">1 → 3</td>
+        <td><span class="mark pass">+0.40 pp</span></td>
+      </tr>
+      <tr>
+        <td class="k">MMLU · 500</td>
+        <td class="num fp8">437 · 87.40%</td>
+        <td class="num mx">434 · 86.80%</td>
+        <td class="num">−0.60 pp</td>
+        <td class="num">0.690</td>
+        <td class="num">37 → 39</td>
+        <td><span class="mark pass">+0.40 pp</span></td>
+      </tr>
+      <tr>
+        <td class="k">GPQA Diamond · 198</td>
+        <td class="num fp8">138 · 69.70%</td>
+        <td class="num mx">135 · 68.18%</td>
+        <td class="num">−1.52 pp</td>
+        <td class="num">0.7283</td>
+        <td class="num">55 → 59</td>
+        <td><span class="mark breach">+2.0202 pp</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span lang="en">Combined · 1198</span><span lang="zh">合计 · 1198</span></td>
+        <td class="num fp8">1064</td>
+        <td class="num mx">1059</td>
+        <td class="num">−0.42 pp</td>
+        <td class="num">—</td>
+        <td class="num">93 → 101</td>
+        <td><span class="mark pass">99.5301%</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">From <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/accuracy/flash-accuracy-comparison.json"><code>flash-accuracy-comparison.json</code></a>. The combined recovery is 1059/1064 = 0.9953007518796992. No benchmark shows a significant difference under an exact McNemar test.</p>
+  <p class="cap" lang="zh">来自 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/accuracy/flash-accuracy-comparison.json"><code>flash-accuracy-comparison.json</code></a>。 合计 recovery 为 1059/1064 = 0.9953007518796992。 在精确 McNemar 检验下没有任何一个 benchmark 显示出显著差异。</p>
+
+  <p lang="en">The line worth pausing on is not the −5 answers. It is that the two models disagreed on 67 of the 1198 rows and the net came out at −5. Thirty-six questions FP8 got right and MXFP4 got wrong; thirty-one the other way. The aggregate delta is a difference of two large, nearly equal counts, and it is small for the same reason a coin lands near even — not because the underlying behaviour is unchanged.</p>
+  <p lang="zh">值得停下来看的不是「少了 5 个正确答案」， 而是两个模型在 1198 行里有 67 行给出了不同的对错结果， 而净值落在 −5。 36 道 FP8 答对而 MXFP4 答错， 31 道反过来。 这个汇总差值是两个很大且几乎相等的计数之差， 它小的原因和硬币接近对半开是同一个原因—— 不是因为底层行为没有变。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate II · Paired disagreement, not net difference</span><span>1198 rows · exact McNemar</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 320" role="img" aria-label="Two by two agreement tables for the three benchmarks, and the total churn across 1198 paired rows">
+        <!-- panel 1 GSM8K -->
+        <text class="diag-strong" x="20" y="24">GSM8K · 500</text>
+        <text class="diag-label" x="135" y="44" text-anchor="middle">FP8</text>
+        <text class="diag-label" x="135" y="55" text-anchor="middle">CORRECT</text>
+        <text class="diag-label" x="245" y="44" text-anchor="middle">FP8</text>
+        <text class="diag-label" x="245" y="55" text-anchor="middle">WRONG</text>
+        <text class="diag-label" x="73" y="86" text-anchor="end">MXFP4</text>
+        <text class="diag-label" x="73" y="97" text-anchor="end">CORRECT</text>
+        <text class="diag-label" x="73" y="144" text-anchor="end">MXFP4</text>
+        <text class="diag-label" x="73" y="155" text-anchor="end">WRONG</text>
+        <rect x="80" y="62" width="110" height="58" fill="#f2f4f6" stroke="#ccd3dc"/>
+        <rect x="190" y="62" width="110" height="58" fill="#7a3fb8" fill-opacity=".14" stroke="#7a3fb8"/>
+        <rect x="80" y="120" width="110" height="58" fill="#1b4fa8" fill-opacity=".14" stroke="#1b4fa8"/>
+        <rect x="190" y="120" width="110" height="58" fill="#f2f4f6" stroke="#ccd3dc"/>
+        <text class="diag-num" x="135" y="97" text-anchor="middle" font-size="17">485</text>
+        <text class="diag-num" x="245" y="97" text-anchor="middle" font-size="17" fill="#7a3fb8">5</text>
+        <text class="diag-num" x="135" y="155" text-anchor="middle" font-size="17" fill="#1b4fa8">4</text>
+        <text class="diag-num" x="245" y="155" text-anchor="middle" font-size="17">6</text>
+        <text class="diag-label" x="20" y="198">DISCORDANT 9 · p = 1.000</text>
+
+        <!-- panel 2 MMLU -->
+        <text class="diag-strong" x="330" y="24">MMLU · 500</text>
+        <text class="diag-label" x="445" y="44" text-anchor="middle">FP8</text>
+        <text class="diag-label" x="445" y="55" text-anchor="middle">CORRECT</text>
+        <text class="diag-label" x="555" y="44" text-anchor="middle">FP8</text>
+        <text class="diag-label" x="555" y="55" text-anchor="middle">WRONG</text>
+        <text class="diag-label" x="383" y="86" text-anchor="end">MXFP4</text>
+        <text class="diag-label" x="383" y="97" text-anchor="end">CORRECT</text>
+        <text class="diag-label" x="383" y="144" text-anchor="end">MXFP4</text>
+        <text class="diag-label" x="383" y="155" text-anchor="end">WRONG</text>
+        <rect x="390" y="62" width="110" height="58" fill="#f2f4f6" stroke="#ccd3dc"/>
+        <rect x="500" y="62" width="110" height="58" fill="#7a3fb8" fill-opacity=".14" stroke="#7a3fb8"/>
+        <rect x="390" y="120" width="110" height="58" fill="#1b4fa8" fill-opacity=".14" stroke="#1b4fa8"/>
+        <rect x="500" y="120" width="110" height="58" fill="#f2f4f6" stroke="#ccd3dc"/>
+        <text class="diag-num" x="445" y="97" text-anchor="middle" font-size="17">423</text>
+        <text class="diag-num" x="555" y="97" text-anchor="middle" font-size="17" fill="#7a3fb8">11</text>
+        <text class="diag-num" x="445" y="155" text-anchor="middle" font-size="17" fill="#1b4fa8">14</text>
+        <text class="diag-num" x="555" y="155" text-anchor="middle" font-size="17">52</text>
+        <text class="diag-label" x="330" y="198">DISCORDANT 25 · p = 0.690</text>
+
+        <!-- panel 3 GPQA -->
+        <text class="diag-strong" x="640" y="24">GPQA DIAMOND · 198</text>
+        <text class="diag-label" x="755" y="44" text-anchor="middle">FP8</text>
+        <text class="diag-label" x="755" y="55" text-anchor="middle">CORRECT</text>
+        <text class="diag-label" x="865" y="44" text-anchor="middle">FP8</text>
+        <text class="diag-label" x="865" y="55" text-anchor="middle">WRONG</text>
+        <text class="diag-label" x="693" y="86" text-anchor="end">MXFP4</text>
+        <text class="diag-label" x="693" y="97" text-anchor="end">CORRECT</text>
+        <text class="diag-label" x="693" y="144" text-anchor="end">MXFP4</text>
+        <text class="diag-label" x="693" y="155" text-anchor="end">WRONG</text>
+        <rect x="700" y="62" width="110" height="58" fill="#f2f4f6" stroke="#ccd3dc"/>
+        <rect x="810" y="62" width="110" height="58" fill="#7a3fb8" fill-opacity=".14" stroke="#7a3fb8"/>
+        <rect x="700" y="120" width="110" height="58" fill="#1b4fa8" fill-opacity=".14" stroke="#1b4fa8"/>
+        <rect x="810" y="120" width="110" height="58" fill="#f2f4f6" stroke="#ccd3dc"/>
+        <text class="diag-num" x="755" y="97" text-anchor="middle" font-size="17">120</text>
+        <text class="diag-num" x="865" y="97" text-anchor="middle" font-size="17" fill="#7a3fb8">15</text>
+        <text class="diag-num" x="755" y="155" text-anchor="middle" font-size="17" fill="#1b4fa8">18</text>
+        <text class="diag-num" x="865" y="155" text-anchor="middle" font-size="17">45</text>
+        <text class="diag-label" x="640" y="198">DISCORDANT 33 · p = 0.7283</text>
+
+        <!-- churn strip -->
+        <line class="axis" x1="20" y1="218" x2="960" y2="218"/>
+        <text class="diag-label" x="20" y="240">ALL 1198 PAIRED ROWS</text>
+        <rect x="20" y="250" width="806.6" height="22" fill="#e7ebf0" stroke="#ccd3dc"/>
+        <rect x="826.6" y="250" width="80.8" height="22" fill="#9aa6b5" fill-opacity=".45" stroke="#9aa6b5"/>
+        <rect x="907.4" y="250" width="28.2" height="22" fill="#1b4fa8"/>
+        <rect x="935.6" y="250" width="24.4" height="22" fill="#7a3fb8"/>
+        <text class="diag-label" x="30" y="265">1028 BOTH CORRECT</text>
+        <text class="diag-label" x="836" y="265">103 BOTH WRONG</text>
+        <line class="diag-edge" x1="921" y1="272" x2="880" y2="296"/>
+        <line class="diag-edge" x1="948" y1="272" x2="948" y2="290"/>
+        <text class="diag-num" x="876" y="306" text-anchor="end" fill="#1b4fa8">36 FP8 only</text>
+        <text class="diag-num" x="960" y="300" text-anchor="end" fill="#7a3fb8">31 MXFP4 only</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">McNemar looks only at the two off-diagonal cells, because the rows both models agree on carry no information about a difference between them. Sixty-seven rows changed side; the reported delta of −5 is what is left after 36 and 31 cancel.</p>
+    <p class="caption" lang="zh">McNemar 只看两个非对角格， 因为两个模型答案一致的行不携带任何关于「它们之间有差异」的信息。 有 67 行换了边； 报告出来的 −5 是 36 与 31 相抵之后剩下的量。</p>
+  </div>
+
+  <div class="note">
+    <span class="tag"><span lang="en">Why churn matters more than the delta</span><span lang="zh">为什么 churn 比差值更重要</span></span>
+    <p lang="en">If quantization were a small uniform blur, the two models would disagree only on questions sitting near a decision boundary, and the disagreements would be roughly symmetric — which is what 36 against 31 looks like. That is the benign reading, and it is consistent with three p-values above 0.69. But the same net delta could also be produced by a model that lost a whole capability and gained an unrelated one, and no aggregate score can tell the two apart. The 2×2 tables can. Reporting only the delta throws away the evidence that decides which story is true.</p>
+    <p lang="zh">如果量化只是一层均匀的轻微模糊， 那两个模型只会在靠近决策边界的题目上分歧， 而且分歧大致对称—— 36 对 31 正是这个样子。 这是良性解读， 也与三个都在 0.69 以上的 p 值一致。 但同样的净差值也可以由「丢掉了一整块能力、又获得了另一块不相干能力」的模型产生， 而任何汇总分数都分辨不出这两者。 2×2 表可以。 只报告差值， 就把决定哪个故事为真的证据扔掉了。</p>
+  </div>
+
+  <h3><span lang="en">Serving throughput</span><span lang="zh">服务吞吐</span></h3>
+
+  <p lang="en">Three rounds at each concurrency, ISL 8192 and OSL 1024, median across rounds, with a fixed 512/128 canary before and after the whole sequence.</p>
+  <p lang="zh">每个并发三轮， ISL 8192、OSL 1024， 取轮间中位数， 整段序列前后各跑一次固定的 512/128 canary。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Concurrency</span><span lang="zh">并发</span></th>
+      <th class="num"><span lang="en">FP8 total</span><span lang="zh">FP8 总吞吐</span></th>
+      <th class="num"><span lang="en">MXFP4 total</span><span lang="zh">MXFP4 总吞吐</span></th>
+      <th class="num"><span lang="en">Ratio</span><span lang="zh">比值</span></th>
+      <th class="num">TPOT FP8 → MXFP4</th>
+      <th class="num"><span lang="en">Round spread</span><span lang="zh">轮间离散</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td class="num fp8">124.93 tok/s</td><td class="num mx">114.66 tok/s</td><td class="num">91.78%</td><td class="num">71.81 → 77.97 ms</td><td class="num">1.12% · 0.80%</td></tr>
+      <tr><td class="k">8</td><td class="num fp8">943.52 tok/s</td><td class="num mx">870.06 tok/s</td><td class="num">92.21%</td><td class="num">75.27 → 81.63 ms</td><td class="num">0.82% · 0.44%</td></tr>
+      <tr><td class="k">32</td><td class="num fp8">3624.11 tok/s</td><td class="num mx">3350.44 tok/s</td><td class="num">92.45%</td><td class="num">75.62 → 82.08 ms</td><td class="num">0.06% · 0.18%</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">From <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/perf/flash-fp8-perf-summary.json"><code>flash-fp8-perf-summary.json</code></a> and <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/perf/flash-mxfp4-perf-summary.json"><code>flash-mxfp4-perf-summary.json</code></a>. Round spread is the p10–p90 band as a fraction of the median, FP8 first.</p>
+  <p class="cap" lang="zh">来自 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/perf/flash-fp8-perf-summary.json"><code>flash-fp8-perf-summary.json</code></a> 与 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/perf/flash-mxfp4-perf-summary.json"><code>flash-mxfp4-perf-summary.json</code></a>。 轮间离散是 p10–p90 带宽占中位数的比例， FP8 在前。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate III · Throughput against the 90% floor, and the time per output token</span><span>ISL 8192 · OSL 1024 · median of 3</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 400" role="img" aria-label="MXFP4 total throughput as a fraction of FP8 at three concurrencies, against the ninety percent gate, and the six median time-per-output-token readings">
+        <text class="diag-label" x="20" y="20">MXFP4 TOTAL THROUGHPUT AS A FRACTION OF FP8 · BAR HEIGHT NORMALISED PER GROUP</text>
+        <line class="axis" x1="120" y1="230" x2="900" y2="230"/>
+        <line x1="120" y1="95" x2="900" y2="95" stroke="#8d2f3f" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text class="diag-label" x="900" y="90" text-anchor="end" fill="#8d2f3f">GATE FLOOR · 90% OF FP8</text>
+        <line class="gridline" x1="120" y1="80" x2="900" y2="80"/>
+        <text class="diag-label" x="112" y="84" text-anchor="end">100%</text>
+        <text class="diag-label" x="112" y="234" text-anchor="end">0</text>
+
+        <!-- c1 -->
+        <rect x="188" y="80" width="60" height="150" fill="#1b4fa8"/>
+        <rect x="272" y="92.3" width="60" height="137.7" fill="#7a3fb8"/>
+        <text class="diag-num" x="218" y="74" text-anchor="middle" fill="#1b4fa8">124.93</text>
+        <text class="diag-num" x="302" y="74" text-anchor="middle" fill="#7a3fb8">114.66</text>
+        <text class="diag-strong" x="260" y="252" text-anchor="middle">concurrency 1</text>
+        <text class="diag-num" x="260" y="270" text-anchor="middle" fill="#7a3fb8">91.78%</text>
+        <!-- c8 -->
+        <rect x="468" y="80" width="60" height="150" fill="#1b4fa8"/>
+        <rect x="552" y="91.7" width="60" height="138.3" fill="#7a3fb8"/>
+        <text class="diag-num" x="498" y="74" text-anchor="middle" fill="#1b4fa8">943.52</text>
+        <text class="diag-num" x="582" y="74" text-anchor="middle" fill="#7a3fb8">870.06</text>
+        <text class="diag-strong" x="540" y="252" text-anchor="middle">concurrency 8</text>
+        <text class="diag-num" x="540" y="270" text-anchor="middle" fill="#7a3fb8">92.21%</text>
+        <!-- c32 -->
+        <rect x="748" y="80" width="60" height="150" fill="#1b4fa8"/>
+        <rect x="832" y="91.3" width="60" height="138.7" fill="#7a3fb8"/>
+        <text class="diag-num" x="778" y="74" text-anchor="middle" fill="#1b4fa8">3624.11</text>
+        <text class="diag-num" x="862" y="74" text-anchor="middle" fill="#7a3fb8">3350.44</text>
+        <text class="diag-strong" x="820" y="252" text-anchor="middle">concurrency 32</text>
+        <text class="diag-num" x="820" y="270" text-anchor="middle" fill="#7a3fb8">92.45%</text>
+        <text class="diag-label" x="20" y="252">tok/s</text>
+        <text class="diag-label" x="20" y="270">RATIO</text>
+
+        <!-- TPOT dot plot -->
+        <line class="axis" x1="20" y1="296" x2="960" y2="296"/>
+        <text class="diag-label" x="20" y="318">MEDIAN TIME PER OUTPUT TOKEN · MILLISECONDS · LOWER IS BETTER</text>
+        <line class="axis" x1="120" y1="356" x2="880" y2="356"/>
+        <line class="gridline" x1="120" y1="340" x2="120" y2="362"/>
+        <line class="gridline" x1="357.5" y1="340" x2="357.5" y2="362"/>
+        <line class="gridline" x1="595" y1="340" x2="595" y2="362"/>
+        <line class="gridline" x1="832.5" y1="340" x2="832.5" y2="362"/>
+        <text class="diag-label" x="120" y="376" text-anchor="middle">70</text>
+        <text class="diag-label" x="357.5" y="376" text-anchor="middle">75</text>
+        <text class="diag-label" x="595" y="376" text-anchor="middle">80</text>
+        <text class="diag-label" x="832.5" y="376" text-anchor="middle">85</text>
+        <circle cx="206.1" cy="356" r="5.5" fill="#1b4fa8"/>
+        <circle cx="370.3" cy="356" r="5.5" fill="#1b4fa8"/>
+        <circle cx="387.2" cy="356" r="5.5" fill="#1b4fa8"/>
+        <circle cx="499.1" cy="356" r="5.5" fill="#7a3fb8"/>
+        <circle cx="673.0" cy="356" r="5.5" fill="#7a3fb8"/>
+        <circle cx="694.1" cy="356" r="5.5" fill="#7a3fb8"/>
+        <text class="diag-num" x="206.1" y="344" text-anchor="middle" fill="#1b4fa8">71.81</text>
+        <text class="diag-num" x="360" y="332" text-anchor="middle" fill="#1b4fa8">75.27 · 75.62</text>
+        <text class="diag-num" x="499.1" y="344" text-anchor="middle" fill="#7a3fb8">77.97</text>
+        <text class="diag-num" x="686" y="332" text-anchor="middle" fill="#7a3fb8">81.63 · 82.08</text>
+        <text class="diag-label" x="112" y="360" text-anchor="end">TPOT</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">The bars are normalised inside each group, so what they show is the ratio, not the absolute rate — the absolute figures are printed above them and span a factor of thirty. The dot plot underneath is the same result seen per token: all three FP8 points sit below 76 ms and all three MXFP4 points above 77 ms, with no overlap.</p>
+    <p class="caption" lang="zh">柱子在每组内部各自归一化， 所以它们展示的是比值而不是绝对速率—— 绝对数值印在柱子上方， 三组之间相差三十倍。 下方的点图是同一个结果按每 token 来看： 三个 FP8 点全部低于 76 ms， 三个 MXFP4 点全部高于 77 ms， 没有重叠。</p>
+  </div>
+
+  <p lang="en">The loss is 7.55% to 8.22% and it barely moves with concurrency. That flatness is itself a result: an overhead that scaled with batch size would point at the matrix work, and one that vanished with batch size would point at launch cost. A constant fraction across a thirty-fold range in load points instead at something paid once per weight element per step — which is what unpacking four-bit values and applying their block scales is.</p>
+  <p lang="zh">损失在 7.55% 到 8.22% 之间， 而且几乎不随并发变化。 这种平坦本身就是一个结果： 随批大小放大的开销会指向矩阵计算， 随批大小消失的开销会指向 launch 成本。 在三十倍负载范围内保持恒定比例， 指向的是「每步每个权重元素付一次」的东西—— 而解包 4 bit 值并施加它们的块 scale 正是这样的东西。</p>
+</section>
+
+<!-- ============================================================ stream -->
+<section id="stream">
+  <span class="field"><span lang="en">Mechanism</span><span lang="zh">机制</span></span>
+  <h2><span lang="en">Why a checkpoint 42% smaller on disk can stream more bytes per token</span><span lang="zh">为什么盘上小 42% 的 checkpoint 每 token 反而读更多字节</span></h2>
+
+  <p class="lede" lang="en">The natural inference is that halving the numbers halves the reading, and halving the reading halves the time. Both halves of that sentence are wrong here, and they are wrong for different reasons.</p>
+  <p class="lede" lang="zh">很自然的推论是： 数字减半则读取减半， 读取减半则时间减半。 这句话的两半在这里都不成立， 而且不成立的原因还不一样。</p>
+
+  <h3><span lang="en">A file is a census; a decode step is a sample</span><span lang="zh">文件是普查， 解码步是抽样</span></h3>
+
+  <p lang="en">In a sparse mixture-of-experts model these are two very different quantities. The file has to contain every expert, because any of them might be routed to. A single decode step touches the shared trunk plus the handful of experts the router picked for that one token. In GLM-5.3-Flash that is 8 of 288 experts, and the expert weights are 92.7% of the file. So compressing the experts — which is where essentially all of the file lives — moves the per-token read by 8/288 of what it moves the file by. The remaining 280/288 of the saving is real, and it buys HBM capacity and load time. It does not buy decode bandwidth, because those bytes were never going to be read on this token.</p>
+  <p lang="zh">在稀疏 MoE 模型里， 这是两个非常不同的量。 文件必须装下每一个 expert， 因为任何一个都可能被路由到。 而一次解码步只碰共享主干， 加上 router 为这一个 token 挑出的少数几个 expert。 在 GLM-5.3-Flash 上是 288 选 8， 而 expert 权重占文件的 92.7%。 所以压缩 expert—— 文件的绝大部分都在那里—— 对每 token 读取量的影响， 只有它对文件大小影响的 8/288。 剩下 280/288 的节省是真实的， 它买到的是 HBM 容量和加载时间， 而不是解码带宽， 因为那些字节本来就不会在这个 token 上被读。</p>
+
+  <p lang="en">Written out, the active set for one token is</p>
+  <p lang="zh">写出来， 一个 token 的活跃权重集是</p>
+
+<pre><code>active_bytes = always_active_bytes + (top_k / num_experts) * routed_expert_bytes</code></pre>
+
+  <p lang="en">which is the quantity computed for all four checkpoints in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/weights"><code>weights/</code></a>, directly from the safetensors headers rather than from any config claim.</p>
+  <p lang="zh">这就是 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/weights"><code>weights/</code></a> 里为四个 checkpoint 分别算出的量， 直接读 safetensors header， 而不是依据 config 里的任何声明。</p>
+
+  <h3><span lang="en">The baseline is already one byte, and the exclusions are two</span><span lang="zh">基线已经是一字节， 而例外是两字节</span></h3>
+
+  <p lang="en">This is the part the file size actively hides. The comparison is not MXFP4 against BF16, it is MXFP4 against FP8 — a baseline that already stores <em>everything</em> at one byte per parameter. The MXFP4 conversion applies four-bit packing plus a shared block scale to the expert tensors and leaves everything it excludes in BF16, at two bytes. Relative to the FP8 baseline the quantized parts roughly halve and the excluded parts <strong>double</strong>.</p>
+  <p lang="zh">这正是文件大小主动掩盖的部分。 这里比较的不是 MXFP4 对 BF16， 而是 MXFP4 对 FP8—— 一个已经把<em>所有东西</em>都按每参数一字节存储的基线。 MXFP4 转换把 4 bit 打包加共享块 scale 应用到 expert 张量上， 而所有被排除的部分保留 BF16， 每参数两字节。 相对于 FP8 基线， 被量化的部分大致减半， 被排除的部分<strong>翻倍</strong>。</p>
+
+  <p lang="en">And the excluded set is not a random subset. Embeddings, attention projections, norms, the multi-token-prediction head — the things a converter is most reluctant to quantize — are precisely the tensors that every token reads. So the format change makes the sparse part cheaper and the dense part more expensive, and the decode step is dominated by the dense part.</p>
+  <p lang="zh">而被排除的那一组并不是随机子集。 embedding、attention 投影、norm、多 token 预测头—— 转换工具最不愿意量化的那些—— 恰好就是每个 token 都要读的那些张量。 于是格式转换让稀疏部分变便宜、让稠密部分变昂贵， 而解码步恰恰由稠密部分主导。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate IV · What the file measures against what the step reads</span><span>from safetensors headers</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 330" role="img" aria-label="File size against estimated per-token active weight bytes for the four checkpoints, showing the two quantities moving in opposite directions for the Full model">
+        <text class="diag-label" x="160" y="24">A · BYTES ON DISK</text>
+        <text class="diag-label" x="160" y="38">INDEX TOTAL, ALL EXPERTS</text>
+        <text class="diag-label" x="560" y="24">B · BYTES READ PER GENERATED TOKEN</text>
+        <text class="diag-label" x="560" y="38">TRUNK + 8 OF N EXPERTS</text>
+        <line class="axis" x1="160" y1="52" x2="500" y2="52"/>
+        <line class="axis" x1="560" y1="52" x2="940" y2="52"/>
+
+        <text class="diag-text" x="150" y="94" text-anchor="end" font-size="11.5">Flash FP8</text>
+        <text class="diag-text" x="150" y="126" text-anchor="end" font-size="11.5">Flash MXFP4</text>
+        <text class="diag-text" x="150" y="178" text-anchor="end" font-size="11.5">Full FP8</text>
+        <text class="diag-text" x="150" y="210" text-anchor="end" font-size="11.5">Full MXFP4</text>
+
+        <!-- panel A bars -->
+        <rect x="160" y="76" width="139.5" height="26" fill="#1b4fa8"/>
+        <rect x="160" y="108" width="96.7" height="26" fill="#7a3fb8"/>
+        <rect x="160" y="160" width="321.1" height="26" fill="#1b4fa8"/>
+        <rect x="160" y="192" width="186.2" height="26" fill="#7a3fb8"/>
+        <text class="diag-num" x="305" y="94" fill="#1b4fa8">328.3 GB</text>
+        <text class="diag-num" x="262" y="126" fill="#7a3fb8">227.5 GB · −30.71%</text>
+        <text class="diag-num" x="487" y="178" text-anchor="end" fill="#fbfcfd">755.6 GB</text>
+        <text class="diag-num" x="352" y="210" fill="#7a3fb8">438.0 GB · −42.04%</text>
+        <text class="diag-label" x="160" y="238">0</text>
+        <text class="diag-label" x="500" y="238" text-anchor="end">800 GB</text>
+
+        <!-- panel B stacked bars: always-active solid, routed-active translucent -->
+        <rect x="560" y="76" width="110.5" height="26" fill="#1b4fa8"/>
+        <rect x="670.5" y="76" width="66.9" height="26" fill="#1b4fa8" fill-opacity=".32" stroke="#1b4fa8" stroke-width=".8"/>
+        <rect x="560" y="108" width="131.2" height="26" fill="#7a3fb8"/>
+        <rect x="691.2" y="108" width="42.6" height="26" fill="#7a3fb8" fill-opacity=".32" stroke="#7a3fb8" stroke-width=".8"/>
+        <rect x="560" y="160" width="148.3" height="26" fill="#1b4fa8"/>
+        <rect x="708.3" y="160" width="179.4" height="26" fill="#1b4fa8" fill-opacity=".32" stroke="#1b4fa8" stroke-width=".8"/>
+        <rect x="560" y="192" width="246.5" height="26" fill="#7a3fb8"/>
+        <rect x="806.5" y="192" width="95.3" height="26" fill="#7a3fb8" fill-opacity=".32" stroke="#7a3fb8" stroke-width=".8"/>
+        <text class="diag-num" x="745" y="94" fill="#1b4fa8">22.41 GB</text>
+        <text class="diag-num" x="742" y="126" fill="#7a3fb8">21.95 GB · −2.06%</text>
+        <text class="diag-num" x="895" y="178" text-anchor="end" fill="#12161c">41.38 GB</text>
+        <text class="diag-num" x="940" y="186" text-anchor="end" fill="#b8631a" font-weight="600">43.17 GB · +4.33%</text>
+        <text class="diag-label" x="560" y="238">0</text>
+        <text class="diag-label" x="940" y="238" text-anchor="end">48 GB</text>
+
+        <!-- the contradiction arrow -->
+        <path class="diag-edge" d="M352 224 L352 250 L900 250 L900 226" stroke="#b8631a" stroke-dasharray="4 3"/>
+        <text class="diag-num" x="626" y="266" text-anchor="middle" fill="#b8631a" font-weight="600">the file shrank 42.04% and the per-token read grew 4.33%</text>
+
+        <!-- legend -->
+        <line class="axis" x1="20" y1="282" x2="960" y2="282"/>
+        <rect x="20" y="296" width="16" height="14" fill="#727d8c"/>
+        <text class="diag-label" x="44" y="307">ALWAYS ACTIVE — TRUNK, ATTENTION, NORMS, MTP HEAD</text>
+        <rect x="430" y="296" width="16" height="14" fill="#727d8c" fill-opacity=".32" stroke="#727d8c" stroke-width=".8"/>
+        <text class="diag-label" x="454" y="307">ROUTED SHARE — (top_k / num_experts) × ALL EXPERT BYTES</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Panel A is what a model card advertises. Panel B is what the hardware does on every token. For the Flash pair they agree in sign and disagree by a factor of fifteen in magnitude; for the Full pair they disagree in sign outright.</p>
+    <p class="caption" lang="zh">A 面板是 model card 会宣传的东西。 B 面板是硬件在每个 token 上真正做的事。 Flash 这一对的符号一致但量级差了十五倍； Full 那一对连符号都相反。</p>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Checkpoint</span><span lang="zh">Checkpoint</span></th>
+      <th class="num"><span lang="en">File</span><span lang="zh">文件</span></th>
+      <th class="num"><span lang="en">Always active</span><span lang="zh">恒定活跃</span></th>
+      <th class="num"><span lang="en">Routed share</span><span lang="zh">路由份额</span></th>
+      <th class="num"><span lang="en">Active per token</span><span lang="zh">每 token 活跃</span></th>
+      <th class="num"><span lang="en">Bytes / active param</span><span lang="zh">字节 / 活跃参数</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k fp8">Flash FP8</td><td class="num">328.327 GB</td><td class="num">13.957 GB</td><td class="num">8.458 GB</td><td class="num">22.415 GB</td><td class="num">1.245</td></tr>
+      <tr><td class="k mx">Flash MXFP4</td><td class="num">227.486 GB</td><td class="num">16.574 GB</td><td class="num">5.379 GB</td><td class="num">21.953 GB</td><td class="num">1.220</td></tr>
+      <tr><td class="k fp8">Full FP8</td><td class="num">755.617 GB</td><td class="num">18.729 GB</td><td class="num">22.655 GB</td><td class="num">41.383 GB</td><td class="num">1.061</td></tr>
+      <tr><td class="k mx">Full MXFP4</td><td class="num">438.002 GB</td><td class="num">31.141 GB</td><td class="num">12.032 GB</td><td class="num">43.174 GB</td><td class="num">1.107</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Flash has 288 experts with top-8 routing over 45 layers; Full has 256 experts with top-8 over 78. The always-active column is where the story is: it grows 18.7% on Flash and 66.3% on Full when moving from FP8 to MXFP4, while the routed share falls 36.4% and 46.9%.</p>
+  <p class="cap" lang="zh">Flash 是 45 层、288 experts、top-8； Full 是 78 层、256 experts、top-8。 故事在「恒定活跃」这一列： 从 FP8 换到 MXFP4 时它在 Flash 上涨 18.7%、在 Full 上涨 66.3%， 而路由份额分别降 36.4% 与 46.9%。</p>
+
+  <p lang="en">Flash survives because its expert bank is enormous relative to its trunk, so the routed saving is just large enough to cover the trunk's expansion — net −2.06%. Full does not: its trunk is 78 layers deep and its expert bank, while bigger in absolute terms, is spread over 256 experts of which 8 are read. The trunk grows by 12.4 GB per token and the routed share only falls by 10.6 GB. Net +4.33%.</p>
+  <p lang="zh">Flash 之所以能扛住， 是因为它的 expert 库相对于主干极大， 路由侧的节省刚好够覆盖主干的膨胀—— 净值 −2.06%。 Full 扛不住： 它的主干有 78 层深， 而 expert 库虽然绝对值更大， 却摊在 256 个 expert 上、每次只读 8 个。 主干每 token 涨了 12.4 GB， 路由份额只降了 10.6 GB。 净值 +4.33%。</p>
+
+  <h3><span lang="en">And even the 2% Flash saves does not appear as speed</span><span lang="zh">而且 Flash 省下的那 2% 也没有变成速度</span></h3>
+
+  <p lang="en">Flash MXFP4 reads 2.06% fewer bytes per token and runs 8.22% slower at concurrency 1. So the active-byte model, having correctly demolished the file-size argument, does not then get to become the new prediction. Check it against the clock: at TP8 each rank holds an eighth of the active set, 2.80 GB, and the measured TPOT is 71.81 ms. That is 39 GB/s per rank against HBM3E measured in thousands. This operating point is nowhere near the bandwidth roof — it is bound by launch and dependency latency down a 45-layer chain, and a 2% change in bytes cannot be what sets the time.</p>
+  <p lang="zh">Flash MXFP4 每 token 少读 2.06% 的字节， 在并发 1 下慢 8.22%。 所以活跃字节这个模型在正确地拆掉文件大小论证之后， 并不因此就变成新的预测器。 用时钟核对一下： TP8 下每个 rank 持有活跃集的八分之一， 2.80 GB， 实测 TPOT 是 71.81 ms。 那是每 rank 39 GB/s， 而 HBM3E 的带宽以千计。 这个工作点离带宽上限还远得很—— 它受限于 45 层链路上的 launch 与依赖延迟， 2% 的字节变化不可能是决定时间的那个量。</p>
+
+  <div class="note key">
+    <span class="tag"><span lang="en">Three models, none of which predicts the clock</span><span lang="zh">三个模型， 没有一个能预测时钟</span></span>
+    <p lang="en">File size predicts −30.71%. Active bytes predict −2.06%. The measurement says +8.22% in time. Each model is correct about the quantity it names and wrong about the one that matters, because the cost that actually dominates is not in any of them: unpacking two four-bit values from each byte and applying a per-block scale is arithmetic that FP8 does not perform, paid once per weight element per step. That is also why the penalty holds flat from concurrency 1 to 32 — it scales with weights read, and the weights are read once per step regardless of how many tokens ride along.</p>
+    <p lang="zh">文件大小预测 −30.71%。 活跃字节预测 −2.06%。 实测是时间上 +8.22%。 每个模型对自己命名的那个量都是对的， 对真正重要的那个量都是错的， 因为真正主导的成本不在它们任何一个里面： 从每个字节里解出两个 4 bit 值并施加逐块 scale， 是 FP8 根本不做的算术， 而且每步每个权重元素都要付一次。 这也解释了为什么这个代价从并发 1 到 32 保持平坦—— 它随读入的权重量缩放， 而不管随行的 token 有多少， 权重每步都只读一次。</p>
+  </div>
+
+  <p lang="en">The transferable form of this, with the proper nouns deleted: <strong>compressing a sparse structure changes storage in proportion to what is stored and changes runtime in proportion to what is visited, and the two are related by the sparsity factor, not by one.</strong> Any claim that moves from the first to the second without dividing by that factor is unsupported, and if the compression is not uniform — if some tensors are excluded and stored wider than the baseline — the second can move the other way entirely.</p>
+  <p lang="zh">把专有名词删掉之后， 这件事的可迁移形式是： <strong>压缩一个稀疏结构， 对存储的影响正比于「存了什么」， 对运行时的影响正比于「访问了什么」， 而两者之间差着稀疏因子而不是 1。</strong> 任何从前者直接推到后者、中间不除以这个因子的论断都是没有支撑的； 而如果压缩不是均匀的—— 如果有些张量被排除、并且存得比基线还宽—— 后者甚至可能整个反向。</p>
+</section>
+
+<!-- ============================================================ full -->
+<section id="full">
+  <span class="field"><span lang="en">Incomplete</span><span lang="zh">未完成</span></span>
+  <h2><span lang="en">The half that is not allowed to conclude anything</span><span lang="zh">不被允许下结论的那一半</span></h2>
+
+  <p class="lede" lang="en">The 755 GB model produced a clean, complete accuracy baseline and three performance records. The accuracy baseline is a result. The three performance records are not, and the difference is not one of degree.</p>
+  <p class="lede" lang="zh">那个 755 GB 的模型跑出了一份干净完整的 accuracy 基线， 和三条性能记录。 accuracy 基线是一个结果。 那三条性能记录不是， 而且这个区别不是程度上的。</p>
+
+  <h3><span lang="en">What the Full FP8 baseline does say</span><span lang="zh">Full FP8 基线说了什么</span></h3>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Dataset</span><span lang="zh">数据集</span></th>
+      <th class="num"><span lang="en">Score</span><span lang="zh">分数</span></th>
+      <th class="num"><span lang="en">Correct</span><span lang="zh">正确</span></th>
+      <th class="num"><span lang="en">Wall clock</span><span lang="zh">墙钟</span></th>
+      <th class="num"><span lang="en">Completion tokens</span><span lang="zh">生成 token</span></th>
+      <th class="num"><span lang="en">Truncated</span><span lang="zh">截断</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k">GSM8K · 1319</td><td class="num">97.1948%</td><td class="num">1282</td><td class="num">0:48:36</td><td class="num">257,351</td><td class="num">6 / 1319</td></tr>
+      <tr><td class="k">MMLU · 500</td><td class="num">85.20%</td><td class="num">426</td><td class="num">1:19:00</td><td class="num">1,051,080</td><td class="num">47 / 500</td></tr>
+      <tr><td class="k">GPQA Diamond · 198</td><td class="num">43.9394%</td><td class="num">87</td><td class="num">2:11:12</td><td class="num">2,033,151</td><td class="num">109 / 198</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">From <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/accuracy/full-fp8-accuracy-summary.json"><code>full-fp8-accuracy-summary.json</code></a>. Request error rate 0 on all three. Generation was <code>temperature=0</code>, <code>top_p=0.95</code>, <code>reasoning_effort=max</code>, 16K max tokens on GPQA.</p>
+  <p class="cap" lang="zh">来自 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/accuracy/full-fp8-accuracy-summary.json"><code>full-fp8-accuracy-summary.json</code></a>。 三项的请求错误率均为 0。 生成参数为 <code>temperature=0</code>、<code>top_p=0.95</code>、<code>reasoning_effort=max</code>， GPQA 上限 16K token。</p>
+
+  <p lang="en">The 43.94% on GPQA needs its footnote immediately, because read naively it looks like a broken model. It is not a quantization result — this is the official FP8 checkpoint, and there is no candidate to compare it to. It is a protocol result: 109 of 198 answers, 55.05%, hit the 16K output ceiling and were scored on a truncated reasoning trace. A benchmark where more than half the responses are cut off mid-thought is measuring the token budget at least as much as the model. Before the Full A/B resumes, either the ceiling moves or the benchmark is reported as a truncation rate rather than an accuracy.</p>
+  <p lang="zh">GPQA 上的 43.94% 需要立刻加脚注， 因为直观读起来像一个坏掉的模型。 它不是量化结果—— 这是官方 FP8 checkpoint， 而且根本没有候选者与之对照。 它是协议结果： 198 个回答里有 109 个、也就是 55.05%， 撞上了 16K 输出上限， 是在被截断的推理轨迹上被评分的。 一个超过一半回答被拦腰截断的 benchmark， 测量 token 预算的成分至少不亚于测量模型。 在 Full 的 A/B 恢复之前， 要么把上限抬高， 要么把这一项作为截断率而不是准确率来报告。</p>
+
+  <h3><span lang="en">Why the three performance records stay in the archive</span><span lang="zh">为什么那三条性能记录只留在归档里</span></h3>
+
+  <p lang="en">A performance number in this campaign is defined by its protocol: the median of three independent rounds at a given concurrency, taken inside a window bracketed by an opening and a closing canary, with a post-run quiescence check on the node. What exists for Full FP8 is one round at two of three concurrencies, an opening canary, and no closing canary. That is not a noisier version of the defined quantity. It is a different quantity that happens to be printed in the same unit.</p>
+  <p lang="zh">在这轮实验里， 一个性能数值是由它的协议定义的： 给定并发下三次独立运行的中位数， 取自一个由开场与收场 canary 夹住的窗口， 并在运行后对节点做静默检查。 Full FP8 现有的是： 三个并发里两个的一轮， 一次开场 canary， 没有收场 canary。 这不是同一个被定义的量的噪声版本， 而是恰好用同一个单位打印出来的另一个量。</p>
+
+  <p lang="en">And the campaign already measured why that matters. The FP8 canary on the Flash side drifted +2.30% across its own sequence. A single round carries that drift with no way to detect it, because detection is exactly what the second canary and the two extra rounds are for. So a lone c1 number could be off by a third of the effect the experiment exists to resolve, and nothing in the record would say so.</p>
+  <p lang="zh">而且这轮实验已经把「为什么这很重要」测出来了。 Flash 一侧的 FP8 canary 在自己的序列里漂移了 +2.30%。 单独一轮会把这个漂移原样带进去而无从察觉， 因为「察觉」正是第二次 canary 和另外两轮存在的目的。 于是一个孤立的 c1 数值可能偏离这个实验存在的意义所要分辨的效应的三分之一， 而记录里不会有任何东西提示这一点。</p>
+
+  <div class="note halt">
+    <span class="tag"><span lang="en">Why publishing them is worse than publishing nothing</span><span lang="zh">为什么发布它们比什么都不发布更糟</span></span>
+    <p lang="en">A missing number is self-describing: anyone who needs it knows it has to be measured. A number published with a caveat loses the caveat on its first copy into a slide, and from then on it is indistinguishable from a protocol-conformant measurement — same units, same model, same hardware, same plausible magnitude. Absence is a state the next run can repair. A wrong figure circulating under this page's name is not, because there is no mechanism to recall it. So the three records live in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/perf/full-fp8-partial"><code>perf/full-fp8-partial/</code></a> next to the stop marker that disqualifies them, where anyone planning the resume can read them for scheduling and no one can mistake them for a result.</p>
+    <p lang="zh">缺失的数字是自我描述的： 需要它的人知道它必须被测出来。 而带着限定语发布的数字， 在第一次被复制进幻灯片时就会丢掉限定语， 从那之后它与一个符合协议的测量再也无法区分—— 同样的单位、同样的模型、同样的硬件、同样看似合理的量级。 缺失是下一次运行可以修复的状态； 一个挂着这一页名义流传出去的错误数值不是， 因为没有任何机制能把它召回。 所以那三条记录躺在 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x/perf/full-fp8-partial"><code>perf/full-fp8-partial/</code></a> 里， 紧挨着那个取消它们资格的停机标记， 谁要规划恢复都可以读它们来排期， 而谁也不会把它们误当成结果。</p>
+  </div>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate V · What a performance result is made of, and which pieces exist</span><span>Flash · Full FP8</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 306" role="img" aria-label="The performance protocol as a grid of required runs, complete for each Flash side and three cells out of eleven for Full FP8">
+        <text class="diag-strong" x="20" y="24">FLASH · EACH SIDE</text>
+        <text class="diag-label" x="20" y="40">COMPLETE</text>
+        <text class="diag-strong" x="520" y="24">FULL FP8</text>
+        <text class="diag-label" x="520" y="40">STOPPED AT A CASE BOUNDARY</text>
+
+        <text class="diag-label" x="150" y="64" text-anchor="middle">c1</text>
+        <text class="diag-label" x="226" y="64" text-anchor="middle">c8</text>
+        <text class="diag-label" x="302" y="64" text-anchor="middle">c32</text>
+        <text class="diag-label" x="650" y="64" text-anchor="middle">c1</text>
+        <text class="diag-label" x="726" y="64" text-anchor="middle">c8</text>
+        <text class="diag-label" x="802" y="64" text-anchor="middle">c32</text>
+
+        <text class="diag-label" x="104" y="90" text-anchor="end">CANARY BEFORE</text>
+        <text class="diag-label" x="104" y="132" text-anchor="end">ROUND 1</text>
+        <text class="diag-label" x="104" y="174" text-anchor="end">ROUND 2</text>
+        <text class="diag-label" x="104" y="216" text-anchor="end">ROUND 3</text>
+        <text class="diag-label" x="104" y="258" text-anchor="end">CANARY AFTER</text>
+        <text class="diag-label" x="604" y="90" text-anchor="end">CANARY BEFORE</text>
+        <text class="diag-label" x="604" y="132" text-anchor="end">ROUND 1</text>
+        <text class="diag-label" x="604" y="174" text-anchor="end">ROUND 2</text>
+        <text class="diag-label" x="604" y="216" text-anchor="end">ROUND 3</text>
+        <text class="diag-label" x="604" y="258" text-anchor="end">CANARY AFTER</text>
+
+        <!-- Flash: all present -->
+        <rect x="115" y="74" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="115" y="116" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="191" y="116" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="267" y="116" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="115" y="158" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="191" y="158" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="267" y="158" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="115" y="200" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="191" y="200" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="267" y="200" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="115" y="242" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <text class="diag-label" x="352" y="90">512/128</text>
+        <text class="diag-label" x="352" y="258">512/128</text>
+        <text class="diag-num" x="20" y="290" fill="#1b4fa8">11 of 11 · median of 3 is defined</text>
+
+        <!-- Full FP8: 3 present, 8 missing -->
+        <rect x="615" y="74" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="615" y="116" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="691" y="116" width="70" height="24" fill="#1b4fa8" fill-opacity=".2" stroke="#1b4fa8"/>
+        <rect x="767" y="116" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="615" y="158" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="691" y="158" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="767" y="158" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="615" y="200" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="691" y="200" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="767" y="200" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <rect x="615" y="242" width="70" height="24" fill="none" stroke="#8d2f3f" stroke-dasharray="3 3"/>
+        <text class="diag-label" x="852" y="90">512/128</text>
+        <text class="diag-label" x="852" y="258" fill="#8d2f3f">NEVER RUN</text>
+        <path class="diag-edge" d="M761 128 L775 128" stroke="#8d2f3f"/>
+        <text class="diag-num" x="520" y="290" fill="#8d2f3f">3 of 11 · median of 3 is undefined</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Eleven runs per side make one publishable performance result: two canaries and three rounds at each of three concurrencies. Full FP8 stopped after three of them. The empty cells are not error bars — they are the definition of the statistic that was supposed to be reported.</p>
+    <p class="caption" lang="zh">每一侧十一次运行才构成一个可发布的性能结果： 两次 canary， 三个并发各三轮。 Full FP8 跑到第三次就停了。 那些空格不是误差棒—— 它们是本应报告的那个统计量的定义本身。</p>
+  </div>
+
+  <p lang="en">The same reasoning governs the delivery state. The generator that would have written the public benchmark page is built to fail closed when any of the four variants lacks complete accuracy and performance evidence, and it was not bypassed. The working branch <code>feat/glm53-mxfp4-benchmarks</code> has no new commit, no push and no pull request. That is not an omission; it is the mechanism doing its job.</p>
+  <p lang="zh">同样的逻辑也决定了交付状态。 那个本来会写出公开 benchmark 页面的 generator， 设计上会在四个变体中任何一个缺少完整 accuracy 与性能证据时 fail closed， 而这次没有绕过它。 工作分支 <code>feat/glm53-mxfp4-benchmarks</code> 没有新 commit、没有 push、没有 PR。 这不是疏漏， 而是机制在正常工作。</p>
+</section>
+
+<!-- ============================================================ hours -->
+<section id="hours">
+  <span class="field"><span lang="en">Time</span><span lang="zh">时间</span></span>
+  <h2><span lang="en">Where 21 hours went, and which part of it was avoidable</span><span lang="zh">21 小时去了哪里， 其中哪一段本可以不花</span></h2>
+
+  <p class="lede" lang="en">The auditable window runs from the earliest checkout artifact in the working directory to the moment the server released its last GPU lock: 21:02:18. Roughly 37% of it produced no number that survives.</p>
+  <p class="lede" lang="zh">可审计窗口从工作目录里最早的 checkout 工件开始， 到服务释放最后一把 GPU 锁为止： 21:02:18。 其中大约 37% 没有产出任何幸存下来的数字。</p>
+
+  <p lang="en">The reason to account for this precisely is that the intuitive explanation — a very large model is slow — is measurably wrong, and acting on it would fix nothing. The three formal accuracy runs generated 7,319,672 completion tokens in 7:53:58 of model time. That is real work at a real rate; the machine was not stalled. The hours that did not survive went somewhere else.</p>
+  <p lang="zh">要把这笔账算清楚， 是因为直觉上的解释—— 模型太大所以慢—— 可以被测量证伪， 而按它去行动什么也修不好。 三次正式 accuracy 运行在 7:53:58 的模型时间里生成了 7,319,672 个 completion token。 那是以真实速率进行的真实工作； 机器没有卡住。 没能幸存下来的那些小时花在了别处。</p>
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate VI · The 21-hour window, three ways</span><span>2026-08-31 07:33:49 → 09-01 04:36:07 UTC</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 336" role="img" aria-label="The twenty-one hour campaign window shown chronologically, rolled up by category, and expanded inside the formal Full FP8 window">
+        <text class="diag-label" x="20" y="20">A · CHRONOLOGY · 21:02:18 · MARKERS ARE THE TWELVE TRANSITIONS</text>
+
+        <!-- markers -->
+        <g fill="none" stroke="#727d8c" stroke-width="1">
+          <line x1="40" y1="53" x2="40" y2="96"/>
+          <line x1="66.5" y1="77" x2="66.5" y2="96"/>
+          <line x1="119.3" y1="53" x2="119.3" y2="96"/>
+          <line x1="159.2" y1="77" x2="159.2" y2="96"/>
+          <line x1="251.2" y1="53" x2="251.2" y2="96"/>
+          <line x1="368.8" y1="77" x2="368.8" y2="96"/>
+          <line x1="398" y1="53" x2="398" y2="96"/>
+          <line x1="512.8" y1="77" x2="512.8" y2="96"/>
+          <line x1="639.7" y1="53" x2="639.7" y2="96"/>
+          <line x1="841.5" y1="77" x2="841.5" y2="96"/>
+          <line x1="925" y1="53" x2="925" y2="96"/>
+          <line x1="937.8" y1="77" x2="937.8" y2="96"/>
+        </g>
+        <g>
+          <circle cx="40" cy="44" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="40" y="47.5" text-anchor="middle" fill="#12161c">01</text>
+          <circle cx="66.5" cy="68" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="66.5" y="71.5" text-anchor="middle" fill="#12161c">02</text>
+          <circle cx="119.3" cy="44" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="119.3" y="47.5" text-anchor="middle" fill="#12161c">03</text>
+          <circle cx="159.2" cy="68" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="159.2" y="71.5" text-anchor="middle" fill="#12161c">04</text>
+          <circle cx="251.2" cy="44" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="251.2" y="47.5" text-anchor="middle" fill="#12161c">05</text>
+          <circle cx="368.8" cy="68" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="368.8" y="71.5" text-anchor="middle" fill="#12161c">06</text>
+          <circle cx="398" cy="44" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="398" y="47.5" text-anchor="middle" fill="#12161c">07</text>
+          <circle cx="512.8" cy="68" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="512.8" y="71.5" text-anchor="middle" fill="#12161c">08</text>
+          <circle cx="639.7" cy="44" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="639.7" y="47.5" text-anchor="middle" fill="#12161c">09</text>
+          <circle cx="841.5" cy="68" r="9" fill="#b8631a" stroke="#b8631a"/><text class="diag-label" x="841.5" y="71.5" text-anchor="middle" fill="#fbfcfd">10</text>
+          <circle cx="925" cy="44" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="925" y="47.5" text-anchor="middle" fill="#12161c">11</text>
+          <circle cx="937.8" cy="68" r="9" fill="#fbfcfd" stroke="#727d8c"/><text class="diag-label" x="937.8" y="71.5" text-anchor="middle" fill="#12161c">12</text>
+        </g>
+
+        <!-- band A -->
+        <rect x="40" y="96" width="26.5" height="34" fill="#9aa6b5" fill-opacity=".35"/>
+        <rect x="66.5" y="96" width="52.8" height="34" fill="#8d2f3f" fill-opacity=".22"/>
+        <rect x="119.3" y="96" width="39.9" height="34" fill="#b8631a" fill-opacity=".24"/>
+        <rect x="159.2" y="96" width="87" height="34" fill="#8d2f3f" fill-opacity=".22"/>
+        <rect x="246.2" y="96" width="5" height="34" fill="#9aa6b5" fill-opacity=".35"/>
+        <rect x="251.2" y="96" width="117.6" height="34" fill="#8d2f3f" fill-opacity=".22"/>
+        <rect x="368.8" y="96" width="29.2" height="34" fill="#b8631a" fill-opacity=".24"/>
+        <rect x="398" y="96" width="113.4" height="34" fill="#1b4fa8"/>
+        <rect x="511.4" y="96" width="1.4" height="34" fill="#9aa6b5" fill-opacity=".35"/>
+        <rect x="512.8" y="96" width="126.2" height="34" fill="#7a3fb8"/>
+        <rect x="639" y="96" width="202.5" height="34" fill="#1b4fa8"/>
+        <rect x="841.5" y="96" width="83.5" height="34" fill="#b8631a"/>
+        <rect x="925" y="96" width="12.8" height="34" fill="#1b4fa8" fill-opacity=".45"/>
+        <rect x="937.8" y="96" width="2.2" height="34" fill="#12161c"/>
+        <rect x="40" y="96" width="900" height="34" fill="none" stroke="#9aa6b5"/>
+        <text class="diag-label" x="40" y="146">07:33 UTC</text>
+        <text class="diag-label" x="229.8" y="146" text-anchor="middle">12:00</text>
+        <text class="diag-label" x="486.4" y="146" text-anchor="middle">18:00</text>
+        <text class="diag-label" x="743.1" y="146" text-anchor="middle">09-01 00:00</text>
+        <text class="diag-label" x="940" y="146" text-anchor="end">04:36</text>
+
+        <line class="axis" x1="20" y1="162" x2="960" y2="162"/>
+        <text class="diag-label" x="20" y="182">B · THE SAME WINDOW ROLLED UP BY CATEGORY</text>
+        <rect x="40" y="192" width="26.4" height="24" fill="#9aa6b5" fill-opacity=".35"/>
+        <rect x="66.4" y="192" width="330.8" height="24" fill="#8d2f3f" fill-opacity=".22"/>
+        <rect x="397.2" y="192" width="114.1" height="24" fill="#1b4fa8"/>
+        <rect x="511.3" y="192" width="125.5" height="24" fill="#7a3fb8"/>
+        <rect x="636.8" y="192" width="300.9" height="24" fill="#1b4fa8" fill-opacity=".55"/>
+        <rect x="40" y="192" width="900" height="24" fill="none" stroke="#9aa6b5"/>
+        <text class="diag-label" x="40" y="232">FREEZE 0:37</text>
+        <text class="diag-num" x="231.8" y="232" text-anchor="middle" fill="#8d2f3f">EXPLORATION, FAILED, INVALIDATED · 7:44</text>
+        <text class="diag-label" x="454.3" y="232" text-anchor="middle" fill="#1b4fa8">FLASH FP8 · 2:40</text>
+        <text class="diag-label" x="574.1" y="246" text-anchor="middle" fill="#7a3fb8">FLASH MXFP4 · 2:56</text>
+        <text class="diag-label" x="787.3" y="232" text-anchor="middle" fill="#1b4fa8">FORMAL FULL FP8 · 7:02</text>
+
+        <line class="axis" x1="20" y1="258" x2="960" y2="258"/>
+        <text class="diag-label" x="20" y="278">C · INSIDE THE FORMAL FULL FP8 WINDOW · 7:01:56</text>
+        <rect x="40" y="288" width="54.6" height="24" fill="#9aa6b5" fill-opacity=".45"/>
+        <rect x="94.6" y="288" width="552.1" height="24" fill="#1b4fa8"/>
+        <rect x="646.7" y="288" width="249.7" height="24" fill="#b8631a"/>
+        <rect x="896.4" y="288" width="38" height="24" fill="#1b4fa8" fill-opacity=".45"/>
+        <rect x="934.4" y="288" width="5.1" height="24" fill="#12161c"/>
+        <rect x="40" y="288" width="900" height="24" fill="none" stroke="#9aa6b5"/>
+        <text class="diag-label" x="67" y="330" text-anchor="middle">LOAD 0:25:37</text>
+        <text class="diag-label" x="370.7" y="330" text-anchor="middle" fill="#1b4fa8">ACCURACY 4:18:50 · 61.3% · 3,341,582 TOKENS</text>
+        <text class="diag-num" x="771.6" y="330" text-anchor="middle" fill="#b8631a" font-weight="600">IDLE 1:57:03 · 27.7%</text>
+        <text class="diag-label" x="940" y="282" text-anchor="end">PARTIAL PERF 0:17:50 · STOP 0:02:24</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">Band A is chronological and band B is the same 21:02:18 sorted into five buckets; the two agree almost exactly, which is the check that the buckets are complete. Band C expands the largest bucket and finds that the single biggest block inside it is nothing happening at all.</p>
+    <p class="caption" lang="zh">A 带按时间顺序排列， B 带是同一个 21:02:18 归入五个桶后的样子； 两者几乎完全对齐， 这正是「桶是完整的」这一点的校验。 C 带展开了最大的那个桶， 发现里面最大的一块是什么都没发生。</p>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th class="num"><span lang="en">Marker</span><span lang="zh">标记</span></th>
+      <th class="num">UTC</th>
+      <th><span lang="en">Transition</span><span lang="zh">转折</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="num k">01</td><td class="num">08-31 07:33</td><td><span lang="en">Environment and checkpoint freeze begins — SGLang, AITER, a checkout-matched kernel package, and four weight sets verified.</span><span lang="zh">环境与 checkpoint 冻结开始—— 核对 SGLang、AITER、与 checkout 匹配的 kernel 包， 以及四组权重。</span></td></tr>
+      <tr><td class="num k">02</td><td class="num">08:11</td><td><span lang="en">First Flash FP8 round starts. It will be invalidated mid-run when <a href="https://github.com/sgl-project/sglang/pull/36507">SGLang PR #36507</a> force-updates from <code>cfb1c833</code> to <code>b9c0e90d</code>.</span><span lang="zh">第一轮 Flash FP8 开始。 运行中 <a href="https://github.com/sgl-project/sglang/pull/36507">SGLang PR #36507</a> 从 <code>cfb1c833</code> force-update 到 <code>b9c0e90d</code>， 这一轮随之作废。</span></td></tr>
+      <tr><td class="num k">03</td><td class="num">09:25</td><td><span lang="en">Runtime and KDA diagnosis. An accidental import of the installed kernel package 0.4.5 triggers an HSA memory aperture violation; the split-grid program-id bug is found underneath it.</span><span lang="zh">运行时与 KDA 诊断。 误导入已安装的 0.4.5 kernel 包会触发 HSA memory aperture violation； 在它下面找到了 split-grid program id 覆盖问题。</span></td></tr>
+      <tr><td class="num k">04</td><td class="num">10:21</td><td><span lang="en">Second Flash FP8 round. Accuracy completes, dataset paths and the local performance seed are corrected, and it is still invalidated — the PR and AITER combination underneath it kept moving.</span><span lang="zh">第二轮 Flash FP8。 accuracy 跑完， 数据集路径与本地性能 seed 被修正， 但仍然作废—— 底下的 PR 与 AITER 组合还在变。</span></td></tr>
+      <tr><td class="num k">05</td><td class="num">12:30</td><td><span lang="en">A complete pre-refresh Flash FP8 run: accuracy plus three performance rounds. Discarded when the freeze point is refreshed to the newest upstream.</span><span lang="zh">一次完整的 pre-refresh Flash FP8 运行： accuracy 加三轮性能。 在冻结点被刷新到最新上游时整套丢弃。</span></td></tr>
+      <tr><td class="num k">06</td><td class="num">15:15</td><td><span lang="en">Flash MXFP4 loader fix. First load fails on a 128-versus-256 shape mismatch between packed FP4 and a BF16 exclusion inside the same fused MoE tensor.</span><span lang="zh">Flash MXFP4 loader 修复。 首次加载在同一个 fused MoE 张量内部的 packed FP4 与 BF16 exclusion 之间撞上 128 对 256 的 shape mismatch。</span></td></tr>
+      <tr><td class="num k">07</td><td class="num">15:55</td><td><span lang="en">Formal Flash FP8: smoke, 1198-row accuracy, three rounds at c1/c8/c32, both canaries.</span><span lang="zh">正式 Flash FP8： smoke、1198 行 accuracy、c1 / c8 / c32 各三轮、双 canary。</span></td></tr>
+      <tr><td class="num k">08</td><td class="num">18:37</td><td><span lang="en">Formal Flash MXFP4 under the identical protocol. This pair is the campaign's only complete A/B.</span><span lang="zh">同协议下的正式 Flash MXFP4。 这一对是整轮唯一完整的 A/B。</span></td></tr>
+      <tr><td class="num k">09</td><td class="num">21:34</td><td><span lang="en">Formal Full FP8 launches. 25 minutes to load and warm up, then 4:18:50 of accuracy.</span><span lang="zh">正式 Full FP8 启动。 25 分钟加载与预热， 随后 4:18:50 的 accuracy。</span></td></tr>
+      <tr><td class="num k">10</td><td class="num">09-01 02:18</td><td><span lang="en">Accuracy finishes and nothing starts. The pipeline has no transition from the accuracy stage to the performance stage; the server holds eight GPUs idle for 1:57:03.</span><span lang="zh">accuracy 结束， 而没有任何东西启动。 pipeline 没有从 accuracy 阶段到 performance 阶段的衔接； 服务把八张 GPU 空持了 1:57:03。</span></td></tr>
+      <tr><td class="num k">11</td><td class="num">04:15</td><td><span lang="en">A manual status check notices and starts performance. Before-canary, c1-r1 and c8-r1 complete.</span><span lang="zh">一次人工状态检查发现了这件事并启动性能测试。 before-canary、c1-r1、c8-r1 完成。</span></td></tr>
+      <tr><td class="num k">12</td><td class="num">04:33</td><td><span lang="en">Intermediate stop requested. <code>c32-r1</code> is prevented from starting, the server exits through its cleanup trap, all eight locks release at 04:36:07.</span><span lang="zh">请求中间停点。 <code>c32-r1</code> 被阻止启动， 服务经 cleanup trap 退出， 八把锁在 04:36:07 全部释放。</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3><span lang="en">Two failures, and only one of them is about scheduling</span><span lang="zh">两个故障， 只有一个和调度有关</span></h3>
+
+  <p lang="en">The 1:57:03 of idle is the easy one. Any pipeline whose next stage is started by a person is bounded below by that person's polling interval, not by the machine's readiness. The machine finished at 02:18 and the poll arrived at 04:15. Nothing here needs a better scheduler — it needs each stage to write a completion marker and the successor to be triggered by that marker, plus a watchdog that tears the server down if no marker appears within a stage's expected time. The cost of not having that was 27.7% of the campaign's largest window, on eight MI355X.</p>
+  <p lang="zh">1:57:03 的空转是容易的那个。 任何「下一阶段由人启动」的 pipeline， 其下界都是那个人的轮询间隔， 而不是机器的就绪时刻。 机器在 02:18 完成， 轮询在 04:15 到达。 这里不需要更好的调度器—— 需要的是每个阶段写一个完成标记、后继阶段由这个标记触发， 再加一个看门狗： 若在某阶段的预期时间内没有出现标记就把服务拆掉。 没有这套东西的代价， 是整轮最大窗口的 27.7%， 乘以八张 MI355X。</p>
+
+  <p lang="en">The 7:44 of invalidated work is the harder one, and it has a single root. The baseline was specified as "the newest upstream SGLang, AITER and HF revision" rather than as a set of commit hashes. A definition that refers to a moving target cannot be satisfied by a run that takes three hours, because the target moves during the run — and it did, when a pull request under test was force-updated to a different commit mid-measurement. Three Flash FP8 runs were completed and thrown away for this reason before the fourth was performed against pinned hashes. A freeze is a decision to stop tracking, taken once and written down; "latest" is not a freeze, it is a subscription.</p>
+  <p lang="zh">7:44 的作废工作是难的那个， 而它只有一个根因。 基线被规定成「最新的上游 SGLang、AITER 与 HF revision」， 而不是一组 commit hash。 一个指向移动目标的定义， 无法被一次耗时三小时的运行满足， 因为目标会在运行期间移动—— 事实也确实如此： 一个正在被测的 pull request 在测量中途被 force-update 到了另一个 commit。 因为这个原因， 有三次 Flash FP8 完整跑完又被丢掉， 第四次才是对着固定 hash 做的。 冻结是「决定停止跟踪」， 做一次并写下来； 「最新」不是冻结， 是订阅。</p>
+
+  <div class="note">
+    <span class="tag"><span lang="en">Where the model time actually goes</span><span lang="zh">模型时间实际花在哪里</span></span>
+    <p lang="en">Inside the 7:53:58 of real generation, one benchmark dominates: Full FP8 on GPQA Diamond took 2:11:12 to answer 198 questions, generating 2,033,151 tokens — an average of 10,268 per question, with 109 of them running into the 16K ceiling. The cost driver is the generation protocol, not the model. <code>reasoning_effort=max</code> against a hard token cap turns a 198-question set into the single most expensive item in a 21-hour campaign, and it does so while producing an accuracy figure that is half a truncation-rate measurement.</p>
+    <p lang="zh">在 7:53:58 的真实生成里， 有一项 benchmark 占了压倒性比重： Full FP8 在 GPQA Diamond 上用 2:11:12 回答 198 道题， 生成 2,033,151 个 token—— 平均每题 10,268 个， 其中 109 道撞上 16K 上限。 成本驱动因素是生成协议， 不是模型。 <code>reasoning_effort=max</code> 配一个硬 token 上限， 把一个 198 题的集合变成 21 小时实验里最贵的单项， 而且同时产出的那个 accuracy 数字有一半是截断率的测量。</p>
+  </div>
+</section>
+
+<!-- ============================================================ findings -->
+<section id="findings">
+  <span class="field"><span lang="en">Findings</span><span lang="zh">发现</span></span>
+  <h2><span lang="en">What the runtime cost, separately from what the model scored</span><span lang="zh">运行时的账单， 与模型分数无关的那部分</span></h2>
+
+  <p class="lede" lang="en">Four of the things this campaign found have nothing to do with either checkpoint's quality. They are properties of the software underneath, and three of them would have silently corrupted the measurement if they had not surfaced.</p>
+  <p class="lede" lang="zh">这轮实验发现的四件事和两个 checkpoint 的质量都无关。 它们是底层软件的性质， 而其中三件如果没有浮出水面， 会无声地污染整个测量。</p>
+
+  <h3><span lang="en">A split grid that overwrote its own program id</span><span lang="zh">一个覆盖了自己 program id 的 split grid</span></h3>
+
+  <p lang="en">The KDA kernel splits one logical launch across an extra grid dimension, and each program works out which slice of the problem it owns from its own program id. If that id is recomputed after the split rather than derived from both dimensions, two programs can resolve to the same slice — and the second one to finish overwrites the first. Nothing crashes. The output is the right shape, contains plausible numbers, and is wrong in a way that only shows up if you compare it against the unsplit path on the same input. That comparison is what caught it, on GPU. The fix is <a href="https://github.com/sgl-project/sglang/pull/37250">SGLang PR #37250</a>, now merged.</p>
+  <p lang="zh">KDA kernel 把一次逻辑 launch 拆到一个额外的 grid 维度上， 每个 program 从自己的 program id 推出它负责哪一片。 如果这个 id 是在拆分之后重新计算的、而不是由两个维度共同推导的， 那么两个 program 可能解析到同一片—— 后完成的那个会覆盖先完成的那个。 什么都不会崩。 输出形状正确、数值看起来合理， 而它的错误只有在同一输入上与未拆分路径逐个比对时才会显现。 抓到它的正是这个比对， 在 GPU 上跑的。 修复是 <a href="https://github.com/sgl-project/sglang/pull/37250">SGLang PR #37250</a>， 已合并。</p>
+
+  <div class="note warn">
+    <span class="tag"><span lang="en">The class of bug this belongs to</span><span lang="zh">这个 bug 属于哪一类</span></span>
+    <p lang="en">Every parallel decomposition carries an implicit invariant: the map from program identity to work is injective. Nothing in the type system, the launch API or the output shape checks it, and a violation produces well-formed garbage rather than a fault. That is why a correctness regression that reruns the same computation through a different decomposition is worth more than any amount of shape assertion — it is the only cheap test that can see this class of failure at all.</p>
+    <p lang="zh">每一种并行分解都带着一条隐式不变量： 从 program 身份到工作的映射是单射。 类型系统、launch API 和输出形状都不检查它， 而违反它产生的是格式正确的垃圾而不是一个错误。 这就是为什么「用另一种分解重跑同一计算」的正确性回归测试， 比任何数量的形状断言都值钱—— 它是唯一能看见这一类故障的廉价测试。</p>
+  </div>
+
+  <h3><span lang="en">A fused tensor with two dtypes in it</span><span lang="zh">一个内部有两种 dtype 的 fused 张量</span></h3>
+
+  <p lang="en">The first Flash MXFP4 load failed on a shape mismatch, 128 against 256 on the same axis. The cause is structural rather than incidental. A fused mixture-of-experts buffer packs every expert of a layer into one tensor, and a loader slices each expert out using one dtype and one stride for the whole buffer. Four-bit packing puts two values in a byte, so a packed expert's last dimension is half the logical width; an excluded expert stored in BF16 keeps the full width. One stride cannot be right for both, and the mismatch is exactly the factor of two. The loader has to carry the exclusion set at expert granularity rather than tensor granularity — and on the Full model that same requirement reappears independently, because its fused-MoE exclusions are also per-expert. Two local commits, <code>cc981fdebd74</code> and <code>f53571897</code>, carry the verification; neither has been pushed.</p>
+  <p lang="zh">第一次加载 Flash MXFP4 时在同一个轴上撞上 128 对 256 的 shape mismatch。 原因是结构性的而不是偶然的。 一个 fused MoE 缓冲把一层的所有 expert 打包进一个张量， 而 loader 用整个缓冲统一的一种 dtype 和一个 stride 去切出每个 expert。 4 bit 打包把两个值放进一个字节， 所以被打包的 expert 最后一维只有逻辑宽度的一半； 被排除、以 BF16 存储的 expert 保持完整宽度。 一个 stride 不可能同时对两者成立， 而错位恰好就是那个 2 倍。 loader 必须把 exclusion 集合按 expert 粒度而不是张量粒度来处理—— 而在 Full 模型上同样的要求会独立地再出现一次， 因为它的 fused-MoE exclusion 同样是逐 expert 的。 两个本地 commit <code>cc981fdebd74</code> 与 <code>f53571897</code> 带着验证； 两者都没有推送。</p>
+
+
+  <div class="plate wide">
+    <div class="plate-meta"><span>Plate VII · One stride cannot address two dtypes</span><span>fused MoE buffer</span></div>
+    <div class="plate-svg">
+      <svg viewBox="0 0 980 300" role="img" aria-label="A fused mixture-of-experts weight buffer where packed four-bit experts and a BF16 exclusion have different widths, so a single stride misaddresses every expert after the exclusion">
+        <text class="diag-label" x="20" y="24">A · WHAT A SINGLE-DTYPE LOADER ASSUMES · offset = expert_index × stride</text>
+        <rect x="60" y="46" width="120" height="40" class="diag-node"/>
+        <rect x="180" y="46" width="120" height="40" class="diag-node"/>
+        <rect x="300" y="46" width="120" height="40" class="diag-node"/>
+        <rect x="420" y="46" width="120" height="40" class="diag-node"/>
+        <rect x="540" y="46" width="120" height="40" class="diag-node"/>
+        <rect x="660" y="46" width="120" height="40" class="diag-node"/>
+        <text class="diag-label" x="120" y="70" text-anchor="middle">E0 · 128</text>
+        <text class="diag-label" x="240" y="70" text-anchor="middle">E1 · 128</text>
+        <text class="diag-label" x="360" y="70" text-anchor="middle">E2 · 128</text>
+        <text class="diag-label" x="480" y="70" text-anchor="middle">E3 · 128</text>
+        <text class="diag-label" x="600" y="70" text-anchor="middle">E4 · 128</text>
+        <text class="diag-label" x="720" y="70" text-anchor="middle">E5 · 128</text>
+        <text class="diag-label" x="20" y="70" text-anchor="start">STRIDE</text>
+
+        <g stroke="#9aa6b5" stroke-width="1" stroke-dasharray="3 3">
+          <line x1="300" y1="86" x2="300" y2="170"/>
+          <line x1="420" y1="86" x2="420" y2="170"/>
+          <line x1="540" y1="86" x2="540" y2="170"/>
+          <line x1="660" y1="86" x2="660" y2="170"/>
+          <line x1="780" y1="86" x2="780" y2="170"/>
+        </g>
+
+        <text class="diag-label" x="20" y="162">B · WHAT THE SHARD ACTUALLY HOLDS</text>
+        <rect x="60" y="170" width="120" height="40" fill="#7a3fb8" fill-opacity=".18" stroke="#7a3fb8"/>
+        <rect x="180" y="170" width="120" height="40" fill="#7a3fb8" fill-opacity=".18" stroke="#7a3fb8"/>
+        <rect x="300" y="170" width="240" height="40" fill="#b8631a" fill-opacity=".22" stroke="#b8631a"/>
+        <rect x="540" y="170" width="120" height="40" fill="#7a3fb8" fill-opacity=".18" stroke="#7a3fb8"/>
+        <rect x="660" y="170" width="120" height="40" fill="#7a3fb8" fill-opacity=".18" stroke="#7a3fb8"/>
+        <rect x="780" y="170" width="120" height="40" fill="#7a3fb8" fill-opacity=".18" stroke="#7a3fb8"/>
+        <text class="diag-label" x="120" y="194" text-anchor="middle" fill="#7a3fb8">E0 · U8 · 128</text>
+        <text class="diag-label" x="240" y="194" text-anchor="middle" fill="#7a3fb8">E1 · U8 · 128</text>
+        <text class="diag-num" x="420" y="194" text-anchor="middle" fill="#b8631a" font-weight="600">E2 · BF16 EXCLUSION · 256</text>
+        <text class="diag-label" x="600" y="194" text-anchor="middle" fill="#7a3fb8">E3 · U8</text>
+        <text class="diag-label" x="720" y="194" text-anchor="middle" fill="#7a3fb8">E4 · U8</text>
+        <text class="diag-label" x="840" y="194" text-anchor="middle" fill="#7a3fb8">E5 · U8</text>
+        <text class="diag-label" x="20" y="194" text-anchor="start">BYTES</text>
+
+        <path class="diag-edge" d="M420 220 L420 236" stroke="#8d2f3f"/>
+        <text class="diag-num" x="420" y="250" text-anchor="middle" fill="#8d2f3f">the loader indexes E3 here — the middle of E2</text>
+        <path class="diag-edge" d="M540 262 L540 274 L900 274 L900 262" stroke="#8d2f3f"/>
+        <text class="diag-num" x="720" y="292" text-anchor="middle" fill="#8d2f3f">every expert past the exclusion is off by one packed width</text>
+      </svg>
+    </div>
+    <p class="caption" lang="en">The reported mismatch is 128 against 256 on one axis, which is the signature of exactly this: four-bit packing halves the stored last dimension while a BF16 exclusion keeps it whole, so the first uniform stride that crosses an exclusion is wrong and stays wrong for the rest of the buffer.</p>
+    <p class="caption" lang="zh">报出来的错位是同一个轴上 128 对 256， 而这正是这件事的特征： 4 bit 打包把存储的最后一维减半， 而 BF16 exclusion 保持完整， 于是第一个跨过 exclusion 的统一 stride 就错了， 并且在这个缓冲的剩余部分里一直错下去。</p>
+  </div>
+
+  <h3><span lang="en">The model card and the metadata disagree</span><span lang="zh">model card 和 metadata 对不上</span></h3>
+
+  <p lang="en">The Full MXFP4 card states that the dense and shared MLP projections remain in BF16. Reading the safetensors headers instead: decoder layers 3 through 77 store their shared-expert <code>gate_proj</code>, <code>up_proj</code> and <code>down_proj</code> as packed U8 with an FP4 scale tensor alongside; layers 0 through 2 have no shared-expert projections at all; the only BF16 exclusion is the MTP head at layer 78. The full per-layer readout is in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/weights/full-mxfp4-shared-experts.json"><code>full-mxfp4-shared-experts.json</code></a>.</p>
+  <p lang="zh">Full MXFP4 的 card 声明 dense 与 shared MLP 投影保持 BF16。 改读 safetensors header： decoder 第 3 到 77 层的 shared-expert <code>gate_proj</code>、<code>up_proj</code>、<code>down_proj</code> 都是 packed U8 加一个并列的 FP4 scale 张量； 第 0 到 2 层根本没有 shared-expert 投影； 唯一的 BF16 exclusion 是第 78 层的 MTP 头。 完整的逐层读数在 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/weights/full-mxfp4-shared-experts.json"><code>full-mxfp4-shared-experts.json</code></a>。</p>
+
+  <p lang="en">This matters twice. Operationally, a loader written to the card would size the shared MLP wrong and either fault or read garbage. Analytically, it changes nothing about the conclusion in the previous section, and that is worth stating: if the card were right and those projections really were BF16, the always-active set would be <em>larger</em> still, and the per-token read would grow by more than 4.33%. The direction of the result does not depend on which document is correct — only its magnitude does. Config, index and safetensors headers are the source of record; the card is a claim about them.</p>
+  <p lang="zh">这件事有两重意义。 在工程上， 按 card 写的 loader 会把 shared MLP 的尺寸算错， 结果不是崩就是读到垃圾。 在分析上， 它对上一节的结论没有任何改变， 而这一点值得说出来： 如果 card 是对的、那些投影真的是 BF16， 那么恒定活跃集会<em>更大</em>， 每 token 读取量的增幅会超过 4.33%。 结论的方向不取决于哪份文档正确， 只有幅度取决于它。 config、index 与 safetensors header 是记录源； card 只是关于它们的一个声明。</p>
+
+  <h3><span lang="en">What this run is not</span><span lang="zh">这次运行不是什么</span></h3>
+
+  <div class="note halt">
+    <span class="tag"><span lang="en">Boundary of the claim</span><span lang="zh">主张的边界</span></span>
+    <p lang="en">The node has no container runtime — no Docker, Podman, Apptainer or Skopeo — so no ROCm 7.2.4 MI35x image was ever pulled or run. Everything here is host ROCm 7.2.0 with a source overlay of the frozen SGLang and AITER checkouts. That is a legitimate configuration and it is what the numbers describe, but it is not the same thing as validating a released container image, and describing it that way would be a claim the evidence cannot carry.</p>
+    <p lang="zh">这个节点没有容器运行时—— 没有 Docker、Podman、Apptainer 或 Skopeo—— 所以从未拉取或运行任何 ROCm 7.2.4 MI35x 镜像。 这里的一切都是宿主机的 ROCm 7.2.0， 加上冻结的 SGLang 与 AITER checkout 的源码 overlay。 这是一个合法的配置， 也正是这些数字所描述的东西， 但它和「验证一个已发布的容器镜像」不是一回事， 那样描述会是一个证据支撑不了的主张。</p>
+  </div>
+</section>
+
+<!-- ============================================================ frozen -->
+<section id="frozen">
+  <span class="field"><span lang="en">Frozen</span><span lang="zh">冻结</span></span>
+  <h2><span lang="en">The point everything was measured against</span><span lang="zh">一切测量所对照的那个点</span></h2>
+
+  <p lang="en">The Flash A/B is only a comparison because both sides ran against the same software. These are the hashes that make the claim checkable — and the reason the earlier runs were discarded is that they were taken against a definition rather than against this list.</p>
+  <p lang="zh">Flash 的 A/B 之所以是一个比较， 唯一的原因是两侧跑在同一套软件上。 下面这些 hash 让这个主张可以被核对—— 而早前那几次运行被丢弃， 正是因为它们对照的是一个定义而不是这张表。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Component</span><span lang="zh">组件</span></th>
+      <th><span lang="en">Frozen value</span><span lang="zh">冻结值</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k"><span lang="en">Node / GPU</span><span lang="zh">节点 / GPU</span></td><td><code>mia1-p02-g23</code> · 8× AMD Instinct MI355X · <code>gfx950:sramecc+:xnack-</code></td></tr>
+      <tr><td class="k">SGLang · Full</td><td><a href="https://github.com/sgl-project/sglang/commit/cc981fdebd74582b26a6e0e3c1274c910df72bc7"><code>cc981fdebd74582b26a6e0e3c1274c910df72bc7</code></a></td></tr>
+      <tr><td class="k">SGLang · Flash</td><td><a href="https://github.com/sgl-project/sglang/commit/e122ff45e901e714f4610b1c3a535cecdd1706b4"><code>e122ff45e901e714f4610b1c3a535cecdd1706b4</code></a></td></tr>
+      <tr><td class="k">AITER</td><td><a href="https://github.com/ROCm/aiter/commit/ea6868a02cf54e29730a38b9a3980e4342823482"><code>ea6868a02cf54e29730a38b9a3980e4342823482</code></a></td></tr>
+      <tr><td class="k">sgl-eval</td><td><code>db1547d6098c791ecb3576353f8a5e9d06344e7c</code></td></tr>
+      <tr><td class="k">ROCm · torch · Triton</td><td>7.2.0 · <code>2.9.1+rocm7.2.0.git7e1940d4</code> · 3.6.0</td></tr>
+      <tr><td class="k">FlyDSL · sglang-kernel</td><td><code>0.3.2.dev853</code> · <code>0.4.6.post1</code></td></tr>
+      <tr><td class="k"><span lang="en">Server</span><span lang="zh">服务</span></td><td>TP 8 · <code>--attention-backend dsa</code> · <code>--moe-runner-backend aiter</code> · KV cache BF16 · context 65536 · <code>--disable-radix-cache</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Recorded at run time in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/env/environment-preflight-20260901.json"><code>env/environment-preflight-20260901.json</code></a>, which additionally captures the resolved import paths of <code>sglang</code>, <code>aiter</code> and <code>sgl_kernel</code> — the check that caught an accidental import of the wrong kernel package earlier in the campaign.</p>
+  <p class="cap" lang="zh">运行时记录在 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/env/environment-preflight-20260901.json"><code>env/environment-preflight-20260901.json</code></a> 里， 它另外还记下了 <code>sglang</code>、<code>aiter</code>、<code>sgl_kernel</code> 解析后的导入路径—— 正是这项检查在实验前段抓到了误导入错误 kernel 包的问题。</p>
+
+  <div class="tbl">
+  <table>
+    <thead><tr>
+      <th><span lang="en">Checkpoint</span><span lang="zh">Checkpoint</span></th>
+      <th class="num"><span lang="en">Index total</span><span lang="zh">索引体积</span></th>
+      <th class="num"><span lang="en">Shards</span><span lang="zh">分片</span></th>
+      <th class="num"><span lang="en">Tensors</span><span lang="zh">张量数</span></th>
+      <th><span lang="en">Revision</span><span lang="zh">Revision</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="k fp8"><a href="https://huggingface.co/zai-org/GLM-5.3-Flash">zai-org/GLM-5.3-Flash</a></td><td class="num">328.327 GB</td><td class="num">62</td><td class="num">76,108</td><td><code>03eb5366286a</code></td></tr>
+      <tr><td class="k mx"><a href="https://huggingface.co/OneNexus/GLM-5.3-Flash-MXFP4">OneNexus/GLM-5.3-Flash-MXFP4</a></td><td class="num">227.486 GB</td><td class="num">120</td><td class="num">72,466</td><td><code>21e1124f735f</code></td></tr>
+      <tr><td class="k fp8"><a href="https://huggingface.co/zai-org/GLM-5.3">zai-org/GLM-5.3</a></td><td class="num">755.617 GB</td><td class="num">141</td><td class="num">118,629</td><td><code>187fb9fff631</code></td></tr>
+      <tr><td class="k mx"><a href="https://huggingface.co/OneNexus/GLM-5.3-MXFP4">OneNexus/GLM-5.3-MXFP4</a></td><td class="num">438.002 GB</td><td class="num">282</td><td class="num">117,410</td><td><code>104690ed94d4</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap" lang="en">Full revisions and the SHA-256 of each weight index are in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/checkpoints.json"><code>checkpoints.json</code></a>. The index hash is what makes "same checkpoint" a testable statement rather than a name.</p>
+  <p class="cap" lang="zh">完整 revision 与每份权重索引的 SHA-256 在 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/checkpoints.json"><code>checkpoints.json</code></a> 里。 索引哈希让「同一个 checkpoint」成为一句可检验的陈述， 而不是一个名字。</p>
+</section>
+
+<!-- ============================================================ reproduce -->
+<section id="reproduce">
+  <span class="field"><span lang="en">Reproduce</span><span lang="zh">复现</span></span>
+  <h2><span lang="en">Reproducing this, and resuming it</span><span lang="zh">复现， 以及恢复</span></h2>
+
+  <p lang="en">Every number on this page comes from the 39 data files in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x">data/glm53-mxfp4-mi355x/</a> — the accuracy summaries and the paired comparison, the per-run performance JSONL and the derived medians, the weight-header analyses, the environment preflight and the checkpoint manifest. <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/README.md"><code>README.md</code></a> in that directory gives the layout, the exact server and benchmark commands, and which columns are measured against which are derived.</p>
+  <p lang="zh">这一页上的每个数字都来自 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x">data/glm53-mxfp4-mi355x/</a> 里的 39 个数据文件—— accuracy 汇总与配对比较、逐次运行的性能 JSONL 与推导出的中位数、权重 header 分析、环境预检与 checkpoint 清单。 该目录下的 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-mxfp4-mi355x/README.md"><code>README.md</code></a> 给出目录结构、精确的服务与压测命令， 以及哪些列是实测、哪些是推导。</p>
+
+  <p lang="en">The shape of one side, for orientation — server, accuracy, then eleven benchmark runs:</p>
+  <p lang="zh">一侧的形状， 用来建立方位感—— 起服务、跑 accuracy， 然后十一次压测：</p>
+
+<pre><code>python3 -m sglang.launch_server --model-path /data/GLM-5.3-Flash-MXFP4 \
+    --tp-size 8 --attention-backend dsa --moe-runner-backend aiter \
+    --kv-cache-dtype bfloat16 --context-length 65536 \
+    --mem-fraction-static 0.8 --chunked-prefill-size 4096 \
+    --max-running-requests 32 --disable-radix-cache --trust-remote-code \
+    --served-model-name glm-5.3-flash-mxfp4 --port 31102
+
+sgl-eval run gsm8k --base-url http://127.0.0.1:31102/v1 \
+    --num-threads 32 --temperature 0 --top-p 0.95 \
+    --reasoning-effort max --max-tokens 8192 --seed 0
+
+python3 -m sglang.bench_serving --backend sglang --dataset-name random \
+    --random-input-len 8192 --random-output-len 1024 --random-range-ratio 1.0 \
+    --max-concurrency 32 --num-prompts 128 --port 31102 \
+    --output-file perf-c32-r1-i8192-o1024.jsonl</code></pre>
+
+  <p lang="en">GPQA runs at <code>--max-tokens 16384</code>; the canaries are the same benchmark command at 512/128 and concurrency 1, once before the first round and once after the last. Reading the archive needs no GPU. Re-measuring needs eight idle ones and, at the observed rates, close to seven hours per variant.</p>
+  <p lang="zh">GPQA 用 <code>--max-tokens 16384</code>； canary 是同一条压测命令在 512/128、并发 1 下各跑一次， 一次在第一轮之前， 一次在最后一轮之后。 读归档不需要 GPU。 重新测量需要八张空闲卡， 按实测速率算， 每个变体接近七小时。</p>
+
+  <h3><span lang="en">Resuming: pilot before full</span><span lang="zh">恢复： 先 pilot 再全量</span></h3>
+
+  <p lang="en">Finishing the original plan needs roughly seven to eight more GPU wall-clock hours: a clean re-run of Full FP8 performance into a fresh directory, then Full MXFP4 from launch through accuracy and three performance rounds. Spending that before knowing whether the Full MXFP4 loader path even works would repeat this campaign's own mistake at larger scale.</p>
+  <p lang="zh">按原计划跑完还需要大约七到八个 GPU 墙钟小时： 把 Full FP8 性能干净地重跑进一个新目录， 然后 Full MXFP4 从启动、accuracy 到三轮性能。 在还不知道 Full MXFP4 的 loader 路径能不能走通之前就花掉这些时间， 等于把这轮实验自己的错误在更大的尺度上重演一遍。</p>
+
+  <ol class="body-list">
+    <li lang="en"><strong>A 60–90 minute pilot first.</strong> Route smoke on Full MXFP4, a fixed small sample of each accuracy set, one round at each of c1, c8 and c32. This is enough to see a loader failure, an obviously broken truncation rate, or a throughput collapse — the three ways the remaining six hours could be wasted.</li>
+    <li lang="zh"><strong>先跑 60–90 分钟的 pilot。</strong> Full MXFP4 的路由 smoke、每个 accuracy 集合固定的小样本、c1 / c8 / c32 各一轮。 这足以看出 loader 故障、明显异常的截断率， 或者吞吐崩塌—— 剩下六小时被浪费掉的三种方式。</li>
+    <li lang="en"><strong>Only then the full sequence,</strong> on the same frozen commits and datasets, with stages chained automatically, a completion marker written at every stage boundary, and a watchdog that stops the server if the next marker does not appear in time. That single mechanism removes the largest avoidable block in the window above.</li>
+    <li lang="zh"><strong>通过之后才跑全量序列，</strong> 用同一批冻结 commit 与数据集， 阶段自动串联， 每个阶段边界写一个完成标记， 再加一个看门狗： 下一个标记没有按时出现就停掉服务。 仅这一个机制就能消掉上面那个窗口里最大的一块可避免开销。</li>
+    <li lang="en"><strong>If the generation protocol changes at all</strong> — reasoning effort, token cap, sample size — both sides have to be re-run. A candidate measured under a new protocol cannot be compared against a baseline measured under the old one, and the Full FP8 accuracy above stops being reusable the moment any of those move.</li>
+    <li lang="zh"><strong>只要生成协议有任何改动</strong>—— reasoning effort、token 上限、样本量—— 两侧都必须重跑。 在新协议下测出的候选者不能与在旧协议下测出的基线比较， 上面那份 Full FP8 accuracy 在这些参数中的任何一个变动的瞬间就不再可复用。</li>
+  </ol>
+
+  <p lang="en">And before the length-finish gate is evaluated again, restate it in the units the instrument reports. On a 198-row set the honest form is a maximum number of additional truncations, not a percentage that falls between two attainable readings.</p>
+  <p lang="zh">另外， 在再次评估 length finish 这条门槛之前， 先用仪器实际报告的单位把它重新表述一遍。 在 198 行的集合上， 诚实的形式是「最多允许多出几次截断」， 而不是一个落在两个可达读数之间的百分比。</p>
+</section>
+
+<!-- ============================================================ epilogue -->
+<section id="epilogue">
+  <span class="field"><span lang="en">Close</span><span lang="zh">收尾</span></span>
+  <h2><span lang="en">What an unfinished experiment is worth</span><span lang="zh">一个没跑完的实验值多少</span></h2>
+
+  <p lang="en">Twenty-one hours on eight MI355X produced one complete paired comparison, one unpaired accuracy baseline, a merged kernel correctness fix, two unpushed loader fixes, and a documented disagreement between a model card and the tensors it describes. It did not produce the result it set out to produce, and the honest version of the write-up says so in the first paragraph rather than the last.</p>
+  <p lang="zh">八张 MI355X 上的二十一个小时， 产出了一个完整的配对比较、一个没有对照的 accuracy 基线、一个已合并的 kernel 正确性修复、两个未推送的 loader 修复， 以及一份关于「model card 与它所描述的张量对不上」的记录。 它没有产出它出发时想要的那个结果， 而诚实的写法是在第一段而不是最后一段说明这一点。</p>
+
+  <p lang="en">Three things generalise past this checkpoint pair. The first is that a threshold's value lies entirely in its immovability; a gate relaxed by a hundredth of itself costs nothing locally and voids every other gate on the page. The second is that a sparse model's file size and its per-token read are separated by the sparsity factor, so a compression applied only to the sparse part can shrink the file by 42% while making the step read 4.33% more — and neither number predicted the 8% the clock actually showed. The third is that the largest single line item in this campaign's budget was one hour and fifty-seven minutes of a pipeline waiting for a person to notice it had finished.</p>
+  <p lang="zh">有三件事可以推广到这一对 checkpoint 之外。 第一， 门槛的价值完全在于它不可移动； 放宽自身百分之一的一道门槛在局部零成本， 却让这一页上其他所有门槛失效。 第二， 稀疏模型的文件大小与它的每 token 读取量之间差着一个稀疏因子， 所以只作用于稀疏部分的压缩可以让文件小 42%、同时让单步多读 4.33%—— 而这两个数字都没有预测到时钟上真正显示的那 8%。 第三， 这轮实验预算里最大的单项， 是一个 pipeline 等了一小时五十七分钟， 等一个人注意到它已经跑完了。</p>
+
+  <p lang="en">The 0.0202 pp stays on the page. It is the smallest thing measured here and the only one that says anything about how the rest of the measurements should be read.</p>
+  <p lang="zh">那 0.0202 pp 留在页面上。 它是这里测到的最小的东西， 也是唯一一个能说明「其余测量该怎么读」的东西。</p>
+</section>
+
+</main>
+</div>
+</div>
+
+<footer class="colophon">
+  <div><b><span lang="en">Source</span><span lang="zh">来源</span></b> · <span lang="en">measured 2026-08-31 → 09-01 on <code>mia1-p02-g23</code>, 8× MI355X, host ROCm 7.2.0</span><span lang="zh">2026-08-31 至 09-01 实测于 <code>mia1-p02-g23</code>， 8× MI355X， 宿主机 ROCm 7.2.0</span></div>
+  <div><b><span lang="en">Raw data</span><span lang="zh">原始数据</span></b> · <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-mxfp4-mi355x">data/glm53-mxfp4-mi355x</a></div>
+  <div><b><span lang="en">Typography</span><span lang="zh">字体</span></b> · Archivo · Source Serif 4 · IBM Plex Mono</div>
+  <div><b><span lang="en">Palette</span><span lang="zh">配色</span></b> · <span lang="en">cool grey paper, indigo, violet, burnt amber, carmine</span><span lang="zh">冷灰纸、靛蓝、紫、焦琥珀、绛红</span></div>
+  <div><b><span lang="en">Status</span><span lang="zh">状态</span></b> · <span lang="en">interim — 4 gates pass, 1 breached, Full A/B not concluded</span><span lang="zh">中期—— 4 条门槛通过， 1 条越线， Full A/B 未得出结论</span></div>
+  <div><b><span lang="en">Compiled for</span><span lang="zh">面向</span></b> · <span lang="en">anyone about to quote a quantized checkpoint's file size as a speedup</span><span lang="zh">任何正准备把量化 checkpoint 的文件大小当作加速比来引用的人</span></div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'glm53-mxfp4-mi355x-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
