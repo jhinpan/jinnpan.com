@@ -65,6 +65,9 @@ h1:lang(zh),h2:lang(zh),h3:lang(zh),.dek:lang(zh){font-family:'Noto Sans SC','Ar
 .verdict{border:1.5px solid var(--halt); padding:12px 15px; margin:0 0 26px; max-width:64ch; background:rgba(141,47,63,.035)}
 .verdict .vlabel{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--halt); font-weight:600; display:block; margin-bottom:6px}
 .verdict p{margin:0; font-size:16px; color:var(--ink2)}
+.live-companion{border:1.5px solid var(--mxfp4); padding:12px 15px; margin:0 0 18px; max-width:64ch; background:rgba(122,63,184,.045)}
+.live-companion .vlabel{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--mxfp4); font-weight:600; display:block; margin-bottom:6px}
+.live-companion p{margin:0; font-size:16px; color:var(--ink2)}
 .spec{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--rule2); font-family:var(--ui); background:var(--card)}
 .spec div{padding:11px 13px; border-right:1px solid var(--rule)}
 .spec div:last-child{border-right:0}
@@ -202,6 +205,11 @@ body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
   <h1><span lang="en">The gate that missed by 0.0202 pp</span><span lang="zh">差 0.0202 pp 越线的那道门槛</span></h1>
   <p class="dek" lang="en">A controlled A/B between the official FP8 checkpoints of GLM-5.3 and their MXFP4 conversions, on eight MI355X, against five thresholds written down before the run. Four gates pass. One misses by a fifth of a percent of itself. This page is about why that is reported as a breach, why a checkpoint 42% smaller on disk streams <em>more</em> bytes per generated token, and why half the experiment is not allowed to conclude anything.</p>
   <p class="dek" lang="zh">GLM-5.3 官方 FP8 checkpoint 与其 MXFP4 转换版在 8 张 MI355X 上的受控 A/B， 对照的是开跑前就写下的五条门槛。 四条通过， 一条以自身的千分之二越线。 这篇要讲的是： 为什么它被记成越线而不是被四舍五入抹掉； 为什么一个盘上小 42% 的 checkpoint 每生成一个 token 反而要读<em>更多</em>字节； 以及为什么这场实验的另一半不被允许得出任何结论。</p>
+  <div class="live-companion">
+    <span class="vlabel"><span lang="en">Continuation now live</span><span lang="zh">后续评测直播中</span></span>
+    <p lang="en">The full-model Terminal-Bench 4.0 continuation now runs as two monitored pools. Follow scored attempts, queue pressure, ETA, and the issue ledger on the <a href="./glm53-mxfp4-tb4-live.html">live dashboard →</a></p>
+    <p lang="zh">Full 模型的 Terminal-Bench 4.0 后续评测正在两个受监控的 pool 上运行。 可在<a href="./glm53-mxfp4-tb4-live.html">实时看板 →</a>查看计分尝试、队列压力、预计完成时间和问题台账。</p>
+  </div>
   <div class="verdict">
     <span class="vlabel"><span lang="en">Status at stop</span><span lang="zh">停机时状态</span></span>
     <p lang="en">Paused at a completed case boundary. Server exited through its cleanup trap, port 31103 closed, all eight GPU locks released. The Flash A/B is complete and carries one boundary warning. The Full A/B has no candidate side at all — the partial FP8 performance records are marked not publishable, and this page honours that mark.</p>
