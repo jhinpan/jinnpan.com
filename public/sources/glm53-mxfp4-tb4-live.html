@@ -101,6 +101,47 @@ h1{font:700 clamp(52px,8vw,92px)/.86 var(--display);letter-spacing:-.035em;text-
 .metric .label{font:500 9px/1.3 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
 .metric .value{display:block;font-size:27px;line-height:1.1;margin-top:9px;color:var(--text)}
 .metric .sub{font-size:11px;line-height:1.4;color:var(--muted);margin-top:6px}
+.correctness-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.correct-card{border:1px solid var(--line);background:var(--panel);padding:17px;min-height:145px}
+.correct-card .label{font:500 8px/1.4 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.correct-card .score{display:block;font:600 31px/1 var(--display);margin-top:13px}
+.correct-card .fraction{display:block;font:500 10px/1.4 var(--mono);color:var(--muted);margin-top:6px}
+.correct-card .compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.correct-card .compare div{border-left:2px solid var(--line2);padding-left:9px}
+.correct-card .compare div:first-child{border-color:var(--live)}
+.correct-card .compare b{display:block;font:600 23px/1 var(--display)}
+.correct-card .compare span{display:block;margin-top:5px;color:var(--muted);font:500 8px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.07em}
+.delta{display:inline-block;margin-top:10px;padding:3px 6px;border:1px solid var(--line2);font:500 9px/1.3 var(--mono)}
+.delta.positive{color:var(--live);border-color:var(--live)}
+.delta.negative{color:var(--red);border-color:var(--red)}
+.comparison-note{margin:14px 0 20px;border-left:3px solid var(--amber);background:rgba(255,189,102,.055);padding:12px 15px;color:var(--muted);font-size:12.5px;line-height:1.6}
+.comparison-note strong{color:var(--text)}
+.source-links{display:flex;gap:14px;flex-wrap:wrap;margin:-6px 0 20px;font:500 9px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.task-tools{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px}
+.task-search{min-width:240px;flex:1;border:1px solid var(--line2);background:var(--panel);color:var(--text);padding:9px 11px;font:400 12px/1.3 var(--mono);outline:none}
+.task-search:focus{border-color:var(--live)}
+.task-filters{display:flex;gap:5px;flex-wrap:wrap}
+.task-filter{border:1px solid var(--line2);background:transparent;color:var(--muted);padding:7px 9px;cursor:pointer;font:500 8px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.task-filter.active{background:var(--live);border-color:var(--live);color:var(--ink)}
+.task-table-wrap{max-height:620px;overflow:auto;border:1px solid var(--line2);background:var(--panel)}
+.task-table{border-collapse:collapse;width:100%;min-width:760px;font-size:12px}
+.task-table th{position:sticky;top:0;z-index:2;background:var(--panel2);border-bottom:1px solid var(--line2);padding:9px 11px;text-align:left;color:var(--muted);font:500 8px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.task-table td{border-bottom:1px solid var(--line);padding:9px 11px;vertical-align:middle}
+.task-table tr:last-child td{border-bottom:0}
+.task-table tr:hover td{background:rgba(112,242,173,.025)}
+.task-name{font:500 11px/1.35 var(--mono);word-break:break-word}
+.task-domain{display:block;color:var(--muted);font:500 8px/1.3 var(--mono);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+.task-score{font:500 12px/1.3 var(--mono);white-space:nowrap}
+.task-mini{width:94px;height:5px;background:var(--line);margin-top:6px}
+.task-mini span{display:block;height:100%;background:var(--live)}
+.task-mini.official span{background:var(--cyan)}
+.task-delta{font:500 11px/1.3 var(--mono);white-space:nowrap}
+.task-delta.positive{color:var(--live)}
+.task-delta.negative{color:var(--red)}
+.task-state{display:inline-block;border:1px solid var(--line2);padding:4px 6px;font:500 8px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.task-state.complete{border-color:var(--live);color:var(--live)}
+.task-state.errors{border-color:var(--amber);color:var(--amber)}
+.task-empty{display:none;color:var(--muted);padding:16px;text-align:center;font:500 10px/1.4 var(--mono)}
 .section{padding:30px 34px;border-bottom:1px solid var(--line2)}
 .section:last-child{border-bottom:0}
 .section-head{display:flex;justify-content:space-between;align-items:baseline;gap:20px;margin-bottom:22px}
@@ -149,6 +190,8 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   .metric:nth-child(2){border-right:0}
   .metric:nth-child(-n+2){border-bottom:1px solid var(--line)}
   .pool-grid,.privacy{grid-template-columns:1fr}
+  .correctness-grid{grid-template-columns:1fr 1fr}
+  .task-tools{align-items:stretch;flex-direction:column}
 }
 @media(max-width:520px){
   .shell{width:min(100% - 18px,1180px);padding-top:12px}
@@ -159,6 +202,8 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   .metrics{grid-template-columns:1fr}
   .metric{border-right:0;border-bottom:1px solid var(--line)}
   .metric:last-child{border-bottom:0}
+  .correctness-grid{grid-template-columns:1fr}
+  .task-search{min-width:0;width:100%}
   .pool-stats{grid-template-columns:1fr 1fr}
   .issue{grid-template-columns:10px minmax(0,1fr)}
   .issue-side{grid-column:2;text-align:left}
@@ -222,6 +267,67 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
       <div class="metric"><span class="label"><span lang="en">Complete tasks</span><span lang="zh">完整任务</span></span><span class="value" id="complete-tasks">—</span><div class="sub"><span lang="en">five scored attempts each</span><span lang="zh">每项均有 5 次计分</span></div></div>
       <div class="metric"><span class="label"><span lang="en">Observed rate</span><span lang="zh">实测速率</span></span><span class="value" id="rate">—</span><div class="sub"><span lang="en">terminal trials per hour</span><span lang="zh">终态 trial / 小时</span></div></div>
       <div class="metric"><span class="label"><span lang="en">Main-run ETA</span><span lang="zh">主跑预计剩余</span></span><span class="value" id="eta">—</span><div class="sub"><span lang="en">at observed rate, regrade excluded</span><span lang="zh">按实测速率， 不含 regrade</span></div></div>
+    </section>
+
+    <section class="section" id="correctness">
+      <div class="section-head"><h2><span lang="en">Verified correctness</span><span lang="zh">Verifier 正确率</span></h2><span class="meta"><span lang="en">Binary task rewards · live</span><span lang="zh">二元任务 reward · 实时</span></span></div>
+      <div class="correctness-grid">
+        <article class="correct-card">
+          <span class="label"><span lang="en">Current scored attempts</span><span lang="zh">当前已计分尝试</span></span>
+          <span class="score" id="partial-rate">—</span>
+          <span class="fraction" id="partial-fraction">—</span>
+        </article>
+        <article class="correct-card">
+          <span class="label"><span lang="en">Completed-task matched</span><span lang="zh">完整任务同项比较</span></span>
+          <div class="compare">
+            <div><b id="matched-current">—</b><span>MXFP4 current</span></div>
+            <div><b id="matched-official">—</b><span>Official API</span></div>
+          </div>
+          <span class="delta" id="matched-delta">—</span>
+        </article>
+        <article class="correct-card">
+          <span class="label"><span lang="en">Official same 63 CPU tasks</span><span lang="zh">官方同一组 63 个 CPU 任务</span></span>
+          <span class="score" id="official-cpu-rate">—</span>
+          <span class="fraction" id="official-cpu-fraction">—</span>
+        </article>
+        <article class="correct-card">
+          <span class="label"><span lang="en">Official full 66-task row</span><span lang="zh">官方完整 66 项结果</span></span>
+          <span class="score" id="official-all-rate">41.82%</span>
+          <span class="fraction" id="official-all-fraction">138 / 330 · 95% CI ±3.23 pp</span>
+        </article>
+      </div>
+      <div class="comparison-note">
+        <span lang="en"><strong>The honest interim comparison is task-matched.</strong> The all-attempt current rate is incomplete and biased by task completion order. The matched card compares only tasks for which both systems have all five scored attempts. The official row used an opaque hosted API; this MXFP4 run uses explicit quantized weights, so the line is an external end-to-end reference, not a same-runtime quantization A/B.</span>
+        <span lang="zh"><strong>中期只能做同 task 比较。</strong> 当前全部 attempt 的比例尚未完成， 还会受到任务完成顺序的偏置。 同项卡片只比较双方都已有 5 次计分的 task。 官方结果来自不透明的 hosted API， 当前运行使用明确的 MXFP4 量化权重， 因此这是一条端到端外部参考线， 不是同 runtime 的量化 A/B。</span>
+      </div>
+      <div class="source-links">
+        <a id="official-submission" href="https://raw.githubusercontent.com/harbor-framework/terminal-bench/main/leaderboard/submissions/2026-08-26-anthropic-glm-5-3-max-claude-code.json"><span lang="en">Official submission</span><span lang="zh">官方提交</span></a>
+        <a id="official-row" href="https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4/leaderboards/4-0-0/rows/d72e8775-f4f1-4313-99e7-35b1cb499f24"><span lang="en">Leaderboard row</span><span lang="zh">排行榜记录</span></a>
+        <a id="official-job" href="https://hub.harborframework.com/jobs/18e4ee29-d8b4-516b-b79d-b8bad5bcd5be"><span lang="en">330-trial Harbor job</span><span lang="zh">330-trial Harbor job</span></a>
+      </div>
+      <div class="task-tools">
+        <input class="task-search" id="task-search" type="search" autocomplete="off" placeholder="Search 63 tasks"/>
+        <div class="task-filters" role="group" aria-label="Filter tasks">
+          <button class="task-filter active" type="button" data-task-filter="all"><span lang="en">All</span><span lang="zh">全部</span></button>
+          <button class="task-filter" type="button" data-task-filter="complete"><span lang="en">Complete</span><span lang="zh">已完成</span></button>
+          <button class="task-filter" type="button" data-task-filter="active"><span lang="en">In progress</span><span lang="zh">进行中</span></button>
+          <button class="task-filter" type="button" data-task-filter="pending"><span lang="en">Pending</span><span lang="zh">未开始</span></button>
+          <button class="task-filter" type="button" data-task-filter="errors"><span lang="en">Needs regrade</span><span lang="zh">需 regrade</span></button>
+        </div>
+      </div>
+      <div class="task-table-wrap">
+        <table class="task-table">
+          <thead><tr>
+            <th><span lang="en">Task</span><span lang="zh">任务</span></th>
+            <th><span lang="en">Current MXFP4</span><span lang="zh">当前 MXFP4</span></th>
+            <th><span lang="en">Official GLM-5.3 API</span><span lang="zh">官方 GLM-5.3 API</span></th>
+            <th><span lang="en">Δ when complete</span><span lang="zh">完成项差值</span></th>
+            <th><span lang="en">State</span><span lang="zh">状态</span></th>
+          </tr></thead>
+          <tbody id="task-body"></tbody>
+        </table>
+        <div class="task-empty" id="task-empty"><span lang="en">No tasks match this view.</span><span lang="zh">没有符合条件的任务。</span></div>
+      </div>
     </section>
 
     <section class="section">
@@ -300,7 +406,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
 <script id="initial-data" type="application/json">
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-03T16:25:00.422798+00:00",
+  "generatedAt": "2026-09-03T19:11:56.967074+00:00",
   "staleAfterSeconds": 180,
   "phase": "running",
   "benchmark": "Terminal-Bench 4.0",
@@ -308,21 +414,37 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   "attemptsPerTask": 5,
   "totalTasks": 63,
   "targetScoredAttempts": 315,
-  "scoredAttempts": 115,
-  "remainingAttempts": 200,
-  "completeTasks": 14,
+  "scoredAttempts": 157,
+  "remainingAttempts": 158,
+  "completeTasks": 22,
   "configuredConcurrency": 24,
-  "elapsedHours": 8.55,
-  "terminalTrialsPerHour": 9.59,
-  "estimatedMainHoursRemaining": 20.2,
+  "elapsedHours": 11.33,
+  "terminalTrialsPerHour": 11.29,
+  "estimatedMainHoursRemaining": 13.1,
   "pools": [
-    {"name":"Replica A","status":"healthy","configuredConcurrency":12,"terminalTrials":38,"runningTrials":12,"pendingTrials":90,"retries":24,"reachable":true,"activeRequests":10,"waitingRequests":0,"allocatedTokens":1643904,"pendingTokens":0},
-    {"name":"Replica B","status":"healthy","configuredConcurrency":12,"terminalTrials":44,"runningTrials":12,"pendingTrials":80,"retries":3,"reachable":true,"activeRequests":1,"waitingRequests":0,"allocatedTokens":325120,"pendingTokens":0}
+    {"name":"Replica A","status":"healthy","configuredConcurrency":12,"terminalTrials":62,"runningTrials":12,"pendingTrials":66,"retries":25,"reachable":true,"activeRequests":12,"waitingRequests":0,"allocatedTokens":1980544,"pendingTokens":0},
+    {"name":"Replica B","status":"healthy","configuredConcurrency":12,"terminalTrials":66,"runningTrials":12,"pendingTrials":58,"retries":3,"reachable":true,"activeRequests":0,"waitingRequests":0,"allocatedTokens":0,"pendingTokens":0}
   ],
   "modelEndpointOutages": 0,
+  "correctness": {
+    "partial":{"passes":67,"failures":90,"attempts":157,"passRate":0.4267515923566879,"comparable":false},
+    "completeTaskMatched":{"tasks":22,"attempts":110,"currentPasses":50,"currentPassRate":0.45454545454545453,"officialPasses":52,"officialPassRate":0.4727272727272727,"deltaPercentagePoints":-1.8181818181818181},
+    "officialCpuMatched":{"tasks":63,"attempts":315,"passes":136,"passRate":0.43174603174603177,"derived":true},
+    "officialAll":{"tasks":66,"attempts":330,"passes":138,"passRate":0.41818181818181815,"ci95HalfWidthPercentagePoints":3.23}
+  },
+  "officialReference": {
+    "label":"Official GLM-5.3 API",
+    "model":"GLM-5.3",
+    "agent":"Claude Code 2.1.207",
+    "reasoningEffort":"max",
+    "submissionUrl":"https://raw.githubusercontent.com/harbor-framework/terminal-bench/main/leaderboard/submissions/2026-08-26-anthropic-glm-5-3-max-claude-code.json",
+    "leaderboardRowUrl":"https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4/leaderboards/4-0-0/rows/d72e8775-f4f1-4313-99e7-35b1cb499f24",
+    "jobUrl":"https://hub.harborframework.com/jobs/18e4ee29-d8b4-516b-b79d-b8bad5bcd5be"
+  },
+  "tasks": [],
   "issues": [
     {"id":"container-builder","kind":"infrastructure","status":"resolved","affectedAttempts":5,"title":"Container builder incompatibility","detail":"The unchanged task was replayed through a compatible builder; all five replacement attempts scored."},
-    {"id":"verifier-timeouts","kind":"verification","status":"queued-for-regrade","affectedAttempts":6,"title":"CPU-heavy verifier timeouts","detail":"Recorded outputs are preserved for verifier-only regrade after the main run releases CPU capacity."},
+    {"id":"verifier-timeouts","kind":"verification","status":"queued-for-regrade","affectedAttempts":10,"title":"CPU-heavy verifier timeouts","detail":"Recorded outputs are preserved for verifier-only regrade after the main run releases CPU capacity."},
     {"id":"output-limit","kind":"model","status":"scored-zero","affectedAttempts":1,"title":"Output token limit reached","detail":"The verifier returned zero; this remains a model outcome."},
     {"id":"agent-exit","kind":"model","status":"scored-zero","affectedAttempts":3,"title":"Agent exited non-zero","detail":"The verifier returned zero; this remains a model outcome."}
   ]
@@ -333,7 +455,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   var FEED='https://gist.githubusercontent.com/jhinpan/e73f4d28e91332c8524f03a682923a1d/raw/tb4-status.json';
   var LANG_KEY='glm53-tb4-live-lang';
   var CACHE_KEY='glm53-tb4-live-last-good-v1';
-  var body=document.body,current=null;
+  var body=document.body,current=null,taskFilter='all';
   var copy={
     phases:{
       running:['Evaluation running','评测运行中'],
@@ -358,12 +480,19 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
         ['Agent exited non-zero','Agent 非零退出'],
         ['The verifier returned zero; this remains a model outcome.','Verifier 已返回 0 分； 这是模型结果。']
       ]
+    },
+    taskState:{
+      complete:['complete','已完成'],
+      active:['in progress','进行中'],
+      pending:['pending','未开始'],
+      errors:['needs regrade','需 regrade']
     }
   };
   function lang(){return body.getAttribute('data-lang')==='zh'?1:0}
   function text(pair){return pair[lang()]}
   function set(id,value){var node=document.getElementById(id);if(node)node.textContent=value}
   function number(value){return new Intl.NumberFormat(lang()?'zh-CN':'en-US').format(value)}
+  function percent(value){return value==null?'—':(value*100).toFixed(1)+'%'}
   function compact(value){
     if(value>=1000000)return (value/1000000).toFixed(2)+'M';
     if(value>=1000)return (value/1000).toFixed(1)+'K';
@@ -373,6 +502,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
     if(!data||data.schemaVersion!==1)throw new Error('unsupported schema');
     if(data.scoredAttempts+data.remainingAttempts!==data.targetScoredAttempts)throw new Error('attempt count mismatch');
     if(!Array.isArray(data.pools)||data.pools.length!==2)throw new Error('pool count mismatch');
+    if(!data.correctness||!Array.isArray(data.tasks))throw new Error('correctness data missing');
     return data;
   }
   function issueCopy(issue){
@@ -392,6 +522,62 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
       var status=document.createElement('span');status.className='status';status.textContent=text(copy.status[issue.status]||[issue.status,issue.status]);
       side.append(count,status);article.append(mark,content,side);root.append(article);
     });
+  }
+  function setDelta(node,value){
+    node.textContent=value==null?'—':(value>0?'+':'')+value.toFixed(1)+' pp';
+    node.className='delta '+(value>0?'positive':value<0?'negative':'');
+  }
+  function renderCorrectness(data){
+    var correctness=data.correctness,partial=correctness.partial,matched=correctness.completeTaskMatched;
+    set('partial-rate',percent(partial.passRate));
+    set('partial-fraction',number(partial.passes)+' / '+number(partial.attempts)+' · '+text(['partial, not comparable','未完成， 不可直接比较']));
+    set('matched-current',percent(matched.currentPassRate));
+    set('matched-official',percent(matched.officialPassRate));
+    setDelta(document.getElementById('matched-delta'),matched.deltaPercentagePoints);
+    set('official-cpu-rate',percent(correctness.officialCpuMatched.passRate));
+    set('official-cpu-fraction',number(correctness.officialCpuMatched.passes)+' / '+number(correctness.officialCpuMatched.attempts)+' · '+text(['derived from per-task data','由逐 task 数据推导']));
+    set('official-all-rate',percent(correctness.officialAll.passRate));
+    set('official-all-fraction',number(correctness.officialAll.passes)+' / '+number(correctness.officialAll.attempts)+' · 95% CI ±'+Number(correctness.officialAll.ci95HalfWidthPercentagePoints).toFixed(2)+' pp');
+    if(data.officialReference){
+      document.getElementById('official-submission').href=data.officialReference.submissionUrl;
+      document.getElementById('official-row').href=data.officialReference.leaderboardRowUrl;
+      document.getElementById('official-job').href=data.officialReference.jobUrl;
+    }
+  }
+  function taskState(task){
+    if(task.complete)return 'complete';
+    if(task.unscoredErrors>0)return 'errors';
+    if(task.scoredAttempts>0)return 'active';
+    return 'pending';
+  }
+  function scoreCell(passes,attempts,rate,official){
+    var cell=document.createElement('td'),score=document.createElement('span'),mini=document.createElement('div'),fill=document.createElement('span');
+    score.className='task-score';score.textContent=number(passes)+' / '+number(attempts)+(attempts?' · '+percent(rate):'');
+    mini.className='task-mini'+(official?' official':'');fill.style.width=(rate==null?0:rate*100)+'%';
+    mini.append(fill);cell.append(score,mini);return cell;
+  }
+  function renderTasks(data){
+    var query=document.getElementById('task-search').value.trim().toLowerCase();
+    var rows=(data.tasks||[]).filter(function(task){
+      var state=taskState(task);
+      return (!query||task.name.toLowerCase().includes(query)||task.domain.toLowerCase().includes(query))&&(taskFilter==='all'||taskFilter===state);
+    });
+    var root=document.getElementById('task-body');root.replaceChildren();
+    rows.forEach(function(task){
+      var row=document.createElement('tr');
+      var name=document.createElement('td'),nameText=document.createElement('span'),domain=document.createElement('span');
+      nameText.className='task-name';nameText.textContent=task.name;domain.className='task-domain';domain.textContent=task.domain;name.append(nameText,domain);
+      var currentCell=scoreCell(task.passes,task.scoredAttempts,task.passRate,false);
+      var officialCell=scoreCell(task.officialPasses,5,task.officialPassRate,true);
+      var deltaCell=document.createElement('td'),delta=document.createElement('span');
+      delta.className='task-delta '+(task.deltaPercentagePoints>0?'positive':task.deltaPercentagePoints<0?'negative':'');
+      delta.textContent=task.deltaPercentagePoints==null?'—':(task.deltaPercentagePoints>0?'+':'')+task.deltaPercentagePoints.toFixed(1)+' pp';deltaCell.append(delta);
+      var stateCell=document.createElement('td'),state=document.createElement('span'),stateName=taskState(task);
+      state.className='task-state '+stateName;
+      state.textContent=text(copy.taskState[stateName])+(task.unscoredErrors?' · '+task.unscoredErrors:'');
+      stateCell.append(state);row.append(name,currentCell,officialCell,deltaCell,stateCell);root.append(row);
+    });
+    document.getElementById('task-empty').style.display=rows.length?'none':'block';
   }
   function render(data){
     current=validate(data);
@@ -414,7 +600,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
       });
       card.querySelector('[data-field="pressure"]').textContent=number(pool.waitingRequests)+' / '+compact(pool.allocatedTokens);
     });
-    renderIssues(data);updateFreshness();
+    renderCorrectness(data);renderTasks(data);renderIssues(data);updateFreshness();
   }
   function updateFreshness(){
     if(!current)return;
@@ -439,10 +625,19 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   }
   function applyLanguage(value){
     document.documentElement.setAttribute('lang',value);body.setAttribute('data-lang',value);try{localStorage.setItem(LANG_KEY,value)}catch(e){}
+    document.getElementById('task-search').placeholder=text(['Search 63 tasks','搜索 63 个任务']);
     if(current)render(current);
   }
   document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(button){
     button.addEventListener('click',function(){applyLanguage(button.getAttribute('data-set'))});
+  });
+  document.getElementById('task-search').addEventListener('input',function(){if(current)renderTasks(current)});
+  document.querySelectorAll('.task-filter').forEach(function(button){
+    button.addEventListener('click',function(){
+      taskFilter=button.getAttribute('data-task-filter');
+      document.querySelectorAll('.task-filter').forEach(function(candidate){candidate.classList.toggle('active',candidate===button)});
+      if(current)renderTasks(current);
+    });
   });
   var stored=null;try{stored=localStorage.getItem(LANG_KEY)}catch(e){}
   applyLanguage(stored==='en'||stored==='zh'?stored:(navigator.language||'en').toLowerCase().startsWith('zh')?'zh':'en');

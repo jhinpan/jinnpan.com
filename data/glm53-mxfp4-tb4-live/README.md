@@ -33,7 +33,30 @@ The board reports:
 - configured trial concurrency and per-pool progress;
 - current request and queue pressure;
 - observed terminal-trial rate and a rate-based main-run ETA;
+- current verifier pass/fail counts and per-task `passes / scored`;
+- a task-matched comparison against the official GLM-5.3 API run;
 - sanitized issue categories and their resolution state.
+
+## Official comparator
+
+[`official-glm53-tb4.json`](./official-glm53-tb4.json) freezes the public
+66-task × 5-trial GLM-5.3 row returned by the Terminal-Bench waffle API. It is
+cross-checked against the canonical leaderboard submission and Harbor job:
+
+- official all-task result: 138 / 330, or 41.82%;
+- official result on the 63 CPU tasks in the current run: 136 / 315, or 43.17%
+  (derived from the public per-task outcomes);
+- Claude Code 2.1.207 with max reasoning effort in both runs.
+
+The live board compares only tasks for which the current MXFP4 run already has
+all five scored attempts. The partial all-attempt rate is shown, but explicitly
+marked non-comparable because task completion order is not random.
+
+This remains an end-to-end reference rather than a quantization A/B. The
+official row used an opaque hosted API; the current run uses explicit
+third-party MXFP4 weights and a self-hosted serving stack. No official
+Terminal-Bench 4.0 row for GLM-5.2 was available when the reference was
+retrieved.
 
 ## Public boundary
 

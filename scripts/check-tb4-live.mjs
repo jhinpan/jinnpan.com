@@ -8,6 +8,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PAGE = resolve(ROOT, "public/sources/glm53-mxfp4-tb4-live.html");
 const HUB = resolve(ROOT, "public/sources/index.html");
 const EXPERIMENT = resolve(ROOT, "public/sources/glm53-mxfp4-mi355x.html");
+const OFFICIAL = resolve(
+  ROOT,
+  "data/glm53-mxfp4-tb4-live/official-glm53-tb4.json",
+);
 const FEED =
   "https://gist.githubusercontent.com/jhinpan/e73f4d28e91332c8524f03a682923a1d/raw/tb4-status.json";
 
@@ -18,11 +22,20 @@ const requiredIds = [
   "progress-bar",
   "scored",
   "complete-tasks",
+  "partial-rate",
+  "matched-current",
+  "matched-official",
+  "official-cpu-rate",
+  "task-search",
+  "task-body",
   "issues",
   "initial-data",
 ];
 const forbidden = [
-  [/\b(?:10|127|169\.254|172\.(?:1[6-9]|2\d|3[01])|192\.168)\./, "private IP"],
+  [
+    /\b(?:(?:10|127)\.(?:\d{1,3}\.){2}\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b/,
+    "private IP",
+  ],
   [/\b100\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/, "tailnet IP"],
   [/\b(?:smci|mia1)[-.\w]*\b/i, "internal hostname"],
   [/\/(?:root|home|tmp)\//, "local path"],
@@ -39,7 +52,7 @@ function embeddedJson(html, id) {
   return JSON.parse(html.slice(contentStart, end));
 }
 
-function validate(data, label) {
+function validate(data, label, requireTasks = false) {
   if (data.schemaVersion !== 1) throw new Error(`${label}: schemaVersion`);
   if (data.targetScoredAttempts !== 315) throw new Error(`${label}: target`);
   if (data.scoredAttempts + data.remainingAttempts !== 315) {
@@ -51,12 +64,37 @@ function validate(data, label) {
   if (data.configuredConcurrency !== 24 || data.pools?.length !== 2) {
     throw new Error(`${label}: pool contract`);
   }
+  if (
+    data.correctness?.officialAll?.passes !== 138 ||
+    data.correctness?.officialAll?.attempts !== 330
+  ) {
+    throw new Error(`${label}: official comparator`);
+  }
+  if (!Array.isArray(data.tasks) || ![0, 63].includes(data.tasks.length)) {
+    throw new Error(`${label}: per-task rows`);
+  }
+  if (requireTasks && data.tasks.length !== 63) {
+    throw new Error(`${label}: live feed must contain 63 tasks`);
+  }
+  for (const task of data.tasks) {
+    if (
+      task.scoredAttempts < 0 ||
+      task.scoredAttempts > 5 ||
+      task.passes < 0 ||
+      task.passes > task.scoredAttempts ||
+      task.officialPasses < 0 ||
+      task.officialPasses > 5
+    ) {
+      throw new Error(`${label}: invalid task row ${task.name}`);
+    }
+  }
 }
 
-const [page, hub, experiment] = await Promise.all([
+const [page, hub, experiment, official] = await Promise.all([
   readFile(PAGE, "utf8"),
   readFile(HUB, "utf8"),
   readFile(EXPERIMENT, "utf8"),
+  readFile(OFFICIAL, "utf8").then(JSON.parse),
 ]);
 
 for (const id of requiredIds) {
@@ -80,13 +118,20 @@ for (const [pattern, label] of forbidden) {
 
 const initial = embeddedJson(page, "initial-data");
 validate(initial, "embedded snapshot");
+if (
+  official.tasks?.length !== 66 ||
+  official.comparator?.passes !== 138 ||
+  official.comparator?.attempts !== 330
+) {
+  throw new Error("archived official reference is incomplete");
+}
 
 if (process.argv.includes("--live")) {
   const response = await fetch(`${FEED}?check=${Date.now()}`, {
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`live feed HTTP ${response.status}`);
-  validate(await response.json(), "live feed");
+  validate(await response.json(), "live feed", true);
 }
 
 console.log(
