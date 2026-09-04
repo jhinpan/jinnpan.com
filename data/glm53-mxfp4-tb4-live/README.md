@@ -58,6 +58,21 @@ third-party MXFP4 weights and a self-hosted serving stack. No official
 Terminal-Bench 4.0 row for GLM-5.2 was available when the reference was
 retrieved.
 
+## Final snapshot
+
+[`final-result.json`](./final-result.json) freezes the completed public ledger:
+
+- 63 / 63 CPU tasks and 315 / 315 scored attempts;
+- 124 passes, or 39.37%;
+- official GLM-5.3 API on the same 63 tasks: 136 / 315, or 43.17%;
+- task-matched delta: -3.81 percentage points.
+
+Ten agent outputs initially lacked rewards because their CPU-heavy verifiers
+timed out. The verifier containers had a four-CPU quota but PyTorch discovered
+120 host CPUs and created 120 worker threads. A verifier-only regrade kept the
+four-CPU resource limit and 600-second timeout, bounded OMP / MKL / OpenBLAS /
+NumExpr to four threads, and completed all ten without re-running the model.
+
 ## Public boundary
 
 The feed intentionally excludes task prompts, agent trajectories, request

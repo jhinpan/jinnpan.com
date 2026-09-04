@@ -297,8 +297,8 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
         </article>
       </div>
       <div class="comparison-note">
-        <span lang="en"><strong>The honest interim comparison is task-matched.</strong> The all-attempt current rate is incomplete and biased by task completion order. The matched card compares only tasks for which both systems have all five scored attempts. The official row used an opaque hosted API; this MXFP4 run uses explicit quantized weights, so the line is an external end-to-end reference, not a same-runtime quantization A/B.</span>
-        <span lang="zh"><strong>中期只能做同 task 比较。</strong> 当前全部 attempt 的比例尚未完成， 还会受到任务完成顺序的偏置。 同项卡片只比较双方都已有 5 次计分的 task。 官方结果来自不透明的 hosted API， 当前运行使用明确的 MXFP4 量化权重， 因此这是一条端到端外部参考线， 不是同 runtime 的量化 A/B。</span>
+        <span lang="en"><strong>The comparison always uses a task-matched denominator.</strong> Before completion, the all-attempt rate is biased by task completion order and the matched card uses only finished tasks. At 63/63 complete it becomes the final CPU-subset comparison. The official row used an opaque hosted API; this MXFP4 run uses explicit quantized weights, so the line is an external end-to-end reference, not a same-runtime quantization A/B.</span>
+        <span lang="zh"><strong>比较始终使用同 task 分母。</strong> 完成之前， 全部 attempt 比例会受到任务完成顺序的偏置， 同项卡片只使用已完成 task； 达到 63/63 后， 它才成为最终 CPU 子集比较。 官方结果来自不透明的 hosted API， 当前运行使用明确的 MXFP4 量化权重， 因此这是一条端到端外部参考线， 不是同 runtime 的量化 A/B。</span>
       </div>
       <div class="source-links">
         <a id="official-submission" href="https://raw.githubusercontent.com/harbor-framework/terminal-bench/main/leaderboard/submissions/2026-08-26-anthropic-glm-5-3-max-claude-code.json"><span lang="en">Official submission</span><span lang="zh">官方提交</span></a>
@@ -462,7 +462,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
       'verification-repair':['Verification repair','Verifier 补跑中'],
       complete:['Evaluation complete','评测已完成']
     },
-    status:{healthy:['healthy','健康'],degraded:['degraded','异常'],resolved:['resolved','已解决'],'queued-for-regrade':['queued for regrade','等待 regrade'],'scored-zero':['scored zero','计 0 分']},
+    status:{healthy:['healthy','健康'],degraded:['degraded','异常'],resolved:['resolved','已解决'],regrading:['regrading','regrade 进行中'],'queued-for-regrade':['queued for regrade','等待 regrade'],'scored-zero':['scored zero','计 0 分']},
     issues:{
       'container-builder':[
         ['Container builder incompatibility','容器构建器不兼容'],
@@ -507,6 +507,8 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   }
   function issueCopy(issue){
     var known=copy.issues[issue.id];
+    if(issue.id==='verifier-timeouts'&&issue.status==='regrading')return{title:text(known[0]),detail:text(['Verifier-only regrade is running at concurrency two; the model is not being called again.','Verifier-only regrade 正以并发 2 运行； 不会再次调用模型。'])};
+    if(issue.id==='verifier-timeouts'&&issue.status==='resolved')return{title:text(known[0]),detail:text(['All recorded outputs passed verifier-only regrade.','所有已保存输出均已通过 verifier-only regrade。'])};
     return known?{title:text(known[0]),detail:text(known[1])}:{title:issue.title,detail:issue.detail};
   }
   function renderIssues(data){
@@ -530,7 +532,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   function renderCorrectness(data){
     var correctness=data.correctness,partial=correctness.partial,matched=correctness.completeTaskMatched;
     set('partial-rate',percent(partial.passRate));
-    set('partial-fraction',number(partial.passes)+' / '+number(partial.attempts)+' · '+text(['partial, not comparable','未完成， 不可直接比较']));
+    set('partial-fraction',number(partial.passes)+' / '+number(partial.attempts)+' · '+(partial.comparable?text(['final 63-task CPU subset','最终 63-task CPU 子集']):text(['partial, not comparable','未完成， 不可直接比较'])));
     set('matched-current',percent(matched.currentPassRate));
     set('matched-official',percent(matched.officialPassRate));
     setDelta(document.getElementById('matched-delta'),matched.deltaPercentagePoints);

@@ -12,6 +12,10 @@ const OFFICIAL = resolve(
   ROOT,
   "data/glm53-mxfp4-tb4-live/official-glm53-tb4.json",
 );
+const FINAL = resolve(
+  ROOT,
+  "data/glm53-mxfp4-tb4-live/final-result.json",
+);
 const FEED =
   "https://gist.githubusercontent.com/jhinpan/e73f4d28e91332c8524f03a682923a1d/raw/tb4-status.json";
 
@@ -90,11 +94,12 @@ function validate(data, label, requireTasks = false) {
   }
 }
 
-const [page, hub, experiment, official] = await Promise.all([
+const [page, hub, experiment, official, finalResult] = await Promise.all([
   readFile(PAGE, "utf8"),
   readFile(HUB, "utf8"),
   readFile(EXPERIMENT, "utf8"),
   readFile(OFFICIAL, "utf8").then(JSON.parse),
+  readFile(FINAL, "utf8").then(JSON.parse),
 ]);
 
 for (const id of requiredIds) {
@@ -124,6 +129,14 @@ if (
   official.comparator?.attempts !== 330
 ) {
   throw new Error("archived official reference is incomplete");
+}
+validate(finalResult, "final result", true);
+if (
+  finalResult.phase !== "complete" ||
+  finalResult.scoredAttempts !== 315 ||
+  finalResult.correctness.partial.passes !== 124
+) {
+  throw new Error("archived final result is incomplete");
 }
 
 if (process.argv.includes("--live")) {
