@@ -610,7 +610,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
     set('last-update',new Intl.DateTimeFormat(lang()?'zh-CN':'en-US',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(updated));
     set('data-age',age<60?Math.round(age)+'s':Math.round(age/60)+'m');
     var degraded=current.pools.some(function(pool){return pool.status!=='healthy'});
-    var stale=age>current.staleAfterSeconds,dot=document.getElementById('status-dot');
+    var stale=current.phase!=='complete'&&age>current.staleAfterSeconds,dot=document.getElementById('status-dot');
     dot.className='dot '+(degraded?'down':stale?'stale':'');
     set('status-title',degraded?text(['Feed degraded','数据源异常']):stale?text(['Data stale','数据已过期']):text(copy.phases[current.phase]||[current.phase,current.phase]));
   }
