@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-04T05:35:48.519583+00:00",
+  "generatedAt": "2026-09-04T05:55:13.586688+00:00",
   "staleAfterSeconds": 180,
   "phase": "complete",
   "benchmark": "Terminal-Bench 4.0",
@@ -12,8 +12,8 @@
   "remainingAttempts": 0,
   "completeTasks": 63,
   "configuredConcurrency": 24,
-  "elapsedHours": 21.73,
-  "terminalTrialsPerHour": 12.7,
+  "elapsedHours": 22.05,
+  "terminalTrialsPerHour": 12.51,
   "estimatedMainHoursRemaining": 0.0,
   "pools": [
     {
@@ -1116,7 +1116,7 @@
       "status": "resolved",
       "affectedAttempts": 10,
       "title": "CPU-heavy verifier timeouts",
-      "detail": "All recorded outputs passed verifier-only regrade."
+      "detail": "All recorded outputs received rewards via verifier-only regrade."
     },
     {
       "id": "output-limit",

@@ -508,7 +508,7 @@ body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
   function issueCopy(issue){
     var known=copy.issues[issue.id];
     if(issue.id==='verifier-timeouts'&&issue.status==='regrading')return{title:text(known[0]),detail:text(['Verifier-only regrade is running at concurrency two; the model is not being called again.','Verifier-only regrade 正以并发 2 运行； 不会再次调用模型。'])};
-    if(issue.id==='verifier-timeouts'&&issue.status==='resolved')return{title:text(known[0]),detail:text(['All recorded outputs passed verifier-only regrade.','所有已保存输出均已通过 verifier-only regrade。'])};
+    if(issue.id==='verifier-timeouts'&&issue.status==='resolved')return{title:text(known[0]),detail:text(['All recorded outputs received rewards via verifier-only regrade.','所有已保存输出均已通过 verifier-only regrade 获得 reward。'])};
     return known?{title:text(known[0]),detail:text(known[1])}:{title:issue.title,detail:issue.detail};
   }
   function renderIssues(data){
