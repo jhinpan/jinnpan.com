@@ -1,0 +1,1697 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Terminal-Bench 4.0 Live — GLM-5.3 FP8</title>
+<meta name="description" content="Live, sanitized progress for the full zai-org/GLM-5.3 block-FP8 Terminal-Bench 4.0 evaluation on 8x MI355X: scored attempts, replica health, observed rate, ETA, and issue ledger."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&amp;family=Instrument+Sans:wdth,wght@75..100,400..700&amp;family=Spline+Sans+Mono:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#070d14;
+  --panel:#0c141d;
+  --panel2:#101c27;
+  --line:#213445;
+  --line2:#2e4a60;
+  --text:#e7eff6;
+  --muted:#8a9dad;
+  --live:#70f2ad;
+  --cyan:#6fd6e8;
+  --amber:#ffbd66;
+  --red:#ff7180;
+  --ink:#020504;
+  --display:'Barlow Condensed','Noto Sans SC',sans-serif;
+  --body:'Instrument Sans','Noto Sans SC',sans-serif;
+  --mono:'Spline Sans Mono',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  color:var(--text);
+  background:
+    linear-gradient(rgba(112,242,173,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,242,173,.025) 1px,transparent 1px),
+    radial-gradient(circle at 72% 8%,rgba(111,182,232,.09),transparent 28rem),
+    var(--bg);
+  background-size:28px 28px,28px 28px,auto,auto;
+  font-family:var(--body);
+  min-height:100vh;
+}
+a{color:var(--cyan);text-underline-offset:3px}
+button{font:inherit}
+.mono,.value,.count{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.shell{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:22px 0 64px}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  border-bottom:1px solid var(--line);padding:0 0 15px;margin-bottom:36px;
+  font:500 11px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+}
+.topbar nav{display:flex;gap:20px;flex-wrap:wrap}
+.topbar a{color:var(--muted);text-decoration:none}
+.topbar a:hover{color:var(--text)}
+.lang-toggle{display:flex;border:1px solid var(--line2);background:var(--panel)}
+.lang-toggle button{
+  border:0;background:transparent;color:var(--muted);padding:7px 11px;
+  cursor:pointer;font:500 10px/1 var(--mono);letter-spacing:.1em;
+}
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"]{
+  color:var(--ink);background:var(--live)
+}
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:48px;align-items:end;margin-bottom:34px}
+.eyebrow{font:500 11px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--live);margin-bottom:13px}
+h1{font:700 clamp(52px,8vw,92px)/.86 var(--display);letter-spacing:-.035em;text-transform:uppercase;margin:0;max-width:9ch}
+.hero-copy{color:var(--muted);font-size:16px;line-height:1.65;max-width:48ch;margin:20px 0 0}
+.signal{
+  border:1px solid var(--line2);background:rgba(12,24,21,.86);padding:20px;
+  position:relative;overflow:hidden;
+}
+.signal:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--live)}
+.signal-head{display:flex;align-items:center;gap:10px;margin-bottom:15px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--live);box-shadow:0 0 18px rgba(112,242,173,.8)}
+.dot.stale{background:var(--amber);box-shadow:0 0 18px rgba(255,189,102,.65)}
+.dot.down{background:var(--red);box-shadow:0 0 18px rgba(255,113,128,.7)}
+.signal-title{font:600 22px/1 var(--display);letter-spacing:.04em;text-transform:uppercase}
+.signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.signal-grid dt{font:500 9px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.signal-grid dd{margin:5px 0 0;font:500 12px/1.4 var(--mono)}
+.board{border:1px solid var(--line2);background:rgba(7,16,14,.7);box-shadow:0 24px 80px rgba(0,0,0,.28)}
+.progress-zone{display:grid;grid-template-columns:300px minmax(0,1fr);border-bottom:1px solid var(--line2)}
+.dial{display:grid;place-items:center;padding:34px;border-right:1px solid var(--line2);background:var(--panel)}
+.dial-wrap{position:relative;width:200px;height:200px}
+.dial svg{width:100%;height:100%;transform:rotate(-90deg)}
+.dial circle{fill:none;stroke-width:8}
+.dial .track{stroke:var(--line)}
+.dial .meter{stroke:var(--live);stroke-linecap:square;transition:stroke-dashoffset .6s ease}
+.dial-label{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.dial-label strong{font:700 50px/1 var(--display);letter-spacing:-.02em}
+.dial-label span{font:500 9px/1.4 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+.summary{padding:32px 36px;display:flex;flex-direction:column;justify-content:center}
+.summary h2,.section-head h2{font:600 30px/1 var(--display);letter-spacing:.02em;text-transform:uppercase;margin:0}
+.summary p{color:var(--muted);max-width:62ch;line-height:1.6;margin:12px 0 24px}
+.bar{height:14px;border:1px solid var(--line2);padding:3px;background:var(--panel)}
+.bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--live),var(--cyan));transition:width .6s ease}
+.bar-meta{display:flex;justify-content:space-between;gap:16px;margin-top:9px;color:var(--muted);font:500 10px/1.4 var(--mono)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line2)}
+.metric{padding:25px 24px;border-right:1px solid var(--line)}
+.metric:last-child{border-right:0}
+.metric .label{font:500 9px/1.3 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.metric .value{display:block;font-size:27px;line-height:1.1;margin-top:9px;color:var(--text)}
+.metric .sub{font-size:11px;line-height:1.4;color:var(--muted);margin-top:6px}
+.correctness-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.correct-card{border:1px solid var(--line);background:var(--panel);padding:17px;min-height:145px}
+.correct-card .label{font:500 8px/1.4 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.correct-card .score{display:block;font:600 31px/1 var(--display);margin-top:13px}
+.correct-card .fraction{display:block;font:500 10px/1.4 var(--mono);color:var(--muted);margin-top:6px}
+.correct-card .compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.correct-card .compare div{border-left:2px solid var(--line2);padding-left:9px}
+.correct-card .compare div:first-child{border-color:var(--live)}
+.correct-card .compare b{display:block;font:600 23px/1 var(--display)}
+.correct-card .compare span{display:block;margin-top:5px;color:var(--muted);font:500 8px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.07em}
+.delta{display:inline-block;margin-top:10px;padding:3px 6px;border:1px solid var(--line2);font:500 9px/1.3 var(--mono)}
+.delta.positive{color:var(--live);border-color:var(--live)}
+.delta.negative{color:var(--red);border-color:var(--red)}
+.comparison-note{margin:14px 0 20px;border-left:3px solid var(--amber);background:rgba(255,189,102,.055);padding:12px 15px;color:var(--muted);font-size:12.5px;line-height:1.6}
+.comparison-note strong{color:var(--text)}
+.source-links{display:flex;gap:14px;flex-wrap:wrap;margin:-6px 0 20px;font:500 9px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.task-tools{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px}
+.task-search{min-width:240px;flex:1;border:1px solid var(--line2);background:var(--panel);color:var(--text);padding:9px 11px;font:400 12px/1.3 var(--mono);outline:none}
+.task-search:focus{border-color:var(--live)}
+.task-filters{display:flex;gap:5px;flex-wrap:wrap}
+.task-filter{border:1px solid var(--line2);background:transparent;color:var(--muted);padding:7px 9px;cursor:pointer;font:500 8px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.task-filter.active{background:var(--live);border-color:var(--live);color:var(--ink)}
+.task-table-wrap{max-height:620px;overflow:auto;border:1px solid var(--line2);background:var(--panel)}
+.task-table{border-collapse:collapse;width:100%;min-width:760px;font-size:12px}
+.task-table th{position:sticky;top:0;z-index:2;background:var(--panel2);border-bottom:1px solid var(--line2);padding:9px 11px;text-align:left;color:var(--muted);font:500 8px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.task-table td{border-bottom:1px solid var(--line);padding:9px 11px;vertical-align:middle}
+.task-table tr:last-child td{border-bottom:0}
+.task-table tr:hover td{background:rgba(112,242,173,.025)}
+.task-name{font:500 11px/1.35 var(--mono);word-break:break-word}
+.task-domain{display:block;color:var(--muted);font:500 8px/1.3 var(--mono);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+.task-score{font:500 12px/1.3 var(--mono);white-space:nowrap}
+.task-mini{width:94px;height:5px;background:var(--line);margin-top:6px}
+.task-mini span{display:block;height:100%;background:var(--live)}
+.task-mini.official span{background:var(--cyan)}
+.task-delta{font:500 11px/1.3 var(--mono);white-space:nowrap}
+.task-delta.positive{color:var(--live)}
+.task-delta.negative{color:var(--red)}
+.task-state{display:inline-block;border:1px solid var(--line2);padding:4px 6px;font:500 8px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.task-state.complete{border-color:var(--live);color:var(--live)}
+.task-state.errors{border-color:var(--amber);color:var(--amber)}
+.task-empty{display:none;color:var(--muted);padding:16px;text-align:center;font:500 10px/1.4 var(--mono)}
+.section{padding:30px 34px;border-bottom:1px solid var(--line2)}
+.section:last-child{border-bottom:0}
+.section-head{display:flex;justify-content:space-between;align-items:baseline;gap:20px;margin-bottom:22px}
+.section-head .meta{font:500 9px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.pool-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pool{border:1px solid var(--line);background:var(--panel);padding:20px}
+.pool-top{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-bottom:15px;border-bottom:1px solid var(--line)}
+.pool-name{font:600 20px/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.badge{font:500 9px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;border:1px solid var(--live);color:var(--live);padding:5px 7px}
+.badge.degraded{border-color:var(--amber);color:var(--amber)}
+.pool-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:17px}
+.pool-stat .label{font:500 8px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pool-stat .count{display:block;margin-top:5px;font-size:17px}
+.pressure{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.pressure div{background:var(--panel2);border:1px solid var(--line);padding:10px 12px}
+.pressure span{display:block;color:var(--muted);font:500 8px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.pressure b{display:block;margin-top:4px;font:500 13px/1.3 var(--mono);color:var(--text)}
+.issues{display:grid;gap:10px}
+.issue{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:13px;align-items:start;border:1px solid var(--line);background:var(--panel);padding:15px 16px}
+.issue-mark{width:8px;height:8px;margin-top:5px;background:var(--amber)}
+.issue.resolved .issue-mark{background:var(--live)}
+.issue.scored-zero .issue-mark{background:var(--red)}
+.issue h3{font-size:14px;margin:0 0 4px}
+.issue p{font-size:12.5px;line-height:1.5;color:var(--muted);margin:0}
+.issue-side{text-align:right}
+.issue-side .count{display:block;font-size:18px}
+.issue-side .status{display:block;margin-top:3px;font:500 8px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.flow{border:1px solid var(--line);background:var(--panel);padding:16px;overflow-x:auto}
+.flow svg{display:block;width:100%;min-width:680px;height:auto}
+.flow-line{stroke:var(--line2);stroke-width:2;fill:none}
+.flow-node{fill:var(--panel2);stroke:var(--line2)}
+.flow-node.live{stroke:var(--live)}
+.flow-text{font:500 12px var(--body);fill:var(--text)}
+.flow-label{font:500 9px var(--mono);letter-spacing:.08em;fill:var(--muted)}
+.privacy{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+.privacy p{font-size:13px;line-height:1.6;color:var(--muted);margin:0}
+.privacy strong{color:var(--text)}
+.foot{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;color:var(--muted);font:400 10px/1.6 var(--mono);padding:18px 2px 0}
+.foot a{color:var(--muted)}
+body[data-lang="en"] [lang="zh"]:not(html){display:none!important}
+body[data-lang="zh"] [lang="en"]:not(html){display:none!important}
+@media(max-width:820px){
+  .hero,.progress-zone{grid-template-columns:1fr}
+  .dial{border-right:0;border-bottom:1px solid var(--line2)}
+  .metrics{grid-template-columns:1fr 1fr}
+  .metric:nth-child(2){border-right:0}
+  .metric:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .pool-grid,.privacy{grid-template-columns:1fr}
+  .correctness-grid{grid-template-columns:1fr 1fr}
+  .task-tools{align-items:stretch;flex-direction:column}
+}
+@media(max-width:520px){
+  .shell{width:min(100% - 18px,1180px);padding-top:12px}
+  .topbar{align-items:flex-start}
+  .topbar nav{display:grid;gap:8px}
+  h1{font-size:52px}
+  .summary,.section{padding:24px 18px}
+  .metrics{grid-template-columns:1fr}
+  .metric{border-right:0;border-bottom:1px solid var(--line)}
+  .metric:last-child{border-bottom:0}
+  .correctness-grid{grid-template-columns:1fr}
+  .task-search{min-width:0;width:100%}
+  .pool-stats{grid-template-columns:1fr 1fr}
+  .issue{grid-template-columns:10px minmax(0,1fr)}
+  .issue-side{grid-column:2;text-align:left}
+}
+</style>
+</head>
+<body data-lang="en">
+<div class="shell">
+  <header class="topbar">
+    <nav>
+      <a href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回书架</span></a>
+      <a href="./glm53-mxfp4-mi355x.html"><span lang="en">Experiment 004</span><span lang="zh">实验 004</span></a>
+      <a href="./glm53-mxfp4-tb4-live.html"><span lang="en">MXFP4 run (archived)</span><span lang="zh">MXFP4 那一轮（已归档）</span></a>
+      <a href="https://gist.github.com/jhinpan/162d506a3e4c788987b60e5bfc49ff1e"><span lang="en">Public data feed</span><span lang="zh">公开数据源</span></a>
+    </nav>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-set="en" aria-label="English">EN</button>
+      <button type="button" data-set="zh" aria-label="中文">中文</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Live evaluation · Terminal-Bench 4.0</div>
+      <h1>GLM-5.3 FP8</h1>
+      <p class="hero-copy" lang="en">The full <code>zai-org/GLM-5.3</code> block-FP8 weights, 743B total and 39B active, served on one 8&times;MI355X node at TP=8. Same instrument and same 63-task denominator as the MXFP4 run, so the two boards are directly comparable. Scored model outcomes stay separated from infrastructure faults.</p>
+      <p class="hero-copy" lang="zh">完整的 <code>zai-org/GLM-5.3</code> block-FP8 权重， 总参数 743B、 激活 39B， 在单节点 8&times;MI355X 上以 TP=8 服务。 仪表与 63 任务分母都与 MXFP4 那一轮相同， 因此两块看板可直接比较。 模型得分结果与基础设施故障分开记录。</p>
+    </div>
+    <aside class="signal" aria-live="polite">
+      <div class="signal-head"><span class="dot" id="status-dot"></span><span class="signal-title" id="status-title">Connecting</span></div>
+      <dl class="signal-grid">
+        <div><dt><span lang="en">Last update</span><span lang="zh">最近更新</span></dt><dd id="last-update">—</dd></div>
+        <div><dt><span lang="en">Data age</span><span lang="zh">数据延迟</span></dt><dd id="data-age">—</dd></div>
+        <div><dt><span lang="en">Endpoint outages</span><span lang="zh">模型端点中断</span></dt><dd id="outages">—</dd></div>
+        <div><dt><span lang="en">Refresh</span><span lang="zh">刷新周期</span></dt><dd>30 s</dd></div>
+      </dl>
+    </aside>
+  </section>
+
+  <main class="board">
+    <section class="progress-zone">
+      <div class="dial">
+        <div class="dial-wrap">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="track" cx="100" cy="100" r="82" pathLength="100"></circle>
+            <circle class="meter" id="progress-ring" cx="100" cy="100" r="82" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></circle>
+          </svg>
+          <div class="dial-label"><strong id="progress-pct">0%</strong><span><span lang="en">scored</span><span lang="zh">已计分</span></span></div>
+        </div>
+      </div>
+      <div class="summary">
+        <h2><span lang="en">Attempt ledger</span><span lang="zh">尝试台账</span></h2>
+        <p lang="en">The denominator is fixed at 63 tasks × 5 attempts: Terminal-Bench 4.0 ships 66, and three of them declare <code>gpus = 1</code>, which this node cannot honour while all eight GPUs are serving the model under test. An attempt advances this bar only when a verifier returns a reward; infrastructure failures remain visible but do not consume the target.</p>
+        <p lang="zh">分母固定为 63 个任务 × 5 次尝试： Terminal-Bench 4.0 共 66 个任务， 其中 3 个声明了 <code>gpus = 1</code>， 而本节点的 8 张卡都在为被测模型提供服务， 无法满足。 只有 verifier 返回 reward 的尝试才推进这条进度； 基础设施故障保留记录， 但不占用目标次数。</p>
+        <div class="bar"><div class="bar-fill" id="progress-bar"></div></div>
+        <div class="bar-meta"><span id="bar-count">0 / 315</span><span id="phase-label">—</span></div>
+      </div>
+    </section>
+
+    <section class="metrics">
+      <div class="metric"><span class="label"><span lang="en">Scored attempts</span><span lang="zh">已计分尝试</span></span><span class="value" id="scored">—</span><div class="sub"><span lang="en">of 315 fixed target</span><span lang="zh">固定目标 315</span></div></div>
+      <div class="metric"><span class="label"><span lang="en">Complete tasks</span><span lang="zh">完整任务</span></span><span class="value" id="complete-tasks">—</span><div class="sub"><span lang="en">five scored attempts each</span><span lang="zh">每项均有 5 次计分</span></div></div>
+      <div class="metric"><span class="label"><span lang="en">Observed rate</span><span lang="zh">实测速率</span></span><span class="value" id="rate">—</span><div class="sub"><span lang="en">terminal trials per hour</span><span lang="zh">终态 trial / 小时</span></div></div>
+      <div class="metric"><span class="label"><span lang="en">Main-run ETA</span><span lang="zh">主跑预计剩余</span></span><span class="value" id="eta">—</span><div class="sub"><span lang="en">at observed rate, regrade excluded</span><span lang="zh">按实测速率， 不含 regrade</span></div></div>
+    </section>
+
+    <section class="section" id="correctness">
+      <div class="section-head"><h2><span lang="en">Verified correctness</span><span lang="zh">Verifier 正确率</span></h2><span class="meta"><span lang="en">Binary task rewards · live</span><span lang="zh">二元任务 reward · 实时</span></span></div>
+      <div class="correctness-grid">
+        <article class="correct-card">
+          <span class="label"><span lang="en">Current scored attempts</span><span lang="zh">当前已计分尝试</span></span>
+          <span class="score" id="partial-rate">—</span>
+          <span class="fraction" id="partial-fraction">—</span>
+        </article>
+        <article class="correct-card">
+          <span class="label"><span lang="en">Completed-task matched</span><span lang="zh">完整任务同项比较</span></span>
+          <div class="compare">
+            <div><b id="matched-current">—</b><span>FP8 current</span></div>
+            <div><b id="matched-official">—</b><span>Official API</span></div>
+          </div>
+          <span class="delta" id="matched-delta">—</span>
+        </article>
+        <article class="correct-card">
+          <span class="label"><span lang="en">Official same 63 CPU tasks</span><span lang="zh">官方同一组 63 个 CPU 任务</span></span>
+          <span class="score" id="official-cpu-rate">—</span>
+          <span class="fraction" id="official-cpu-fraction">—</span>
+        </article>
+        <article class="correct-card">
+          <span class="label"><span lang="en">Official full 66-task row</span><span lang="zh">官方完整 66 项结果</span></span>
+          <span class="score" id="official-all-rate">41.82%</span>
+          <span class="fraction" id="official-all-fraction">138 / 330 · 95% CI ±3.23 pp</span>
+        </article>
+      </div>
+      <div class="comparison-note">
+        <span lang="en"><strong>The comparison always uses a task-matched denominator.</strong> Before completion, the all-attempt rate is biased by task completion order and the matched card uses only finished tasks. At 63/63 complete it becomes the final CPU-subset comparison. The official row used an opaque hosted API; this run serves the published block-FP8 weights on our own SGLang stack, so the line is an external end-to-end reference, not a same-runtime A/B.</span>
+        <span lang="zh"><strong>比较始终使用同 task 分母。</strong> 完成之前， 全部 attempt 比例会受到任务完成顺序的偏置， 同项卡片只使用已完成 task； 达到 63/63 后， 它才成为最终 CPU 子集比较。 官方结果来自不透明的 hosted API， 当前运行在我们自己的 SGLang 栈上服务官方 block-FP8 权重， 因此这是一条端到端外部参考线， 不是同 runtime 的 A/B。</span>
+      </div>
+      <div class="source-links">
+        <a id="official-submission" href="https://raw.githubusercontent.com/harbor-framework/terminal-bench/main/leaderboard/submissions/2026-08-26-anthropic-glm-5-3-max-claude-code.json"><span lang="en">Official submission</span><span lang="zh">官方提交</span></a>
+        <a id="official-row" href="https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4/leaderboards/4-0-0/rows/d72e8775-f4f1-4313-99e7-35b1cb499f24"><span lang="en">Leaderboard row</span><span lang="zh">排行榜记录</span></a>
+        <a id="official-job" href="https://hub.harborframework.com/jobs/18e4ee29-d8b4-516b-b79d-b8bad5bcd5be"><span lang="en">330-trial Harbor job</span><span lang="zh">330-trial Harbor job</span></a>
+      </div>
+      <div class="task-tools">
+        <input class="task-search" id="task-search" type="search" autocomplete="off" placeholder="Search 63 tasks"/>
+        <div class="task-filters" role="group" aria-label="Filter tasks">
+          <button class="task-filter active" type="button" data-task-filter="all"><span lang="en">All</span><span lang="zh">全部</span></button>
+          <button class="task-filter" type="button" data-task-filter="complete"><span lang="en">Complete</span><span lang="zh">已完成</span></button>
+          <button class="task-filter" type="button" data-task-filter="active"><span lang="en">In progress</span><span lang="zh">进行中</span></button>
+          <button class="task-filter" type="button" data-task-filter="pending"><span lang="en">Pending</span><span lang="zh">未开始</span></button>
+          <button class="task-filter" type="button" data-task-filter="errors"><span lang="en">Needs regrade</span><span lang="zh">需 regrade</span></button>
+        </div>
+      </div>
+      <div class="task-table-wrap">
+        <table class="task-table">
+          <thead><tr>
+            <th><span lang="en">Task</span><span lang="zh">任务</span></th>
+            <th><span lang="en">Current FP8</span><span lang="zh">当前 FP8</span></th>
+            <th><span lang="en">Official GLM-5.3 API</span><span lang="zh">官方 GLM-5.3 API</span></th>
+            <th><span lang="en">Δ when complete</span><span lang="zh">完成项差值</span></th>
+            <th><span lang="en">State</span><span lang="zh">状态</span></th>
+          </tr></thead>
+          <tbody id="task-body"></tbody>
+        </table>
+        <div class="task-empty" id="task-empty"><span lang="en">No tasks match this view.</span><span lang="zh">没有符合条件的任务。</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2><span lang="en">Serving pools</span><span lang="zh">模型服务池</span></h2><span class="meta"><span lang="en">One 8-GPU replica · max-running-requests 64</span><span lang="zh">单个 8 卡副本 · max-running-requests 64</span></span></div>
+      <div class="pool-grid">
+        <article class="pool" data-pool="0">
+          <div class="pool-top"><span class="pool-name">Replica A · TP=8</span><span class="badge">—</span></div>
+          <div class="pool-stats">
+            <div class="pool-stat"><span class="label"><span lang="en">Terminal</span><span lang="zh">终态</span></span><span class="count" data-field="terminalTrials">—</span></div>
+            <div class="pool-stat"><span class="label"><span lang="en">Running</span><span lang="zh">运行中</span></span><span class="count" data-field="runningTrials">—</span></div>
+            <div class="pool-stat"><span class="label"><span lang="en">Pending</span><span lang="zh">等待</span></span><span class="count" data-field="pendingTrials">—</span></div>
+            <div class="pool-stat"><span class="label"><span lang="en">Retries</span><span lang="zh">重试</span></span><span class="count" data-field="retries">—</span></div>
+          </div>
+          <div class="pressure">
+            <div><span><span lang="en">Active requests</span><span lang="zh">活跃请求</span></span><b data-field="activeRequests">—</b></div>
+            <div><span><span lang="en">Waiting / KV tokens</span><span lang="zh">等待 / KV token</span></span><b data-field="pressure">—</b></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2><span lang="en">Issue ledger</span><span lang="zh">问题台账</span></h2><span class="meta"><span lang="en">Faults are not silently scored</span><span lang="zh">故障不会被静默计分</span></span></div>
+      <div class="issues" id="issues"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2><span lang="en">Completion path</span><span lang="zh">完成路径</span></h2><span class="meta"><span lang="en">One owner per attempt</span><span lang="zh">每次尝试只有一个归属</span></span></div>
+      <div class="flow">
+        <svg viewBox="0 0 820 170" role="img" aria-labelledby="flow-title">
+          <title id="flow-title">Evaluation completion flow</title>
+          <path class="flow-line" d="M170 84 H258 M408 84 H500 M650 84 H730"></path>
+          <rect class="flow-node" x="20" y="42" width="150" height="84"></rect>
+          <text class="flow-text" x="95" y="73" text-anchor="middle">66 TASKS</text>
+          <text class="flow-label" x="95" y="96" text-anchor="middle">LESS 3 GPU TASKS</text>
+          <rect class="flow-node live" x="258" y="28" width="150" height="112"></rect>
+          <text class="flow-text" x="333" y="64" text-anchor="middle">ONE TP=8 REPLICA</text>
+          <text class="flow-label" x="333" y="88" text-anchor="middle">8x MI355X · FP8 KV</text>
+          <text class="flow-label" x="333" y="107" text-anchor="middle">CURRENT RUN</text>
+          <rect class="flow-node" x="500" y="42" width="150" height="84"></rect>
+          <text class="flow-text" x="575" y="73" text-anchor="middle">REPAIR / REGRADE</text>
+          <text class="flow-label" x="575" y="96" text-anchor="middle">ONLY MISSING REWARDS</text>
+          <circle class="flow-node live" cx="770" cy="84" r="40"></circle>
+          <text class="flow-text" x="770" y="80" text-anchor="middle">315</text>
+          <text class="flow-label" x="770" y="99" text-anchor="middle">SCORED</text>
+        </svg>
+      </div>
+      <div class="privacy">
+        <p lang="en"><strong>Why the count is not the Harbor terminal count.</strong> A model outcome may score zero and still count. A container or verifier fault without a reward does not count and is replayed from the narrowest durable boundary.</p>
+        <p lang="zh"><strong>为什么这里不直接使用 Harbor 的终态数量。</strong> 模型结果即使得 0 分也可以计数； 没有 reward 的容器或 verifier 故障不计数， 并从最窄的持久化边界补跑。</p>
+        <p lang="en"><strong>What this public view excludes.</strong> Task prompts, agent trajectories, internal addresses, credentials, per-request content, and unpublished benchmark artifacts never enter the feed.</p>
+        <p lang="zh"><strong>公开看板不会包含什么。</strong> Task prompt、agent trajectory、内部地址、凭据、逐请求内容以及未发布的 benchmark artifact 都不会进入数据源。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span><span lang="en">Data generated at the evaluation boundary and mirrored through a public, sanitized feed.</span><span lang="zh">数据在评测边界生成， 经公开且去敏的数据源同步。</span></span>
+    <span><a href="https://gist.github.com/jhinpan/162d506a3e4c788987b60e5bfc49ff1e">tb4-status.json</a> · <a href="./glm53-mxfp4-mi355x.html">Experiment 004</a> · <a href="./glm53-mxfp4-tb4-live.html">MXFP4 run</a></span>
+  </footer>
+</div>
+
+<script id="initial-data" type="application/json">
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-09T01:09:08.142295+00:00",
+  "staleAfterSeconds": 180,
+  "phase": "running",
+  "benchmark": "Terminal-Bench 4.0",
+  "model": "GLM-5.3 FP8",
+  "attemptsPerTask": 5,
+  "totalTasks": 63,
+  "targetScoredAttempts": 315,
+  "scoredAttempts": 0,
+  "remainingAttempts": 315,
+  "completeTasks": 0,
+  "unscoredErrors": 0,
+  "configuredConcurrency": null,
+  "elapsedHours": 0.0,
+  "terminalTrialsPerHour": 0.0,
+  "estimatedMainHoursRemaining": null,
+  "pools": [
+    {
+      "name": "Replica A \u00b7 TP=8",
+      "status": "degraded",
+      "configuredConcurrency": null,
+      "reachable": false,
+      "terminalTrials": 0,
+      "runningTrials": 0,
+      "pendingTrials": 0,
+      "retries": 0,
+      "activeRequests": 0,
+      "waitingRequests": 0,
+      "allocatedTokens": 0,
+      "kvPoolTokens": null
+    }
+  ],
+  "issues": [],
+  "modelEndpointOutages": 1,
+  "correctness": {
+    "partial": {
+      "passes": 0,
+      "failures": 0,
+      "attempts": 0,
+      "passRate": null,
+      "comparable": false,
+      "reason": "Task completion order is not random, so the all-attempt rate is not yet comparable."
+    },
+    "completeTaskMatched": {
+      "tasks": 0,
+      "attempts": 0,
+      "currentPasses": 0,
+      "currentPassRate": null,
+      "officialPasses": 0,
+      "officialPassRate": null,
+      "deltaPercentagePoints": null
+    },
+    "officialCpuMatched": {
+      "tasks": 63,
+      "attempts": 315,
+      "passes": 136,
+      "passRate": 0.43174603174603177,
+      "derived": true
+    },
+    "officialAll": {
+      "tasks": 66,
+      "attempts": 330,
+      "passes": 138,
+      "passRate": 0.41818181818181815,
+      "ci95HalfWidthPercentagePoints": 3.23
+    }
+  },
+  "officialReference": {
+    "label": "Official GLM-5.3 API",
+    "model": "GLM-5.3",
+    "agent": "Claude Code 2.1.207",
+    "reasoningEffort": "max",
+    "tasks": 66,
+    "attemptsPerTask": 5,
+    "attempts": 330,
+    "passes": 138,
+    "failures": 184,
+    "errors": 8,
+    "resolutionRate": 0.41818181818181815,
+    "ci95HalfWidthPercentagePoints": 3.23,
+    "waffleUrl": "https://www.tbench.ai/api/waffle?version=4.0",
+    "waffleSha256": "20ea10a2c8c75b13b1b2758008956585122f319a5c74122c7bd0c6c4f20e2f4b",
+    "submissionUrl": "https://raw.githubusercontent.com/harbor-framework/terminal-bench/main/leaderboard/submissions/2026-08-26-anthropic-glm-5-3-max-claude-code.json",
+    "leaderboardRowUrl": "https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4/leaderboards/4-0-0/rows/d72e8775-f4f1-4313-99e7-35b1cb499f24",
+    "jobUrl": "https://hub.harborframework.com/jobs/18e4ee29-d8b4-516b-b79d-b8bad5bcd5be",
+    "terminalBenchCommit": "83c7a6172d629c6575b785ab12c8db787bb2e323",
+    "retrievedAt": "2026-09-03T19:08:12.870396+00:00",
+    "comparisonCaveat": "The official row used an opaque hosted API; this run uses explicit block-FP8 weights on a self-hosted SGLang stack. It is an end-to-end reference, not a same-runtime A/B."
+  },
+  "tasks": [
+    {
+      "name": "atrx-vep-crispr",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 3,
+      "officialFailures": 2,
+      "officialErrors": 0,
+      "officialPassRate": 0.6,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "batched-eval-parity",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 1,
+      "officialErrors": 0,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "biped-contact-dynamics",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 2,
+      "officialFailures": 3,
+      "officialErrors": 0,
+      "officialPassRate": 0.4,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "bun-sourcemap-leak",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "cad-model",
+      "domain": "Hardware",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "cargo-flight-dispatch",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "coq-block-bound",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "ctr-optimization",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "cumulative-layout-shift",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "data-anonymization",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 4,
+      "officialErrors": 1,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "distributed-dedup",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 1,
+      "officialErrors": 0,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "embedding-drift-monitor",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "fin-saccr-rwa",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 1,
+      "officialErrors": 0,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "foodstuff-beta-activity",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "formal-crypto",
+      "domain": "Security",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 1,
+      "officialErrors": 0,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "freecad-impeller",
+      "domain": "Hardware",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "freecad-platform-drawing",
+      "domain": "Hardware",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "freecad-spring-clip",
+      "domain": "Hardware",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "freight-dispatch-shift",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "glycan-ms2-elucidation",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "gsea-proteomics",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "heat-pump-warranty",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "hof-topology-interpenetration",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "html-js-filter",
+      "domain": "Security",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 3,
+      "officialFailures": 2,
+      "officialErrors": 0,
+      "officialPassRate": 0.6,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "interleaved-vigenere",
+      "domain": "Security",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "intrastat-meldung",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 3,
+      "officialFailures": 2,
+      "officialErrors": 0,
+      "officialPassRate": 0.6,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "ks-solver-cpp",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "kv-live-surgery",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 1,
+      "officialFailures": 4,
+      "officialErrors": 0,
+      "officialPassRate": 0.2,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "lake-temp-glm",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 2,
+      "officialFailures": 3,
+      "officialErrors": 0,
+      "officialPassRate": 0.4,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "layout-config-recreation",
+      "domain": "Media",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "layout-config-recreation2",
+      "domain": "Media",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 0,
+      "officialErrors": 1,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "legacy-utility-triage",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "live-database-cutover",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "medical-claims-processing",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "mp-checkpoint-consolidation",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "music-harmony",
+      "domain": "Media",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "mvcc-lsm-compaction",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 3,
+      "officialFailures": 2,
+      "officialErrors": 0,
+      "officialPassRate": 0.6,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "nextjs-performance",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 4,
+      "officialErrors": 1,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "ontology-kg-querying",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "payments-pipeline-fix",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "photonic-waveguide-routing",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 2,
+      "officialErrors": 3,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "pretrain-shard-corruption",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 2,
+      "officialFailures": 3,
+      "officialErrors": 0,
+      "officialPassRate": 0.4,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "production-planning",
+      "domain": "Operations",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 2,
+      "officialFailures": 3,
+      "officialErrors": 0,
+      "officialPassRate": 0.4,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "protein-autointerp-disulfide",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 1,
+      "officialErrors": 0,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "react-lead-form",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 4,
+      "officialFailures": 1,
+      "officialErrors": 0,
+      "officialPassRate": 0.8,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "retro-console-soc",
+      "domain": "Hardware",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "risk-scorer-replay",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "roy-polymorph-cn",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "rs-archive-clone",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 2,
+      "officialFailures": 3,
+      "officialErrors": 0,
+      "officialPassRate": 0.4,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "satb-audio-transcription",
+      "domain": "Media",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 3,
+      "officialFailures": 2,
+      "officialErrors": 0,
+      "officialPassRate": 0.6,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "session-window-debug",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "sglang-qwen-burst",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "shadow-relay",
+      "domain": "Security",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "sound-change-cascade",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "takens-embedding-lean",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "telecom-entity-resolution",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "uefi-bootkit",
+      "domain": "Security",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "vba-userform-port",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 1,
+      "officialFailures": 4,
+      "officialErrors": 0,
+      "officialPassRate": 0.2,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "vf2-speedup-networkx",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 3,
+      "officialFailures": 2,
+      "officialErrors": 0,
+      "officialPassRate": 0.6,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "vllm-deepseek-streaming",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 0,
+      "officialFailures": 5,
+      "officialErrors": 0,
+      "officialPassRate": 0.0,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "vpp-loss-divergence",
+      "domain": "ML",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 2,
+      "officialFailures": 3,
+      "officialErrors": 0,
+      "officialPassRate": 0.4,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "wal-recovery-ordering",
+      "domain": "Software",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 1,
+      "officialFailures": 4,
+      "officialErrors": 0,
+      "officialPassRate": 0.2,
+      "deltaPercentagePoints": null
+    },
+    {
+      "name": "wdm-design",
+      "domain": "Science",
+      "scoredAttempts": 0,
+      "passes": 0,
+      "failures": 0,
+      "remainingAttempts": 5,
+      "unscoredErrors": 0,
+      "passRate": null,
+      "complete": false,
+      "officialPasses": 5,
+      "officialFailures": 0,
+      "officialErrors": 0,
+      "officialPassRate": 1.0,
+      "deltaPercentagePoints": null
+    }
+  ]
+}
+</script>
+<script>
+(function(){
+  var FEED='https://gist.githubusercontent.com/jhinpan/162d506a3e4c788987b60e5bfc49ff1e/raw/tb4-status.json';
+  var LANG_KEY='glm53-tb4-live-lang';
+  var CACHE_KEY='glm53-fp8-tb4-live-last-good-v1';
+  var body=document.body,current=null,taskFilter='all';
+  var copy={
+    phases:{
+      running:['Evaluation running','评测运行中'],
+      'verification-repair':['Verification repair','Verifier 补跑中'],
+      complete:['Evaluation complete','评测已完成']
+    },
+    status:{healthy:['healthy','健康'],degraded:['degraded','异常'],resolved:['resolved','已解决'],regrading:['regrading','regrade 进行中'],'queued-for-regrade':['queued for regrade','等待 regrade'],'scored-zero':['scored zero','计 0 分']},
+    issues:{
+      'container-builder':[
+        ['Container builder incompatibility','容器构建器不兼容'],
+        ['The unchanged task was replayed through a compatible builder; all five replacement attempts scored.','未改动的任务已通过兼容构建器重跑， 5 次替代尝试全部计分。']
+      ],
+      'verifier-timeouts':[
+        ['CPU-heavy verifier timeouts','CPU-heavy verifier 超时'],
+        ['Recorded outputs are preserved for verifier-only regrade after the main run releases CPU capacity.','已保留输出， 主跑释放 CPU 后只重跑 verifier。']
+      ],
+      'output-limit':[
+        ['Output token limit reached','达到输出 token 上限'],
+        ['The verifier returned zero; this remains a model outcome.','Verifier 已返回 0 分； 这是模型结果。']
+      ],
+      'agent-exit':[
+        ['Agent exited non-zero','Agent 非零退出'],
+        ['The verifier returned zero; this remains a model outcome.','Verifier 已返回 0 分； 这是模型结果。']
+      ]
+    },
+    taskState:{
+      complete:['complete','已完成'],
+      active:['in progress','进行中'],
+      pending:['pending','未开始'],
+      errors:['needs regrade','需 regrade']
+    }
+  };
+  function lang(){return body.getAttribute('data-lang')==='zh'?1:0}
+  function text(pair){return pair[lang()]}
+  function set(id,value){var node=document.getElementById(id);if(node)node.textContent=value}
+  function number(value){return new Intl.NumberFormat(lang()?'zh-CN':'en-US').format(value)}
+  function percent(value){return value==null?'—':(value*100).toFixed(1)+'%'}
+  function compact(value){
+    if(value>=1000000)return (value/1000000).toFixed(2)+'M';
+    if(value>=1000)return (value/1000).toFixed(1)+'K';
+    return String(value);
+  }
+  function validate(data){
+    if(!data||data.schemaVersion!==1)throw new Error('unsupported schema');
+    if(data.scoredAttempts+data.remainingAttempts!==data.targetScoredAttempts)throw new Error('attempt count mismatch');
+    if(!Array.isArray(data.pools)||data.pools.length!==1)throw new Error('pool count mismatch');
+    if(!data.correctness||!Array.isArray(data.tasks))throw new Error('correctness data missing');
+    return data;
+  }
+  function issueCopy(issue){
+    var known=copy.issues[issue.id];
+    if(issue.id==='verifier-timeouts'&&issue.status==='regrading')return{title:text(known[0]),detail:text(['Verifier-only regrade is running at concurrency two; the model is not being called again.','Verifier-only regrade 正以并发 2 运行； 不会再次调用模型。'])};
+    if(issue.id==='verifier-timeouts'&&issue.status==='resolved')return{title:text(known[0]),detail:text(['All recorded outputs received rewards via verifier-only regrade.','所有已保存输出均已通过 verifier-only regrade 获得 reward。'])};
+    return known?{title:text(known[0]),detail:text(known[1])}:{title:issue.title,detail:issue.detail};
+  }
+  function renderIssues(data){
+    var root=document.getElementById('issues');root.replaceChildren();
+    data.issues.filter(function(issue){return issue.affectedAttempts>0}).forEach(function(issue){
+      var localized=issueCopy(issue),article=document.createElement('article');
+      article.className='issue '+issue.status;
+      var mark=document.createElement('span');mark.className='issue-mark';
+      var content=document.createElement('div'),title=document.createElement('h3'),detail=document.createElement('p');
+      title.textContent=localized.title;detail.textContent=localized.detail;content.append(title,detail);
+      var side=document.createElement('div');side.className='issue-side';
+      var count=document.createElement('span');count.className='count';count.textContent=number(issue.affectedAttempts);
+      var status=document.createElement('span');status.className='status';status.textContent=text(copy.status[issue.status]||[issue.status,issue.status]);
+      side.append(count,status);article.append(mark,content,side);root.append(article);
+    });
+  }
+  function setDelta(node,value){
+    node.textContent=value==null?'—':(value>0?'+':'')+value.toFixed(1)+' pp';
+    node.className='delta '+(value>0?'positive':value<0?'negative':'');
+  }
+  function renderCorrectness(data){
+    var correctness=data.correctness,partial=correctness.partial,matched=correctness.completeTaskMatched;
+    set('partial-rate',percent(partial.passRate));
+    set('partial-fraction',number(partial.passes)+' / '+number(partial.attempts)+' · '+(partial.comparable?text(['final 63-task CPU subset','最终 63-task CPU 子集']):text(['partial, not comparable','未完成， 不可直接比较'])));
+    set('matched-current',percent(matched.currentPassRate));
+    set('matched-official',percent(matched.officialPassRate));
+    setDelta(document.getElementById('matched-delta'),matched.deltaPercentagePoints);
+    set('official-cpu-rate',percent(correctness.officialCpuMatched.passRate));
+    set('official-cpu-fraction',number(correctness.officialCpuMatched.passes)+' / '+number(correctness.officialCpuMatched.attempts)+' · '+text(['derived from per-task data','由逐 task 数据推导']));
+    set('official-all-rate',percent(correctness.officialAll.passRate));
+    set('official-all-fraction',number(correctness.officialAll.passes)+' / '+number(correctness.officialAll.attempts)+' · 95% CI ±'+Number(correctness.officialAll.ci95HalfWidthPercentagePoints).toFixed(2)+' pp');
+    if(data.officialReference){
+      document.getElementById('official-submission').href=data.officialReference.submissionUrl;
+      document.getElementById('official-row').href=data.officialReference.leaderboardRowUrl;
+      document.getElementById('official-job').href=data.officialReference.jobUrl;
+    }
+  }
+  function taskState(task){
+    if(task.complete)return 'complete';
+    if(task.unscoredErrors>0)return 'errors';
+    if(task.scoredAttempts>0)return 'active';
+    return 'pending';
+  }
+  function scoreCell(passes,attempts,rate,official){
+    var cell=document.createElement('td'),score=document.createElement('span'),mini=document.createElement('div'),fill=document.createElement('span');
+    score.className='task-score';score.textContent=number(passes)+' / '+number(attempts)+(attempts?' · '+percent(rate):'');
+    mini.className='task-mini'+(official?' official':'');fill.style.width=(rate==null?0:rate*100)+'%';
+    mini.append(fill);cell.append(score,mini);return cell;
+  }
+  function renderTasks(data){
+    var query=document.getElementById('task-search').value.trim().toLowerCase();
+    var rows=(data.tasks||[]).filter(function(task){
+      var state=taskState(task);
+      return (!query||task.name.toLowerCase().includes(query)||task.domain.toLowerCase().includes(query))&&(taskFilter==='all'||taskFilter===state);
+    });
+    var root=document.getElementById('task-body');root.replaceChildren();
+    rows.forEach(function(task){
+      var row=document.createElement('tr');
+      var name=document.createElement('td'),nameText=document.createElement('span'),domain=document.createElement('span');
+      nameText.className='task-name';nameText.textContent=task.name;domain.className='task-domain';domain.textContent=task.domain;name.append(nameText,domain);
+      var currentCell=scoreCell(task.passes,task.scoredAttempts,task.passRate,false);
+      var officialCell=scoreCell(task.officialPasses,5,task.officialPassRate,true);
+      var deltaCell=document.createElement('td'),delta=document.createElement('span');
+      delta.className='task-delta '+(task.deltaPercentagePoints>0?'positive':task.deltaPercentagePoints<0?'negative':'');
+      delta.textContent=task.deltaPercentagePoints==null?'—':(task.deltaPercentagePoints>0?'+':'')+task.deltaPercentagePoints.toFixed(1)+' pp';deltaCell.append(delta);
+      var stateCell=document.createElement('td'),state=document.createElement('span'),stateName=taskState(task);
+      state.className='task-state '+stateName;
+      state.textContent=text(copy.taskState[stateName])+(task.unscoredErrors?' · '+task.unscoredErrors:'');
+      stateCell.append(state);row.append(name,currentCell,officialCell,deltaCell,stateCell);root.append(row);
+    });
+    document.getElementById('task-empty').style.display=rows.length?'none':'block';
+  }
+  function render(data){
+    current=validate(data);
+    var pct=Math.max(0,Math.min(100,data.scoredAttempts/data.targetScoredAttempts*100));
+    set('progress-pct',pct.toFixed(1)+'%');
+    document.getElementById('progress-ring').style.strokeDashoffset=String(100-pct);
+    document.getElementById('progress-bar').style.width=pct+'%';
+    set('bar-count',number(data.scoredAttempts)+' / '+number(data.targetScoredAttempts));
+    set('phase-label',text(copy.phases[data.phase]||[data.phase,data.phase]));
+    set('scored',number(data.scoredAttempts));
+    set('complete-tasks',number(data.completeTasks)+' / '+number(data.totalTasks));
+    set('rate',Number(data.terminalTrialsPerHour).toFixed(1)+'/h');
+    set('eta',data.estimatedMainHoursRemaining==null?'—':'≈ '+Number(data.estimatedMainHoursRemaining).toFixed(1)+'h');
+    set('outages',number(data.modelEndpointOutages));
+    data.pools.forEach(function(pool,index){
+      var card=document.querySelector('[data-pool="'+index+'"]');
+      var badge=card.querySelector('.badge');badge.textContent=text(copy.status[pool.status]||[pool.status,pool.status]);badge.className='badge '+(pool.status==='healthy'?'':pool.status);
+      ['terminalTrials','runningTrials','pendingTrials','retries','activeRequests'].forEach(function(field){
+        card.querySelector('[data-field="'+field+'"]').textContent=number(pool[field]);
+      });
+      card.querySelector('[data-field="pressure"]').textContent=number(pool.waitingRequests)+' / '+compact(pool.allocatedTokens);
+    });
+    renderCorrectness(data);renderTasks(data);renderIssues(data);updateFreshness();
+  }
+  function updateFreshness(){
+    if(!current)return;
+    var updated=new Date(current.generatedAt),age=Math.max(0,(Date.now()-updated.getTime())/1000);
+    set('last-update',new Intl.DateTimeFormat(lang()?'zh-CN':'en-US',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(updated));
+    set('data-age',age<60?Math.round(age)+'s':Math.round(age/60)+'m');
+    var degraded=current.pools.some(function(pool){return pool.status!=='healthy'});
+    var stale=current.phase!=='complete'&&age>current.staleAfterSeconds,dot=document.getElementById('status-dot');
+    dot.className='dot '+(degraded?'down':stale?'stale':'');
+    set('status-title',degraded?text(['Feed degraded','数据源异常']):stale?text(['Data stale','数据已过期']):text(copy.phases[current.phase]||[current.phase,current.phase]));
+  }
+  async function refresh(){
+    try{
+      var response=await fetch(FEED+'?t='+Date.now(),{cache:'no-store'});
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      var data=validate(await response.json());
+      try{localStorage.setItem(CACHE_KEY,JSON.stringify(data))}catch(e){}
+      render(data);
+    }catch(error){
+      updateFreshness();
+    }
+  }
+  function applyLanguage(value){
+    document.documentElement.setAttribute('lang',value);body.setAttribute('data-lang',value);try{localStorage.setItem(LANG_KEY,value)}catch(e){}
+    document.getElementById('task-search').placeholder=text(['Search 63 tasks','搜索 63 个任务']);
+    if(current)render(current);
+  }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(button){
+    button.addEventListener('click',function(){applyLanguage(button.getAttribute('data-set'))});
+  });
+  document.getElementById('task-search').addEventListener('input',function(){if(current)renderTasks(current)});
+  document.querySelectorAll('.task-filter').forEach(function(button){
+    button.addEventListener('click',function(){
+      taskFilter=button.getAttribute('data-task-filter');
+      document.querySelectorAll('.task-filter').forEach(function(candidate){candidate.classList.toggle('active',candidate===button)});
+      if(current)renderTasks(current);
+    });
+  });
+  var stored=null;try{stored=localStorage.getItem(LANG_KEY)}catch(e){}
+  applyLanguage(stored==='en'||stored==='zh'?stored:(navigator.language||'en').toLowerCase().startsWith('zh')?'zh':'en');
+  var initial=validate(JSON.parse(document.getElementById('initial-data').textContent));
+  try{var cached=JSON.parse(localStorage.getItem(CACHE_KEY));if(new Date(cached.generatedAt)>new Date(initial.generatedAt))initial=validate(cached)}catch(e){}
+  render(initial);refresh();setInterval(refresh,30000);setInterval(updateFreshness,1000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,556 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-09-03T19:08:12.870396+00:00",
+  "source": {
+    "waffleUrl": "https://www.tbench.ai/api/waffle?version=4.0",
+    "waffleSha256": "20ea10a2c8c75b13b1b2758008956585122f319a5c74122c7bd0c6c4f20e2f4b",
+    "submissionUrl": "https://raw.githubusercontent.com/harbor-framework/terminal-bench/main/leaderboard/submissions/2026-08-26-anthropic-glm-5-3-max-claude-code.json",
+    "leaderboardRowUrl": "https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4/leaderboards/4-0-0/rows/d72e8775-f4f1-4313-99e7-35b1cb499f24",
+    "jobUrl": "https://hub.harborframework.com/jobs/18e4ee29-d8b4-516b-b79d-b8bad5bcd5be",
+    "terminalBenchCommit": "83c7a6172d629c6575b785ab12c8db787bb2e323"
+  },
+  "comparator": {
+    "label": "Official GLM-5.3 API",
+    "model": "GLM-5.3",
+    "agent": "Claude Code 2.1.207",
+    "reasoningEffort": "max",
+    "tasks": 66,
+    "attemptsPerTask": 5,
+    "attempts": 330,
+    "passes": 138,
+    "failures": 184,
+    "errors": 8,
+    "resolutionRate": 0.41818181818181815,
+    "ci95HalfWidthPercentagePoints": 3.23
+  },
+  "tasks": [
+    {
+      "name": "atrx-vep-crispr",
+      "domain": "Science",
+      "passes": 3,
+      "failures": 2,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "batched-eval-parity",
+      "domain": "ML",
+      "passes": 4,
+      "failures": 1,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "biped-contact-dynamics",
+      "domain": "Science",
+      "passes": 2,
+      "failures": 3,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "bun-sourcemap-leak",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "cad-model",
+      "domain": "Hardware",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "cargo-flight-dispatch",
+      "domain": "Operations",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "coq-block-bound",
+      "domain": "Science",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "ctr-optimization",
+      "domain": "Operations",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "cumulative-layout-shift",
+      "domain": "Software",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "data-anonymization",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 4,
+      "errors": 1,
+      "attempts": 5
+    },
+    {
+      "name": "distributed-dedup",
+      "domain": "Software",
+      "passes": 4,
+      "failures": 1,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "embedding-drift-monitor",
+      "domain": "ML",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "fin-saccr-rwa",
+      "domain": "Operations",
+      "passes": 4,
+      "failures": 1,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "foodstuff-beta-activity",
+      "domain": "Science",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "formal-crypto",
+      "domain": "Security",
+      "passes": 4,
+      "failures": 1,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "fp8-rmsnorm-gemm",
+      "domain": "ML",
+      "passes": 2,
+      "failures": 2,
+      "errors": 1,
+      "attempts": 5
+    },
+    {
+      "name": "freecad-impeller",
+      "domain": "Hardware",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "freecad-platform-drawing",
+      "domain": "Hardware",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "freecad-spring-clip",
+      "domain": "Hardware",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "freight-dispatch-shift",
+      "domain": "Operations",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "glycan-ms2-elucidation",
+      "domain": "Science",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "gsea-proteomics",
+      "domain": "Science",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "heat-pump-warranty",
+      "domain": "Operations",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "hof-topology-interpenetration",
+      "domain": "Science",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "html-js-filter",
+      "domain": "Security",
+      "passes": 3,
+      "failures": 2,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "interleaved-vigenere",
+      "domain": "Security",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "intrastat-meldung",
+      "domain": "Operations",
+      "passes": 3,
+      "failures": 2,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "jax-speedrun-gpu",
+      "domain": "ML",
+      "passes": 0,
+      "failures": 4,
+      "errors": 1,
+      "attempts": 5
+    },
+    {
+      "name": "ks-solver-cpp",
+      "domain": "Science",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "kv-live-surgery",
+      "domain": "Software",
+      "passes": 1,
+      "failures": 4,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "lake-temp-glm",
+      "domain": "Science",
+      "passes": 2,
+      "failures": 3,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "layout-config-recreation",
+      "domain": "Media",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "layout-config-recreation2",
+      "domain": "Media",
+      "passes": 4,
+      "failures": 0,
+      "errors": 1,
+      "attempts": 5
+    },
+    {
+      "name": "legacy-utility-triage",
+      "domain": "Operations",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "live-database-cutover",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "math-eval-grader",
+      "domain": "ML",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "medical-claims-processing",
+      "domain": "Operations",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "mp-checkpoint-consolidation",
+      "domain": "ML",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "music-harmony",
+      "domain": "Media",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "mvcc-lsm-compaction",
+      "domain": "Software",
+      "passes": 3,
+      "failures": 2,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "nextjs-performance",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 4,
+      "errors": 1,
+      "attempts": 5
+    },
+    {
+      "name": "ontology-kg-querying",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "payments-pipeline-fix",
+      "domain": "Software",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "photonic-waveguide-routing",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 2,
+      "errors": 3,
+      "attempts": 5
+    },
+    {
+      "name": "pretrain-shard-corruption",
+      "domain": "ML",
+      "passes": 2,
+      "failures": 3,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "production-planning",
+      "domain": "Operations",
+      "passes": 2,
+      "failures": 3,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "protein-autointerp-disulfide",
+      "domain": "Science",
+      "passes": 4,
+      "failures": 1,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "react-lead-form",
+      "domain": "Software",
+      "passes": 4,
+      "failures": 1,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "retro-console-soc",
+      "domain": "Hardware",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "risk-scorer-replay",
+      "domain": "ML",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "roy-polymorph-cn",
+      "domain": "Science",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "rs-archive-clone",
+      "domain": "Software",
+      "passes": 2,
+      "failures": 3,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "satb-audio-transcription",
+      "domain": "Media",
+      "passes": 3,
+      "failures": 2,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "session-window-debug",
+      "domain": "Software",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "sglang-qwen-burst",
+      "domain": "ML",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "shadow-relay",
+      "domain": "Security",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "sound-change-cascade",
+      "domain": "Science",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "takens-embedding-lean",
+      "domain": "Science",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "telecom-entity-resolution",
+      "domain": "Software",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "uefi-bootkit",
+      "domain": "Security",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "vba-userform-port",
+      "domain": "Software",
+      "passes": 1,
+      "failures": 4,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "vf2-speedup-networkx",
+      "domain": "Software",
+      "passes": 3,
+      "failures": 2,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "vllm-deepseek-streaming",
+      "domain": "ML",
+      "passes": 0,
+      "failures": 5,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "vpp-loss-divergence",
+      "domain": "ML",
+      "passes": 2,
+      "failures": 3,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "wal-recovery-ordering",
+      "domain": "Software",
+      "passes": 1,
+      "failures": 4,
+      "errors": 0,
+      "attempts": 5
+    },
+    {
+      "name": "wdm-design",
+      "domain": "Science",
+      "passes": 5,
+      "failures": 0,
+      "errors": 0,
+      "attempts": 5
+    }
+  ]
+}
