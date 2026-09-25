@@ -1,0 +1,17 @@
+{"label": "s2-split-real-a", "mode": "real", "affinity_mode": "split", "sglang_set_cpu_affinity": "1", "node1_cpus": "64-127,192-255",
+ "launcher": "$E2E_CAMPAIGN/bench/launch_ll.sh", "launcher_sha256": "0b49f483fc816b2c9e8da44b1a7e3b69db884fa78c98a6ce2c27290f2a7c4419",
+ "env_sh_sha256": "ea4e3e6f8d72061b4c0788ee2eca434a3d619102a72aab07c07147768bb84870",
+ "sglang_tree": "$E2E_CAMPAIGN/sources/rt-base", "sglang_tree_manifest": {
+  "tree": "$E2E_CAMPAIGN/sources/rt-base",
+  "base": "e2e824dc58",
+  "common_fix": "82958d31b0",
+  "patches": [],
+  "diff_sha256": "20a8c3f1babe41e33c91c046a9fdecb70727be3b91d50dd68e8a569bb9e6ac23",
+  "files": [
+    "python/sglang/kernels/ops/kvcache/triton_store_cache.py"
+  ]
+},
+ "aiter_tree": "$E2E_CAMPAIGN/sources/aiter-acf8fdf9-e2e",
+ "client_sha256": "8a9276345df9fa7ae71c3f11f73fb59ac02ffcbc82a47d6b25455346ece89952",
+ "prompt_sha256": "2331eb918994e153dc659a4bd97f5eca87af7751268a5d931a1863a865801307",
+ "gpu_lock_record": "$CAMPAIGN/results/gpu-claim-session2", "start_utc": "2026-09-25T08:06:03.518Z"}

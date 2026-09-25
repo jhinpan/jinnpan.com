@@ -1,0 +1,2 @@
+{"label": "s2-split-real-a", "ok": true, "server_ready": 1, "client_rc": 0, "gpus_released_rc": 0,
+ "start_utc": "2026-09-25T08:06:03.518Z", "ready_utc": "2026-09-25T08:07:54.923Z", "bench_end_utc": "2026-09-25T08:08:15.313Z", "end_utc": "2026-09-25T08:08:21.349Z"}

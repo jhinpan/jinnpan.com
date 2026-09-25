@@ -1,0 +1,57 @@
+{
+  "name": "p2-real",
+  "image": "lmsysorg/sglang@sha256:b8257f5c5f8f7c5aeeba7e6f230c8cb1a6af8b010bf1d906d3d05f72128c1d7c",
+  "image_id": null,
+  "server_cmd": null,
+  "env": null,
+  "docker_args": null,
+  "port": null,
+  "bench": null,
+  "started_utc": "2026-09-25T02:01:13Z",
+  "sample_gpu": null,
+  "num_steps": 100,
+  "trigger_after": 256,
+  "nvidia_smi_pre_summary": [],
+  "idle_check_gpus": [
+    {
+      "index": "0",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "180.29",
+      "sm_mhz": "120",
+      "mem_mhz": "3996",
+      "temp_c": "31",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "1",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "180.05",
+      "sm_mhz": "120",
+      "mem_mhz": "3996",
+      "temp_c": "31",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "2",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "176.17",
+      "sm_mhz": "120",
+      "mem_mhz": "3996",
+      "temp_c": "31",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "3",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "178.71",
+      "sm_mhz": "120",
+      "mem_mhz": "3996",
+      "temp_c": "31",
+      "power_limit_w": "1400.00"
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "sqlite": "results/p2-off/nsys/tp0.sqlite",
+  "device": 0,
+  "main_graph": 428,
+  "draft_graphs": [],
+  "cycles": 199,
+  "cycle_us_median": 3545.937,
+  "cycle_us_mean": 3557.2855477386934,
+  "host_gap_us": 114.0997688442211,
+  "categories": [
+    {
+      "category": "moe",
+      "kernel_us": 1075.5110201005025,
+      "wall_us": 544.4515218592965,
+      "kernels": 240.0
+    },
+    {
+      "category": "dense_gemm",
+      "kernel_us": 1732.1849447236182,
+      "wall_us": 1091.458586432161,
+      "kernels": 403.0
+    },
+    {
+      "category": "attention",
+      "kernel_us": 622.5108040201004,
+      "wall_us": 570.305418760469,
+      "kernels": 197.0
+    },
+    {
+      "category": "mhc",
+      "kernel_us": 1032.4711608040202,
+      "wall_us": 456.21179195979903,
+      "kernels": 163.0
+    },
+    {
+      "category": "all_reduce",
+      "kernel_us": 654.3297537688442,
+      "wall_us": 617.9946675041876,
+      "kernels": 84.0
+    },
+    {
+      "category": "engram",
+      "kernel_us": 14.798115577889448,
+      "wall_us": 14.779221105527638,
+      "kernels": 5.0
+    },
+    {
+      "category": "other",
+      "kernel_us": 204.52424120603015,
+      "wall_us": 140.1411474874372,
+      "kernels": 81.01005025125627
+    },
+    {
+      "category": "memcpy",
+      "kernel_us": 9.298718592964825,
+      "wall_us": 7.84342378559464,
+      "kernels": 7.005025125628141
+    }
+  ],
+  "subcategories": [
+    {
+      "category": "all_reduce",
+      "sub": "allreduce",
+      "kernel_us": 25.92704522613065,
+      "wall_us": 23.62421440536014,
+      "kernels": 4.0
+    },
+    {
+      "category": "all_reduce",
+      "sub": "moe_finalize_allreduce",
+      "kernel_us": 628.4027085427135,
+      "wall_us": 594.3704530988275,
+      "kernels": 80.0
+    },
+    {
+      "category": "attention",
+      "sub": "attention",
+      "kernel_us": 503.7803668341708,
+      "wall_us": 464.9820239530988,
+      "kernels": 160.0
+    },
+    {
+      "category": "attention",
+      "sub": "compressor",
+      "kernel_us": 8.748311557788943,
+      "wall_us": 2.840958458961474,
+      "kernels": 4.0
+    },
+    {
+      "category": "attention",
+      "sub": "indexer",
+      "kernel_us": 104.95584924623115,
+      "wall_us": 97.45615996649916,
+      "kernels": 30.0
+    },
+    {
+      "category": "attention",
+      "sub": "kv_metadata",
+      "kernel_us": 5.026276381909548,
+      "wall_us": 5.026276381909548,
+      "kernels": 3.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "act_quant",
+      "kernel_us": 211.5125728643216,
+      "wall_us": 84.01684664991625,
+      "kernels": 131.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "cublas_gemm",
+      "kernel_us": 85.60515577889447,
+      "wall_us": 64.31976666666667,
+      "kernels": 10.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "mxfp8_gemm",
+      "kernel_us": 1173.3668492462311,
+      "wall_us": 693.0188262144054,
+      "kernels": 210.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "small_gemm",
+      "kernel_us": 261.70036683417084,
+      "wall_us": 250.10314690117252,
+      "kernels": 52.0
+    },
+    {
+      "category": "engram",
+      "sub": "engram",
+      "kernel_us": 14.798115577889448,
+      "wall_us": 14.779221105527638,
+      "kernels": 5.0
+    },
+    {
+      "category": "memcpy",
+      "sub": "memcpy",
+      "kernel_us": 9.298718592964825,
+      "wall_us": 7.84342378559464,
+      "kernels": 7.005025125628141
+    },
+    {
+      "category": "mhc",
+      "sub": "mhc",
+      "kernel_us": 1032.4711608040202,
+      "wall_us": 456.21179195979903,
+      "kernels": 163.0
+    },
+    {
+      "category": "moe",
+      "sub": "activation",
+      "kernel_us": 41.51162311557789,
+      "wall_us": 19.912609547738697,
+      "kernels": 40.0
+    },
+    {
+      "category": "moe",
+      "sub": "moe_gemm",
+      "kernel_us": 632.1679246231156,
+      "wall_us": 328.82900402010046,
+      "kernels": 80.0
+    },
+    {
+      "category": "moe",
+      "sub": "routing",
+      "kernel_us": 401.83147236180906,
+      "wall_us": 195.70990829145728,
+      "kernels": 120.0
+    },
+    {
+      "category": "other",
+      "sub": "elementwise_copy",
+      "kernel_us": 114.14440703517589,
+      "wall_us": 93.84912897822446,
+      "kernels": 38.01005025125628
+    },
+    {
+      "category": "other",
+      "sub": "norm",
+      "kernel_us": 88.3594824120603,
+      "wall_us": 44.27166675041877,
+      "kernels": 42.0
+    },
+    {
+      "category": "other",
+      "sub": "sampling_accept",
+      "kernel_us": 2.0203517587939697,
+      "wall_us": 2.0203517587939697,
+      "kernels": 1.0
+    }
+  ]
+}

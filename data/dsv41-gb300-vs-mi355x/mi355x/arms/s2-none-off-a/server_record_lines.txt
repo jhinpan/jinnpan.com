@@ -1,0 +1,33 @@
+[2026-09-25 08:18:18] Use dsv4 attention backend for DeepseekV4ForCausalLM, setting page_size to 256.
+[2026-09-25 08:18:36 TP0 EP0] Multimodal attention backend not set. Use aiter_attn.
+[2026-09-25 08:18:36 TP0 EP0] Using aiter_attn as multimodal attention backend.
+[2026-09-25 08:18:36 TP3 EP3] Multimodal attention backend not set. Use aiter_attn.
+[2026-09-25 08:18:36 TP3 EP3] Using aiter_attn as multimodal attention backend.
+[2026-09-25 08:18:36 TP1 EP1] Multimodal attention backend not set. Use aiter_attn.
+[2026-09-25 08:18:36 TP1 EP1] Using aiter_attn as multimodal attention backend.
+[2026-09-25 08:18:36 TP2 EP2] Multimodal attention backend not set. Use aiter_attn.
+[2026-09-25 08:18:36 TP2 EP2] Using aiter_attn as multimodal attention backend.
+[2026-09-25 08:19:02 TP0 EP0] Load weight end. elapsed=26.19 s, type=DeepseekV4ForCausalLM, quant=fp8, avail mem=153.60 GB, mem usage=128.80 GB.
+[2026-09-25 08:19:04 TP1 EP1] Load weight end. elapsed=27.39 s, type=DeepseekV4ForCausalLM, quant=fp8, avail mem=153.56 GB, mem usage=128.80 GB.
+[2026-09-25 08:19:04 TP2 EP2] Load weight end. elapsed=27.77 s, type=DeepseekV4ForCausalLM, quant=fp8, avail mem=153.60 GB, mem usage=128.80 GB.
+[2026-09-25 08:19:04 TP3 EP3] Load weight end. elapsed=28.06 s, type=DeepseekV4ForCausalLM, quant=fp8, avail mem=153.69 GB, mem usage=128.80 GB.
+[2026-09-25 08:19:06 TP3 EP3] DSV4 SWA sizing: mode=cap, swa_tokens=229632, request_cap+headroom=229632, prefix_tails=0
+[2026-09-25 08:19:06 TP0 EP0] DSV4 SWA sizing: mode=cap, swa_tokens=229632, request_cap+headroom=229632, prefix_tails=0
+[2026-09-25 08:19:06 TP2 EP2] DSV4 SWA sizing: mode=cap, swa_tokens=229632, request_cap+headroom=229632, prefix_tails=0
+[2026-09-25 08:19:06 TP1 EP1] DSV4 SWA sizing: mode=cap, swa_tokens=229632, request_cap+headroom=229632, prefix_tails=0
+[2026-09-25 08:19:07 TP1 EP1] Memory pool end. avail mem=24.30 GB
+[2026-09-25 08:19:07 TP0 EP0] Memory pool end. avail mem=24.33 GB
+[2026-09-25 08:19:07 TP3 EP3] Memory pool end. avail mem=24.43 GB
+[2026-09-25 08:19:07 TP2 EP2] Memory pool end. avail mem=24.33 GB
+[2026-09-25 08:19:08 TP1 EP1] Using DeepseekV4HipRadixBackend for compressed attention backend (HIP).
+[2026-09-25 08:19:08 TP2 EP2] Using DeepseekV4HipRadixBackend for compressed attention backend (HIP).
+[2026-09-25 08:19:08 TP0 EP0] Using DeepseekV4HipRadixBackend for compressed attention backend (HIP).
+[2026-09-25 08:19:08 TP3 EP3] Using DeepseekV4HipRadixBackend for compressed attention backend (HIP).
+[2026-09-25 08:19:29 TP0 EP0] Capture target prefill CUDA graph end. elapsed=20.64 s, mem usage=11.17 GB, avail mem=9.33 GB.
+[2026-09-25 08:19:29 TP1 EP1] Capture target prefill CUDA graph end. elapsed=20.78 s, mem usage=11.17 GB, avail mem=9.30 GB.
+[2026-09-25 08:19:29 TP2 EP2] Capture target prefill CUDA graph end. elapsed=20.74 s, mem usage=11.17 GB, avail mem=9.33 GB.
+[2026-09-25 08:19:29 TP3 EP3] Capture target prefill CUDA graph end. elapsed=20.79 s, mem usage=11.17 GB, avail mem=9.42 GB.
+[2026-09-25 08:20:00 TP0 EP0] Capture target decode CUDA graph end. elapsed=31.53 s, mem usage=1.46 GB, avail mem=7.87 GB.
+[2026-09-25 08:20:00 TP1 EP1] Capture target decode CUDA graph end. elapsed=31.54 s, mem usage=1.46 GB, avail mem=7.84 GB.
+[2026-09-25 08:20:00 TP2 EP2] Capture target decode CUDA graph end. elapsed=31.53 s, mem usage=1.46 GB, avail mem=7.87 GB.
+[2026-09-25 08:20:00 TP3 EP3] Capture target decode CUDA graph end. elapsed=31.58 s, mem usage=1.46 GB, avail mem=7.96 GB.

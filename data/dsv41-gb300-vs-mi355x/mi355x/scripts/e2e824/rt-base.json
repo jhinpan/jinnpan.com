@@ -1,0 +1,10 @@
+{
+  "tree": "$E2E_CAMPAIGN/sources/rt-base",
+  "base": "e2e824dc58",
+  "common_fix": "82958d31b0",
+  "patches": [],
+  "diff_sha256": "20a8c3f1babe41e33c91c046a9fdecb70727be3b91d50dd68e8a569bb9e6ac23",
+  "files": [
+    "python/sglang/kernels/ops/kvcache/triton_store_cache.py"
+  ]
+}

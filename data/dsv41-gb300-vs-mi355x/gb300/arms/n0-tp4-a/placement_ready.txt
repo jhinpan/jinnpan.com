@@ -1,0 +1,4 @@
+sglang::scheduler_TP0 pid=170 cpus_allowed=0-71 mems_allowed=0-1 threads_on_node0=255 threads_on_node1=0 pages[N1=4177 N0=90914 ] first_mapping_policy=bind:0
+sglang::scheduler_TP1 pid=235 cpus_allowed=0-71 mems_allowed=0-1 threads_on_node0=250 threads_on_node1=0 pages[N1=4177 N0=98341 ] first_mapping_policy=bind:0
+sglang::scheduler_TP2 pid=300 cpus_allowed=72-143 mems_allowed=0-1 threads_on_node0=0 threads_on_node1=250 pages[N1=87951 N0=8786 ] first_mapping_policy=bind:1
+sglang::scheduler_TP3 pid=366 cpus_allowed=72-143 mems_allowed=0-1 threads_on_node0=0 threads_on_node1=250 pages[N1=87760 N0=8786 ] first_mapping_policy=bind:1

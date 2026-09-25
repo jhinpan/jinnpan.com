@@ -1,0 +1,66 @@
+phase,segment,family,calls_per_cycle,profiled_us,est_unprofiled_us,est_unprofiled_us_per_call
+DRAFT,draft,other custom collective,12.0,245.6,177.3,14.78
+DRAFT,draft,hipBLASLt/Tensile GEMM,12.0,143.4,103.6,8.63
+DRAFT,draft,other,26.0,115.0,83.0,3.19
+DRAFT,draft,mHC combine,18.0,107.0,77.3,4.29
+DRAFT,draft,mxfp8 GEMV,15.0,99.0,71.5,4.77
+DRAFT,draft,PyTorch elementwise/index/copy,27.0,95.6,69.0,2.56
+DRAFT,draft,MoE G1,6.0,73.6,53.2,8.86
+DRAFT,draft,KV norm/RoPE/store,9.0,38.9,28.1,3.12
+DRAFT,draft,MoE quant/sort,6.0,26.5,19.2,3.19
+DRAFT,draft,PA main,3.0,25.9,18.7,6.22
+DRAFT,draft,MoE topk reduce + shared add,3.0,15.6,11.3,3.76
+DRAFT,draft,WO-A partial,3.0,15.0,10.9,3.62
+DRAFT,draft,MoE sorting,3.0,14.4,10.4,3.46
+DRAFT,draft,metadata / attention glue (Triton),4.0,14.2,10.3,2.56
+DRAFT,draft,PA split reduce + inverse RoPE,3.0,14.0,10.1,3.37
+DRAFT,draft,SiLU/clamp,3.0,13.8,9.9,3.31
+DRAFT,draft,router gate,3.0,13.7,9.9,3.31
+DRAFT,draft,WO-A reduce,3.0,13.5,9.7,3.24
+DRAFT,draft,embedding,1.0,5.8,4.2,4.18
+DRAFT,draft,runtime copyBuffer,1.0,3.6,2.6,2.62
+VERIFY,head,PyTorch elementwise/index/copy,32.0,141.3,129.6,4.05
+VERIFY,head,metadata / attention glue (Triton),11.0,55.5,50.9,4.62
+VERIFY,head,mxfp8 GEMV,2.0,10.6,9.8,4.88
+VERIFY,head,runtime copyBuffer,2.0,8.8,8.1,4.03
+VERIFY,head,other custom collective,1.0,7.5,6.9,6.9
+VERIFY,head,engram,1.0,6.9,6.3,6.31
+VERIFY,head,mHC RMSNorm+Sinkhorn,1.0,6.6,6.0,6.02
+VERIFY,head,mHC boundary partial,1.0,6.5,6.0,5.98
+VERIFY,head,embedding,1.0,5.3,4.8,4.82
+VERIFY,head,KV norm/RoPE/store,1.0,4.7,4.3,4.27
+VERIFY,head,RMSNorm+fake quant,1.0,4.3,3.9,3.95
+VERIFY,layers,mxfp8 GEMV,168.0,1047.4,960.6,5.72
+VERIFY,layers,MoE G1,40.0,791.3,725.7,18.14
+VERIFY,layers,fused AR + mHC post,80.0,771.5,707.5,8.84
+VERIFY,layers,PA main,40.0,656.9,602.5,15.06
+VERIFY,layers,mHC RMSNorm+Sinkhorn,79.0,523.2,479.8,6.07
+VERIFY,layers,mHC boundary partial,79.0,482.3,442.3,5.6
+VERIFY,layers,hipBLASLt/Tensile GEMM,50.0,395.6,362.8,7.26
+VERIFY,layers,MoE G2,40.0,383.9,352.1,8.8
+VERIFY,layers,KV norm/RoPE/store,54.0,246.4,226.0,4.19
+VERIFY,layers,router GEMV,48.0,226.6,207.8,4.33
+VERIFY,layers,PyTorch elementwise/index/copy,47.0,212.8,195.2,4.15
+VERIFY,layers,WO-A partial,40.0,200.4,183.8,4.59
+VERIFY,layers,PA split reduce + inverse RoPE,40.0,194.8,178.7,4.47
+VERIFY,layers,MoE sorting,40.0,186.4,171.0,4.27
+VERIFY,layers,router gate,40.0,186.2,170.8,4.27
+VERIFY,layers,SiLU/clamp,40.0,185.4,170.0,4.25
+VERIFY,layers,MoE quant/sort,40.0,180.2,165.3,4.13
+VERIFY,layers,WO-A reduce,40.0,177.7,163.0,4.08
+VERIFY,layers,MoE topk reduce + shared add,40.0,177.3,162.6,4.06
+VERIFY,layers,RMSNorm+fake quant,39.0,169.8,155.7,3.99
+VERIFY,layers,other,10.0,129.6,118.9,11.89
+VERIFY,layers,metadata / attention glue (Triton),8.0,37.5,34.4,4.3
+VERIFY,layers,indexer logits,8.0,35.2,32.3,4.04
+VERIFY,layers,RCCL collective,2.0,32.8,30.1,15.06
+VERIFY,layers,engram,4.0,20.6,18.9,4.73
+VERIFY,layers,other custom collective,1.0,12.5,11.5,11.49
+VERIFY,layers,mHC combine,1.0,4.8,4.4,4.37
+VERIFY,tail,mxfp8 GEMV,4.0,58.3,53.5,13.37
+VERIFY,tail,PyTorch elementwise/index/copy,8.0,38.0,34.8,4.35
+VERIFY,tail,RCCL collective,3.0,28.4,26.0,8.67
+VERIFY,tail,metadata / attention glue (Triton),6.0,26.4,24.2,4.04
+VERIFY,tail,runtime copyBuffer,5.0,22.1,20.2,4.05
+VERIFY,tail,KV norm/RoPE/store,3.0,11.8,10.9,3.62
+VERIFY,tail,other,1.0,4.4,4.0,3.99

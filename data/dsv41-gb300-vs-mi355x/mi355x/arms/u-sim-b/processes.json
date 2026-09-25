@@ -1,0 +1,79 @@
+[
+  {
+    "pid": 3069815,
+    "name": "python",
+    "cmdline": "python -m sglang.launch_server --model-path $MODEL_ROOT/DeepSeek-V4.1-Flash --served-model-name deepseek-ai/DeepSeek-V4.1-Flash --trust-remot",
+    "cpus_allowed": "0-255",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 263636,
+      "N0": 158509
+    }
+  },
+  {
+    "pid": 3070026,
+    "name": "python",
+    "cmdline": "$CAMPAIGN_CACHE/env/bin/python -c from multiprocessing.resource_tracker import main;main(16) ",
+    "cpus_allowed": "0-255",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 2296,
+      "N0": 636
+    }
+  },
+  {
+    "pid": 3070027,
+    "name": "sglang::schedul",
+    "cmdline": "sglang::scheduler_TP0_EP0                                                                                                                                    ",
+    "cpus_allowed": "0-31,128-159",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 135560,
+      "N0": 1740562
+    }
+  },
+  {
+    "pid": 3070028,
+    "name": "sglang::schedul",
+    "cmdline": "sglang::scheduler_TP1_EP1                                                                                                                                    ",
+    "cpus_allowed": "32-63,160-191",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 227971,
+      "N0": 1644332
+    }
+  },
+  {
+    "pid": 3070029,
+    "name": "sglang::schedul",
+    "cmdline": "sglang::scheduler_TP2_EP2                                                                                                                                    ",
+    "cpus_allowed": "64-95,192-223",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 1150062,
+      "N0": 721764
+    }
+  },
+  {
+    "pid": 3070030,
+    "name": "sglang::schedul",
+    "cmdline": "sglang::scheduler_TP3_EP3                                                                                                                                    ",
+    "cpus_allowed": "96-127,224-255",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 1209610,
+      "N0": 669617
+    }
+  },
+  {
+    "pid": 3070031,
+    "name": "sglang::detoken",
+    "cmdline": "sglang::detokenizer                                                                                                                                          ",
+    "cpus_allowed": "0-255",
+    "mems_allowed": "0-1",
+    "numa_pages": {
+      "N1": 262251,
+      "N0": 131961
+    }
+  }
+]

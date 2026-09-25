@@ -1,0 +1,2 @@
+{"label": "s2-node1-sim-a", "ok": true, "server_ready": 1, "client_rc": 0, "gpus_released_rc": 0,
+ "start_utc": "2026-09-25T07:50:30.981Z", "ready_utc": "2026-09-25T07:52:20.359Z", "bench_end_utc": "2026-09-25T07:52:34.048Z", "end_utc": "2026-09-25T07:52:40.079Z"}

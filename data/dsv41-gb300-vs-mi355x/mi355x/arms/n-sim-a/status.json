@@ -1,0 +1,2 @@
+{"label": "n-sim-a", "ok": true, "server_ready": 1, "client_rc": 0, "gpus_released_rc": 0,
+ "start_utc": "2026-09-25T07:25:34.509Z", "ready_utc": "2026-09-25T07:27:25.922Z", "bench_end_utc": "2026-09-25T07:27:39.663Z", "end_utc": "2026-09-25T07:27:45.697Z"}

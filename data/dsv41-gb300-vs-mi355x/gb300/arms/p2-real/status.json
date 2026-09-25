@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "stream_end": "ChunkedEncodingError(ProtocolError(\"Connection broken: InvalidChunkLength(got length b'', 0 bytes read)\", InvalidChunkLength(got length b'', 0 bytes read)))",
+  "streamed_tokens": 862,
+  "container_exit": "0",
+  "profile_reply": {
+    "code": 200,
+    "text": "Start profiling.\n"
+  },
+  "report_exists": true
+}

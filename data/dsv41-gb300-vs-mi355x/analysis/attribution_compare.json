@@ -1,0 +1,237 @@
+{
+  "order": [
+    "moe",
+    "dense_gemm",
+    "attention",
+    "mhc",
+    "all_reduce",
+    "engram",
+    "draft",
+    "other",
+    "host_gap"
+  ],
+  "labels": {
+    "moe": "MoE experts + routing",
+    "dense_gemm": "dense GEMM + act. quant",
+    "attention": "attention / indexer / KV",
+    "mhc": "mHC",
+    "all_reduce": "all-reduce + MoE finalize",
+    "engram": "Engram",
+    "draft": "DSpark draft",
+    "other": "other glue",
+    "host_gap": "GPU idle"
+  },
+  "gb300_verify": {
+    "cycle_us_median": 4591.638,
+    "cycle_us_mean": 4643.625292929293,
+    "cycles": 99,
+    "categories": {
+      "moe": {
+        "wall_us": 814.7193301346801,
+        "kernel_us": 1545.3397171717172,
+        "kernels": 240.0
+      },
+      "dense_gemm": {
+        "wall_us": 1066.426751010101,
+        "kernel_us": 1846.6557070707072,
+        "kernels": 407.0
+      },
+      "attention": {
+        "wall_us": 584.017436868687,
+        "kernel_us": 693.1608787878787,
+        "kernels": 204.06060606060606
+      },
+      "mhc": {
+        "wall_us": 565.1970651515152,
+        "kernel_us": 1330.9764545454545,
+        "kernels": 163.0
+      },
+      "all_reduce": {
+        "wall_us": 827.6816936026935,
+        "kernel_us": 894.9221111111111,
+        "kernels": 87.0
+      },
+      "engram": {
+        "wall_us": 18.233180134680133,
+        "kernel_us": 18.39458585858586,
+        "kernels": 6.0
+      },
+      "draft": {
+        "wall_us": 418.2501717171717,
+        "kernel_us": 632.2337878787879,
+        "kernels": 155.0
+      },
+      "other": {
+        "wall_us": 200.2204218855219,
+        "kernel_us": 268.37968686868686,
+        "kernels": 144.14141414141415
+      },
+      "host_gap": {
+        "wall_us": 148.87924242424242,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      }
+    },
+    "kernel_sum_us": 7230.062929292929,
+    "busy_us": 4442.758757575757,
+    "kernels": 1406.20202020202,
+    "overlap": 1.6273813915653832
+  },
+  "gb300_decode": {
+    "cycle_us_median": 3545.937,
+    "cycle_us_mean": 3557.2855477386934,
+    "cycles": 199,
+    "categories": {
+      "moe": {
+        "wall_us": 544.4515218592965,
+        "kernel_us": 1075.5110201005025,
+        "kernels": 240.0
+      },
+      "dense_gemm": {
+        "wall_us": 1091.458586432161,
+        "kernel_us": 1732.1849447236182,
+        "kernels": 403.0
+      },
+      "attention": {
+        "wall_us": 570.305418760469,
+        "kernel_us": 622.5108040201004,
+        "kernels": 197.0
+      },
+      "mhc": {
+        "wall_us": 456.21179195979903,
+        "kernel_us": 1032.4711608040202,
+        "kernels": 163.0
+      },
+      "all_reduce": {
+        "wall_us": 617.9946675041876,
+        "kernel_us": 654.3297537688442,
+        "kernels": 84.0
+      },
+      "engram": {
+        "wall_us": 14.779221105527638,
+        "kernel_us": 14.798115577889448,
+        "kernels": 5.0
+      },
+      "draft": {
+        "wall_us": 0.0,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      },
+      "other": {
+        "wall_us": 147.98457127303183,
+        "kernel_us": 213.822959798995,
+        "kernels": 88.01507537688441
+      },
+      "host_gap": {
+        "wall_us": 114.0997688442211,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      }
+    },
+    "kernel_sum_us": 5345.6287587939705,
+    "busy_us": 3431.8372311557787,
+    "kernels": 1180.0150753768844,
+    "overlap": 1.5576580119429682
+  },
+  "mi355x_verify": {
+    "cycle_us": 8921.1,
+    "categories": {
+      "moe": {
+        "wall_us": 1962.7,
+        "kernel_us": 1962.7,
+        "kernels": 288.0
+      },
+      "dense_gemm": {
+        "wall_us": 1893.1000000000001,
+        "kernel_us": 1893.1000000000001,
+        "kernels": 344.0
+      },
+      "attention": {
+        "wall_us": 1164.2000000000003,
+        "kernel_us": 1164.2000000000003,
+        "kernels": 171.0
+      },
+      "mhc": {
+        "wall_us": 938.5,
+        "kernel_us": 938.5,
+        "kernels": 161.0
+      },
+      "all_reduce": {
+        "wall_us": 944.6,
+        "kernel_us": 944.6,
+        "kernels": 127.0
+      },
+      "engram": {
+        "wall_us": 25.2,
+        "kernel_us": 25.2,
+        "kernels": 5.0
+      },
+      "draft": {
+        "wall_us": 790.2000000000002,
+        "kernel_us": 790.2000000000002,
+        "kernels": 161.0
+      },
+      "other": {
+        "wall_us": 515.6,
+        "kernel_us": 515.6,
+        "kernels": 106.0
+      },
+      "host_gap": {
+        "wall_us": 687.0,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      }
+    },
+    "kernel_sum_us": 8234.1,
+    "busy_us": 8234.1,
+    "kernels": 1363.0,
+    "overlap": 1.0,
+    "unmapped": [],
+    "source": "dsv41-bs1-floor-20260922 kernel ledger (prior base, genuine acceptance, unprofiled phase totals with profiled per-family shares)"
+  },
+  "mi_family_map": {
+    "moe": [
+      "MoE G1",
+      "MoE G2",
+      "MoE sorting",
+      "router gate",
+      "SiLU/clamp",
+      "MoE quant/sort",
+      "router GEMV"
+    ],
+    "dense_gemm": [
+      "mxfp8 GEMV",
+      "hipBLASLt/Tensile GEMM",
+      "WO-A partial",
+      "WO-A reduce",
+      "RMSNorm+fake quant"
+    ],
+    "attention": [
+      "PA main",
+      "PA split reduce + inverse RoPE",
+      "KV norm/RoPE/store",
+      "indexer logits",
+      "metadata / attention glue (Triton)"
+    ],
+    "mhc": [
+      "mHC RMSNorm+Sinkhorn",
+      "mHC boundary partial",
+      "mHC combine"
+    ],
+    "all_reduce": [
+      "fused AR + mHC post",
+      "RCCL collective",
+      "other custom collective",
+      "MoE topk reduce + shared add"
+    ],
+    "engram": [
+      "engram"
+    ],
+    "other": [
+      "PyTorch elementwise/index/copy",
+      "other",
+      "runtime copyBuffer",
+      "embedding"
+    ]
+  }
+}

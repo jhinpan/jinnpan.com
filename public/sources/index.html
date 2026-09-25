@@ -359,14 +359,14 @@
           <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" /><rect x="137" y="196" width="16" height="30" fill="#4e744c" />
           <!-- shelf 5 experiments (plum) -->
           <line x1="30" y1="274" x2="290" y2="274" stroke="#22231f" stroke-width="3" />
-          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" />
+          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" /><rect x="118" y="247" width="16" height="27" fill="#6d3f8c" />
         </g>
         <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
           <text x="214" y="74">CODE · 12</text>
           <text x="214" y="122">PAPER · 5</text>
           <text x="214" y="170">TUTORIAL · 6</text>
           <text x="214" y="218">BLOG · 6</text>
-          <text x="214" y="266">EXPERIMENTS · 4</text>
+          <text x="214" y="266">EXPERIMENTS · 5</text>
         </g>
       </svg>
     </figure>
@@ -390,7 +390,7 @@
     <div class="stat" data-c="paper"><span class="num">5</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">7</span><span class="label">tutorials</span></div>
     <div class="stat" data-c="blog"><span class="num">6</span><span class="label">blog posts</span></div>
-    <div class="stat" data-c="experiments"><span class="num">4</span><span class="label">experiments</span></div>
+    <div class="stat" data-c="experiments"><span class="num">5</span><span class="label">experiments</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -760,9 +760,18 @@
         <h2>Experiments</h2>
         <div class="sub"><span class="zh">实验记录</span> · reproducible kernel and system measurements — raw data archived alongside the write-up</div>
       </div>
-      <div class="shelf-count">4 records</div>
+      <div class="shelf-count">5 records</div>
     </div>
     <div class="grid">
+      <article class="entry" data-kind="experiments" data-search="experiment 005 deepseek v4.1 flash dsv41 dspark speculative decoding verify cycle gb300 blackwell ultra sm103 grace nvl72 mi355x gfx950 rocm sglang bs1 batch 1 numa placement cpu affinity sys_nice sglang_set_cpu_affinity nsys attribution mhc moe attention stream concurrency multi-stream cuda graph hip graph simulated acceptance calibration bbuf">
+        <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 005</span></div>
+        <div class="entry-body">
+          <h3>GB300 vs MI355X, one token at a time</h3>
+          <p>DeepSeek-V4.1 Flash at BS=1 on SGLang. After reproducing the published GB300 series within 1.6%, a 4.61 ms GB300 verify cycle against 9.15 ms on MI355X: up to 61% of the gap is stream concurrency, most of the rest four kernel families, and a 30% swing on GB300 turned out to be CPU placement.</p>
+          <div class="tags"><span class="tag">DeepSeek-V4.1</span><span class="tag">GB300 / MI355X</span><span class="tag">nsys attribution</span><span class="tag">NUMA placement</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./dsv41-gb300-vs-mi355x.html">Deep dive →</a></div>
+      </article>
       <article class="entry" data-kind="experiments" data-search="experiment 004 glm-5.3 glm53 mxfp4 fp8 quantization onenexus zai sglang mi355x gfx950 rocm accuracy recovery mcnemar gsm8k mmlu gpqa diamond truncation throughput tpot canary quark loader active weight stream kda split grid interim stop gate threshold terminal-bench 4.0 live dashboard harbor claude code block fp8 743b full glm-5.3 concurrency">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 004</span></div>
         <div class="entry-body">

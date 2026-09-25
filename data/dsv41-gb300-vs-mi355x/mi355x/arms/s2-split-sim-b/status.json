@@ -1,0 +1,2 @@
+{"label": "s2-split-sim-b", "ok": true, "server_ready": 1, "client_rc": 0, "gpus_released_rc": 0,
+ "start_utc": "2026-09-25T07:59:15.760Z", "ready_utc": "2026-09-25T08:01:09.178Z", "bench_end_utc": "2026-09-25T08:01:22.890Z", "end_utc": "2026-09-25T08:01:30.931Z"}

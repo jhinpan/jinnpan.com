@@ -1,0 +1,245 @@
+{
+  "sqlite": "results/p2-real/nsys/tp0.sqlite",
+  "device": 0,
+  "main_graph": 158,
+  "draft_graphs": [
+    242
+  ],
+  "cycles": 99,
+  "cycle_us_median": 4591.638,
+  "cycle_us_mean": 4643.625292929293,
+  "host_gap_us": 148.87924242424242,
+  "categories": [
+    {
+      "category": "moe",
+      "kernel_us": 1545.3397171717172,
+      "wall_us": 814.7193301346801,
+      "kernels": 240.0
+    },
+    {
+      "category": "dense_gemm",
+      "kernel_us": 1846.6557070707072,
+      "wall_us": 1066.426751010101,
+      "kernels": 407.0
+    },
+    {
+      "category": "attention",
+      "kernel_us": 693.1608787878787,
+      "wall_us": 584.017436868687,
+      "kernels": 204.06060606060606
+    },
+    {
+      "category": "mhc",
+      "kernel_us": 1330.9764545454545,
+      "wall_us": 565.1970651515152,
+      "kernels": 163.0
+    },
+    {
+      "category": "all_reduce",
+      "kernel_us": 894.9221111111111,
+      "wall_us": 827.6816936026935,
+      "kernels": 87.0
+    },
+    {
+      "category": "engram",
+      "kernel_us": 18.39458585858586,
+      "wall_us": 18.233180134680133,
+      "kernels": 6.0
+    },
+    {
+      "category": "draft",
+      "kernel_us": 632.2337878787879,
+      "wall_us": 418.2501717171717,
+      "kernels": 155.0
+    },
+    {
+      "category": "other",
+      "kernel_us": 239.00838383838382,
+      "wall_us": 174.01960925925925,
+      "kernels": 119.12121212121212
+    },
+    {
+      "category": "memcpy",
+      "kernel_us": 29.371303030303032,
+      "wall_us": 26.20081262626263,
+      "kernels": 25.02020202020202
+    }
+  ],
+  "subcategories": [
+    {
+      "category": "all_reduce",
+      "sub": "allreduce",
+      "kernel_us": 41.578494949494946,
+      "wall_us": 38.508301346801346,
+      "kernels": 7.0
+    },
+    {
+      "category": "all_reduce",
+      "sub": "moe_finalize_allreduce",
+      "kernel_us": 853.3436161616162,
+      "wall_us": 789.1733922558922,
+      "kernels": 80.0
+    },
+    {
+      "category": "attention",
+      "sub": "attention",
+      "kernel_us": 567.3546666666666,
+      "wall_us": 476.42613030303045,
+      "kernels": 163.0
+    },
+    {
+      "category": "attention",
+      "sub": "compressor",
+      "kernel_us": 13.027888888888889,
+      "wall_us": 4.14418468013468,
+      "kernels": 4.0
+    },
+    {
+      "category": "attention",
+      "sub": "indexer",
+      "kernel_us": 99.31525252525252,
+      "wall_us": 90.64107491582492,
+      "kernels": 30.0
+    },
+    {
+      "category": "attention",
+      "sub": "kv_metadata",
+      "kernel_us": 13.463070707070706,
+      "wall_us": 12.806046969696968,
+      "kernels": 7.0606060606060606
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "act_quant",
+      "kernel_us": 241.6630606060606,
+      "wall_us": 86.75958148148148,
+      "kernels": 133.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "cublas_gemm",
+      "kernel_us": 90.58078787878787,
+      "wall_us": 66.42857441077442,
+      "kernels": 10.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "mxfp8_gemm",
+      "kernel_us": 1244.7036262626264,
+      "wall_us": 669.2097698653199,
+      "kernels": 212.0
+    },
+    {
+      "category": "dense_gemm",
+      "sub": "small_gemm",
+      "kernel_us": 269.7082323232323,
+      "wall_us": 244.02882525252525,
+      "kernels": 52.0
+    },
+    {
+      "category": "draft",
+      "sub": "draft:all_reduce",
+      "kernel_us": 78.07679797979797,
+      "wall_us": 74.26871885521886,
+      "kernels": 12.0
+    },
+    {
+      "category": "draft",
+      "sub": "draft:attention",
+      "kernel_us": 46.16649494949495,
+      "wall_us": 39.29085521885522,
+      "kernels": 18.0
+    },
+    {
+      "category": "draft",
+      "sub": "draft:dense_gemm",
+      "kernel_us": 241.238202020202,
+      "wall_us": 159.2043473063973,
+      "kernels": 55.0
+    },
+    {
+      "category": "draft",
+      "sub": "draft:mhc",
+      "kernel_us": 129.35070707070707,
+      "wall_us": 63.398066498316496,
+      "kernels": 24.0
+    },
+    {
+      "category": "draft",
+      "sub": "draft:moe",
+      "kernel_us": 81.11555555555556,
+      "wall_us": 30.955023905723905,
+      "kernels": 15.0
+    },
+    {
+      "category": "draft",
+      "sub": "draft:other",
+      "kernel_us": 56.2860303030303,
+      "wall_us": 51.13315993265993,
+      "kernels": 31.0
+    },
+    {
+      "category": "engram",
+      "sub": "engram",
+      "kernel_us": 18.39458585858586,
+      "wall_us": 18.233180134680133,
+      "kernels": 6.0
+    },
+    {
+      "category": "memcpy",
+      "sub": "memcpy",
+      "kernel_us": 29.371303030303032,
+      "wall_us": 26.20081262626263,
+      "kernels": 25.02020202020202
+    },
+    {
+      "category": "mhc",
+      "sub": "mhc",
+      "kernel_us": 1330.9764545454545,
+      "wall_us": 565.1970651515152,
+      "kernels": 163.0
+    },
+    {
+      "category": "moe",
+      "sub": "activation",
+      "kernel_us": 53.4599797979798,
+      "wall_us": 18.195017171717172,
+      "kernels": 40.0
+    },
+    {
+      "category": "moe",
+      "sub": "moe_gemm",
+      "kernel_us": 1006.2775757575758,
+      "wall_us": 597.0951227272727,
+      "kernels": 80.0
+    },
+    {
+      "category": "moe",
+      "sub": "routing",
+      "kernel_us": 485.60216161616165,
+      "wall_us": 199.4291902356902,
+      "kernels": 120.0
+    },
+    {
+      "category": "other",
+      "sub": "elementwise_copy",
+      "kernel_us": 122.70872727272727,
+      "wall_us": 105.52018754208754,
+      "kernels": 67.12121212121212
+    },
+    {
+      "category": "other",
+      "sub": "norm",
+      "kernel_us": 106.46045454545454,
+      "wall_us": 58.704987373737374,
+      "kernels": 46.0
+    },
+    {
+      "category": "other",
+      "sub": "sampling_accept",
+      "kernel_us": 9.83920202020202,
+      "wall_us": 9.794434343434343,
+      "kernels": 6.0
+    }
+  ]
+}

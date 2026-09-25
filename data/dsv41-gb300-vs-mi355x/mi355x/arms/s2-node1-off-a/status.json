@@ -1,0 +1,2 @@
+{"label": "s2-node1-off-a", "ok": true, "server_ready": 1, "client_rc": 0, "gpus_released_rc": 0,
+ "start_utc": "2026-09-25T08:15:21.823Z", "ready_utc": "2026-09-25T08:17:15.186Z", "bench_end_utc": "2026-09-25T08:18:04.667Z", "end_utc": "2026-09-25T08:18:10.706Z"}

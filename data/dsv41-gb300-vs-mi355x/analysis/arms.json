@@ -1,0 +1,940 @@
+[
+  {
+    "platform": "gb300",
+    "group": "s0-tp4",
+    "desc": "BBuf 835c3909, MoE TP4 (EP1), sim 5.5, unbound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 870.5650743030822,
+    "tps_min": 844.3887210472648,
+    "tps_max": 882.7370460377011,
+    "al": 5.505376344086022,
+    "al_min": 5.475935828877005,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 6.327046920941976,
+    "step_ms": null,
+    "ttft_ms": 249.3122989544645,
+    "repeat16": 1.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 877.9467982172166,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.285520078469487,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 863.6935424890266,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.375801345078095,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "s0-ep4",
+    "desc": "BBuf 835c3909, MoE EP4, sim 5.5, unbound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 841.3183972225103,
+    "tps_min": 787.1355265815071,
+    "tps_max": 852.7536658192516,
+    "al": 5.505376344086022,
+    "al_min": 5.475935828877005,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 6.537367260867169,
+    "step_ms": null,
+    "ttft_ms": 247.2893105004914,
+    "repeat16": 7.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 832.3989623356513,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.625694222533447,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 843.8152529417305,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.501798582593272,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "s0-nods",
+    "desc": "BBuf 835c3909, EP4, DSpark off, unbound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 223.86357115948493,
+    "tps_min": 215.21686049583974,
+    "tps_max": 224.46675431094602,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 4.467006625103712,
+    "ttft_ms": 323.0014125001617,
+    "repeat16": 324.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 223.79899341631756,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 4.468295355291012
+      },
+      {
+        "launch": "b",
+        "tps": 224.1175075819352,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 4.461945318204978
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "n0-tp4",
+    "desc": "BBuf 835c3909, MoE TP4 (EP1), sim 5.5, NUMA-bound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 878.8005876793591,
+    "tps_min": 862.5668902674219,
+    "tps_max": 891.9126493011757,
+    "al": 5.505376344086022,
+    "al_min": 5.475935828877005,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 6.286762073019368,
+    "step_ms": null,
+    "ttft_ms": 208.12730450415984,
+    "repeat16": 2.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 876.2363212951986,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.288229953994977,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 880.7077150505747,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.261955124396217,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "n0-ep4",
+    "desc": "BBuf 835c3909, MoE EP4, sim 5.5, NUMA-bound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 848.5119559704156,
+    "tps_min": 836.380769403643,
+    "tps_max": 861.5073892163781,
+    "al": 5.505376344086022,
+    "al_min": 5.475935828877005,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 6.481890395822914,
+    "step_ms": null,
+    "ttft_ms": 205.52128046983853,
+    "repeat16": 6.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 848.5222598334547,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.469122224534784,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 848.276841741414,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.481890395822914,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "n0-nods",
+    "desc": "BBuf 835c3909, EP4, DSpark off, NUMA-bound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 224.326891515898,
+    "tps_min": 221.03280195903753,
+    "tps_max": 224.69376465334582,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 4.4577803196684105,
+    "ttft_ms": 204.93091049138457,
+    "repeat16": 240.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 224.36982636276605,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 4.456927294249784
+      },
+      {
+        "launch": "b",
+        "tps": 224.2574506797166,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 4.459160652497778
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "s1a-off",
+    "desc": "main ffac53d779, HT cell (DSpark off), unbound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 281.844579059476,
+    "tps_min": 279.09689444835607,
+    "tps_max": 282.64239600680037,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 3.5480603635791805,
+    "ttft_ms": 411.9461544905789,
+    "repeat16": 247.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 280.7873922010531,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 3.5614139931403894
+      },
+      {
+        "launch": "b",
+        "tps": 282.40693319747834,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 3.540990491753184
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "s1a-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, unbound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 968.3087923605059,
+    "tps_min": 851.9512709677898,
+    "tps_max": 1201.223775871651,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 5.6699519380972605,
+    "step_ms": null,
+    "ttft_ms": 242.5067670410499,
+    "repeat16": 2.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 1184.21079679956,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.6569957851664485,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 958.2239910895491,
+        "al": 5.505376344086022,
+        "cycle_ms": 5.734936690949384,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "s1a-real",
+    "desc": "main ffac53d779, LL cell, real acceptance, unbound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 1244.9920221035654,
+    "tps_min": 851.7787478289878,
+    "tps_max": 1333.91858160576,
+    "al": 5.785310734463277,
+    "al_min": 3.9844357976653697,
+    "al_max": 5.953488372093023,
+    "cycle_ms": 4.655553010389902,
+    "step_ms": null,
+    "ttft_ms": 424.6916289557703,
+    "repeat16": 246.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 1244.9920221035654,
+        "al": 5.818181818181818,
+        "cycle_ms": 4.655553010389902,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 1245.3880097400368,
+        "al": 5.785310734463277,
+        "cycle_ms": 4.636453170835265,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "n1a-off",
+    "desc": "main ffac53d779, HT cell (DSpark off), NUMA-bound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 282.94011369033393,
+    "tps_min": 278.02821757571417,
+    "tps_max": 283.3987124354676,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 3.534316848977155,
+    "ttft_ms": 207.8037090250291,
+    "repeat16": 124.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 282.80544090488854,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 3.5360003485278804
+      },
+      {
+        "launch": "b",
+        "tps": 283.0204923293947,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 3.53331316665556
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "n1a-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, NUMA-bound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 1190.0817555939884,
+    "tps_min": 1163.8250359410897,
+    "tps_max": 1216.1476418656052,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 4.614081104806754,
+    "step_ms": null,
+    "ttft_ms": 212.8371560247615,
+    "repeat16": 2.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 1192.0033531766346,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.602552033417148,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 1188.0037406450733,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.640652733962602,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "n1a-real",
+    "desc": "main ffac53d779, LL cell, real acceptance, NUMA-bound",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 1240.9507560020616,
+    "tps_min": 890.9567632678373,
+    "tps_max": 1338.3160501377454,
+    "al": 5.752808988764045,
+    "al_min": 4.079681274900398,
+    "al_max": 5.953488372093023,
+    "cycle_ms": 4.614902238443557,
+    "step_ms": null,
+    "ttft_ms": 206.25689550070092,
+    "repeat16": 75.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 1235.159076453288,
+        "al": 5.642258652094718,
+        "cycle_ms": 4.617672422201128,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 1268.5905523393394,
+        "al": 5.818181818181818,
+        "cycle_ms": 4.582170511474198,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "e1-base-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, unbound (NUMA control)",
+    "launches": 3,
+    "rounds": 18,
+    "tps": 908.812204013097,
+    "tps_min": 778.1091094583394,
+    "tps_max": 1045.4181645558797,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 6.0643383423297585,
+    "step_ms": null,
+    "ttft_ms": 366.21892254333943,
+    "repeat16": 1.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 899.6971774131857,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.097082315345389,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 994.9765127462454,
+        "al": 5.505376344086022,
+        "cycle_ms": 5.513448499357277,
+        "step_ms": null
+      },
+      {
+        "launch": "c",
+        "tps": 908.812204013097,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.068230495295294,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "e1-nice-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, NUMA-bound (NUMA control)",
+    "launches": 3,
+    "rounds": 18,
+    "tps": 1185.5667497187155,
+    "tps_min": 1159.6470218525476,
+    "tps_max": 1214.2165226280767,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 4.64180775014283,
+    "step_ms": null,
+    "ttft_ms": 212.14924997184426,
+    "repeat16": 1.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 1192.9433721382825,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.619465836667394,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 1191.2890635159406,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.6295915282719395,
+        "step_ms": null
+      },
+      {
+        "launch": "c",
+        "tps": 1183.001822411762,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.658799132223567,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "u-off",
+    "desc": "e2e824dc58+#8, HT cell, SGLang split affinity",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 150.32929179941286,
+    "tps_min": 150.18244018017384,
+    "tps_max": 150.4780094604456,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 6.652066381220303,
+    "ttft_ms": 143.05916102603078,
+    "repeat16": 19.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 150.46001729581388,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 6.646283967320317
+      },
+      {
+        "launch": "b",
+        "tps": 150.2197297305076,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 6.656915187482465
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "u-real",
+    "desc": "e2e824dc58+#8, LL cell, real, SGLang split affinity",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 389.581174495063,
+    "tps_min": 269.3368481704373,
+    "tps_max": 579.291781226556,
+    "al": 3.543295019157088,
+    "al_min": 2.4615384615384617,
+    "al_max": 5.278350515463917,
+    "cycle_ms": 9.135019501112568,
+    "step_ms": null,
+    "ttft_ms": 144.376237411052,
+    "repeat16": 7.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 389.581174495063,
+        "al": 3.543295019157088,
+        "cycle_ms": 9.11529259778595,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 370.5412443304384,
+        "al": 3.3700848276602597,
+        "cycle_ms": 9.139886612777119,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "u-sim",
+    "desc": "e2e824dc58+#8, LL cell, sim 5.5, SGLang split affinity",
+    "launches": 3,
+    "rounds": 18,
+    "tps": 603.116486611897,
+    "tps_min": 589.894347004967,
+    "tps_max": 609.7313659401825,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 9.147063052322437,
+    "step_ms": null,
+    "ttft_ms": 144.70897987484932,
+    "repeat16": 7.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 601.9857325383139,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.127696539190195,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 603.116486611897,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.140740833939446,
+        "step_ms": null
+      },
+      {
+        "launch": "c",
+        "tps": 602.7770278057856,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.1594915308461,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "n-off",
+    "desc": "e2e824dc58+#8, HT cell, split affinity + main on node 1",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 150.37171639476236,
+    "tps_min": 150.2854086151734,
+    "tps_max": 150.4677585588439,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 6.650186788367211,
+    "ttft_ms": 142.63756992295384,
+    "repeat16": 14.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 150.35213708385822,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 6.651052784990385
+      },
+      {
+        "launch": "b",
+        "tps": 150.45066843487942,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 6.646696958355861
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "n-real",
+    "desc": "e2e824dc58+#8, LL cell, real, split affinity + main on node 1",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 415.4304204785793,
+    "tps_min": 310.4144847741521,
+    "tps_max": 579.4648811054645,
+    "al": 3.7918181199373766,
+    "al_min": 2.8444444444444446,
+    "al_max": 5.251282051282051,
+    "cycle_ms": 9.136944616844518,
+    "step_ms": null,
+    "ttft_ms": 144.50001111254096,
+    "repeat16": 3.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 463.1760997402564,
+        "al": 4.224134998128806,
+        "cycle_ms": 9.085351307062613,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 359.4331796732947,
+        "al": 3.2938304804261263,
+        "cycle_ms": 9.141873251253987,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "n-sim",
+    "desc": "e2e824dc58+#8, LL cell, sim 5.5, split affinity + main on node 1",
+    "launches": 3,
+    "rounds": 18,
+    "tps": 601.6353706890802,
+    "tps_min": 589.1709544491767,
+    "tps_max": 605.4149505334898,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 9.156202039102444,
+    "step_ms": null,
+    "ttft_ms": 144.50333174318075,
+    "repeat16": 11.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 603.9414144925178,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.144332561943983,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 602.1484259947874,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.150556145970452,
+        "step_ms": null
+      },
+      {
+        "launch": "c",
+        "tps": 597.9934583789616,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.222268972010507,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-split-sim",
+    "desc": "session 2, sim 5.5, SGLang split affinity",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 602.7606113754018,
+    "tps_min": 587.6949414444708,
+    "tps_max": 609.6867093315639,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 9.13718966202877,
+    "step_ms": null,
+    "ttft_ms": 144.5325557142496,
+    "repeat16": 108.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 600.9696276886093,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.154721527663241,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 605.0944840430491,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.11408064967312,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-node1-sim",
+    "desc": "session 2, sim 5.5, all schedulers on node 1",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 602.4208219235422,
+    "tps_min": 591.1230469150711,
+    "tps_max": 608.1880457892486,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 9.135985998025413,
+    "step_ms": null,
+    "ttft_ms": 144.45628505200148,
+    "repeat16": 6.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 603.1628673308448,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.126394138184551,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 601.8422699904904,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.144782106912013,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-none-sim",
+    "desc": "session 2, sim 5.5, no pinning",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 600.8540094832315,
+    "tps_min": 587.7650067723534,
+    "tps_max": 606.5293117344754,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 9.181806895680523,
+    "step_ms": null,
+    "ttft_ms": 144.85826715826988,
+    "repeat16": 10.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 601.7459637873908,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.189479110913503,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 599.9836260033858,
+        "al": 5.505376344086022,
+        "cycle_ms": 9.176205672281483,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-split-real",
+    "desc": "session 2, real, SGLang split affinity",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 433.87985904182534,
+    "tps_min": 288.3947805721507,
+    "tps_max": 575.7326974257255,
+    "al": 3.953903722587474,
+    "al_min": 2.6256410256410256,
+    "al_max": 5.278350515463917,
+    "cycle_ms": 9.130753710254542,
+    "step_ms": null,
+    "ttft_ms": 144.28185764700174,
+    "repeat16": 6.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 452.6200756218327,
+        "al": 4.144192953540364,
+        "cycle_ms": 9.130337468826806,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 433.87985904182534,
+        "al": 3.953903722587474,
+        "cycle_ms": 9.143775215604364,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-node1-real",
+    "desc": "session 2, real, all schedulers on node 1",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 442.6039614321687,
+    "tps_min": 287.2907086767291,
+    "tps_max": 577.1322759085447,
+    "al": 4.040217898832685,
+    "al_min": 2.6189258312020463,
+    "al_max": 5.251282051282051,
+    "cycle_ms": 9.122099695495482,
+    "step_ms": null,
+    "ttft_ms": 143.6489443294704,
+    "repeat16": 7.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 449.7713620782914,
+        "al": 4.104224899598393,
+        "cycle_ms": 9.123584585670955,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 362.62093158662003,
+        "al": 3.3147837747234328,
+        "cycle_ms": 9.12193417373797,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-none-real",
+    "desc": "session 2, real, no pinning",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 316.82887403357904,
+    "tps_min": 260.76855819823317,
+    "tps_max": 578.8103299532647,
+    "al": 2.897342166174475,
+    "al_min": 2.386946386946387,
+    "al_max": 5.251282051282051,
+    "cycle_ms": 9.13144109978698,
+    "step_ms": null,
+    "ttft_ms": 144.20561771839857,
+    "repeat16": 6.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 415.8583136011147,
+        "al": 3.801840524604618,
+        "cycle_ms": 9.120364619547205,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 273.6228207109524,
+        "al": 2.4980959634424984,
+        "cycle_ms": 9.137039621661206,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-node1-off",
+    "desc": "session 2, DSpark off, all schedulers on node 1",
+    "launches": 1,
+    "rounds": 6,
+    "tps": 150.07245848068322,
+    "tps_min": 149.90678969539465,
+    "tps_max": 150.09527577804008,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 6.663447867747568,
+    "ttft_ms": 142.38559221848845,
+    "repeat16": 19.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 150.07245848068322,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 6.663447867747568
+      }
+    ]
+  },
+  {
+    "platform": "mi355x",
+    "group": "s2-none-off",
+    "desc": "session 2, DSpark off, no pinning",
+    "launches": 1,
+    "rounds": 6,
+    "tps": 149.89603921037133,
+    "tps_min": 149.8848290668394,
+    "tps_max": 149.918376306602,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 6.671290352616463,
+    "ttft_ms": 142.83020934090018,
+    "repeat16": 19.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 149.89603921037133,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 6.671290352616463
+      }
+    ]
+  }
+]

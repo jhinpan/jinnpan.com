@@ -1,0 +1,75 @@
+{
+  "name": "s0-nods-b",
+  "image": "lmsysorg/sglang@sha256:4a5d132a06a77c8331e15845f2e925adc788b00105097ad55409afa3f4fa4860",
+  "image_id": "sha256:381b27ffa19bfbade2bf69bb103395e59a7e82ab0adf176b15b492e9df5aaf7b lmsysorg/sglang@sha256:4a5d132a06a77c8331e15845f2e925adc788b00105097ad55409afa3f4fa4860",
+  "server_cmd": "bash /work/bbuf/launch.sh",
+  "env": [
+    "MODEL_PATH=/models/DeepSeek-V4.1-Flash",
+    "DSPARK=0"
+  ],
+  "docker_args": null,
+  "port": 30021,
+  "bench": [
+    "python3 bbuf/benchmark.py bench --prompt bbuf/prompt.json --max-tokens 1024 --out {out}/bench --repeat 6 --url http://127.0.0.1:30021"
+  ],
+  "started_utc": "2026-09-25T00:22:37Z",
+  "sample_gpu": null,
+  "num_steps": null,
+  "trigger_after": null,
+  "nvidia_smi_pre_summary": [
+    "Driver Version                                         : 595.58.03",
+    "CUDA Version                                           : 13.2",
+    "Current Power Limit                            : 1400.00 W",
+    "Max Power Limit                                : 1400.00 W",
+    "Current Power Limit                            : 2900.00 W",
+    "Max Power Limit                                : 2900.00 W",
+    "Graphics                                       : 765 MHz",
+    "SM                                             : 765 MHz",
+    "Graphics                                       : Requested functionality has been deprecated",
+    "Graphics                                       : Requested functionality has been deprecated",
+    "Graphics                                       : 2070 MHz",
+    "SM                                             : 2070 MHz"
+  ],
+  "idle_check_gpus": [
+    {
+      "index": "0",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "237.37",
+      "sm_mhz": "2070",
+      "mem_mhz": "3996",
+      "temp_c": "34",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "1",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "234.56",
+      "sm_mhz": "2070",
+      "mem_mhz": "3996",
+      "temp_c": "34",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "2",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "244.78",
+      "sm_mhz": "2070",
+      "mem_mhz": "3996",
+      "temp_c": "34",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "3",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "233.98",
+      "sm_mhz": "2070",
+      "mem_mhz": "3996",
+      "temp_c": "34",
+      "power_limit_w": "1400.00"
+    }
+  ]
+}

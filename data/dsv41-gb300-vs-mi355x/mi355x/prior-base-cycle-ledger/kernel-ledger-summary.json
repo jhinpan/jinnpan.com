@@ -1,0 +1,73 @@
+{
+  "profiled_phase_us": {
+    "VERIFY": 8116.289718750041,
+    "DRAFT": 1094.1320625
+  },
+  "unprofiled_phase_us": {
+    "VERIFY": 7443.550825119019,
+    "DRAFT": 790.1052683591843
+  },
+  "scale": {
+    "VERIFY": 0.917112508677841,
+    "DRAFT": 0.722129709419044
+  },
+  "kernels_between_pa_mains": [
+    31,
+    36,
+    26,
+    26,
+    26,
+    26,
+    26,
+    36,
+    26,
+    26,
+    26,
+    26,
+    26,
+    41,
+    26,
+    26,
+    26,
+    26,
+    26,
+    37,
+    26,
+    26,
+    26,
+    32,
+    26,
+    26,
+    26,
+    32,
+    26,
+    26,
+    26,
+    32,
+    26,
+    26,
+    26,
+    32,
+    27,
+    27,
+    27
+  ],
+  "segment_totals": {
+    "DRAFT/draft": {
+      "calls": 161.0,
+      "est_unprofiled_us": 790.2
+    },
+    "VERIFY/head": {
+      "calls": 54.0,
+      "est_unprofiled_us": 236.6
+    },
+    "VERIFY/layers": {
+      "calls": 1118.0,
+      "est_unprofiled_us": 7033.7
+    },
+    "VERIFY/tail": {
+      "calls": 30.0,
+      "est_unprofiled_us": 173.6
+    }
+  }
+}
