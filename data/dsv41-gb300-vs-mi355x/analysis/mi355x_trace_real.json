@@ -1,0 +1,144 @@
+{
+  "trace": "3334009_kernel_trace.csv",
+  "cycles": 100,
+  "kernels_per_cycle": 1519.0,
+  "distinct_kernels": 116,
+  "traced_duration_median_us": 5.2,
+  "traced_share_between_4_and_6_us": 0.5960437100915016,
+  "watched": {
+    "attention main (partial_gluon)": {
+      "calls_per_cycle": 40.0,
+      "traced_median_us": 9.92
+    },
+    "attention combine (_combine)": {
+      "calls_per_cycle": 47.0,
+      "traced_median_us": 5.16
+    },
+    "fused all-reduce + mHC post": {
+      "calls_per_cycle": 80.0,
+      "traced_median_us": 49.84
+    },
+    "MoE G1": {
+      "calls_per_cycle": 43.0,
+      "traced_median_us": 15.4
+    },
+    "MoE G2": {
+      "calls_per_cycle": 43.0,
+      "traced_median_us": 9.24
+    },
+    "MoE sorting": {
+      "calls_per_cycle": 43.0,
+      "traced_median_us": 11.0
+    },
+    "router gate": {
+      "calls_per_cycle": 40.0,
+      "traced_median_us": 5.12
+    },
+    "RMSNorm + fake quant": {
+      "calls_per_cycle": 40.0,
+      "traced_median_us": 4.7605
+    }
+  },
+  "top_by_calls": [
+    [
+      "_fill_padded_rows_kernel",
+      86.0
+    ],
+    [
+      "_ZN5aiter31dsv41_allreduce_mhc_post_kernelEPNS_8RankDataENS_11RankSignalsEPNS_6SignalEiPDF16bPKDF16b",
+      80.0
+    ],
+    [
+      "_hc_boundary_partial_kernel",
+      80.0
+    ],
+    [
+      "_rmsnorm_sinkhorn_kernel",
+      80.0
+    ],
+    [
+      "void sglang::mxfp8_gemv::mxfp8_gemv_kernel<8, 1, 16, 16, true>(unsigned char const*, unsigned char c",
+      52.0
+    ],
+    [
+      "_router_gemv_split_k_kernel",
+      48.0
+    ],
+    [
+      "void sglang::mxfp8_gemv::mxfp8_gemv_kernel<8, 1, 16, 16, false>(unsigned char const*, unsigned char ",
+      48.0
+    ],
+    [
+      "Cijk_Alik_Bljk_BBS_BH_Bias_HA_S_SAV_UserArgs_MT32x16x64_MI16x16x1_SN_LDSB0_AFC0_AFEM1_AFEM1_ASEM1_CL",
+      44.0
+    ],
+    [
+      "_wo_a_partial",
+      43.0
+    ],
+    [
+      "_wo_a_reduce",
+      43.0
+    ],
+    [
+      "void sglang::mxfp8_gemv::mxfp8_gemv_kernel<16, 4, 32, 16, true>(unsigned char const*, unsigned char ",
+      43.0
+    ],
+    [
+      "_silu_and_mul_clamp_kernel",
+      43.0
+    ],
+    [
+      "void aiter::opus_moe_sorting_entry<aiter::MoeSortingKernel<aiter::MoeSortingProblemEx<int, float, 1,",
+      43.0
+    ],
+    [
+      "_ZN5aiter30fused_mx_quant_moe_sort_kernelIDF16bDB8_Li256ELi32EEEvPT0_PhPKT_PKiS9_PKfiiiiiiiii",
+      43.0
+    ],
+    [
+      "mfma_moe1_silu_mul_afp8_wfp4_bf16_t32x128x256_pm1_async_gui_v33",
+      43.0
+    ],
+    [
+      "_ZN5aiter30fused_mx_quant_moe_sort_kernelIDF16bDB8_Li256ELi16EEEvPT0_PhPKT_PKiS9_PKfiiiiiiiii",
+      43.0
+    ],
+    [
+      "mfma_moe2_afp8_wfp4_bf16_cshuffle_t32x128x256_vscale_fix3_fp4opt_v1_pm1_acc0",
+      43.0
+    ],
+    [
+      "moe_reduction_kernel_0",
+      43.0
+    ],
+    [
+      "void at::native::vectorized_elementwise_kernel<8, at::native::CUDAFunctor_add<c10::BFloat16>, std::a",
+      43.0
+    ],
+    [
+      "partial_gluon",
+      40.0
+    ],
+    [
+      "_combine",
+      40.0
+    ],
+    [
+      "_router_gate_kernel",
+      40.0
+    ],
+    [
+      "_rmsnorm_fake_quant_fp8_kernel",
+      40.0
+    ],
+    [
+      "void sglang::mxfp8_gemv::mxfp8_gemv_kernel<16, 2, 32, 16, false>(unsigned char const*, unsigned char",
+      40.0
+    ],
+    [
+      "void sglang::fused_k_norm_rope_flashmla<__hip_bfloat16, 512l, 64l, long, 8, (sglang::deepseek_v4::KV",
+      40.0
+    ]
+  ]
+}

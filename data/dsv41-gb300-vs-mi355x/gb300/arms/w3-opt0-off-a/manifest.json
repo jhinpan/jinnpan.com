@@ -1,0 +1,79 @@
+{
+  "name": "w3-opt0-off-a",
+  "image": null,
+  "image_id": null,
+  "server_cmd": "sglang serve --model-path /models/DeepSeek-V4.1-Flash --served-model-name deepseek-ai/DeepSeek-V4.1-Flash --trust-remote-code --tp 4 --ep-size 4 --max-running-requests 256 --disable-radix-cache --reasoning-parser auto --tool-call-parser auto --enable-metrics --random-seed 42 --host 127.0.0.1 --port 30000",
+  "env": [
+    "SGLANG_OPT_USE_MULTI_STREAM_OVERLAP=0"
+  ],
+  "docker_args": null,
+  "port": null,
+  "bench": [
+    "python3 bbuf/benchmark.py bench --prompt bbuf/prompt.json --max-tokens 1024 --out {out}/bench --repeat 6 --url http://127.0.0.1:30000"
+  ],
+  "started_utc": "2026-09-25T19:51:43Z",
+  "sample_gpu": null,
+  "num_steps": null,
+  "trigger_after": 256,
+  "container": "dsv41-workbench",
+  "pythonpath": null,
+  "profile_steps": null,
+  "sglang_rev": "ffac53d779c08dcdab2d07e5e2a41dba83f0e65c",
+  "sglang_dirty": [],
+  "nvidia_smi_pre_summary": [
+    "Driver Version                                         : 595.58.03",
+    "CUDA Version                                           : 13.2",
+    "Current Power Limit                            : 1400.00 W",
+    "Max Power Limit                                : 1400.00 W",
+    "Current Power Limit                            : 2900.00 W",
+    "Max Power Limit                                : 2900.00 W",
+    "Graphics                                       : 187 MHz",
+    "SM                                             : 187 MHz",
+    "Graphics                                       : Requested functionality has been deprecated",
+    "Graphics                                       : Requested functionality has been deprecated",
+    "Graphics                                       : 2070 MHz",
+    "SM                                             : 2070 MHz"
+  ],
+  "idle_check_gpus": [
+    {
+      "index": "0",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "184.21",
+      "sm_mhz": "210",
+      "mem_mhz": "3996",
+      "temp_c": "33",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "1",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "183.97",
+      "sm_mhz": "315",
+      "mem_mhz": "3996",
+      "temp_c": "33",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "2",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "180.05",
+      "sm_mhz": "120",
+      "mem_mhz": "3996",
+      "temp_c": "33",
+      "power_limit_w": "1400.00"
+    },
+    {
+      "index": "3",
+      "mem_used_mib": "0",
+      "util": "0",
+      "power_w": "180.38",
+      "sm_mhz": "195",
+      "mem_mhz": "3996",
+      "temp_c": "32",
+      "power_limit_w": "1400.00"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "utc": "2026-09-25T19:35:49.865341+00:00",
+  "command": [
+    "bash",
+    "bench/session3.sh"
+  ],
+  "physical_ids": [
+    4,
+    5,
+    6,
+    7
+  ],
+  "reserved_physical_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "exclusive_node": true,
+  "HIP_VISIBLE_DEVICES": "4,5,6,7",
+  "bdfs": [
+    "0000:85:00.0",
+    "0000:95:00.0",
+    "0000:e5:00.0",
+    "0000:f5:00.0"
+  ]
+}

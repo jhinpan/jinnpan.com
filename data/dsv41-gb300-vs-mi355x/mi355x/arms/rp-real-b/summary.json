@@ -1,0 +1,17 @@
+{
+  "runs": 1,
+  "output_tps_median": 220.39776344893627,
+  "output_tps_min": 220.39776344893627,
+  "output_tps_max": 220.39776344893627,
+  "accept_length_median": 4.112449799196787,
+  "input_tokens": 4096,
+  "output_tokens": [
+    1024
+  ],
+  "requested_output_tokens": 1024,
+  "ignore_eos": true,
+  "accept_length_min": 4.112449799196787,
+  "accept_length_max": 4.112449799196787,
+  "prompt_file_sha256": "2331eb918994e153dc659a4bd97f5eca87af7751268a5d931a1863a865801307",
+  "acceptance_mode": "Read server launch manifest: simulated target 5.5 for DSpark, not applicable for ordinary decode"
+}

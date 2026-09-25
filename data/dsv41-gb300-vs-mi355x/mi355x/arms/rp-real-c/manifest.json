@@ -1,0 +1,7 @@
+{"label": "rp-real-c", "mode": "real", "affinity_mode": "split", "launcher": "$E2E_CAMPAIGN/bench/launch_ll.sh",
+ "launcher_sha256": "0b49f483fc816b2c9e8da44b1a7e3b69db884fa78c98a6ce2c27290f2a7c4419", "sglang_tree": "$E2E_CAMPAIGN/sources/rt-base",
+ "rocprofv3": "1.1.0
+6.8.0-71-generic
+11.4.0
+7.2.0",
+ "trace_dir": "$ROCPROF_TRACES/rp-real-c", "gpu_lock_record": "$CAMPAIGN/results/gpu-claim-session3c", "start_utc": "2026-09-25T19:57:21.101Z"}

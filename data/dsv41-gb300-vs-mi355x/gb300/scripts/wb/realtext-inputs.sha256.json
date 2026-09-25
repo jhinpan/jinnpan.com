@@ -1,0 +1,32 @@
+{
+  "row": {
+    "name": "primary4k_o1024_c1",
+    "prompt": 4096,
+    "cached": 0,
+    "output": 1024,
+    "concurrency": 1
+  },
+  "encoding": "checkpoint encode_messages; chat mode",
+  "prompts": [
+    {
+      "index": 0,
+      "tokens": 4096,
+      "sha256": "523cfa6ece5d30ccecc3bc509bdf6000a30d920c12177e178d5840c824f67aa7"
+    },
+    {
+      "index": 1,
+      "tokens": 4096,
+      "sha256": "ad51fb283142517f43b941f507a0ad8f196f342d8afa5cc6e31083ff3db0ae9d"
+    },
+    {
+      "index": 2,
+      "tokens": 4096,
+      "sha256": "1c78a16d5e1d88e14dbe77ec5c59b4c2228e9b68e89aeb6fa9b7b6338284899f"
+    },
+    {
+      "index": 3,
+      "tokens": 4096,
+      "sha256": "b1530d37bdac01f66d5e55177f6d68fd3aa03a2034e1161686bf9c786a6e3ca4"
+    }
+  ]
+}

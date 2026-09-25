@@ -133,6 +133,118 @@
     "kernels": 1180.0150753768844,
     "overlap": 1.5576580119429682
   },
+  "gb300_verify_serial": {
+    "cycle_us_median": 7182.768,
+    "cycle_us_mean": 7195.163222222222,
+    "cycles": 99,
+    "categories": {
+      "moe": {
+        "wall_us": 1180.2540387205388,
+        "kernel_us": 1350.400494949495,
+        "kernels": 240.0
+      },
+      "dense_gemm": {
+        "wall_us": 1725.9551818181817,
+        "kernel_us": 1778.1949494949495,
+        "kernels": 407.0
+      },
+      "attention": {
+        "wall_us": 680.6973215488215,
+        "kernel_us": 690.7740404040404,
+        "kernels": 204.06060606060606
+      },
+      "mhc": {
+        "wall_us": 1310.9415858585858,
+        "kernel_us": 1311.0018686868686,
+        "kernels": 240.0
+      },
+      "all_reduce": {
+        "wall_us": 733.9420572390572,
+        "kernel_us": 738.616707070707,
+        "kernels": 87.0
+      },
+      "engram": {
+        "wall_us": 17.21669696969697,
+        "kernel_us": 17.230272727272727,
+        "kernels": 6.0
+      },
+      "draft": {
+        "wall_us": 579.1733434343435,
+        "kernel_us": 594.9584444444445,
+        "kernels": 161.0
+      },
+      "other": {
+        "wall_us": 463.06193602693605,
+        "kernel_us": 511.145,
+        "kernels": 257.14141414141415
+      },
+      "host_gap": {
+        "wall_us": 503.9210606060606,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      }
+    },
+    "kernel_sum_us": 6992.321777777777,
+    "busy_us": 6678.8469393939395,
+    "kernels": 1602.20202020202,
+    "overlap": 1.0469354727288127
+  },
+  "gb300_decode_serial": {
+    "cycle_us_median": 5648.525,
+    "cycle_us_mean": 5660.8854974874375,
+    "cycles": 199,
+    "categories": {
+      "moe": {
+        "wall_us": 892.8246013400335,
+        "kernel_us": 1003.5233919597989,
+        "kernels": 240.0
+      },
+      "dense_gemm": {
+        "wall_us": 1663.195146566164,
+        "kernel_us": 1704.5656733668343,
+        "kernels": 403.0
+      },
+      "attention": {
+        "wall_us": 579.4258350083752,
+        "kernel_us": 587.2493969849246,
+        "kernels": 197.0
+      },
+      "mhc": {
+        "wall_us": 1047.2216415410385,
+        "kernel_us": 1050.2703718592963,
+        "kernels": 240.0
+      },
+      "all_reduce": {
+        "wall_us": 628.7679095477387,
+        "kernel_us": 633.349391959799,
+        "kernels": 84.0
+      },
+      "engram": {
+        "wall_us": 14.70377889447236,
+        "kernel_us": 14.70377889447236,
+        "kernels": 5.0
+      },
+      "draft": {
+        "wall_us": 0.0,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      },
+      "other": {
+        "wall_us": 316.545458961474,
+        "kernel_us": 347.1707085427136,
+        "kernels": 205.01507537688443
+      },
+      "host_gap": {
+        "wall_us": 518.2011256281407,
+        "kernel_us": 0.0,
+        "kernels": 0.0
+      }
+    },
+    "kernel_sum_us": 5340.832713567839,
+    "busy_us": 5130.323874371859,
+    "kernels": 1374.0150753768844,
+    "overlap": 1.0410322709346989
+  },
   "mi355x_verify": {
     "cycle_us": 8921.1,
     "categories": {

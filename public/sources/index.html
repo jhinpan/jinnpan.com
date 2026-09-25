@@ -763,12 +763,12 @@
       <div class="shelf-count">5 records</div>
     </div>
     <div class="grid">
-      <article class="entry" data-kind="experiments" data-search="experiment 005 deepseek v4.1 flash dsv41 dspark speculative decoding verify cycle gb300 blackwell ultra sm103 grace nvl72 mi355x gfx950 rocm sglang bs1 batch 1 numa placement cpu affinity sys_nice sglang_set_cpu_affinity nsys attribution mhc moe attention stream concurrency multi-stream cuda graph hip graph simulated acceptance calibration bbuf">
+      <article class="entry" data-kind="experiments" data-search="experiment 005 deepseek v4.1 flash dsv41 dspark speculative decoding verify cycle gb300 blackwell ultra sm103 grace nvl72 mi355x gfx950 rocm sglang bs1 batch 1 numa placement cpu affinity sys_nice sglang_set_cpu_affinity nsys attribution mhc moe attention stream concurrency multi-stream serialized streams cuda graph hip graph graph floor packet capture real text acceptance simulated acceptance calibration bbuf">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 005</span></div>
         <div class="entry-body">
           <h3>GB300 vs MI355X, one token at a time</h3>
-          <p>DeepSeek-V4.1 Flash at BS=1 on SGLang. After reproducing the published GB300 series within 1.6%, a 4.61 ms GB300 verify cycle against 9.15 ms on MI355X: up to 61% of the gap is stream concurrency, most of the rest four kernel families, and a 30% swing on GB300 turned out to be CPU placement.</p>
-          <div class="tags"><span class="tag">DeepSeek-V4.1</span><span class="tag">GB300 / MI355X</span><span class="tag">nsys attribution</span><span class="tag">NUMA placement</span></div>
+          <p>DeepSeek-V4.1 Flash at BS=1 on SGLang: a 4.61 ms GB300 verify cycle against 9.15 ms on MI355X. Turning off GB300's side streams takes it to 7.34 ms, so 60% of the gap is stream concurrency that HIP graphs make expensive; most of the rest is MoE and attention kernel time, and a 30% swing on GB300 turned out to be CPU placement.</p>
+          <div class="tags"><span class="tag">DeepSeek-V4.1</span><span class="tag">GB300 / MI355X</span><span class="tag">stream concurrency</span><span class="tag">NUMA placement</span></div>
         </div>
         <div class="links"><a class="link primary" href="./dsv41-gb300-vs-mi355x.html">Deep dive →</a></div>
       </article>

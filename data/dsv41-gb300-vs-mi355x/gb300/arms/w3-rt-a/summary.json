@@ -1,0 +1,27 @@
+{
+  "row": {
+    "name": "primary4k_o1024_c1",
+    "prompt": 4096,
+    "cached": 0,
+    "output": 1024,
+    "concurrency": 1
+  },
+  "requests": 96,
+  "accepted_length_median": 3.170278637770898,
+  "accepted_length_by_prompt": {
+    "0": 3.056716417910448,
+    "1": 2.9681408791504236,
+    "2": 3.5804633535057153,
+    "3": 3.313915857605178
+  },
+  "wall_per_verify_proxy_ms_median": 4.72006401658024,
+  "stream_decode_tps_median": 670.3540208793653,
+  "request_output_tps_median": 588.5886815407794,
+  "server_ttft_ms_median": 212.15588005725294,
+  "distinct_outputs_by_prompt": {
+    "0": 24,
+    "1": 24,
+    "2": 24,
+    "3": 24
+  }
+}

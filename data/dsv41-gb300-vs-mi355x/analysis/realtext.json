@@ -1,0 +1,3920 @@
+{
+  "mi355x": {
+    "requests": 192,
+    "launches": [
+      "1-base",
+      "6-base"
+    ],
+    "accepted_length_median": 3.230283911671924,
+    "wall_per_verify_proxy_ms_median": 9.157171150721702,
+    "stream_decode_tps_median": 352.66515644134756,
+    "request_output_tps_median": 336.3344636211401,
+    "server_ttft_ms_median": 140.6551841646433,
+    "accepted_length_range": [
+      2.752688172043011,
+      3.893536121673004
+    ],
+    "accepted_length_by_prompt": {
+      "0": 3.0751028064353223,
+      "1": 3.138421102036985,
+      "2": 3.710144927536232,
+      "3": 3.34640522875817
+    },
+    "accepted_length_by_launch": {
+      "1-base": 3.230283911671924,
+      "6-base": 3.230283911671924
+    },
+    "distinct_outputs_by_prompt_and_launch": {
+      "1-base/0": 23,
+      "1-base/1": 7,
+      "1-base/2": 14,
+      "1-base/3": 18,
+      "6-base/0": 22,
+      "6-base/1": 9,
+      "6-base/2": 16,
+      "6-base/3": 16
+    }
+  },
+  "gb300": {
+    "requests": 192,
+    "launches": [
+      "a",
+      "b"
+    ],
+    "accepted_length_median": 3.170278637770898,
+    "wall_per_verify_proxy_ms_median": 4.714552833845727,
+    "stream_decode_tps_median": 670.3540208793653,
+    "request_output_tps_median": 588.7497573409419,
+    "server_ttft_ms_median": 211.9231194956228,
+    "accepted_length_range": [
+      2.752688172043011,
+      3.9233716475095783
+    ],
+    "accepted_length_by_prompt": {
+      "0": 3.056716417910448,
+      "1": 2.9724300640377486,
+      "2": 3.6376668938189343,
+      "3": 3.3628990509059533
+    },
+    "accepted_length_by_launch": {
+      "a": 3.170278637770898,
+      "b": 3.1753846153846155
+    },
+    "distinct_outputs_by_prompt_and_launch": {
+      "a/0": 24,
+      "a/1": 24,
+      "a/2": 24,
+      "a/3": 24,
+      "b/0": 24,
+      "b/1": 24,
+      "b/2": 24,
+      "b/3": 24
+    }
+  },
+  "rows": {
+    "mi355x": [
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.8704204261303,
+        "output_sha256": "69480f30203832ef1cb67cd8ffe3f94098142f803fab43730ceb9a617141657a",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 9.183698618607966,
+        "stream_decode_tps": 340.581172233406,
+        "request_output_tps": 325.17142317384605
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.89674782007933,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.169508298894144,
+        "stream_decode_tps": 350.7529916194097,
+        "request_output_tps": 334.556769540534
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.68823866546154,
+        "output_sha256": "975627ca95f51b875e7a948a208cc8702b641140110bee5cf621ec6b19fe2676",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 9.162037995168202,
+        "stream_decode_tps": 401.5172853882142,
+        "request_output_tps": 380.40430637200257
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.89519530534744,
+        "output_sha256": "bd41ee0c306d91749cbdc07b7c14dd9cdd8c87713f865ed8fd4209ce3a37d129",
+        "accepted_length": 3.5310344827586206,
+        "wall_per_verify_proxy_ms": 9.167084386893388,
+        "stream_decode_tps": 384.76607815297115,
+        "request_output_tps": 365.32706147064636
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 141.5658062323928,
+        "output_sha256": "f249d6b68e7d600e7bd61f28c3a7662eca37b2544c6e693ba3f41f98baaffd4d",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.175099630298373,
+        "stream_decode_tps": 364.28278705147113,
+        "request_output_tps": 346.8839846953566
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.7450038716197,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.162529877832402,
+        "stream_decode_tps": 404.42806237659016,
+        "request_output_tps": 382.8963691799444
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.59126283973455,
+        "output_sha256": "c94586e9841b05efe3f010aefb5b625f51552c97e95ae7cb453098fa98be5b92",
+        "accepted_length": 2.8603351955307263,
+        "wall_per_verify_proxy_ms": 9.182523782547126,
+        "stream_decode_tps": 311.133806570124,
+        "request_output_tps": 298.3809008751417
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.35902358591557,
+        "output_sha256": "f71d5fc9387e18b84f03f5b6c1495332725e7a469cb5599248b8b9f4b710fcb7",
+        "accepted_length": 2.9854227405247813,
+        "wall_per_verify_proxy_ms": 9.180367937849145,
+        "stream_decode_tps": 324.8309391736701,
+        "request_output_tps": 310.9646524554245
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 142.34443381428719,
+        "output_sha256": "9d931d5e8eb2aff579e40f8f3b3ff4af659b8065e093176ceb4055991e8c071f",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.163881444172668,
+        "stream_decode_tps": 332.1596841583373,
+        "request_output_tps": 317.48695315502664
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.9818446263671,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 9.153298574930696,
+        "stream_decode_tps": 333.53278615681114,
+        "request_output_tps": 318.8606062285212
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.23695793002844,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.151993569094634,
+        "stream_decode_tps": 404.87543494916076,
+        "request_output_tps": 383.4852972031033
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.11307805776596,
+        "output_sha256": "66c6ad7e4bae031c4730eb98667f8355123a93d8f89e9d65c07a8c06ddb35e85",
+        "accepted_length": 3.357377049180328,
+        "wall_per_verify_proxy_ms": 9.156756438925617,
+        "stream_decode_tps": 366.2224022704724,
+        "request_output_tps": 348.674341515567
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.3424646705389,
+        "output_sha256": "93f7c5c80699b0cb2ceaf382b23633225e7116ea5af6db85f708934d829a8695",
+        "accepted_length": 3.303225806451613,
+        "wall_per_verify_proxy_ms": 9.162600720000844,
+        "stream_decode_tps": 360.0706375806364,
+        "request_output_tps": 343.1143430153096
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.50556160509586,
+        "output_sha256": "4f92433d788a6f2ed0db2e0f200e8d9f32e615f3f90e530c01353b79c2e3d962",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 9.154505009273832,
+        "stream_decode_tps": 401.87099381072005,
+        "request_output_tps": 380.7757378410093
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.78114740550518,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.153057092489316,
+        "stream_decode_tps": 352.48444479684616,
+        "request_output_tps": 336.1677534132998
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.6995253637433,
+        "output_sha256": "440b1cc11cebe03896769b06c98425b8675c448d6428efaa771f9eb1f176e703",
+        "accepted_length": 3.065868263473054,
+        "wall_per_verify_proxy_ms": 9.173000326190524,
+        "stream_decode_tps": 333.8203900086465,
+        "request_output_tps": 319.16293207621266
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.9594343751669,
+        "output_sha256": "b3c0b07943b1da3d916549ca715da0682798e48abde2d9272ab08379504a82ea",
+        "accepted_length": 2.9767441860465116,
+        "wall_per_verify_proxy_ms": 9.145618511125619,
+        "stream_decode_tps": 325.101877521753,
+        "request_output_tps": 311.0328899976931
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.39563667029142,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.15667531594681,
+        "stream_decode_tps": 352.34633914473324,
+        "request_output_tps": 336.0540378726015
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.17638859897852,
+        "output_sha256": "fc4920e766bcebb89bfbeaf0f44b65f29cd2d5ee3db8a95792b8de8e2caebe40",
+        "accepted_length": 3.7236363636363636,
+        "wall_per_verify_proxy_ms": 9.13922907276587,
+        "stream_decode_tps": 406.96725360311444,
+        "request_output_tps": 385.2013887217269
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 141.08786638826132,
+        "output_sha256": "9d71ae8781d933ad0807939b3105c87805063e6e4ff6b4b7fda68b51924a7116",
+        "accepted_length": 3.292604501607717,
+        "wall_per_verify_proxy_ms": 9.168607293601205,
+        "stream_decode_tps": 358.6645858095031,
+        "request_output_tps": 341.7253343240191
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.52614010870457,
+        "output_sha256": "c49b8a6134d0461506f54a3db74443d63dffa6a667e4dc286bd67b92de36f837",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 9.1597918716688,
+        "stream_decode_tps": 354.47748629889503,
+        "request_output_tps": 337.9721644455305
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.45195002108812,
+        "output_sha256": "27172da2261a8e624dd17309fbaff299941a7bb4d4e05a8031f4401b62ea8b38",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.158137402888658,
+        "stream_decode_tps": 404.60119647170814,
+        "request_output_tps": 383.19316743471126
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.8106442540884,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.152040090529049,
+        "stream_decode_tps": 351.41213154757475,
+        "request_output_tps": 335.1595527116144
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.8587135374546,
+        "output_sha256": "4d0f08edd71e03ffd2d065c312a8bf1573b29c030b36344ac14a1fd3180e2277",
+        "accepted_length": 3.190031152647975,
+        "wall_per_verify_proxy_ms": 9.155434556305408,
+        "stream_decode_tps": 347.9974176999595,
+        "request_output_tps": 332.03424513396817
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.1247987523675,
+        "output_sha256": "96592f928a633cd8db59eca72ac00fb3937a12635d19a62b8019a67bb3dba4bf",
+        "accepted_length": 3.029585798816568,
+        "wall_per_verify_proxy_ms": 9.152449711540042,
+        "stream_decode_tps": 330.6177724258377,
+        "request_output_tps": 316.28671899854055
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 141.98591094464064,
+        "output_sha256": "41f5e164f26182538cba712e3ee2929d56d9c1b55d58aac806dba447bec1235c",
+        "accepted_length": 2.8054794520547945,
+        "wall_per_verify_proxy_ms": 9.145296143036182,
+        "stream_decode_tps": 306.4016086447464,
+        "request_output_tps": 293.93135911101973
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 139.8230167105794,
+        "output_sha256": "15c131002896fefc8225c2ffc3b37ce1bdcd84e611b3da51a31f56e015a84134",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.145822822632178,
+        "stream_decode_tps": 415.68356065458846,
+        "request_output_tps": 393.2012295751108
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.02278354018927,
+        "output_sha256": "c49b8a6134d0461506f54a3db74443d63dffa6a667e4dc286bd67b92de36f837",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 9.158711983925766,
+        "stream_decode_tps": 354.4960869346216,
+        "request_output_tps": 338.0497430451551
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.52259922027588,
+        "output_sha256": "c12f57af3e7c0f4fa33f2894ab9d65b3cf809f99bf44dc384acbffc0452f6130",
+        "accepted_length": 3.1124620060790273,
+        "wall_per_verify_proxy_ms": 9.161963000168916,
+        "stream_decode_tps": 339.3319782572401,
+        "request_output_tps": 324.18560256008965
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.68830588459969,
+        "output_sha256": "85da78b501f9cbe9b779dc09e1807b9fbcedd440a228b2a296f086a11c129fd3",
+        "accepted_length": 3.5804195804195804,
+        "wall_per_verify_proxy_ms": 9.165855290667785,
+        "stream_decode_tps": 390.110250590904,
+        "request_output_tps": 370.0531103259532
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.5105860903859,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.152320207740042,
+        "stream_decode_tps": 352.56151278739884,
+        "request_output_tps": 336.2245350050717
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.02049078792334,
+        "output_sha256": "60fdfcd332fe900e86277343dfd1a2080743ad197995b61cdd1a45844e1168aa",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 9.166222255568481,
+        "stream_decode_tps": 361.06513465061767,
+        "request_output_tps": 344.0259521002971
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.75207151472569,
+        "output_sha256": "9bbe42adbd67bc175a6f14295131934c435daf7c9eb304beeedf85a91dd3bf67",
+        "accepted_length": 2.9767441860465116,
+        "wall_per_verify_proxy_ms": 9.160286995993797,
+        "stream_decode_tps": 324.569203286173,
+        "request_output_tps": 310.6799281745142
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.52231051027775,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.157439144416374,
+        "stream_decode_tps": 352.3181448911043,
+        "request_output_tps": 335.9914230576959
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 139.98451363295317,
+        "output_sha256": "0008c639068f516ea590e413d7909966b2f916fed9ec4b4302f829812e692d68",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 9.142723572056568,
+        "stream_decode_tps": 400.90601655953947,
+        "request_output_tps": 379.95919123259455
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 139.97750356793404,
+        "output_sha256": "08b1f9a893d3ee90453464110dfc4d777509d75d0382f73bb1770dbb534cc744",
+        "accepted_length": 3.657142857142857,
+        "wall_per_verify_proxy_ms": 9.154633156556104,
+        "stream_decode_tps": 398.98721242006025,
+        "request_output_tps": 378.2112188821927
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 139.76078387349844,
+        "output_sha256": "8fbdb7f621eee47c4d38e9be2e52e3b4fdfdd87f44b0d60a5ade431a798e2e66",
+        "accepted_length": 3.5432525951557095,
+        "wall_per_verify_proxy_ms": 9.150597753460845,
+        "stream_decode_tps": 386.72619399192814,
+        "request_output_tps": 367.2403281090206
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.2466781437397,
+        "output_sha256": "8b774074020bc5fb477c3794c08046f0ce7b605a8d77c5892fd0073b487d69cb",
+        "accepted_length": 3.7372262773722627,
+        "wall_per_verify_proxy_ms": 9.177507516540533,
+        "stream_decode_tps": 406.7069944706383,
+        "request_output_tps": 385.1141521390216
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.2663867920637,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.141538026077408,
+        "stream_decode_tps": 332.9715532852287,
+        "request_output_tps": 318.4058021482371
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.43064415454865,
+        "output_sha256": "29650e64ea7f41bf092130e352b0f0dcf670bc2dc2cd27f41f442dfeb9201042",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.144992043363786,
+        "stream_decode_tps": 351.68826183055916,
+        "request_output_tps": 335.45493521511986
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.60933142900467,
+        "output_sha256": "dfd59bb2704e97fd6f06714d22a50fb58f093a58a65f6c912c8f44e1b09b5136",
+        "accepted_length": 2.8764044943820224,
+        "wall_per_verify_proxy_ms": 9.140854853132133,
+        "stream_decode_tps": 314.31307024133554,
+        "request_output_tps": 301.305661150709
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 142.20175612717867,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 9.13484202447667,
+        "stream_decode_tps": 334.2089453064748,
+        "request_output_tps": 319.38574426178184
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 139.5381474867463,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.134857591403568,
+        "stream_decode_tps": 405.68612013648834,
+        "request_output_tps": 384.3262936959188
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 141.1605216562748,
+        "output_sha256": "4051104984766fd3e28b415248075011a5052ea49d6733a857fc2c29adc0a676",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.146020972942994,
+        "stream_decode_tps": 365.4453806884398,
+        "request_output_tps": 347.99120476426225
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 141.33078884333372,
+        "output_sha256": "c16519d2c814d37db1661707019b8a58e324475e7d9d29fe3691cf0596a73e98",
+        "accepted_length": 3.240506329113924,
+        "wall_per_verify_proxy_ms": 9.161265452003367,
+        "stream_decode_tps": 353.29472386996713,
+        "request_output_tps": 336.84616514588515
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.2477781996131,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.148083644095754,
+        "stream_decode_tps": 405.03836238297504,
+        "request_output_tps": 383.51129314113433
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.59708174318075,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.14229932961808,
+        "stream_decode_tps": 332.96433420799997,
+        "request_output_tps": 318.35668833959204
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.55441226810217,
+        "output_sha256": "6d79b5ce78676833622b18675eaa8c834bbaf4270f81237e92999ef0ec1510de",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 9.163079441372139,
+        "stream_decode_tps": 333.18681820267193,
+        "request_output_tps": 318.6159281268156
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.15499409288168,
+        "output_sha256": "8c477c07d4f7c3a2c46911da8357d7177fc42befc0962653b45e45e006c1807e",
+        "accepted_length": 3.2100313479623823,
+        "wall_per_verify_proxy_ms": 9.157241768784658,
+        "stream_decode_tps": 350.1753011787936,
+        "request_output_tps": 334.1041213294471
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 142.25567411631346,
+        "output_sha256": "bc95cee09ec2f86fff5cc6738886ade2be3bbf8e03e1371d3308aac7395c7fcc",
+        "accepted_length": 2.9008498583569406,
+        "wall_per_verify_proxy_ms": 9.154073587980216,
+        "stream_decode_tps": 316.5128719380504,
+        "request_output_tps": 303.30775351060356
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.10079205036163,
+        "output_sha256": "4888fc639830819dba7db04452115b46b5ee768b743261222576146cdd2b66dc",
+        "accepted_length": 3.8208955223880596,
+        "wall_per_verify_proxy_ms": 9.145159521070656,
+        "stream_decode_tps": 417.26805901540035,
+        "request_output_tps": 394.61104072003315
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.8202238380909,
+        "output_sha256": "ce3409204f5c305b78c8aeab94f5a346ce2027ee3078de174752bdad49d038d9",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.157627766184946,
+        "stream_decode_tps": 364.96641112084836,
+        "request_output_tps": 347.4978043407226
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 139.75271210074425,
+        "output_sha256": "ab9bbb074390c3ce87f71506ca451706ef1e3c15ec00febfbe243ed68c288cf7",
+        "accepted_length": 3.2100313479623823,
+        "wall_per_verify_proxy_ms": 9.151240796154383,
+        "stream_decode_tps": 350.37998040995734,
+        "request_output_tps": 334.3197440646803
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.77483320236206,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.153095711751476,
+        "stream_decode_tps": 404.84433309771595,
+        "request_output_tps": 383.25101646684175
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.88841900229454,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.148520514463025,
+        "stream_decode_tps": 352.6803223745126,
+        "request_output_tps": 336.36660768959973
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.57123304903507,
+        "output_sha256": "d2c9e4d27e655c0db84257062b36495553a810560ecf486c07b5b20dbec60c9b",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 9.151601643544383,
+        "stream_decode_tps": 320.2172667456287,
+        "request_output_tps": 306.6353600228864
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.3020629659295,
+        "output_sha256": "5dbdd12c60851e6c155f0c28b099cd407639a48c49836db6dccf4b8a71adb95d",
+        "accepted_length": 2.8764044943820224,
+        "wall_per_verify_proxy_ms": 9.159885004183717,
+        "stream_decode_tps": 313.66628783505774,
+        "request_output_tps": 300.74645437383276
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 142.0143349096179,
+        "output_sha256": "363ccd645de7cba8243c8ac3cd315cd1fa06ad308c405049281e4a8ff92691d1",
+        "accepted_length": 2.8603351955307263,
+        "wall_per_verify_proxy_ms": 9.13989436214363,
+        "stream_decode_tps": 312.61605288437084,
+        "request_output_tps": 299.6297521969251
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.96099527180195,
+        "output_sha256": "e640d499d22175b9e69f0d55d03ba3ae4c9e77d0f98b02395444101cedfc12a5",
+        "accepted_length": 3.696750902527076,
+        "wall_per_verify_proxy_ms": 9.141118611992482,
+        "stream_decode_tps": 403.9449314123658,
+        "request_output_tps": 382.4741768338848
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.42895752936602,
+        "output_sha256": "c49b8a6134d0461506f54a3db74443d63dffa6a667e4dc286bd67b92de36f837",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 9.148767457476684,
+        "stream_decode_tps": 354.92785590856096,
+        "request_output_tps": 338.5508700627594
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.91369230300188,
+        "output_sha256": "34bd561297221c07d8809cc15407abb0b7d2ef0ab216ee4e5bcc8c337c1a18e8",
+        "accepted_length": 3.3684210526315788,
+        "wall_per_verify_proxy_ms": 9.152515414538549,
+        "stream_decode_tps": 367.55413495207733,
+        "request_output_tps": 349.90590925880014
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.16748778522015,
+        "output_sha256": "856ca9643bdec08b52581c255047a3077a4a7018f673024dfa46563abf999e82",
+        "accepted_length": 3.7785977859778597,
+        "wall_per_verify_proxy_ms": 9.140142109038864,
+        "stream_decode_tps": 412.937532458207,
+        "request_output_tps": 390.7036990497681
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 141.7011022567749,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.146374864768154,
+        "stream_decode_tps": 352.7335054559055,
+        "request_output_tps": 336.3127322070274
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.32176525890827,
+        "output_sha256": "29650e64ea7f41bf092130e352b0f0dcf670bc2dc2cd27f41f442dfeb9201042",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.152454930304918,
+        "stream_decode_tps": 351.3873942697443,
+        "request_output_tps": 335.1179137857126
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.35572297871113,
+        "output_sha256": "48cdc66583bda856c701a16744f4c0f11b23fe975073f910acf0829f3d4097bc",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 9.150851492204366,
+        "stream_decode_tps": 342.87094594798,
+        "request_output_tps": 327.4843090002887
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 141.6809894144535,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.15799597248858,
+        "stream_decode_tps": 352.2960186009653,
+        "request_output_tps": 335.9426582468628
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.68909734487534,
+        "output_sha256": "0008c639068f516ea590e413d7909966b2f916fed9ec4b4302f829812e692d68",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 9.14288895692022,
+        "stream_decode_tps": 400.9304403310505,
+        "request_output_tps": 380.0152181844312
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.6359663233161,
+        "output_sha256": "39e1303db2eaca38deea1b470711732d0e7f2e834279281ffe522eff95163b22",
+        "accepted_length": 3.190031152647975,
+        "wall_per_verify_proxy_ms": 9.153504870437388,
+        "stream_decode_tps": 348.0807399795848,
+        "request_output_tps": 332.2046303609866
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.83631243556738,
+        "output_sha256": "c49b8a6134d0461506f54a3db74443d63dffa6a667e4dc286bd67b92de36f837",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 9.148412200784872,
+        "stream_decode_tps": 354.9232008504413,
+        "request_output_tps": 338.39336881234914
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.0274812951684,
+        "output_sha256": "4f92433d788a6f2ed0db2e0f200e8d9f32e615f3f90e530c01353b79c2e3d962",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 9.14068789080643,
+        "stream_decode_tps": 402.4678923577032,
+        "request_output_tps": 381.2797932016445
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.31897764652967,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.1446920970825,
+        "stream_decode_tps": 352.8387186071662,
+        "request_output_tps": 336.5570446569106
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.7765317708254,
+        "output_sha256": "72be8e8e8bfbe86e5e5e35fd7e43c308e03f002dc1df5813642f9da00be6a23b",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 9.138535814930853,
+        "stream_decode_tps": 320.72199510943983,
+        "request_output_tps": 307.2455409172605
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.03924669325352,
+        "output_sha256": "1c28116c3944ec178c4f3ed67b250d05d7f7a49d07318638c635c601b911a0eb",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 9.150138041975856,
+        "stream_decode_tps": 342.85350203160056,
+        "request_output_tps": 327.50583658817715
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.41597209870815,
+        "output_sha256": "363ccd645de7cba8243c8ac3cd315cd1fa06ad308c405049281e4a8ff92691d1",
+        "accepted_length": 2.8603351955307263,
+        "wall_per_verify_proxy_ms": 9.14610475405801,
+        "stream_decode_tps": 312.3523821077344,
+        "request_output_tps": 299.5531716869726
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 139.80279490351677,
+        "output_sha256": "27172da2261a8e624dd17309fbaff299941a7bb4d4e05a8031f4401b62ea8b38",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.138691951048331,
+        "stream_decode_tps": 405.4711330570003,
+        "request_output_tps": 384.14385164461083
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.40813967585564,
+        "output_sha256": "ce3409204f5c305b78c8aeab94f5a346ce2027ee3078de174752bdad49d038d9",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.154185205332789,
+        "stream_decode_tps": 365.1463244530353,
+        "request_output_tps": 347.72215984242877
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 141.28657896071672,
+        "output_sha256": "31b63883f26358525945d3d6d5a102c0359feefe57633d3ff40955651056241a",
+        "accepted_length": 3.893536121673004,
+        "wall_per_verify_proxy_ms": 9.15727747370535,
+        "stream_decode_tps": 424.6910423521876,
+        "request_output_tps": 401.1466719639861
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 141.40566810965538,
+        "output_sha256": "15c131002896fefc8225c2ffc3b37ce1bdcd84e611b3da51a31f56e015a84134",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.147375569329164,
+        "stream_decode_tps": 415.6250120665327,
+        "request_output_tps": 393.13103156486216
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.7543933019042,
+        "output_sha256": "c94586e9841b05efe3f010aefb5b625f51552c97e95ae7cb453098fa98be5b92",
+        "accepted_length": 2.8603351955307263,
+        "wall_per_verify_proxy_ms": 9.181182113522924,
+        "stream_decode_tps": 311.1891005143295,
+        "request_output_tps": 298.45263384740826
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.98024105280638,
+        "output_sha256": "908cb718c74072984e00b980392903fda072dc19fdb9af0fd7bb73371a2e918f",
+        "accepted_length": 3.029585798816568,
+        "wall_per_verify_proxy_ms": 9.13608227939119,
+        "stream_decode_tps": 331.2138114348862,
+        "request_output_tps": 316.7107673677876
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 141.01353753358126,
+        "output_sha256": "85724b02a108a81aff2eb9c5ab44e327a02b19acec49f5f958a59c54f33e94f1",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 9.14460320640868,
+        "stream_decode_tps": 341.9976757336494,
+        "request_output_tps": 326.6367949300641
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.7507499679923,
+        "output_sha256": "d9465694fa9b6436ba5f27c6f3ea479cc4c7f0ade9f4a3a090617129a64a300c",
+        "accepted_length": 2.9257142857142857,
+        "wall_per_verify_proxy_ms": 9.152192401566676,
+        "stream_decode_tps": 319.2894235165601,
+        "request_output_tps": 305.8671535364433
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.49765095114708,
+        "output_sha256": "844fc9f184fe11ab14effaafb67eea6fff3c616a8251c50e7943ff0a111f96e7",
+        "accepted_length": 3.6441281138790034,
+        "wall_per_verify_proxy_ms": 9.150010530316532,
+        "stream_decode_tps": 397.7708899110338,
+        "request_output_tps": 377.09981601782397
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.47609083354473,
+        "output_sha256": "ce3409204f5c305b78c8aeab94f5a346ce2027ee3078de174752bdad49d038d9",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.156768274146552,
+        "stream_decode_tps": 365.0221571999734,
+        "request_output_tps": 347.5774947861178
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 139.91874363273382,
+        "output_sha256": "c49b8a6134d0461506f54a3db74443d63dffa6a667e4dc286bd67b92de36f837",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 9.15332788985873,
+        "stream_decode_tps": 354.7193736151013,
+        "request_output_tps": 338.2897790941479
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.59567637741566,
+        "output_sha256": "eda8af67f3b27543bed12b3ffc4d72a420a7cdff8188626e59188c2dea658aa4",
+        "accepted_length": 3.7372262773722627,
+        "wall_per_verify_proxy_ms": 9.14391528570304,
+        "stream_decode_tps": 408.22173351886676,
+        "request_output_tps": 386.45102378503327
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.60981571674347,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.149117794839741,
+        "stream_decode_tps": 352.6499905081825,
+        "request_output_tps": 336.3561950352528
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.7962441444397,
+        "output_sha256": "c4000fdc70be9d34472c856f30d2beca6be7b318e04aa68381a6ec0522c988d2",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 9.154334495792542,
+        "stream_decode_tps": 342.71387553540586,
+        "request_output_tps": 327.2940887444037
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.88384062051773,
+        "output_sha256": "91ad6db11622e11f27c22a9b8528ca9c6c7660319d2da0bad645dfb7680c5893",
+        "accepted_length": 2.9257142857142857,
+        "wall_per_verify_proxy_ms": 9.163860048034362,
+        "stream_decode_tps": 318.92065588091054,
+        "request_output_tps": 305.5175053824024
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 142.43006519973278,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.153251474688076,
+        "stream_decode_tps": 351.37628433518955,
+        "request_output_tps": 335.00167526355335
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 140.096016228199,
+        "output_sha256": "fc4920e766bcebb89bfbeaf0f44b65f29cd2d5ee3db8a95792b8de8e2caebe40",
+        "accepted_length": 3.7236363636363636,
+        "wall_per_verify_proxy_ms": 9.153885157270865,
+        "stream_decode_tps": 406.2956131985027,
+        "request_output_tps": 384.8090666905495
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.35212248563766,
+        "output_sha256": "bc10c4a57cddba4ffb7f9f07eb5bfc85823a482c44c19573b9f9f9ff5e10d9c2",
+        "accepted_length": 3.592982456140351,
+        "wall_per_verify_proxy_ms": 9.159033663832306,
+        "stream_decode_tps": 391.8022907211541,
+        "request_output_tps": 371.7938892678889
+      },
+      {
+        "launch": "1-base",
+        "index": 3,
+        "server_ttft_ms": 140.0259044021368,
+        "output_sha256": "86c956c654e5d493b5f096d7b8b8cecb6cd342ea3c925f1e65e63bd45d02d090",
+        "accepted_length": 3.4019933554817277,
+        "wall_per_verify_proxy_ms": 9.166403060958434,
+        "stream_decode_tps": 370.68701231408414,
+        "request_output_tps": 352.7487433582656
+      },
+      {
+        "launch": "1-base",
+        "index": 2,
+        "server_ttft_ms": 139.86933510750532,
+        "output_sha256": "27172da2261a8e624dd17309fbaff299941a7bb4d4e05a8031f4401b62ea8b38",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.140576620626709,
+        "stream_decode_tps": 405.400588441847,
+        "request_output_tps": 384.04262839571464
+      },
+      {
+        "launch": "1-base",
+        "index": 1,
+        "server_ttft_ms": 140.44774882495403,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.157321903537312,
+        "stream_decode_tps": 352.3202909973015,
+        "request_output_tps": 336.0602922777338
+      },
+      {
+        "launch": "1-base",
+        "index": 0,
+        "server_ttft_ms": 140.44748805463314,
+        "output_sha256": "d58adaf6cf62ce269807ca1ef9bf2de6b0be6c3311cad5da8316fd9510f54c68",
+        "accepted_length": 2.9767441860465116,
+        "wall_per_verify_proxy_ms": 9.157100532658745,
+        "stream_decode_tps": 324.68914573815385,
+        "request_output_tps": 310.85164219301026
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.86479600518942,
+        "output_sha256": "a3dba654209f209cd6497be8baaf72a31a330a82ca7d34d674dc2ef64ded9254",
+        "accepted_length": 2.8764044943820224,
+        "wall_per_verify_proxy_ms": 9.16284615215793,
+        "stream_decode_tps": 313.54626017525004,
+        "request_output_tps": 300.6104569941405
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.03813453018665,
+        "output_sha256": "1aadd6b6a34040fb5eb1d2a017e985f848f574df444d19d72a9126786a0a8954",
+        "accepted_length": 2.782608695652174,
+        "wall_per_verify_proxy_ms": 9.154290851691496,
+        "stream_decode_tps": 303.60298690102957,
+        "request_output_tps": 291.50286311137336
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.21435007452965,
+        "output_sha256": "5548342c6547084d9a025aa79ff6d75dec13340f7cab17c0facd2253b6caacdc",
+        "accepted_length": 3.657142857142857,
+        "wall_per_verify_proxy_ms": 9.156776429153979,
+        "stream_decode_tps": 398.91275583603766,
+        "request_output_tps": 378.1607475269237
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.01345075666904,
+        "output_sha256": "93f7c5c80699b0cb2ceaf382b23633225e7116ea5af6db85f708934d829a8695",
+        "accepted_length": 3.303225806451613,
+        "wall_per_verify_proxy_ms": 9.154131083238509,
+        "stream_decode_tps": 360.4141515845059,
+        "request_output_tps": 343.4767432760851
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.77434409409761,
+        "output_sha256": "b1efb589960d09dd905a8c98c4ed5dc4f2529697b489d1c28654ced8d5ac7287",
+        "accepted_length": 3.261146496815287,
+        "wall_per_verify_proxy_ms": 9.166176365629124,
+        "stream_decode_tps": 355.359533385685,
+        "request_output_tps": 338.8111224847792
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.31225722283125,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.157640366828527,
+        "stream_decode_tps": 404.6475267582225,
+        "request_output_tps": 383.34026909684275
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.91262128204107,
+        "output_sha256": "09a5a372656167af729bbf23c4ceffa0e4409d0cc7cc08eb4f7110543c2adb5c",
+        "accepted_length": 2.8054794520547945,
+        "wall_per_verify_proxy_ms": 9.160361234864144,
+        "stream_decode_tps": 305.9229484573149,
+        "request_output_tps": 293.61927320854846
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 142.56509486585855,
+        "output_sha256": "a4ef9bfb36a77483554a72bf54682718d272b533a1f7f831e14994c2b0237088",
+        "accepted_length": 2.852367688022284,
+        "wall_per_verify_proxy_ms": 9.160311454206623,
+        "stream_decode_tps": 311.01681320500484,
+        "request_output_tps": 298.15610912708905
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.87249990552664,
+        "output_sha256": "402b6d6b0a5d585de3277dd36b064568ede50453035c5e21363f0385f778c821",
+        "accepted_length": 2.9173789173789175,
+        "wall_per_verify_proxy_ms": 9.161031399017725,
+        "stream_decode_tps": 318.08348500300656,
+        "request_output_tps": 304.78301824265657
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.35221375524998,
+        "output_sha256": "974c51f895e1b9d1fbc4fc0ddd48d4a926f95e5b56b2acb5024603456f830829",
+        "accepted_length": 2.7675675675675677,
+        "wall_per_verify_proxy_ms": 9.159976941206166,
+        "stream_decode_tps": 301.780550203538,
+        "request_output_tps": 289.8380405408695
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.82641806453466,
+        "output_sha256": "15c131002896fefc8225c2ffc3b37ce1bdcd84e611b3da51a31f56e015a84134",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.152010356709638,
+        "stream_decode_tps": 415.43774253401597,
+        "request_output_tps": 392.89262430050815
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.20631276071072,
+        "output_sha256": "21c384114624661dddcf32cfa56ca880879c34e60cd044ee4d2c4b89a7f24dd4",
+        "accepted_length": 3.56794425087108,
+        "wall_per_verify_proxy_ms": 9.164671465520867,
+        "stream_decode_tps": 388.8417169025269,
+        "request_output_tps": 369.140546755621
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.7858282327652,
+        "output_sha256": "93f7c5c80699b0cb2ceaf382b23633225e7116ea5af6db85f708934d829a8695",
+        "accepted_length": 3.303225806451613,
+        "wall_per_verify_proxy_ms": 9.159442596137524,
+        "stream_decode_tps": 360.1950831781076,
+        "request_output_tps": 343.18976114796976
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 139.68171831220388,
+        "output_sha256": "15c131002896fefc8225c2ffc3b37ce1bdcd84e611b3da51a31f56e015a84134",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.153541208670706,
+        "stream_decode_tps": 415.35974851887704,
+        "request_output_tps": 392.9935499561344
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.26793092489243,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.163963041424,
+        "stream_decode_tps": 352.07810494622873,
+        "request_output_tps": 335.8622776683641
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.6581774353981,
+        "output_sha256": "44a836179541cef1e3c227972944c5247b0cf4ab3b61452655bc1b6854b8ff93",
+        "accepted_length": 3.093655589123867,
+        "wall_per_verify_proxy_ms": 9.205133991816792,
+        "stream_decode_tps": 335.6835714901793,
+        "request_output_tps": 320.8873411406088
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.98330214619637,
+        "output_sha256": "d7051c51d7f4ab8c35a37e3f5a0bd6d13e67a2cbec7c2edabc269eff8601a970",
+        "accepted_length": 2.752688172043011,
+        "wall_per_verify_proxy_ms": 9.170092905180589,
+        "stream_decode_tps": 299.88266927871524,
+        "request_output_tps": 288.0228478264367
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 142.88947358727455,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 9.157928187789311,
+        "stream_decode_tps": 333.4235999779334,
+        "request_output_tps": 318.70815166472
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 142.212999984622,
+        "output_sha256": "090eaeb0918593f74671125e89b40e6b5c2ad6b727d5dcf240ce06c05dc36f8a",
+        "accepted_length": 3.7925925925925927,
+        "wall_per_verify_proxy_ms": 9.173577158125463,
+        "stream_decode_tps": 412.90243719183115,
+        "request_output_tps": 390.5070623802864
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 141.51566568762064,
+        "output_sha256": "7525500cfd5be0be4bb260c106fa59cdb5c2eb6bfcca045006dda9f14b58d0c6",
+        "accepted_length": 3.390728476821192,
+        "wall_per_verify_proxy_ms": 9.162904491142326,
+        "stream_decode_tps": 369.58207072013397,
+        "request_output_tps": 351.62258128732884
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.17801731824875,
+        "output_sha256": "e1aa7d20c8301bd53a3d922981a548e59d55d1ae46ea1e0fae9082acf9c8b955",
+        "accepted_length": 3.390728476821192,
+        "wall_per_verify_proxy_ms": 9.168410750833766,
+        "stream_decode_tps": 369.43246799113956,
+        "request_output_tps": 351.61160099130353
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 141.74335170537233,
+        "output_sha256": "5c43185d27d05dbc090135e9fb7acf87bfdac30e8f85c4233c74cc548c3aa222",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.162838901460603,
+        "stream_decode_tps": 404.4137372140614,
+        "request_output_tps": 383.0412532493349
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.6004223972559,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.162951515600929,
+        "stream_decode_tps": 351.0052663533194,
+        "request_output_tps": 334.8371238061465
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.63710998743773,
+        "output_sha256": "3fd10947ae9175e4091f5187ae7c81980135c5638e40d03d3f4390f80ec379d5",
+        "accepted_length": 3.2100313479623823,
+        "wall_per_verify_proxy_ms": 9.169615773034506,
+        "stream_decode_tps": 349.6476086658763,
+        "request_output_tps": 333.61476334126655
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.53233060985804,
+        "output_sha256": "6e368dd739fdd91f8d2d0c55c420d2ac46887d51d54180d6c3c577e92be1bed4",
+        "accepted_length": 2.8764044943820224,
+        "wall_per_verify_proxy_ms": 9.159658350092307,
+        "stream_decode_tps": 313.65992111449305,
+        "request_output_tps": 300.72005988156326
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.4074104502797,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.162642593474983,
+        "stream_decode_tps": 352.13118896587207,
+        "request_output_tps": 335.87485220087893
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.01484401524067,
+        "output_sha256": "c4de62470ffc69191d1b1aa4f0ba392d16c03043268fbbea355a885ba3ade079",
+        "accepted_length": 3.750915750915751,
+        "wall_per_verify_proxy_ms": 9.171986065450168,
+        "stream_decode_tps": 408.45582942290446,
+        "request_output_tps": 386.75132937790835
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.56346844881773,
+        "output_sha256": "9d90871dd11c2cb674d25a36b1c3697c6c0439f4f9699c970d3d63aa3b6b7daf",
+        "accepted_length": 3.190031152647975,
+        "wall_per_verify_proxy_ms": 9.171902518313251,
+        "stream_decode_tps": 347.3807460507278,
+        "request_output_tps": 331.5478937467821
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.3861902654171,
+        "output_sha256": "c2adce202c219c9002242e9298c147b0bb974ec6d724a29de6e53bd668a1616e",
+        "accepted_length": 3.282051282051282,
+        "wall_per_verify_proxy_ms": 9.16773233956729,
+        "stream_decode_tps": 357.5682710098105,
+        "request_output_tps": 340.8212953479479
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.45682922005653,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.154651297148371,
+        "stream_decode_tps": 404.7830201514247,
+        "request_output_tps": 383.3985260218207
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.47709852457047,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.159257913699502,
+        "stream_decode_tps": 351.1515800846941,
+        "request_output_tps": 334.9811965633023
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.78762475401163,
+        "output_sha256": "c4000fdc70be9d34472c856f30d2beca6be7b318e04aa68381a6ec0522c988d2",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 9.156000683301249,
+        "stream_decode_tps": 342.73056394545694,
+        "request_output_tps": 327.302210611692
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 144.93760466575623,
+        "output_sha256": "19e739503bc5d61515461bff4a65b0cdbb5cb450f425f806098e803fee306fd0",
+        "accepted_length": 3.170278637770898,
+        "wall_per_verify_proxy_ms": 9.166254742711137,
+        "stream_decode_tps": 345.4589214394662,
+        "request_output_tps": 329.49031065333673
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 141.2854976952076,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.158859890446347,
+        "stream_decode_tps": 351.2256028053091,
+        "request_output_tps": 335.0909711038604
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 143.0877298116684,
+        "output_sha256": "38ebd1b7947cfcfcd6b49f73160c1702432b906886357babde838334def4d6dd",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 9.159411893313308,
+        "stream_decode_tps": 401.7245151447617,
+        "request_output_tps": 380.45045300941354
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 141.37832634150982,
+        "output_sha256": "ce3409204f5c305b78c8aeab94f5a346ce2027ee3078de174752bdad49d038d9",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.16457292471641,
+        "stream_decode_tps": 364.7005503138793,
+        "request_output_tps": 347.3032768471845
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 139.77188989520073,
+        "output_sha256": "0953d885a5eb28e7d83167d341e9dbecc68920f821a13e245a017f60a55a8493",
+        "accepted_length": 3.4829931972789114,
+        "wall_per_verify_proxy_ms": 9.164767400013144,
+        "stream_decode_tps": 379.579526949508,
+        "request_output_tps": 360.82767867909865
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.54390229284763,
+        "output_sha256": "15c131002896fefc8225c2ffc3b37ce1bdcd84e611b3da51a31f56e015a84134",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.158027853442833,
+        "stream_decode_tps": 415.13857120981226,
+        "request_output_tps": 392.66357334202877
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.74395038187504,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.153691137076489,
+        "stream_decode_tps": 332.5389211468582,
+        "request_output_tps": 318.0048674731826
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.7514689490199,
+        "output_sha256": "2463c74328c2d25afe0e08f1260efd863313b54e8cf6f3e9dcc2118ef6b0ac68",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.158473071122208,
+        "stream_decode_tps": 352.31544188043296,
+        "request_output_tps": 336.01682020923
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 142.44308322668076,
+        "output_sha256": "e45558ce392b261addc1bd00550e5a3d1e3d2c669d6d76230d565f9d6a345760",
+        "accepted_length": 3.1801242236024843,
+        "wall_per_verify_proxy_ms": 9.165155198077978,
+        "stream_decode_tps": 346.5623725182763,
+        "request_output_tps": 330.6299743715533
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.4958488419652,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.15177531229953,
+        "stream_decode_tps": 332.6220748375868,
+        "request_output_tps": 318.0915835998479
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.20096138119698,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.162019992220229,
+        "stream_decode_tps": 404.4389797591302,
+        "request_output_tps": 383.1453671988215
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.66989719867706,
+        "output_sha256": "370fab967a2a3018183b04277ad1454be77335bdb6869593499354ac3e3db2db",
+        "accepted_length": 3.3684210526315788,
+        "wall_per_verify_proxy_ms": 9.16586207887648,
+        "stream_decode_tps": 367.0550995024714,
+        "request_output_tps": 349.3977472146913
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 139.78773541748524,
+        "output_sha256": "ce3409204f5c305b78c8aeab94f5a346ce2027ee3078de174752bdad49d038d9",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.162970021172287,
+        "stream_decode_tps": 364.79219153520495,
+        "request_output_tps": 347.4554616209979
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 141.94035436958075,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.147038420095392,
+        "stream_decode_tps": 405.1945027425792,
+        "request_output_tps": 383.56647222077754
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 141.84619579464197,
+        "output_sha256": "c94586e9841b05efe3f010aefb5b625f51552c97e95ae7cb453098fa98be5b92",
+        "accepted_length": 2.8603351955307263,
+        "wall_per_verify_proxy_ms": 9.186709632670413,
+        "stream_decode_tps": 311.00624619594214,
+        "request_output_tps": 298.24355843448717
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.82213304936886,
+        "output_sha256": "57665a1ad97c786ea507ee7569995553b16317f86d90c936bc1ba0996b2ec689",
+        "accepted_length": 2.9173789173789175,
+        "wall_per_verify_proxy_ms": 9.162665965656439,
+        "stream_decode_tps": 318.0265705566619,
+        "request_output_tps": 304.69932423629143
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.89345186948776,
+        "output_sha256": "2f931cbc5d107fadc64be8849a9b14b61cb7353516a55ce442b1f59de63fa257",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.165946414770577,
+        "stream_decode_tps": 352.00439446828045,
+        "request_output_tps": 335.7300081149648
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.99039044231176,
+        "output_sha256": "d9465694fa9b6436ba5f27c6f3ea479cc4c7f0ade9f4a3a090617129a64a300c",
+        "accepted_length": 2.9257142857142857,
+        "wall_per_verify_proxy_ms": 9.164783294711794,
+        "stream_decode_tps": 318.8915307945602,
+        "request_output_tps": 305.4899717379771
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 141.84953272342682,
+        "output_sha256": "669f47cdeee6964a02e68615a90dd4488e8008eb1a4a5ced6786062922c6e9a7",
+        "accepted_length": 3.7785977859778597,
+        "wall_per_verify_proxy_ms": 9.156099084173622,
+        "stream_decode_tps": 412.1994173702665,
+        "request_output_tps": 389.908262601014
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 141.85852278023958,
+        "output_sha256": "36ce343c2ba987a6dc8a925e8f69ffd7f467283438c8c0cfa4d15488eacf6934",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 9.158859523706452,
+        "stream_decode_tps": 361.399467868358,
+        "request_output_tps": 344.1673491983025
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.82687068730593,
+        "output_sha256": "36ce343c2ba987a6dc8a925e8f69ffd7f467283438c8c0cfa4d15488eacf6934",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 9.154971077146074,
+        "stream_decode_tps": 361.5538535376681,
+        "request_output_tps": 344.4099762370873
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.07562678307295,
+        "output_sha256": "0008c639068f516ea590e413d7909966b2f916fed9ec4b4302f829812e692d68",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 9.146245987585155,
+        "stream_decode_tps": 400.7948613839297,
+        "request_output_tps": 379.93273703474006
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.35943243652582,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.153040043962827,
+        "stream_decode_tps": 351.3833755861194,
+        "request_output_tps": 335.23006295617637
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.9014482051134,
+        "output_sha256": "c745066b556d78edd41df0917d178733b06f59865e381b99f61121fa9bd3cd87",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.159236292665204,
+        "stream_decode_tps": 332.37970444531555,
+        "request_output_tps": 317.8602400577443
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 142.1609353274107,
+        "output_sha256": "72be8e8e8bfbe86e5e5e35fd7e43c308e03f002dc1df5813642f9da00be6a23b",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 9.176024894915884,
+        "stream_decode_tps": 319.39687748739397,
+        "request_output_tps": 305.9140538403184
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.79366624355316,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.154852201470977,
+        "stream_decode_tps": 351.3441870153714,
+        "request_output_tps": 335.156493449748
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 142.04533491283655,
+        "output_sha256": "5bc18e9cb39d37e9eabea68177c2ccb0192087d17b79ce09e8cc6842981f1c12",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 9.151450188089443,
+        "stream_decode_tps": 400.61123641209804,
+        "request_output_tps": 379.4876436373609
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 141.90531615167856,
+        "output_sha256": "95caeee69622dae96d8ab7ec03d0360dcd40d27c560055cebda1e9a5cf0ff8d5",
+        "accepted_length": 3.4594594594594597,
+        "wall_per_verify_proxy_ms": 9.170017834450748,
+        "stream_decode_tps": 376.7927679735331,
+        "request_output_tps": 358.2195681886783
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.54269809275866,
+        "output_sha256": "61b6238a158c781653d04ea2f020a79cf99cef588686846f8da3911683c52505",
+        "accepted_length": 3.5432525951557095,
+        "wall_per_verify_proxy_ms": 9.16453095791043,
+        "stream_decode_tps": 386.1609660793407,
+        "request_output_tps": 366.7141877401034
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 139.88105300813913,
+        "output_sha256": "090eaeb0918593f74671125e89b40e6b5c2ad6b727d5dcf240ce06c05dc36f8a",
+        "accepted_length": 3.7925925925925927,
+        "wall_per_verify_proxy_ms": 9.156389317164818,
+        "stream_decode_tps": 413.8004888392232,
+        "request_output_tps": 391.5910108850167
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 143.78134720027447,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.16553195565939,
+        "stream_decode_tps": 350.90390406854476,
+        "request_output_tps": 334.57314706028257
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.81630483269691,
+        "output_sha256": "91ad6db11622e11f27c22a9b8528ca9c6c7660319d2da0bad645dfb7680c5893",
+        "accepted_length": 2.9257142857142857,
+        "wall_per_verify_proxy_ms": 9.166736294116292,
+        "stream_decode_tps": 318.8107883647322,
+        "request_output_tps": 305.44756664147553
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 142.08586234599352,
+        "output_sha256": "b9db3a43c6411cd1358dc47cf25e5e802667ffe1ec54ec6a170922bf2d39ff3e",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.173088043538574,
+        "stream_decode_tps": 364.382404698595,
+        "request_output_tps": 346.86963928787395
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 142.09383074194193,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 9.155287521321382,
+        "stream_decode_tps": 333.49673532368524,
+        "request_output_tps": 318.7853420735188
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 141.74835477024317,
+        "output_sha256": "256181ffcb90bf7e26c7f3bf634b8bad93385cae3901a1ac6d156e09d9023185",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.160896804751516,
+        "stream_decode_tps": 414.99848768547196,
+        "request_output_tps": 392.4290332897867
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.52604511380196,
+        "output_sha256": "c49b8a6134d0461506f54a3db74443d63dffa6a667e4dc286bd67b92de36f837",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 9.164127417736584,
+        "stream_decode_tps": 354.3171993722027,
+        "request_output_tps": 337.8764740768565
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.71812201291323,
+        "output_sha256": "36ce343c2ba987a6dc8a925e8f69ffd7f467283438c8c0cfa4d15488eacf6934",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 9.160421315496215,
+        "stream_decode_tps": 361.30954570223673,
+        "request_output_tps": 344.21332098331794
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.29312506318092,
+        "output_sha256": "a960a050a7a966d66ab9b783664a6e776d6756815d637dfd0d9df1f41b61002a",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.150120389202367,
+        "stream_decode_tps": 405.0882139814602,
+        "request_output_tps": 383.6929702281488
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 143.74480303376913,
+        "output_sha256": "363ccd645de7cba8243c8ac3cd315cd1fa06ad308c405049281e4a8ff92691d1",
+        "accepted_length": 2.8683473389355743,
+        "wall_per_verify_proxy_ms": 9.15442062515755,
+        "stream_decode_tps": 312.9381063705213,
+        "request_output_tps": 299.9037161755091
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.65219089388847,
+        "output_sha256": "466015b38a6ce0bdde9ff75108e3396e3a6dd222e8914c256ee4996c6691b5a1",
+        "accepted_length": 3.324675324675325,
+        "wall_per_verify_proxy_ms": 9.165352648849804,
+        "stream_decode_tps": 362.29803681329054,
+        "request_output_tps": 345.0845413670635
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.51774144172668,
+        "output_sha256": "440b1cc11cebe03896769b06c98425b8675c448d6428efaa771f9eb1f176e703",
+        "accepted_length": 3.065868263473054,
+        "wall_per_verify_proxy_ms": 9.176130414923687,
+        "stream_decode_tps": 333.71544763346293,
+        "request_output_tps": 319.0891336434459
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.35241305828094,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.160528226817256,
+        "stream_decode_tps": 352.19823783054767,
+        "request_output_tps": 335.9509439969727
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.48034232109785,
+        "output_sha256": "4888fc639830819dba7db04452115b46b5ee768b743261222576146cdd2b66dc",
+        "accepted_length": 3.7785977859778597,
+        "wall_per_verify_proxy_ms": 9.15472150687472,
+        "stream_decode_tps": 412.30419756783346,
+        "request_output_tps": 390.1269760022294
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 141.59436989575624,
+        "output_sha256": "39e1303db2eaca38deea1b470711732d0e7f2e834279281ffe522eff95163b22",
+        "accepted_length": 3.190031152647975,
+        "wall_per_verify_proxy_ms": 9.165747587299235,
+        "stream_decode_tps": 347.59393374133236,
+        "request_output_tps": 331.7674256434033
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 139.902176335454,
+        "output_sha256": "39e1303db2eaca38deea1b470711732d0e7f2e834279281ffe522eff95163b22",
+        "accepted_length": 3.190031152647975,
+        "wall_per_verify_proxy_ms": 9.162272039417909,
+        "stream_decode_tps": 347.79387133156376,
+        "request_output_tps": 331.99144509400924
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 141.53396990150213,
+        "output_sha256": "61cddd3218d6d71dc4c2beb98f194e155806737a9bcf2225ed72f59e349d0ce9",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.145698139658649,
+        "stream_decode_tps": 415.7775345714478,
+        "request_output_tps": 393.1651912812026
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.50621911883354,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 9.1451629634891,
+        "stream_decode_tps": 333.8124653832109,
+        "request_output_tps": 319.2161014187661
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.48328902572393,
+        "output_sha256": "19e739503bc5d61515461bff4a65b0cdbb5cb450f425f806098e803fee306fd0",
+        "accepted_length": 3.170278637770898,
+        "wall_per_verify_proxy_ms": 9.163499273498177,
+        "stream_decode_tps": 345.55628879057025,
+        "request_output_tps": 329.90399420049397
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.5634479597211,
+        "output_sha256": "4aaf9f14b24fd805dc2efda54d2924550a7e3d7b7fbaa34dd67631ab17c91255",
+        "accepted_length": 3.2,
+        "wall_per_verify_proxy_ms": 9.164497849997133,
+        "stream_decode_tps": 348.75642009048545,
+        "request_output_tps": 332.8011642299928
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.18035028129816,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.230283911671924,
+        "wall_per_verify_proxy_ms": 9.156861248476083,
+        "stream_decode_tps": 352.3501145932985,
+        "request_output_tps": 336.12825928547375
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 140.0384921580553,
+        "output_sha256": "941df08c1353b3314ded294ecb58b5ef363ea474af687da0d1fff4a08c70b5da",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 9.154619517490323,
+        "stream_decode_tps": 415.3113925290878,
+        "request_output_tps": 392.89809693395296
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.0738600641489,
+        "output_sha256": "93f7c5c80699b0cb2ceaf382b23633225e7116ea5af6db85f708934d829a8695",
+        "accepted_length": 3.303225806451613,
+        "wall_per_verify_proxy_ms": 9.15485484104964,
+        "stream_decode_tps": 360.3868135452729,
+        "request_output_tps": 343.4373925591627
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.17321914434433,
+        "output_sha256": "e1aa7d20c8301bd53a3d922981a548e59d55d1ae46ea1e0fae9082acf9c8b955",
+        "accepted_length": 3.390728476821192,
+        "wall_per_verify_proxy_ms": 9.170558346768484,
+        "stream_decode_tps": 369.30137985453496,
+        "request_output_tps": 351.49944636760466
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 139.97928146272898,
+        "output_sha256": "4f92433d788a6f2ed0db2e0f200e8d9f32e615f3f90e530c01353b79c2e3d962",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 9.145376647708655,
+        "stream_decode_tps": 402.3240352112815,
+        "request_output_tps": 381.2920389646445
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 141.7773338034749,
+        "output_sha256": "5559d7f2e811c47617a990352a2d6355791539f00590aefd3652741baebc9b83",
+        "accepted_length": 3.220125786163522,
+        "wall_per_verify_proxy_ms": 9.162353404428599,
+        "stream_decode_tps": 351.0136380893442,
+        "request_output_tps": 334.8524394947385
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.30894730240107,
+        "output_sha256": "7f87d58b766fd0331e0097edd137af25e0bfaf8976d662076d17a541d1cd70d0",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 9.156548181713903,
+        "stream_decode_tps": 341.5833607317636,
+        "request_output_tps": 326.3080860502172
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.4493534937501,
+        "output_sha256": "3fd10947ae9175e4091f5187ae7c81980135c5638e40d03d3f4390f80ec379d5",
+        "accepted_length": 3.2100313479623823,
+        "wall_per_verify_proxy_ms": 9.158836382800322,
+        "stream_decode_tps": 350.05993034562255,
+        "request_output_tps": 334.00346747461106
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.36864414811134,
+        "output_sha256": "5a4252e4bf6252a36f93de2f9123e66eb7330b26d0dece6d1f60167ece475622",
+        "accepted_length": 3.0476190476190474,
+        "wall_per_verify_proxy_ms": 9.146787328756458,
+        "stream_decode_tps": 332.7955624884849,
+        "request_output_tps": 318.27342119434405
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 139.89840727299452,
+        "output_sha256": "27172da2261a8e624dd17309fbaff299941a7bb4d4e05a8031f4401b62ea8b38",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 9.149816369745826,
+        "stream_decode_tps": 404.9913876562397,
+        "request_output_tps": 383.6817483155484
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 140.3307542204857,
+        "output_sha256": "ce3409204f5c305b78c8aeab94f5a346ce2027ee3078de174752bdad49d038d9",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.162536761388669,
+        "stream_decode_tps": 364.83231515433914,
+        "request_output_tps": 347.4470058685221
+      },
+      {
+        "launch": "6-base",
+        "index": 3,
+        "server_ttft_ms": 142.3912551254034,
+        "output_sha256": "c83ff5f6f01db787a6e9f845c375d12e69c6195600eb2cdbd541ef430c4ee9c5",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 9.160640345143726,
+        "stream_decode_tps": 364.8570295478652,
+        "request_output_tps": 347.2576132686222
+      },
+      {
+        "launch": "6-base",
+        "index": 2,
+        "server_ttft_ms": 139.70160856842995,
+        "output_sha256": "4f92433d788a6f2ed0db2e0f200e8d9f32e615f3f90e530c01353b79c2e3d962",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 9.13837550060569,
+        "stream_decode_tps": 402.5832793865836,
+        "request_output_tps": 381.5470501350446
+      },
+      {
+        "launch": "6-base",
+        "index": 1,
+        "server_ttft_ms": 140.7703785225749,
+        "output_sha256": "ba8a5c443843ba200d933c2ca1aae40deefdbbf6c7d74da503b5a7f7b7e47fb2",
+        "accepted_length": 2.7601078167115904,
+        "wall_per_verify_proxy_ms": 9.148914429718111,
+        "stream_decode_tps": 301.3421400694541,
+        "request_output_tps": 289.36659212003957
+      },
+      {
+        "launch": "6-base",
+        "index": 0,
+        "server_ttft_ms": 140.71853831410408,
+        "output_sha256": "cfa447abd998ff3092c030f6f5093bffdc14e0f63c966c91d52dba9ebeaba9cd",
+        "accepted_length": 3.0843373493975905,
+        "wall_per_verify_proxy_ms": 9.145254140203617,
+        "stream_decode_tps": 336.8525937267917,
+        "request_output_tps": 321.9368712128041
+      }
+    ],
+    "gb300": [
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 211.94897196255624,
+        "output_sha256": "cb52c1c3e8b3bc712ff3994add52a15e623b701b5a9da31879929c6f98cdb286",
+        "accepted_length": 3.0385756676557865,
+        "wall_per_verify_proxy_ms": 4.729658896200227,
+        "stream_decode_tps": 641.7185529467689,
+        "request_output_tps": 566.5004449617577
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 210.77146590687335,
+        "output_sha256": "eeee8c90fbffda3fe1f4d4d63b238b01f20b99e796b7fc97f82e63f896f125cf",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.7174292122198,
+        "stream_decode_tps": 621.2941187482472,
+        "request_output_tps": 550.8894285473701
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 209.69011902343482,
+        "output_sha256": "963291df744ffb879a27eda65a307a242b3c21c4a974cf2168fd1e2d7e860729",
+        "accepted_length": 3.282051282051282,
+        "wall_per_verify_proxy_ms": 4.707082012781682,
+        "stream_decode_tps": 696.448636231947,
+        "request_output_tps": 609.5310542357685
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 214.05208203941584,
+        "output_sha256": "9dc0326f968e046e711f73a8bcd04c5a8a18be1d11dded766889922033925289",
+        "accepted_length": 3.1507692307692308,
+        "wall_per_verify_proxy_ms": 4.910922587419359,
+        "stream_decode_tps": 640.8538917168423,
+        "request_output_tps": 565.1683208384525
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 338.24951003771275,
+        "output_sha256": "0a8b9884b783b096f306c27ea4502e3fa2a48856810e5091ea489363ff8dbce6",
+        "accepted_length": 3.5432525951557095,
+        "wall_per_verify_proxy_ms": 4.727292210943223,
+        "stream_decode_tps": 748.7292105646219,
+        "request_output_tps": 600.1594012820128
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 214.25761899445206,
+        "output_sha256": "fc64069aa211e0ae672d19c82761ff4b975aabd0d8eca86106f2aaf0d93ee0c8",
+        "accepted_length": 3.471186440677966,
+        "wall_per_verify_proxy_ms": 4.71390814567774,
+        "stream_decode_tps": 735.5326428980686,
+        "request_output_tps": 637.3594397585628
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 214.52971606049687,
+        "output_sha256": "491cf6c8dea5b0d6f93554ca7b069dd0d090eec9177759018b21765f2b69c46c",
+        "accepted_length": 2.9941520467836256,
+        "wall_per_verify_proxy_ms": 4.718471675218023,
+        "stream_decode_tps": 633.8466650528546,
+        "request_output_tps": 559.5982665466582
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 209.7523279953748,
+        "output_sha256": "ebe5eb4999e1e2a800d614b9287d3e76795a91dfb4003d26c3b25f3366b4b66b",
+        "accepted_length": 3.2100313479623823,
+        "wall_per_verify_proxy_ms": 4.728568467124712,
+        "stream_decode_tps": 678.0784872190115,
+        "request_output_tps": 595.4238187230882
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 211.83598099742085,
+        "output_sha256": "14a3743f619389d546e81b8030e6deafb335e2b9c16f23db374c0686e7e18421",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.726917584650859,
+        "stream_decode_tps": 620.0076482640441,
+        "request_output_tps": 549.6042910827342
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 214.99365393538028,
+        "output_sha256": "919668500dfa6770b2721875ff3ab511db31bb2fe692c9456a6017a2a0b4e5df",
+        "accepted_length": 2.9173789173789175,
+        "wall_per_verify_proxy_ms": 4.707994179646259,
+        "stream_decode_tps": 618.959269879566,
+        "request_output_tps": 547.8264756407088
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 215.017813956365,
+        "output_sha256": "91eaa815c36403732fbb7cfe6fe6c52f5e8f0a5b84635628a081d77435e6f65c",
+        "accepted_length": 3.282051282051282,
+        "wall_per_verify_proxy_ms": 4.708528920160368,
+        "stream_decode_tps": 696.2497632886924,
+        "request_output_tps": 607.4803872465359
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 218.68124708998948,
+        "output_sha256": "20dfa5fbcaf10e26068fae11bb6d8737a57b32f6e178a2c984c19731b57a8ea1",
+        "accepted_length": 3.4948805460750854,
+        "wall_per_verify_proxy_ms": 4.7239262182360875,
+        "stream_decode_tps": 739.0114427274822,
+        "request_output_tps": 638.22740634843
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 211.57194999977946,
+        "output_sha256": "c79805d8287fd3a7613af58d8cd40502a1670be7345ca332b3193a7fd852b42a",
+        "accepted_length": 3.170278637770898,
+        "wall_per_verify_proxy_ms": 4.7198923433707,
+        "stream_decode_tps": 670.9266068334799,
+        "request_output_tps": 589.2651334425623
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 212.09204697515815,
+        "output_sha256": "6dd98e6d92cd71d63fbc42ff5f9893ed2bde1f29a07a37210131446546a30dc9",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 4.716554650566004,
+        "stream_decode_tps": 806.1490820291751,
+        "request_output_tps": 690.7808455807856
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 205.14083001762629,
+        "output_sha256": "fdc0234b44ec4646ca27c3ef7e519dfd5493a48c5ad4fbbebf7d458974910c64",
+        "accepted_length": 3.0206489675516224,
+        "wall_per_verify_proxy_ms": 4.711809421815308,
+        "stream_decode_tps": 640.3598081482767,
+        "request_output_tps": 567.6534718403666
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 210.66849201451987,
+        "output_sha256": "09b0d861579eb4a9dc4a71b7f57ffbe7a467516c23c86dc7fea43966c93cddaa",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 4.72008855372599,
+        "stream_decode_tps": 662.6924716273465,
+        "request_output_tps": 583.2832684234656
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 215.33365594223142,
+        "output_sha256": "025c5914677658e64bde68e6617df562896770f8c76c3464620c6f0ca024ff15",
+        "accepted_length": 3.029585798816568,
+        "wall_per_verify_proxy_ms": 4.723299890563729,
+        "stream_decode_tps": 640.6725653583902,
+        "request_output_tps": 564.6906828312639
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 217.5622700015083,
+        "output_sha256": "9262a5bafc42ed6a951000bdf3314ff903a5030849c6167686885c5ee8293c96",
+        "accepted_length": 2.959537572254335,
+        "wall_per_verify_proxy_ms": 4.712396187941958,
+        "stream_decode_tps": 627.3536639902679,
+        "request_output_tps": 553.5956171298697
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 209.67501704581082,
+        "output_sha256": "71848c4da5fbb9123d7c0a6d309da352cb526f2cd24bca285fb584837e822a46",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 4.714485133658804,
+        "stream_decode_tps": 806.5191057576322,
+        "request_output_tps": 692.1712288156787
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 213.52792298421264,
+        "output_sha256": "7c318a28dba526360da4205ef932fb1ca986c04763fda0c4fa91a49daa3ea8e8",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 4.720339314216404,
+        "stream_decode_tps": 701.2439978037943,
+        "request_output_tps": 611.8434862704183
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 212.88641798309982,
+        "output_sha256": "a36305cadf14a05e08dc2f4dd26046e53161ed176496afe9750f2b8624b85f6b",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 4.725385077514694,
+        "stream_decode_tps": 700.4997438440885,
+        "request_output_tps": 611.4871334660356
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 210.31463600229472,
+        "output_sha256": "303d22a792578e054798f6c6ae150155474eaaf8f9e3e57dd87ebcfcc93c87aa",
+        "accepted_length": 3.3795379537953796,
+        "wall_per_verify_proxy_ms": 4.7124659703282195,
+        "stream_decode_tps": 716.3324238686785,
+        "request_output_tps": 624.5025732564495
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 213.5571399703622,
+        "output_sha256": "9126b47f1215ff5bf8a34edeb5d50c0f8459da28c6c5b451724bbbc5d13c89dd",
+        "accepted_length": 3.029585798816568,
+        "wall_per_verify_proxy_ms": 4.7207839291724625,
+        "stream_decode_tps": 641.0377071782877,
+        "request_output_tps": 565.5502522062513
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 215.0414640782401,
+        "output_sha256": "436750b584aac498a4a26443b581736a42fae709462245390408b7ef27c0c5d3",
+        "accepted_length": 2.9854227405247813,
+        "wall_per_verify_proxy_ms": 4.725019358581817,
+        "stream_decode_tps": 631.1165091417133,
+        "request_output_tps": 557.3609590410307
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 215.16757598146796,
+        "output_sha256": "8981b05e7e4aea65d6c6138393d2c7b321eb96b2df52331ea234f8be56dce717",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 4.7249243073443425,
+        "stream_decode_tps": 646.1967786340163,
+        "request_output_tps": 568.9851640235674
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 212.6049790531397,
+        "output_sha256": "f08b687aa78a588e4767b9e42c5427126edfda0681082ab2f212f1076df5d324",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.713850427101391,
+        "stream_decode_tps": 621.7453454466004,
+        "request_output_tps": 550.7300520865156
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 201.71279192436486,
+        "output_sha256": "a648d4b30137f0c626d8d829b424e6c796e09453b1e7034e93fa567eda0797dd",
+        "accepted_length": 3.56794425087108,
+        "wall_per_verify_proxy_ms": 4.710956533416742,
+        "stream_decode_tps": 756.5291449170269,
+        "request_output_tps": 658.3793407187825
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 202.16309698298573,
+        "output_sha256": "1d100f51b28ed938d5bf4a9a18673cd4c6f3d85a31d0d732f2adca4cb814867a",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 4.722299052128961,
+        "stream_decode_tps": 662.3710323213567,
+        "request_output_tps": 585.8548676542927
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 213.5537170106545,
+        "output_sha256": "8de7985a0f44ffa4464431fe0e29d5e41d833766b52b59ade4bf7a7de0134cac",
+        "accepted_length": 3.5432525951557095,
+        "wall_per_verify_proxy_ms": 4.7208520899620225,
+        "stream_decode_tps": 749.6983717215323,
+        "request_output_tps": 648.3253898583963
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 211.6981609724462,
+        "output_sha256": "7a0d5af173d9aec7ec44313d3797f8754b49f923ed147ac3e3c267707d0ce0c5",
+        "accepted_length": 3.696750902527076,
+        "wall_per_verify_proxy_ms": 4.708005400754457,
+        "stream_decode_tps": 784.315600403306,
+        "request_output_tps": 674.872022136841
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 208.2269840175286,
+        "output_sha256": "831a57d6d258dc55019df84ab4a846cfe9b4e81099fdd86c152bb1c8842f5d16",
+        "accepted_length": 2.9767441860465116,
+        "wall_per_verify_proxy_ms": 4.711812328571606,
+        "stream_decode_tps": 631.0264124993603,
+        "request_output_tps": 559.3688301061538
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 214.73324100952595,
+        "output_sha256": "6c31c26320a7003801d2393f58d88358d219a4dcc4626fcd4f010b42964bfed1",
+        "accepted_length": 2.959537572254335,
+        "wall_per_verify_proxy_ms": 4.727558170598689,
+        "stream_decode_tps": 625.3209889387257,
+        "request_output_tps": 552.840794123926
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 210.895951022394,
+        "output_sha256": "8bd18973ba1d1aeb6fc03489da599a5e750756d39f79205c6fef3cb0777ce0c6",
+        "accepted_length": 3.1124620060790273,
+        "wall_per_verify_proxy_ms": 4.722678699137185,
+        "stream_decode_tps": 658.3022241238069,
+        "request_output_tps": 579.7538578564078
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 211.0910560004413,
+        "output_sha256": "e2750e6f9d455cedebe834bd5e38af38982a161b2a08241b7cb358a044292c26",
+        "accepted_length": 3.075075075075075,
+        "wall_per_verify_proxy_ms": 4.710447429133965,
+        "stream_decode_tps": 652.0913743886144,
+        "request_output_tps": 574.8887843540716
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 214.64447292964906,
+        "output_sha256": "df3697e15761ff98a414b4df1a7e8fcfa7a59730e7cb95731d18288f4ddcc4cd",
+        "accepted_length": 3.696750902527076,
+        "wall_per_verify_proxy_ms": 4.711285025463019,
+        "stream_decode_tps": 783.7438645496435,
+        "request_output_tps": 673.1173058172725
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 199.3356669554487,
+        "output_sha256": "6f510d981d80583dbdc071c5cd659069243169acc16ac3540e5aeced101520c6",
+        "accepted_length": 3.2,
+        "wall_per_verify_proxy_ms": 4.720498309688992,
+        "stream_decode_tps": 677.144564693228,
+        "request_output_tps": 598.3532072776983
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 209.50929203536361,
+        "output_sha256": "19127ee9dbb05a2c2ad3e4498a430b94ddb5cae6f8830ea3a70aaa1f80634331",
+        "accepted_length": 3.4829931972789114,
+        "wall_per_verify_proxy_ms": 4.73037602729956,
+        "stream_decode_tps": 735.4670376154394,
+        "request_output_tps": 639.3145620888292
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 210.88846400380135,
+        "output_sha256": "95531090d05479840344b58fd56123a6cf7a57524503d17e7edeac5b74e5a055",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 4.720310597896468,
+        "stream_decode_tps": 785.0087581884758,
+        "request_output_tps": 675.7642765447122
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 208.39159400202334,
+        "output_sha256": "911945a9eb26427bee91cf380f07754a46828f3203e684bd1c5d903acdcbe741",
+        "accepted_length": 3.075075075075075,
+        "wall_per_verify_proxy_ms": 4.713866264313213,
+        "stream_decode_tps": 651.6126658360366,
+        "request_output_tps": 575.3308427650697
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 212.4162120744586,
+        "output_sha256": "a0a2d8f5f2bc809be3c6079f58d054a8dbb1d49a32c9c6abe703ebf1624372a0",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 4.7311987777337965,
+        "stream_decode_tps": 706.5106308955053,
+        "request_output_tps": 616.193665076365
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 212.2190590016544,
+        "output_sha256": "cd315f15b2fa62bd83f719a7292304c8fe6c38e2cd4bd74c2ae202d9e293d378",
+        "accepted_length": 3.170278637770898,
+        "wall_per_verify_proxy_ms": 4.728092389951112,
+        "stream_decode_tps": 669.7814349252507,
+        "request_output_tps": 588.1969281891038
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 211.4500979660079,
+        "output_sha256": "df33b4f6b3c414ca136b49920d0499aaf7cd272c20293a054b11a272e6134a80",
+        "accepted_length": 2.942528735632184,
+        "wall_per_verify_proxy_ms": 4.7171653851186965,
+        "stream_decode_tps": 623.1278685102104,
+        "request_output_tps": 552.1851438004784
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 203.09689291752875,
+        "output_sha256": "705a0d1a9db09f67bf6b81d001de774bae0cf87383ad1cdfa54d3d5a85da2358",
+        "accepted_length": 3.5310344827586206,
+        "wall_per_verify_proxy_ms": 4.71546097963663,
+        "stream_decode_tps": 747.9316875869337,
+        "request_output_tps": 651.3484418671882
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 212.54085295367986,
+        "output_sha256": "da06f66a0511affcc345ab57a4786b0fdc02c1a93d4fd138e5594eef465a44e8",
+        "accepted_length": 3.250793650793651,
+        "wall_per_verify_proxy_ms": 4.715307520717264,
+        "stream_decode_tps": 688.6227452403743,
+        "request_output_tps": 602.5371991785813
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 211.89726702868938,
+        "output_sha256": "7ff004458ec2bf525a807f85966c0e268b1d226924c72991ff5ffdb8987a396c",
+        "accepted_length": 3.1219512195121952,
+        "wall_per_verify_proxy_ms": 4.72032959770309,
+        "stream_decode_tps": 660.6409888374094,
+        "request_output_tps": 581.2517351591791
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 212.33201993163675,
+        "output_sha256": "d3bbab802a2ba0908c6e3b41c0a375619b801cdef79065b75838c404dc3572e7",
+        "accepted_length": 3.592982456140351,
+        "wall_per_verify_proxy_ms": 4.711266165076379,
+        "stream_decode_tps": 761.6936589840528,
+        "request_output_tps": 657.8329834301064
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 215.32783599104732,
+        "output_sha256": "15b4f560ea64e552e2c94957ec8e74ad3582bac35aee323cbef635f210505d53",
+        "accepted_length": 2.951008645533141,
+        "wall_per_verify_proxy_ms": 4.717353625378708,
+        "stream_decode_tps": 624.8518019344026,
+        "request_output_tps": 552.2705772332127
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 219.55200703814626,
+        "output_sha256": "df96bac1770dc159e2c9c6f1f6544fb8edf5b48427e58b3c3a470e02d1298cb2",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 4.73142586801304,
+        "stream_decode_tps": 663.1593557754709,
+        "request_output_tps": 580.5675825081727
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 211.61064400803298,
+        "output_sha256": "32e83dfeb4110a286159474354693b118d526939fae5202ee90d823696b79b0f",
+        "accepted_length": 2.8683473389355743,
+        "wall_per_verify_proxy_ms": 4.720825389228469,
+        "stream_decode_tps": 606.9158502529671,
+        "request_output_tps": 539.3259729832406
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 215.21378902252764,
+        "output_sha256": "06faf439c5ecf2b79b22acc3226fc3453c4d2ef53ddef6ecd6b4c6b7162bb8e1",
+        "accepted_length": 2.8764044943820224,
+        "wall_per_verify_proxy_ms": 4.7118761037146735,
+        "stream_decode_tps": 609.7630096040558,
+        "request_output_tps": 540.572484653382
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 212.98453491181135,
+        "output_sha256": "88d3a8a461f19c75fdca5417728b14fff14c31ea5d4697ad798aae18c005cf0e",
+        "accepted_length": 3.506849315068493,
+        "wall_per_verify_proxy_ms": 4.71234542823218,
+        "stream_decode_tps": 743.3346630376996,
+        "request_output_tps": 643.7906020468926
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 213.20943196769804,
+        "output_sha256": "bdd6546c335eacc79115cbbf0fd9d8a21206cbf11a2f3fec11640bc1237f3a9b",
+        "accepted_length": 3.506849315068493,
+        "wall_per_verify_proxy_ms": 4.726395880076269,
+        "stream_decode_tps": 741.0645022999176,
+        "request_output_tps": 642.0051453790777
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 215.57094191666692,
+        "output_sha256": "de54f33d3221832a71f5fd67ac605da4676275d00de3a64d15e4fd85bcea2aec",
+        "accepted_length": 3.1507692307692308,
+        "wall_per_verify_proxy_ms": 4.721808396996214,
+        "stream_decode_tps": 666.538279970056,
+        "request_output_tps": 584.484017406692
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 207.08730502519757,
+        "output_sha256": "b92f9d1f9db8cf1373be318c64a42fdea141841fdab9ec91c396e9f39ba873f7",
+        "accepted_length": 3.4019933554817277,
+        "wall_per_verify_proxy_ms": 4.708071691030482,
+        "stream_decode_tps": 721.7714406411484,
+        "request_output_tps": 629.8067571307644
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 209.38951906282455,
+        "output_sha256": "2899904d3802c8c1605382e3bda903960f1d1a9baaa5b53d82dee140f6aff76e",
+        "accepted_length": 2.8764044943820224,
+        "wall_per_verify_proxy_ms": 4.714184710455096,
+        "stream_decode_tps": 609.4785539921484,
+        "request_output_tps": 542.055269410984
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 211.9653649860993,
+        "output_sha256": "2657eba01ddfc8cf22956347330f87a4e67ce478f3d1b8250ba48f11f4b9c186",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 4.720612808909101,
+        "stream_decode_tps": 646.7735542555675,
+        "request_output_tps": 570.4950568686967
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 207.82036299351603,
+        "output_sha256": "29bb8de01ab77ce75debf8172ed36b698c694148f42e51ea10a5ebd52e66627a",
+        "accepted_length": 2.959537572254335,
+        "wall_per_verify_proxy_ms": 4.723358017492049,
+        "stream_decode_tps": 625.8770898068149,
+        "request_output_tps": 555.437274416528
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 212.21759007312357,
+        "output_sha256": "e491f338db290bfc6ab3ce8df30ba6ce98729a020b79ff91d08814a96803f459",
+        "accepted_length": 2.752688172043011,
+        "wall_per_verify_proxy_ms": 5.10656210200821,
+        "stream_decode_tps": 538.433254379281,
+        "request_output_tps": 484.5263021580375
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 213.9515469316393,
+        "output_sha256": "1f3bc37bb994fa91422e0adb93fda32774d57e68e5c60d3742db4e2d874606be",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 4.709801680865734,
+        "stream_decode_tps": 778.3607364069253,
+        "request_output_tps": 669.4001149689468
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 214.66300392057747,
+        "output_sha256": "861f57d379241ad62e250737ea6263588d01458be3a94d794302f375ed4fa331",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 4.727619852562495,
+        "stream_decode_tps": 778.2004229325319,
+        "request_output_tps": 668.9663294488626
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 215.0551660452038,
+        "output_sha256": "80a2d987ee55014a59593b6b61aaf7f41bb8f815209add336aa81a88fd6f7281",
+        "accepted_length": 3.2715654952076676,
+        "wall_per_verify_proxy_ms": 4.725157463262542,
+        "stream_decode_tps": 691.6082202227414,
+        "request_output_tps": 603.8759304819915
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 204.62387602310628,
+        "output_sha256": "9df8f274f02f0b76dae310591c088ecbfe899e7b485ee034dbaeb43685244f99",
+        "accepted_length": 3.7372262773722627,
+        "wall_per_verify_proxy_ms": 4.713203817483609,
+        "stream_decode_tps": 792.0349392672214,
+        "request_output_tps": 683.7931210142248
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 201.83106896001846,
+        "output_sha256": "407a60f2bc9066d3cdac17252b10ba48378e0333c24d4da6e4fdb93c0350ccfd",
+        "accepted_length": 3.0385756676557865,
+        "wall_per_verify_proxy_ms": 4.716754917232237,
+        "stream_decode_tps": 643.4875514634674,
+        "request_output_tps": 571.1603889962571
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 202.97881495207548,
+        "output_sha256": "b9b4caf3505f5d71becaf23aa33f7913975b96dff74fa6ed513bc744246a4eb9",
+        "accepted_length": 3.103030303030303,
+        "wall_per_verify_proxy_ms": 4.802264715192106,
+        "stream_decode_tps": 645.4121868055269,
+        "request_output_tps": 572.3114026465396
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 211.30974893458188,
+        "output_sha256": "0147daedf05286beb5fe4ba3a11a16a3f48f0c55591ad1190960b3d105c83e93",
+        "accepted_length": 3.011764705882353,
+        "wall_per_verify_proxy_ms": 4.72003947943449,
+        "stream_decode_tps": 637.3484800011607,
+        "request_output_tps": 563.3481442530098
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 206.59088902175426,
+        "output_sha256": "7cb7bba6eb15498cfbe442e1a3be7acb545c6c3872e7c83cc36d22ee20267039",
+        "accepted_length": 2.8683473389355743,
+        "wall_per_verify_proxy_ms": 4.718242940970328,
+        "stream_decode_tps": 607.2096494623506,
+        "request_output_tps": 541.0254966153474
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 213.39247399009764,
+        "output_sha256": "393093970883913b45575aec49b2baff8d572efcbfc0d864965180b7aa07361a",
+        "accepted_length": 3.4133333333333336,
+        "wall_per_verify_proxy_ms": 4.70897369668819,
+        "stream_decode_tps": 724.025064686119,
+        "request_output_tps": 629.0478692872142
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 210.75771609321237,
+        "output_sha256": "570a9b546b35acbe06581ef77b92aad1bbd90b9eb7b18723a226780a10465a41",
+        "accepted_length": 3.471186440677966,
+        "wall_per_verify_proxy_ms": 4.723170267465382,
+        "stream_decode_tps": 734.1156164066359,
+        "request_output_tps": 637.7302586209377
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 207.64177199453115,
+        "output_sha256": "0c9c1caff40773a973a90d9d02f0bd83818a9e2b3f0796a5b98c7e303b206272",
+        "accepted_length": 3.282051282051282,
+        "wall_per_verify_proxy_ms": 4.722848025640139,
+        "stream_decode_tps": 694.1283387985299,
+        "request_output_tps": 608.5703156807261
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 215.29209497384727,
+        "output_sha256": "e42e132c59cf601df0749f2938ebd160728bcf65661c64a1558e839b2679edfe",
+        "accepted_length": 3.5432525951557095,
+        "wall_per_verify_proxy_ms": 4.708795616109969,
+        "stream_decode_tps": 751.6006332844404,
+        "request_output_tps": 649.0699937507744
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 211.66674292180687,
+        "output_sha256": "b3aaba2ca2f70f7bfe975baaef0482d7d7b16bd0867fef7fc119157c9dbc8628",
+        "accepted_length": 3.093655589123867,
+        "wall_per_verify_proxy_ms": 4.715761906267608,
+        "stream_decode_tps": 655.2922552982551,
+        "request_output_tps": 577.2059907842265
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 212.32863201294094,
+        "output_sha256": "b8e62e84d83e2fc6be8bfaf7867755fa940b9f53be2a75652284a2e995b45dd6",
+        "accepted_length": 3.029585798816568,
+        "wall_per_verify_proxy_ms": 4.730608973158909,
+        "stream_decode_tps": 639.6956118423676,
+        "request_output_tps": 564.8925811162894
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 210.9461339423433,
+        "output_sha256": "42432187edffa98662479be0d0c572e5062f524bfce3a6b3c78454ad3e216baf",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.72858300022941,
+        "stream_decode_tps": 619.8209821769804,
+        "request_output_tps": 549.7474817619394
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 219.40116200130433,
+        "output_sha256": "5b5cbccf14fa80a6dd5bf7b7438f2885c36cf4f026a0be855ad3763d60973eee",
+        "accepted_length": 2.9941520467836256,
+        "wall_per_verify_proxy_ms": 4.7143667280042205,
+        "stream_decode_tps": 634.4184862263787,
+        "request_output_tps": 558.582755584707
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 215.23017599247396,
+        "output_sha256": "f19de4db7e3656adbbd7b2675ff75d1f2076800730644e7b32dc0562c1a8d712",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 4.719002925371925,
+        "stream_decode_tps": 805.7195096525902,
+        "request_output_tps": 688.9600582087282
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 208.57854303903878,
+        "output_sha256": "8eb7d9c55bf565e7f840b1b0141aaed5b71745045587027d969a8de07b98780a",
+        "accepted_length": 3.34640522875817,
+        "wall_per_verify_proxy_ms": 4.719012617772701,
+        "stream_decode_tps": 708.3101341281341,
+        "request_output_tps": 619.0598097815889
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 214.53631902113557,
+        "output_sha256": "76886e512a30aa32c136a3d2840851b59a01da56a1463ae6317da363b0509320",
+        "accepted_length": 3.292604501607717,
+        "wall_per_verify_proxy_ms": 4.723936427531351,
+        "stream_decode_tps": 696.2185246767946,
+        "request_output_tps": 607.655330149134
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 211.05320600327104,
+        "output_sha256": "01d4ed409baab09f291d4c27e3a3b17730e265811140b2c358d6224f864eb652",
+        "accepted_length": 3.5189003436426116,
+        "wall_per_verify_proxy_ms": 4.710403013785603,
+        "stream_decode_tps": 746.1659161548022,
+        "request_output_tps": 646.7598012612482
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 208.1040469929576,
+        "output_sha256": "2d78dca42bbb861813b84ea3343fd104d05231522a5d257bd32ff958a9176379",
+        "accepted_length": 2.942528735632184,
+        "wall_per_verify_proxy_ms": 4.719323853643654,
+        "stream_decode_tps": 622.8125709906639,
+        "request_output_tps": 552.9155040142314
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 213.80412601865828,
+        "output_sha256": "e0306f2b208439919c8ca8522661748a4be2125360f062af36819fd10a0fe0e8",
+        "accepted_length": 3.1801242236024843,
+        "wall_per_verify_proxy_ms": 4.7303305838332275,
+        "stream_decode_tps": 671.5298287960435,
+        "request_output_tps": 588.9804348924548
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 208.2132960204035,
+        "output_sha256": "48540b46e533c35e139d6fda5718465737a2b27e850e52a35858691e2c43824e",
+        "accepted_length": 3.065868263473054,
+        "wall_per_verify_proxy_ms": 4.7238280088361915,
+        "stream_decode_tps": 648.267165232911,
+        "request_output_tps": 572.8745634107707
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 217.22205402329564,
+        "output_sha256": "2890172e8a55e157070e70f6b5b0ae34fe61a27bced83a27f6ac2e526a7f67d3",
+        "accepted_length": 3.1507692307692308,
+        "wall_per_verify_proxy_ms": 4.716822781528418,
+        "stream_decode_tps": 667.2419126821678,
+        "request_output_tps": 584.4639468280363
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 213.88937393203378,
+        "output_sha256": "94b68f1061d20c75484b31126864d88b937aa6b270ed3bc95763e5818a44553a",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 4.717764816508233,
+        "stream_decode_tps": 779.8470780712549,
+        "request_output_tps": 670.5184046386505
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 214.07295810058713,
+        "output_sha256": "a5ef3d132f0c628fd5841c479bcf47060de2b63d5ca080cbd9cc365b2935b48a",
+        "accepted_length": 3.390728476821192,
+        "wall_per_verify_proxy_ms": 4.732325529704327,
+        "stream_decode_tps": 715.683345116212,
+        "request_output_tps": 622.5517025769211
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 214.1497579868883,
+        "output_sha256": "d7918d55bec4aaf992b5e6237bcb012177223bf460afe3edd4338c5ffd138cd8",
+        "accepted_length": 3.592982456140351,
+        "wall_per_verify_proxy_ms": 4.729861143992789,
+        "stream_decode_tps": 758.8056379083845,
+        "request_output_tps": 654.8672833045375
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 211.45589603111148,
+        "output_sha256": "df787eea7897e5f7c453b081bbcd48add53c8489a3df3bb9445e676bba77d7a3",
+        "accepted_length": 3.8208955223880596,
+        "wall_per_verify_proxy_ms": 4.713954160306185,
+        "stream_decode_tps": 809.5858177000202,
+        "request_output_tps": 693.6345422908563
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 216.6413168888539,
+        "output_sha256": "9627a213c5e907c0d0e31e2de6141bcd444188bb9264e2d3d91a01d8b1b79af3",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.716149315486174,
+        "stream_decode_tps": 621.4581204083711,
+        "request_output_tps": 549.2765545014619
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 212.6026520272717,
+        "output_sha256": "72749d52d281c41bf8580b7331057318aee420db5a584190fa3212434622f163",
+        "accepted_length": 2.9767441860465116,
+        "wall_per_verify_proxy_ms": 4.731354235636266,
+        "stream_decode_tps": 628.4309372847413,
+        "request_output_tps": 555.9515452547514
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 213.28319795429707,
+        "output_sha256": "3d8f7051426aef53c0b6087b416a64d1e4a14902871807d2b9a3448b1314f434",
+        "accepted_length": 3.2,
+        "wall_per_verify_proxy_ms": 4.730290603038156,
+        "stream_decode_tps": 675.71799128532,
+        "request_output_tps": 592.3538839184977
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 211.32450399454683,
+        "output_sha256": "6f8901c14bc9b2979e235899bd3a8bbd36685171a872fe75581ec4f6afa53ec5",
+        "accepted_length": 3.1219512195121952,
+        "wall_per_verify_proxy_ms": 4.720475006118848,
+        "stream_decode_tps": 660.6168738078553,
+        "request_output_tps": 581.4114825040856
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 211.35813696309924,
+        "output_sha256": "06954d462bb29457b679f649d05a34656c98008c81d17cea5c5edd7213fb8017",
+        "accepted_length": 3.631205673758865,
+        "wall_per_verify_proxy_ms": 4.7144898120974394,
+        "stream_decode_tps": 769.3553100316892,
+        "request_output_tps": 663.9346951292246
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 202.1302409702912,
+        "output_sha256": "d0443c2b250093fe35169539a2b0abe867cebe8fe72236e7c9a8d2988aa5da14",
+        "accepted_length": 3.506849315068493,
+        "wall_per_verify_proxy_ms": 4.724903068463765,
+        "stream_decode_tps": 741.3447027638199,
+        "request_output_tps": 646.7774172440021
+      },
+      {
+        "launch": "a",
+        "index": 3,
+        "server_ttft_ms": 212.0941700413823,
+        "output_sha256": "63a2413b591275c87a7b94605d1773f86fced12470d9154a0be996d74fe82294",
+        "accepted_length": 3.313915857605178,
+        "wall_per_verify_proxy_ms": 4.728814602066977,
+        "stream_decode_tps": 700.0272051237424,
+        "request_output_tps": 611.444666583433
+      },
+      {
+        "launch": "a",
+        "index": 2,
+        "server_ttft_ms": 213.71113404165953,
+        "output_sha256": "a1c5e202a41c90c6fe5e2078bc4e1c2168a63f224a13c47438d9d16988df909d",
+        "accepted_length": 3.5555555555555554,
+        "wall_per_verify_proxy_ms": 4.716514982849024,
+        "stream_decode_tps": 753.0190748498479,
+        "request_output_tps": 650.7726178109416
+      },
+      {
+        "launch": "a",
+        "index": 1,
+        "server_ttft_ms": 209.60645307786763,
+        "output_sha256": "2ecac6af956ad5beb636089bda33c8e6f634327c965c8cd5f5baa4454d01d189",
+        "accepted_length": 3.093655589123867,
+        "wall_per_verify_proxy_ms": 4.709605199321429,
+        "stream_decode_tps": 656.1438342199176,
+        "request_output_tps": 578.5702302296324
+      },
+      {
+        "launch": "a",
+        "index": 0,
+        "server_ttft_ms": 220.2168150106445,
+        "output_sha256": "1d4c21a765e81e46d535145332229cc2e45bfee2542a81e42e0d874497726f01",
+        "accepted_length": 3.065868263473054,
+        "wall_per_verify_proxy_ms": 4.728938008848199,
+        "stream_decode_tps": 647.6279106826911,
+        "request_output_tps": 568.5273654956555
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 210.1630070246756,
+        "output_sha256": "cdc55f974eab6dac624bd34c6c04cbe89e4ea9702af0c469dd35cec48ab766f4",
+        "accepted_length": 3.0385756676557865,
+        "wall_per_verify_proxy_ms": 4.710953789403889,
+        "stream_decode_tps": 644.2596068180858,
+        "request_output_tps": 569.0816662518012
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 209.61369399446994,
+        "output_sha256": "64df2f56aa6b1ea72cb3f0f567ebaf2c58dfd1d160c8acd23dc96b9c8374eb82",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.707219492761488,
+        "stream_decode_tps": 622.6187404598893,
+        "request_output_tps": 552.2842240624626
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 210.17084701452404,
+        "output_sha256": "5762ec4be7ffd08a751e6022cc52efa8ebde011749744003324d9d2cf270969f",
+        "accepted_length": 3.7785977859778597,
+        "wall_per_verify_proxy_ms": 4.711522490500964,
+        "stream_decode_tps": 801.0455926750642,
+        "request_output_tps": 687.9043492863999
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 205.7633800432086,
+        "output_sha256": "ed34cc2dec2c4d819f9896156fce0eb4b98a3935206a2d6298157b91790104a3",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 4.7158073403582135,
+        "stream_decode_tps": 777.3810427515438,
+        "request_output_tps": 672.2717887278341
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 205.10484999977052,
+        "output_sha256": "345c498a1a10cd554ca4ac7ca9d7dc78870c1935ef9fa64d3989fdcf956dbcd2",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 4.717677760586439,
+        "stream_decode_tps": 665.0604427636323,
+        "request_output_tps": 586.9696960087842
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 204.14939196780324,
+        "output_sha256": "7b762cf062036a56fce2a4129b8ba9a4e2a337060d1dfc9746c55f368f648b13",
+        "accepted_length": 3.6441281138790034,
+        "wall_per_verify_proxy_ms": 4.704112598003017,
+        "stream_decode_tps": 773.7487813967231,
+        "request_output_tps": 670.3515981301244
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 215.8988630399108,
+        "output_sha256": "0f9fd8b964f395ee64e7d85e92c0a22447ffa992c457ee6e8ad1bd7ce7955670",
+        "accepted_length": 3.075075075075075,
+        "wall_per_verify_proxy_ms": 4.8725264204257694,
+        "stream_decode_tps": 630.3762517490761,
+        "request_output_tps": 556.455616174892
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 214.00237700436264,
+        "output_sha256": "d93f082339f15f80b286eba2a9909660af2fe338bfa7b97a304f04a064f26070",
+        "accepted_length": 2.942528735632184,
+        "wall_per_verify_proxy_ms": 4.713312692635147,
+        "stream_decode_tps": 623.6023922850766,
+        "request_output_tps": 551.7124856801045
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 211.80771593935788,
+        "output_sha256": "f149579807a92a1910ee3eaf4e130b5abbd8562cd264c80b4750edab2448ad31",
+        "accepted_length": 2.852367688022284,
+        "wall_per_verify_proxy_ms": 4.713113289676648,
+        "stream_decode_tps": 604.5246178636645,
+        "request_output_tps": 537.4230240185602
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 213.55956001207232,
+        "output_sha256": "e9188a12588766e8fa99a6280bdd9aa4892483c7b1d455b11ec7bd4d9a2ff769",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 4.7024574710358085,
+        "stream_decode_tps": 665.1853584777596,
+        "request_output_tps": 584.2313260740575
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 210.44060797430575,
+        "output_sha256": "f47edc9afed9bb9e2da3d86283dc0d6e47eb2d5bb96c9c07a4faaeff073c81fb",
+        "accepted_length": 3.56794425087108,
+        "wall_per_verify_proxy_ms": 4.7047489512556,
+        "stream_decode_tps": 757.4909378426883,
+        "request_output_tps": 655.4850841734993
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 217.2198259504512,
+        "output_sha256": "f34f43299dccb0d8f4b4419a27db24a18c42b1e14f5e77a2d52ae0bc9ed079eb",
+        "accepted_length": 3.2,
+        "wall_per_verify_proxy_ms": 4.700112162390724,
+        "stream_decode_tps": 680.0717499495383,
+        "request_output_tps": 594.4054821873665
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 211.52749098837376,
+        "output_sha256": "c7acd0c4c0a6a34b9a8e45cbd4230f87eec1c29b4d4dd78429b95e928f7ed09f",
+        "accepted_length": 3.357377049180328,
+        "wall_per_verify_proxy_ms": 4.711200652613503,
+        "stream_decode_tps": 711.8174091404791,
+        "request_output_tps": 620.629502346573
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 207.59410504251719,
+        "output_sha256": "167c54ae2d90d59c6999ab6e0437ddb4be33ec7f4bc9d8928a407110e8079149",
+        "accepted_length": 3.7236363636363636,
+        "wall_per_verify_proxy_ms": 4.7111754254861316,
+        "stream_decode_tps": 789.4712313542386,
+        "request_output_tps": 680.5729457044872
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 210.79366595949978,
+        "output_sha256": "e4e9925d0824411dbd1fe474d39b2611d0b871595e6a2fd265b483b06bce426a",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 4.699442089785502,
+        "stream_decode_tps": 649.730345393476,
+        "request_output_tps": 573.1981412453823
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 209.36611003708094,
+        "output_sha256": "3c80176e741fd569c0f4e43c22205097cec5cb8496eceda4d9ae06e3bf631ca1",
+        "accepted_length": 3.103030303030303,
+        "wall_per_verify_proxy_ms": 4.713899430212085,
+        "stream_decode_tps": 657.5158102472462,
+        "request_output_tps": 579.712487538347
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 213.17680808715522,
+        "output_sha256": "86dcd0d79fc725f678733da7ca97894a67481577538f66b1c7f2ef0c3e72e9f0",
+        "accepted_length": 2.9941520467836256,
+        "wall_per_verify_proxy_ms": 4.713884394817403,
+        "stream_decode_tps": 634.4619743076702,
+        "request_output_tps": 560.4818618012047
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 209.65878292918205,
+        "output_sha256": "9acf142b05925ce7e6f6e3df7586eab07c1497e9d843d9a360d06f389aaadfff",
+        "accepted_length": 2.959537572254335,
+        "wall_per_verify_proxy_ms": 4.705534315253527,
+        "stream_decode_tps": 628.2145448100184,
+        "request_output_tps": 556.7053562899167
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 215.00916499644518,
+        "output_sha256": "03549353c8334608044d410df8aba94a8fec14684567dbaf55f74fa480049e58",
+        "accepted_length": 3.506849315068493,
+        "wall_per_verify_proxy_ms": 4.699388719068152,
+        "stream_decode_tps": 745.3438587718434,
+        "request_output_tps": 644.4238452432397
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 214.0805230010301,
+        "output_sha256": "2443a8e6dd05644883b4bfa5e9a1e7f96188c26840383fd51c35c2c7aeb4c7ac",
+        "accepted_length": 3.261146496815287,
+        "wall_per_verify_proxy_ms": 4.720693910909686,
+        "stream_decode_tps": 690.0125797184922,
+        "request_output_tps": 603.0562608617853
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 214.0906029380858,
+        "output_sha256": "31f60489423596041198546782434f4ebd4b3dcca15f1c57dceb63e2e2f66546",
+        "accepted_length": 3.8496240601503757,
+        "wall_per_verify_proxy_ms": 4.719176259648083,
+        "stream_decode_tps": 814.8117275512641,
+        "request_output_tps": 696.0891949769518
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 212.79696805868298,
+        "output_sha256": "820b37df31303a544e1c8ddc89686b98904a9b4597144c267dbcaa21a6fb2c65",
+        "accepted_length": 3.592982456140351,
+        "wall_per_verify_proxy_ms": 4.705270747409055,
+        "stream_decode_tps": 762.7384450018516,
+        "request_output_tps": 658.3688196645307
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 211.55958797316998,
+        "output_sha256": "80a6f6163a28dbf803ec465893365cd54c10db1a213ed47cea4566053eb9185f",
+        "accepted_length": 2.909090909090909,
+        "wall_per_verify_proxy_ms": 4.706590110634517,
+        "stream_decode_tps": 617.3942311465196,
+        "request_output_tps": 547.6608581918276
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 210.8433620305732,
+        "output_sha256": "35c419bb850a17259efc1f51ca20bd85b35370dbe7ccba4fc59bf5b21538ef78",
+        "accepted_length": 3.075075075075075,
+        "wall_per_verify_proxy_ms": 4.7072467985688835,
+        "stream_decode_tps": 652.5247567940567,
+        "request_output_tps": 575.3320119541429
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 211.72579703852534,
+        "output_sha256": "5f134b64a31d1ee761dd009bb0ee9e43465e9727b21cd9dad23c7410906aab61",
+        "accepted_length": 3.075075075075075,
+        "wall_per_verify_proxy_ms": 4.7143670571576415,
+        "stream_decode_tps": 651.5255574739264,
+        "request_output_tps": 574.2554927829499
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 218.8892720732838,
+        "output_sha256": "d6d5324c0bcf002504d0414ff94742437dc1007ac81cbae84afcaf5b790991ab",
+        "accepted_length": 3.065868263473054,
+        "wall_per_verify_proxy_ms": 4.964520278509461,
+        "stream_decode_tps": 616.83694500781,
+        "request_output_tps": 545.0260656453825
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 210.96806705463678,
+        "output_sha256": "a0621d80af54bc70ad6feef6f5ae9d819b083eb757b8a514dbd4a9c4e08e903e",
+        "accepted_length": 3.618374558303887,
+        "wall_per_verify_proxy_ms": 4.701458526505387,
+        "stream_decode_tps": 768.7423279628387,
+        "request_output_tps": 663.5554886934119
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 201.61607500631362,
+        "output_sha256": "2c0df5d916b16ce64ec46ba705d2bf9bada43709e9b468e6016ae03ee1b10d86",
+        "accepted_length": 3.4133333333333336,
+        "wall_per_verify_proxy_ms": 4.717034743322681,
+        "stream_decode_tps": 722.8034988019098,
+        "request_output_tps": 632.7979720357554
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 210.5778899276629,
+        "output_sha256": "5c9adc154efdb9160342316e80bfb084ab3554f1627bde51305ef0162599f9fd",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 4.719732713926097,
+        "stream_decode_tps": 785.1646047590481,
+        "request_output_tps": 676.0408488968357
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 211.25081996433437,
+        "output_sha256": "4bf16f027129db98a4f48fddab8a0386e82dc7a7763b28532e5fb64650d38de3",
+        "accepted_length": 3.2715654952076676,
+        "wall_per_verify_proxy_ms": 4.698533140429364,
+        "stream_decode_tps": 695.5057001583783,
+        "request_output_tps": 608.2689503172403
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 214.47044506203383,
+        "output_sha256": "66daa93a7f97a5a415906dc600f4c0efda0c601c905263beec5f53e26ce497c1",
+        "accepted_length": 2.797814207650273,
+        "wall_per_verify_proxy_ms": 4.704592844262678,
+        "stream_decode_tps": 594.0474045996307,
+        "request_output_tps": 528.4304657490244
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 214.27165996283293,
+        "output_sha256": "0b36f0ea1c1e39e84bb050132fef367e29e5f2c7a5473e0c47e642a6a6aa105a",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 4.717502449653382,
+        "stream_decode_tps": 663.0506537080237,
+        "request_output_tps": 582.3710359075627
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 218.51932001300156,
+        "output_sha256": "18645dd161a210abd291aa91867175983162b3ab25aa34b1c94b37081b6a58c4",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 4.720939082643216,
+        "stream_decode_tps": 662.5945213673181,
+        "request_output_tps": 580.5826587066312
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 214.4226039526984,
+        "output_sha256": "e979e7977e59a8d3a6d7a95147a2be7750cd2348611e2eaeb5580483aaf36403",
+        "accepted_length": 2.7601078167115904,
+        "wall_per_verify_proxy_ms": 4.7020283854011735,
+        "stream_decode_tps": 586.3730604698629,
+        "request_output_tps": 522.3232800960584
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 211.20426000561565,
+        "output_sha256": "dc9b7fd60310e26b816b4ee448b2dd25b4187df48ed84c106765baef11c3874a",
+        "accepted_length": 3.696750902527076,
+        "wall_per_verify_proxy_ms": 4.7060869098725036,
+        "stream_decode_tps": 784.6104057641245,
+        "request_output_tps": 675.3321618435135
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 213.35604297928512,
+        "output_sha256": "e4e2d7a031b91d7d60e989a635dc2f96a64ede049c0f258eb39f9122733a93ce",
+        "accepted_length": 3.3355048859934855,
+        "wall_per_verify_proxy_ms": 4.714169377970725,
+        "stream_decode_tps": 706.7196976508611,
+        "request_output_tps": 616.0885328174195
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 214.40439706202596,
+        "output_sha256": "659be5336ab0e13abe201cc0179a6394a094e393cb2462b851e410ab39977d8e",
+        "accepted_length": 3.5555555555555554,
+        "wall_per_verify_proxy_ms": 4.72100426365311,
+        "stream_decode_tps": 752.2519301273406,
+        "request_output_tps": 649.9050476666573
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 210.02995292656124,
+        "output_sha256": "dbef71b0e58e6a39e683878f09bea29ba9ffce01f74392f71bd1f7f245e9f46f",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 4.712716362479588,
+        "stream_decode_tps": 786.3466165015141,
+        "request_output_tps": 677.1457824390883
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 215.64539289101958,
+        "output_sha256": "e24e22b155d6a835c2186c613dcd66af0ac175afed739bbd15d688076429b9a4",
+        "accepted_length": 2.9941520467836256,
+        "wall_per_verify_proxy_ms": 4.699646365591897,
+        "stream_decode_tps": 636.4060947677306,
+        "request_output_tps": 561.2935921617924
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 201.47517998702824,
+        "output_sha256": "24c4b4d73a7bd1e7a08fc011d8db85e2b99c29b04dc8a5211cbacdee1f6816a6",
+        "accepted_length": 2.9340974212034383,
+        "wall_per_verify_proxy_ms": 4.723976060006245,
+        "stream_decode_tps": 620.3823785068272,
+        "request_output_tps": 553.0162660980382
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 206.58485707826912,
+        "output_sha256": "a42f0517b94fa813b5c948fb9977e76125991883ed48d3c3417c8554800f56d2",
+        "accepted_length": 2.9941520467836256,
+        "wall_per_verify_proxy_ms": 4.715883792228234,
+        "stream_decode_tps": 634.1883284110224,
+        "request_output_tps": 562.3122550099475
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 210.36413102410734,
+        "output_sha256": "4b7846746140e7065dcb856ec74e389644d02595b6e2877fc9e3229d1cffcadb",
+        "accepted_length": 2.9257142857142857,
+        "wall_per_verify_proxy_ms": 4.701319742681725,
+        "stream_decode_tps": 621.6099260072974,
+        "request_output_tps": 551.3165634973732
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 213.67873100098222,
+        "output_sha256": "bba41b29aa7d070ebc5fb51e88f6c7b0b10980ead613c083dea82bdc003267c6",
+        "accepted_length": 3.6441281138790034,
+        "wall_per_verify_proxy_ms": 4.704984537163398,
+        "stream_decode_tps": 773.596640019489,
+        "request_output_tps": 666.07928274314
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 211.1974130384624,
+        "output_sha256": "43a45602e8d4b8fab2b67d0248653c028033ed1c66fb6fb092fee11104b8373f",
+        "accepted_length": 3.2715654952076676,
+        "wall_per_verify_proxy_ms": 4.69934513097623,
+        "stream_decode_tps": 695.3760147373058,
+        "request_output_tps": 608.2432218475719
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 209.91501002572477,
+        "output_sha256": "94fb97fa9f1be0b1f33fde29646955f638ccc4de221633858b5a4d293dcf546b",
+        "accepted_length": 3.4948805460750854,
+        "wall_per_verify_proxy_ms": 4.745145450320743,
+        "stream_decode_tps": 735.6606318660793,
+        "request_output_tps": 639.3297750131904
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 207.16421899851412,
+        "output_sha256": "9dfe52b17570a492b8c1a79d647bfc78e438791f8b2c7d5bf529671527a343fd",
+        "accepted_length": 3.6702508960573477,
+        "wall_per_verify_proxy_ms": 4.702186630871881,
+        "stream_decode_tps": 779.6452932175757,
+        "request_output_tps": 673.4464821458907
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 211.46983094513416,
+        "output_sha256": "4eb1539b8604854d023c18cfd6803c8e29fbdbf3f36fdf9806eabc5d83df4727",
+        "accepted_length": 3.1507692307692308,
+        "wall_per_verify_proxy_ms": 4.708029676873523,
+        "stream_decode_tps": 668.4330204163575,
+        "request_output_tps": 587.4589762595666
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 212.06211997196078,
+        "output_sha256": "923e307c04ee03cbf2ddb3ec6d84f8c14104f676c7d770b93aa3d30f493c51d5",
+        "accepted_length": 3.075075075075075,
+        "wall_per_verify_proxy_ms": 4.728308666984106,
+        "stream_decode_tps": 649.6173205966293,
+        "request_output_tps": 572.616203637219
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 211.54986298643053,
+        "output_sha256": "e8ace664c102593b4255306396e1867d2d2b1286d5701b3b33a1ed75da38b95a",
+        "accepted_length": 3.1411042944785277,
+        "wall_per_verify_proxy_ms": 4.7191935366425275,
+        "stream_decode_tps": 664.8463243628137,
+        "request_output_tps": 584.6345207678181
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 208.6250230204314,
+        "output_sha256": "671cbd01303702c35520371afd90d024fa288fc63ddd28633abb130d861f2400",
+        "accepted_length": 2.8287292817679557,
+        "wall_per_verify_proxy_ms": 4.698212983379995,
+        "stream_decode_tps": 601.4021279684858,
+        "request_output_tps": 535.8698601989374
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 217.28517301380634,
+        "output_sha256": "a95aaa0b88a6260f9c58217a1fd0fa69244b9f9f79849a7f57acdd3435eea658",
+        "accepted_length": 3.710144927536232,
+        "wall_per_verify_proxy_ms": 4.705690746313717,
+        "stream_decode_tps": 787.5568893797639,
+        "request_output_tps": 674.716107580592
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 210.48413193784654,
+        "output_sha256": "826a1de1429df0a637da2838dc381498dc2250b29057828fbfbc291ecfac957b",
+        "accepted_length": 3.5432525951557095,
+        "wall_per_verify_proxy_ms": 4.715824155717005,
+        "stream_decode_tps": 750.5103657564508,
+        "request_output_tps": 650.1825986715381
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 211.03654999751598,
+        "output_sha256": "c16e2bc62c2c2cf0570db714c411060d7678d2ded9178ab139fe8bb8659269f2",
+        "accepted_length": 3.506849315068493,
+        "wall_per_verify_proxy_ms": 4.708761852856547,
+        "stream_decode_tps": 743.899761265478,
+        "request_output_tps": 645.0540732482775
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 209.18956899549812,
+        "output_sha256": "8d8a48ba45d99df68a0b1b2bff36c1cda4b61fa2a043430fb6e842a583931689",
+        "accepted_length": 3.806691449814126,
+        "wall_per_verify_proxy_ms": 4.707237955729813,
+        "stream_decode_tps": 807.7614922910177,
+        "request_output_tps": 693.3727378865933
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 212.6060260925442,
+        "output_sha256": "d252ef8dad315d3453b020fff9a576c95e20c37124d0a25ac5a8dba54801b745",
+        "accepted_length": 3.0843373493975905,
+        "wall_per_verify_proxy_ms": 4.703844834332275,
+        "stream_decode_tps": 654.9365519939859,
+        "request_output_tps": 576.6656993512537
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 212.256520986557,
+        "output_sha256": "4562418c6002b41ac749fed0fe2713c2a19625891bcb12551d29913a1f5740b8",
+        "accepted_length": 2.9767441860465116,
+        "wall_per_verify_proxy_ms": 4.710258508905183,
+        "stream_decode_tps": 631.2477238251446,
+        "request_output_tps": 558.2544212905152
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 214.2576789483428,
+        "output_sha256": "e3971d9ef2a6ff93b146b361cb248c7d0e4a5202d74410a7d09995b291dfa96c",
+        "accepted_length": 3.1314984709480123,
+        "wall_per_verify_proxy_ms": 4.712284131784459,
+        "stream_decode_tps": 663.7979792376411,
+        "request_output_tps": 582.8672464900635
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 209.1939530801028,
+        "output_sha256": "fd779b854ba99819eb8dcf6dfc0ac156b005a9b9ede5758f881fc7f969da35ec",
+        "accepted_length": 3.2,
+        "wall_per_verify_proxy_ms": 4.704294562179712,
+        "stream_decode_tps": 679.4810622331298,
+        "request_output_tps": 596.701715070429
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 211.6509519983083,
+        "output_sha256": "2a93c3b6e54ba10c2fc1abb091d31876bc80754c12ba3c516455bdefa07a0533",
+        "accepted_length": 3.618374558303887,
+        "wall_per_verify_proxy_ms": 4.706763251036301,
+        "stream_decode_tps": 767.8694888844283,
+        "request_output_tps": 662.6999119629701
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 211.2714300164953,
+        "output_sha256": "d59dea35928a91adcd471669c9438c336f335a448fe7183f38136f8be448e3cc",
+        "accepted_length": 3.1219512195121952,
+        "wall_per_verify_proxy_ms": 4.711839993677398,
+        "stream_decode_tps": 661.8331163303525,
+        "request_output_tps": 582.392534688653
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 208.86147290002555,
+        "output_sha256": "f24bb0b028e6790915db15077ad406a840a596302e08041f5acb658be5b61d43",
+        "accepted_length": 3.471186440677966,
+        "wall_per_verify_proxy_ms": 4.710766559435149,
+        "stream_decode_tps": 736.0024798290552,
+        "request_output_tps": 639.9799378289115
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 215.24510497692972,
+        "output_sha256": "8d97ce7c264e48a697c708df9b6d714fa1b556b6efb63b037508570cbd80cd81",
+        "accepted_length": 3.4478114478114477,
+        "wall_per_verify_proxy_ms": 4.704439905566173,
+        "stream_decode_tps": 732.0587492560301,
+        "request_output_tps": 634.4254109730678
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 210.51792497746646,
+        "output_sha256": "a718d4cbc83a6b126150454fdad0f61010d932fd5664a7e15e931673262bfcba",
+        "accepted_length": 3.0843373493975905,
+        "wall_per_verify_proxy_ms": 4.705727647384068,
+        "stream_decode_tps": 654.6998293791446,
+        "request_output_tps": 577.0607188224918
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 206.72415604349226,
+        "output_sha256": "abfb56762a915cd813ef9182a686ac873ef2c3111f5f8c7b9819ba2a71e3c1fe",
+        "accepted_length": 2.9257142857142857,
+        "wall_per_verify_proxy_ms": 4.719021222886762,
+        "stream_decode_tps": 619.2682553650122,
+        "request_output_tps": 550.5529539885413
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 208.60566396731883,
+        "output_sha256": "ab4da786528e3deb71d5eefa55ac76debe436e8db4622c5e41d678c2a2cf357b",
+        "accepted_length": 2.9173789173789175,
+        "wall_per_verify_proxy_ms": 4.708627125439354,
+        "stream_decode_tps": 618.8795081482998,
+        "request_output_tps": 549.6648667810088
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 212.145289988257,
+        "output_sha256": "2bfb73d6f73d1799a95e12a6581406d3965af825160517132371c8260f13afe4",
+        "accepted_length": 2.951008645533141,
+        "wall_per_verify_proxy_ms": 4.700088899002896,
+        "stream_decode_tps": 627.1559447331275,
+        "request_output_tps": 555.1059348065744
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 212.92807592544705,
+        "output_sha256": "95232d9dba02877520bb320029d25c608d69a5a47a43d2cc44f5732e98775ea3",
+        "accepted_length": 3.6056338028169015,
+        "wall_per_verify_proxy_ms": 4.707176679774831,
+        "stream_decode_tps": 765.0600237152455,
+        "request_output_tps": 660.065509219923
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 205.76984900981188,
+        "output_sha256": "3ebcd91f54054a0abcb43b311ab23f0da4c87cd9588a84b534e96fec2f15ca78",
+        "accepted_length": 3.4829931972789114,
+        "wall_per_verify_proxy_ms": 4.717732149692645,
+        "stream_decode_tps": 737.4467249977606,
+        "request_output_tps": 642.2281584145816
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 211.8492580484599,
+        "output_sha256": "3a7b41d6c6c554521f77453fce840561b75ff9f70188d792b9eed0bb92458f1b",
+        "accepted_length": 3.5189003436426116,
+        "wall_per_verify_proxy_ms": 4.70679595504801,
+        "stream_decode_tps": 746.7705213497367,
+        "request_output_tps": 646.8518669383942
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 214.71019298769534,
+        "output_sha256": "00573aeeafbedf1a6723a03f76399577022b083950491da88044659ea545e6ac",
+        "accepted_length": 3.7785977859778597,
+        "wall_per_verify_proxy_ms": 4.709329962991591,
+        "stream_decode_tps": 801.4455633671689,
+        "request_output_tps": 686.0372899870105
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 213.02452497184277,
+        "output_sha256": "7f42055d18ed09411fa0cac82ffa1761437cdbfc64a55113b3b9de25a948644d",
+        "accepted_length": 2.8209366391184574,
+        "wall_per_verify_proxy_ms": 4.708171942073739,
+        "stream_decode_tps": 598.4916578055579,
+        "request_output_tps": 532.3162192665548
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 213.35825300775468,
+        "output_sha256": "206552d204e434fc2d1482a3f6d0a7261a5baa2990272133444f5b5f6cfe1a05",
+        "accepted_length": 2.8926553672316384,
+        "wall_per_verify_proxy_ms": 4.723592539644132,
+        "stream_decode_tps": 611.7168178294766,
+        "request_output_tps": 542.6594423319541
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 213.52548501454294,
+        "output_sha256": "e56fdeea57c5cae95415ed6f269186a8a3158d72c356877ae18f30092287660b",
+        "accepted_length": 3.2,
+        "wall_per_verify_proxy_ms": 4.703452287503751,
+        "stream_decode_tps": 679.582355867378,
+        "request_output_tps": 595.2964133997435
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 212.50772394705564,
+        "output_sha256": "d00424951941bb71de8c64c868ef8e817fa48c62d8df0d9287137c52f2fced0b",
+        "accepted_length": 2.9681159420289855,
+        "wall_per_verify_proxy_ms": 4.703864066834575,
+        "stream_decode_tps": 630.3183526907488,
+        "request_output_tps": 557.4544434265251
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 211.84317802544683,
+        "output_sha256": "748ab4c7ea5ec05736f33f371f4fae1be96747196599cde2258d9cc50b2f0d13",
+        "accepted_length": 3.683453237410072,
+        "wall_per_verify_proxy_ms": 4.708540071850549,
+        "stream_decode_tps": 781.4114018188048,
+        "request_output_tps": 672.6870153118024
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 201.07098994776607,
+        "output_sha256": "b4b1e2521f6cb634de264181283db113da008cd8db275eb48b1c659de0209af5",
+        "accepted_length": 3.9233716475095783,
+        "wall_per_verify_proxy_ms": 4.718951180209745,
+        "stream_decode_tps": 830.4078388512853,
+        "request_output_tps": 713.9265493723042
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 204.3811100302264,
+        "output_sha256": "3d5e4942c5015e04ab64a7b965c1a5db289ef03cf0904a0d8e0259aad39da14f",
+        "accepted_length": 3.4133333333333336,
+        "wall_per_verify_proxy_ms": 4.715252749932309,
+        "stream_decode_tps": 723.0580911189212,
+        "request_output_tps": 631.8292302026387
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 212.1926830150187,
+        "output_sha256": "77a1faf0a30b248db4ba57cf4aa3889fddfb78b7420f03ac4a8b67475c5db06a",
+        "accepted_length": 3.4829931972789114,
+        "wall_per_verify_proxy_ms": 4.704516132751822,
+        "stream_decode_tps": 739.4975217421236,
+        "request_output_tps": 641.1910576737475
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 212.24100200925022,
+        "output_sha256": "307c9098fbcafc9e27bef199ed517937d9e5f3b3a91cfc770c4b523423e3decc",
+        "accepted_length": 3.1124620060790273,
+        "wall_per_verify_proxy_ms": 4.702017498542314,
+        "stream_decode_tps": 661.2162501289008,
+        "request_output_tps": 581.5627505364449
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 205.56322496850044,
+        "output_sha256": "31cd2be311db744abd171709a3eddaa9da9c6b063b9c5fc8ff000c3522aaa511",
+        "accepted_length": 3.1507692307692308,
+        "wall_per_verify_proxy_ms": 4.716572086326778,
+        "stream_decode_tps": 667.2528055338856,
+        "request_output_tps": 588.5190797894288
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 212.9973249975592,
+        "output_sha256": "d4a1d6312003fe5cff5fca001bd51822b16af649b38ad8dab7560182c4e3a3d4",
+        "accepted_length": 2.959537572254335,
+        "wall_per_verify_proxy_ms": 4.716308286138998,
+        "stream_decode_tps": 626.8206919963679,
+        "request_output_tps": 554.6043621353223
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 211.1808720510453,
+        "output_sha256": "63117b64633a570a060bcec49349353489d3acbe59e38f5fbb2496e677e48a7c",
+        "accepted_length": 2.8287292817679557,
+        "wall_per_verify_proxy_ms": 4.702526154652629,
+        "stream_decode_tps": 600.8327658424789,
+        "request_output_tps": 534.7111994316621
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 212.67281204927713,
+        "output_sha256": "1487f8943b1650f6e8b235e7de6cc13fc79ce2b891bf24456cc2b98643c7e460",
+        "accepted_length": 3.893536121673004,
+        "wall_per_verify_proxy_ms": 4.708609973547888,
+        "stream_decode_tps": 825.9072137826544,
+        "request_output_tps": 704.9230032704847
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 214.19147308915854,
+        "output_sha256": "1662c5e9875b574e1ba7f41e17e7d5afd1c903b69f8da203a0d829fd66ec5b9f",
+        "accepted_length": 3.292604501607717,
+        "wall_per_verify_proxy_ms": 4.716883540015751,
+        "stream_decode_tps": 697.2515359998091,
+        "request_output_tps": 608.4616723093941
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 213.11594999860972,
+        "output_sha256": "5b9e6f164b9c673961f1281ef41ea681a7acbdf77a4c91ac5cc245293bf6627e",
+        "accepted_length": 3.357377049180328,
+        "wall_per_verify_proxy_ms": 4.709870209841088,
+        "stream_decode_tps": 712.0223170428537,
+        "request_output_tps": 620.1272411955642
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 212.75726100429893,
+        "output_sha256": "3e71335cf3e02a58bb19901f5a96292319c25378611488be1e9eaeba18de0eb0",
+        "accepted_length": 3.7785977859778597,
+        "wall_per_verify_proxy_ms": 4.707667756674474,
+        "stream_decode_tps": 801.7305649701794,
+        "request_output_tps": 687.2256985854085
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 215.56171600241214,
+        "output_sha256": "81c08134fee3989a82d522a35227953fa5bbdb168fe14a3691209d2967db1387",
+        "accepted_length": 3.1124620060790273,
+        "wall_per_verify_proxy_ms": 4.700908498586606,
+        "stream_decode_tps": 661.3267289371742,
+        "request_output_tps": 580.6114472335732
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 214.15480005089194,
+        "output_sha256": "a5efed9b0d3ab3bf7ca40c4c0250e53c1762545e93525830def54d59bc1973d1",
+        "accepted_length": 3.0206489675516224,
+        "wall_per_verify_proxy_ms": 4.7146158555940145,
+        "stream_decode_tps": 639.965345632559,
+        "request_output_tps": 564.4690871558286
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 204.64277500286698,
+        "output_sha256": "b2e1dfffb4a7251b2f07d371879e81073ea72de73b5dd51eaab2b523cfa50059",
+        "accepted_length": 3.056716417910448,
+        "wall_per_verify_proxy_ms": 4.72220259391939,
+        "stream_decode_tps": 646.5749163924594,
+        "request_output_tps": 572.6721260741981
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 208.70070590171963,
+        "output_sha256": "6f81dee0a950016a808db41920015b8b5d824a48162020836dfe3bc3d9a2ab27",
+        "accepted_length": 2.7675675675675677,
+        "wall_per_verify_proxy_ms": 4.706382570549141,
+        "stream_decode_tps": 587.4019949270759,
+        "request_output_tps": 524.7176560779086
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 217.78197900857776,
+        "output_sha256": "cde2906c878d70451d5219fcc1a1a967bc821dcc5fbd24e8347dc078f91acbef",
+        "accepted_length": 3.5189003436426116,
+        "wall_per_verify_proxy_ms": 4.703598072163479,
+        "stream_decode_tps": 747.291604296946,
+        "request_output_tps": 644.8051532888302
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 210.94816795084625,
+        "output_sha256": "75d257abbc328ba2e7774fa48c255ed7c693cb06e684ea59406c05daabfb7e5c",
+        "accepted_length": 3.3684210526315788,
+        "wall_per_verify_proxy_ms": 4.7128142369298365,
+        "stream_decode_tps": 713.952791548715,
+        "request_output_tps": 622.3528651634757
+      },
+      {
+        "launch": "b",
+        "index": 3,
+        "server_ttft_ms": 212.30698795989156,
+        "output_sha256": "a6712c4341e001b4b18ed1f9bdf279b0080f402dabf8e099def95024715f8922",
+        "accepted_length": 3.292604501607717,
+        "wall_per_verify_proxy_ms": 4.715376466563589,
+        "stream_decode_tps": 697.4753058867949,
+        "request_output_tps": 609.3808484140449
+      },
+      {
+        "launch": "b",
+        "index": 2,
+        "server_ttft_ms": 209.6804849570617,
+        "output_sha256": "bb2f0a9d0ecca7d98503cea9295fbe2bcb34289bc0bc2477405e01eb509067d1",
+        "accepted_length": 3.657142857142857,
+        "wall_per_verify_proxy_ms": 4.701043400148462,
+        "stream_decode_tps": 777.0432989308085,
+        "request_output_tps": 670.3837485875436
+      },
+      {
+        "launch": "b",
+        "index": 1,
+        "server_ttft_ms": 212.2792759910226,
+        "output_sha256": "b126473a1de9fabc7cfca6999bd758b258ac6df20829c0663bed1e78e3171eec",
+        "accepted_length": 3.1219512195121952,
+        "wall_per_verify_proxy_ms": 4.711293609721995,
+        "stream_decode_tps": 661.8982520185282,
+        "request_output_tps": 582.0991663776028
+      },
+      {
+        "launch": "b",
+        "index": 0,
+        "server_ttft_ms": 212.34398009255528,
+        "output_sha256": "4c0eeb4cbb399cb1c87849472d562bd2307e204833b0d66c3e0c40bdd5037ca5",
+        "accepted_length": 3.1507692307692308,
+        "wall_per_verify_proxy_ms": 4.718076704571454,
+        "stream_decode_tps": 667.0628359152465,
+        "request_output_tps": 586.0538802439117
+      }
+    ]
+  }
+}

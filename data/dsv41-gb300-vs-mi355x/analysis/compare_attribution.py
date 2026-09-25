@@ -78,7 +78,9 @@ def mi355x():
 
 
 def main():
+    # p3-serial-*: every side stream off, so each category's kernel time is its standalone cost.
     res = dict(order=ORDER, labels=LABEL, gb300_verify=gb300("p2-real"), gb300_decode=gb300("p2-off"),
+               gb300_verify_serial=gb300("p3-serial-real"), gb300_decode_serial=gb300("p3-serial-off"),
                mi355x_verify=mi355x(), mi_family_map=MI_FAMILY)
     (CAMP / "analysis/attribution_compare.json").write_text(json.dumps(res, indent=2) + "\n")
     g, m = res["gb300_verify"], res["mi355x_verify"]
@@ -91,6 +93,13 @@ def main():
           f"{m['kernels']:6.0f} {g['kernels']:6.0f}")
     print(f"GB300 overlap = kernel sum / busy = {g['overlap']:.2f}; decode step overlap = "
           f"{res['gb300_decode']['overlap']:.2f}; unmapped MI families: {m['unmapped']}")
+    s = res["gb300_verify_serial"]
+    print(f"{'category':26} {'MI355X':>8} {'GB300 serial':>12} {'gap':>7}")
+    for k in ORDER:
+        a, b = m["categories"][k]["wall_us"], s["categories"][k]["wall_us"]
+        print(f"{LABEL[k]:26} {a:8.0f} {b:12.0f} {a - b:7.0f}")
+    print(f"serial cycle median {s['cycle_us_median']:.0f} us, overlap {s['overlap']:.3f}; decode serial overlap "
+          f"{res['gb300_decode_serial']['overlap']:.3f}")
 
 
 if __name__ == "__main__":

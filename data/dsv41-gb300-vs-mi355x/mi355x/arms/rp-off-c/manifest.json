@@ -1,0 +1,7 @@
+{"label": "rp-off-c", "mode": "off", "affinity_mode": "split", "launcher": "$E2E_CAMPAIGN/bench/launch_ht.sh",
+ "launcher_sha256": "cf1dc908919a651655bf8ad3643f169dfc3b79e0200b677839239d584e5f9620", "sglang_tree": "$E2E_CAMPAIGN/sources/rt-base",
+ "rocprofv3": "1.1.0
+6.8.0-71-generic
+11.4.0
+7.2.0",
+ "trace_dir": "$ROCPROF_TRACES/rp-off-c", "gpu_lock_record": "$CAMPAIGN/results/gpu-claim-session3c", "start_utc": "2026-09-25T20:02:46.196Z"}

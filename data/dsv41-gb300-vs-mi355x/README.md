@@ -55,5 +55,32 @@ Raw data behind `public/sources/dsv41-gb300-vs-mi355x.html`. Measured 2026-09-24
 - `analysis/`: `arms.json` (every group), `attribution_compare.json` (both machines in one category
   scheme), `gb300_placement.json`, and the scripts that produced them and the page.
 
+## Session 3 (2026-09-25): concurrency A/B, serialized attribution, real text, graph floor
+
+- GB300 ran inside the persistent workbench container (no Docker CLI there), so
+  `gb300/scripts/wb/wb_arm.py` starts each server as a fresh process of that container with the same
+  cells, client, JIT caches and records as `arm.py`; the container holds `CAP_SYS_NICE`, so every
+  session-3 arm is NUMA-bound. `gb300/scripts/wb/queue3.sh` is the whole session.
+  - `w3-{base,opt0,serial}-{sim,off}-{a,b}`: default streams; `SGLANG_OPT_USE_MULTI_STREAM_OVERLAP=0`
+    (attention preparation, mHC statistics, routed quantization and DSpark draft streams off); and that
+    plus `gb300/scripts/wb/serial_moe/sitecustomize.py`, which clears `DeepseekV2MoE.alt_stream` so the
+    shared experts run on the forward stream. Order mirrored in time.
+  - `p3-serial-real`, `p3-serial-off`: nsys captures of the fully serial layout (same windows as p2-*).
+  - `w3-rt-{a,b}`: the MI355X real-text BS=1 contract (four chat-encoded 4,096-token prompts, 2 warm-ups
+    + 24 samples each, temperature 0, 1,024 streamed tokens) at the default layout. The prompts are
+    token ids of local documents and are not published; `gb300/scripts/wb/realtext-inputs.sha256.json`
+    has their hashes, and each request records only the sha256 of its output ids.
+  - `mb-cuda/default.json`: `graph_floor.py` (the MI355X campaign's graph microbenchmark) on GPU0.
+- MI355X: `mi355x/graph-floor/default.json` is the same script on HIP 4 (lease `gpu-claim-session3`,
+  no foreign process seen). `quick*.json` are the rocprofv3 calibration runs; `rp-real-c` is a TP4
+  server traced by rocprofv3 1.1.0 with `DEBUG_CLR_GRAPH_PACKET_CAPTURE=0` (packet-captured graph
+  replays abort under tracing), summarized in `analysis/mi355x_trace_real.json`. Only its kernel
+  counts are used: traced small-kernel durations cluster near 5 us and collectives absorb rank skew.
+  Leases `gpu-claim-session3b-r` and `gpu-claim-session3c` are flagged (canaries moved up to 11% in
+  both directions after traced servers were killed); nothing from them is used as a timing.
+  The 1.7 GB of raw traces are not committed.
+- `analysis/realtext.json` (per-request metrics on both machines), `analysis/export_flat.py` (the flat
+  CSVs published as a gist for analysis).
+
 Hostnames, account names, IP addresses and machine-local paths are replaced by placeholders
 (`$GB300_WORK`, `$CAMPAIGN`, `$E2E_CAMPAIGN`, `$MODEL_ROOT`, `gb300-tray`, `mi355x-node`, `<ip>`).

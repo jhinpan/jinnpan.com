@@ -1,0 +1,4 @@
+sglang::scheduler_TP0_EP0 pid=123629 cpus_allowed=0-71 mems_allowed=0-1 threads_on_node0=183 threads_on_node1=0 pages[N1=7290 N0=125079 ] first_mapping_policy=bind:0
+sglang::scheduler_TP1_EP1 pid=123694 cpus_allowed=0-71 mems_allowed=0-1 threads_on_node0=178 threads_on_node1=0 pages[N1=7288 N0=138856 ] first_mapping_policy=bind:0
+sglang::scheduler_TP2_EP2 pid=123759 cpus_allowed=72-143 mems_allowed=0-1 threads_on_node0=0 threads_on_node1=178 pages[N1=130261 N0=5648 ] first_mapping_policy=bind:1
+sglang::scheduler_TP3_EP3 pid=123824 cpus_allowed=72-143 mems_allowed=0-1 threads_on_node0=0 threads_on_node1=178 pages[N1=131680 N0=5648 ] first_mapping_policy=bind:1

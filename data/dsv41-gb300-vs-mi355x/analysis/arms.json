@@ -476,6 +476,204 @@
     ]
   },
   {
+    "platform": "gb300",
+    "group": "w3-base-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, NUMA-bound, default streams (session 3)",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 1193.0613640208157,
+    "tps_min": 1162.8404969349208,
+    "tps_max": 1204.9905082826112,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 4.61103485912949,
+    "step_ms": null,
+    "ttft_ms": 214.77138245245442,
+    "repeat16": 1.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 1182.7223294829391,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.662848928217855,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 1197.089298116658,
+        "al": 5.505376344086022,
+        "cycle_ms": 4.606892563202301,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "w3-opt0-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, NUMA-bound, SGLANG_OPT_USE_MULTI_STREAM_OVERLAP=0",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 857.9775977743911,
+    "tps_min": 822.2213771296282,
+    "tps_max": 884.3961190055375,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 6.384822451572463,
+    "step_ms": null,
+    "ttft_ms": 201.42944296821952,
+    "repeat16": 3.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 857.9775977743911,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.389818902019725,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 859.3165950792634,
+        "al": 5.505376344086022,
+        "cycle_ms": 6.383603409411936,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "w3-serial-sim",
+    "desc": "main ffac53d779, LL cell, sim 5.5, NUMA-bound, every side stream off",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 749.4084208274287,
+    "tps_min": 729.5789249102494,
+    "tps_max": 767.1993615538792,
+    "al": 5.505376344086022,
+    "al_min": 5.446808510638298,
+    "al_max": 5.535135135135135,
+    "cycle_ms": 7.341422638632685,
+    "step_ms": null,
+    "ttft_ms": 201.33328449446708,
+    "repeat16": 1.5,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 746.7603452119085,
+        "al": 5.505376344086022,
+        "cycle_ms": 7.402090271658123,
+        "step_ms": null
+      },
+      {
+        "launch": "b",
+        "tps": 752.1797717523184,
+        "al": 5.505376344086022,
+        "cycle_ms": 7.304071128115146,
+        "step_ms": null
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "w3-base-off",
+    "desc": "main ffac53d779, HT cell (DSpark off), NUMA-bound, default streams (session 3)",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 282.8406368710634,
+    "tps_min": 282.7142095380494,
+    "tps_max": 283.36698809875793,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 3.5355598650980133,
+    "ttft_ms": 210.4935684474185,
+    "repeat16": 492.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 282.8097071063487,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 3.535946528859735
+      },
+      {
+        "launch": "b",
+        "tps": 282.8652720533752,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 3.5352519344522975
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "w3-opt0-off",
+    "desc": "main ffac53d779, HT cell (DSpark off), NUMA-bound, SGLANG_OPT_USE_MULTI_STREAM_OVERLAP=0",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 211.89770677102052,
+    "tps_min": 209.39701618943164,
+    "tps_max": 212.25923856535394,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 4.719258295219639,
+    "ttft_ms": 196.16050651529804,
+    "repeat16": 63.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 212.13179901638398,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 4.714050599638344
+      },
+      {
+        "launch": "b",
+        "tps": 211.78368613436675,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 4.7217990894335795
+      }
+    ]
+  },
+  {
+    "platform": "gb300",
+    "group": "w3-serial-off",
+    "desc": "main ffac53d779, HT cell (DSpark off), NUMA-bound, every side stream off",
+    "launches": 2,
+    "rounds": 12,
+    "tps": 177.10441714919483,
+    "tps_min": 173.49565974640035,
+    "tps_max": 177.27240201276163,
+    "al": null,
+    "al_min": null,
+    "al_max": null,
+    "cycle_ms": null,
+    "step_ms": 5.646386910113847,
+    "ttft_ms": 196.8122930265963,
+    "repeat16": 151.0,
+    "per_launch": [
+      {
+        "launch": "a",
+        "tps": 177.12647622240496,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 5.645684156904155
+      },
+      {
+        "launch": "b",
+        "tps": 177.10355594509042,
+        "al": null,
+        "cycle_ms": null,
+        "step_ms": 5.646414380772759
+      }
+    ]
+  },
+  {
     "platform": "mi355x",
     "group": "u-off",
     "desc": "e2e824dc58+#8, HT cell, SGLang split affinity",

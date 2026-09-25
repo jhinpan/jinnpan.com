@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "ready_s": 151.0,
+  "stream_end": "ChunkedEncodingError(ProtocolError('Response ended prematurely'))",
+  "streamed_tokens": 457,
+  "server_exit": 0,
+  "profile_reply": {
+    "code": 200,
+    "text": "Start profiling.\n"
+  },
+  "report_exists": true,
+  "released": true,
+  "finished_utc": "2026-09-25T20:10:20Z"
+}

@@ -33,6 +33,8 @@ REPLACE = [
     ("$WORKSPACE", "$WORKSPACE"),
     ("$MORI", "$MORI"),
     ("$CAMPAIGN_CACHE", "$CAMPAIGN_CACHE"),
+    ("$ROCPROF_TRACES", "$ROCPROF_TRACES"),
+    ("$GB300_SSH", "$GB300_SSH"),
     ("$MODEL_ROOT", "$MODEL_ROOT"),
     ("gb300-tray", "gb300-tray"),
     ("mi355x-node", "mi355x-node"),
@@ -105,6 +107,33 @@ Raw data behind `public/sources/dsv41-gb300-vs-mi355x.html`. Measured 2026-09-24
 - `analysis/`: `arms.json` (every group), `attribution_compare.json` (both machines in one category
   scheme), `gb300_placement.json`, and the scripts that produced them and the page.
 
+## Session 3 (2026-09-25): concurrency A/B, serialized attribution, real text, graph floor
+
+- GB300 ran inside the persistent workbench container (no Docker CLI there), so
+  `gb300/scripts/wb/wb_arm.py` starts each server as a fresh process of that container with the same
+  cells, client, JIT caches and records as `arm.py`; the container holds `CAP_SYS_NICE`, so every
+  session-3 arm is NUMA-bound. `gb300/scripts/wb/queue3.sh` is the whole session.
+  - `w3-{base,opt0,serial}-{sim,off}-{a,b}`: default streams; `SGLANG_OPT_USE_MULTI_STREAM_OVERLAP=0`
+    (attention preparation, mHC statistics, routed quantization and DSpark draft streams off); and that
+    plus `gb300/scripts/wb/serial_moe/sitecustomize.py`, which clears `DeepseekV2MoE.alt_stream` so the
+    shared experts run on the forward stream. Order mirrored in time.
+  - `p3-serial-real`, `p3-serial-off`: nsys captures of the fully serial layout (same windows as p2-*).
+  - `w3-rt-{a,b}`: the MI355X real-text BS=1 contract (four chat-encoded 4,096-token prompts, 2 warm-ups
+    + 24 samples each, temperature 0, 1,024 streamed tokens) at the default layout. The prompts are
+    token ids of local documents and are not published; `gb300/scripts/wb/realtext-inputs.sha256.json`
+    has their hashes, and each request records only the sha256 of its output ids.
+  - `mb-cuda/default.json`: `graph_floor.py` (the MI355X campaign's graph microbenchmark) on GPU0.
+- MI355X: `mi355x/graph-floor/default.json` is the same script on HIP 4 (lease `gpu-claim-session3`,
+  no foreign process seen). `quick*.json` are the rocprofv3 calibration runs; `rp-real-c` is a TP4
+  server traced by rocprofv3 1.1.0 with `DEBUG_CLR_GRAPH_PACKET_CAPTURE=0` (packet-captured graph
+  replays abort under tracing), summarized in `analysis/mi355x_trace_real.json`. Only its kernel
+  counts are used: traced small-kernel durations cluster near 5 us and collectives absorb rank skew.
+  Leases `gpu-claim-session3b-r` and `gpu-claim-session3c` are flagged (canaries moved up to 11% in
+  both directions after traced servers were killed); nothing from them is used as a timing.
+  The 1.7 GB of raw traces are not committed.
+- `analysis/realtext.json` (per-request metrics on both machines), `analysis/export_flat.py` (the flat
+  CSVs published as a gist for analysis).
+
 Hostnames, account names, IP addresses and machine-local paths are replaced by placeholders
 (`$GB300_WORK`, `$CAMPAIGN`, `$E2E_CAMPAIGN`, `$MODEL_ROOT`, `gb300-tray`, `mi355x-node`, `<ip>`).
 """
@@ -169,6 +198,8 @@ def gb300_manifest(src: Path) -> str:
     m = json.loads(src.read_text())
     keep = {k: m.get(k) for k in ("name", "image", "image_id", "server_cmd", "env", "docker_args", "port",
                                    "bench", "started_utc", "sample_gpu", "num_steps", "trigger_after")}
+    # Session-3 workbench arms (wb_arm.py) record these instead of an image.
+    keep.update({k: m[k] for k in ("container", "pythonpath", "profile_steps", "sglang_rev", "sglang_dirty") if k in m})
     pre = m.get("nvidia_smi_pre", "")
     keep["nvidia_smi_pre_summary"] = [l.strip() for l in pre.splitlines()
                                       if re.search(r"Driver Version|CUDA Version|Current Power Limit|"
@@ -189,13 +220,20 @@ def main():
         if (arm / "bench/measurements.json").exists():
             put(f"{base}/rounds.csv", rounds_csv(arm / "bench/measurements.json"))
         for f in ("bench/summary.json", "status.json", "docker_run.txt", "placement_ready.txt",
-                  "placement_post.txt", "server_record_lines.txt", "gpu_samples.csv", "attribution.json"):
+                  "placement_post.txt", "server_record_lines.txt", "gpu_samples.csv", "attribution.json",
+                  "realtext/requests.jsonl", "realtext/summary.json", "default.json", "serial-preflight.log"):
             put_file(f"{base}/{Path(f).name}", arm / f)
         if (arm / "manifest.json").exists():
             put(f"{base}/manifest.json", gb300_manifest(arm / "manifest.json"))
-    for f in sorted((CAMP / "gb300/scripts").glob("*")):
-        if f.is_file():
-            put_file(f"gb300/scripts/{f.name}", f)
+    # The real-text prompts are token ids of local documents; only their hashes are published.
+    for f in sorted((CAMP / "gb300/scripts").rglob("*")):
+        if f.is_file() and "__pycache__" not in f.parts and f.name != "realtext-inputs.json":
+            put_file(f"gb300/scripts/{f.relative_to(CAMP / 'gb300/scripts')}", f)
+    inputs = json.loads((CAMP / "gb300/scripts/wb/realtext-inputs.json").read_text())
+    put("gb300/scripts/wb/realtext-inputs.sha256.json",
+        json.dumps({"row": inputs["row"], "encoding": inputs["encoding"],
+                    "prompts": [{"index": p["index"], "tokens": len(p["input_ids"]), "sha256": p["sha256"]}
+                                for p in inputs["prompts"]]}, indent=2) + "\n")
     for f in ("lscpu.txt", "topo.txt", "uname.txt", "nvlink-gpu0.txt", "nvidia-smi-q.txt"):
         put_file(f"gb300/system/{f}", CAMP / "gb300/records/system" / f)
     # MI355X arms
@@ -215,24 +253,29 @@ def main():
                                                   r"flashinfer|aiter_sparse|DSV4 SWA sizing|SIMULATE|"
                                                   r"NUMA|numa|affinity", l)]
             put(f"{base}/server_record_lines.txt", "\n".join(keep) + "\n")
-    for lease in ("gpu-claim-session1-a2", "gpu-claim-session2"):
+    for lease in ("gpu-claim-session1-a2", "gpu-claim-session2", "gpu-claim-session3", "gpu-claim-session3b-r",
+                  "gpu-claim-session3c"):
         src = CAMP / "results" / lease
         for f in sorted(src.glob("canary-*.json")):
             put_file(f"mi355x/leases/{lease}/{f.name}", f)
         for name in ("picker.txt", "command.json", "exit.json", "kfd-before.json", "kfd-after.json"):
             put_file(f"mi355x/leases/{lease}/{name}", src / name)
         put(f"mi355x/leases/{lease}/process-monitor-summary.csv", monitor_summary(src / "process-monitor.jsonl"))
+    for f in sorted((CAMP / "results/mb-hip").glob("*.json")):
+        put_file(f"mi355x/graph-floor/{f.name}", f)
     for f in ("run_arm.sh", "run_arm2.sh", "session1.sh", "session2.sh", "launch_ll_sim.sh", "lease.sh",
-              "snapshot_procs.py", "wait_free.py"):
+              "snapshot_procs.py", "wait_free.py", "session3.sh", "session3b.sh", "session3c.sh", "run_rocprof_arm.sh"):
         put_file(f"mi355x/scripts/{f}", CAMP / "bench" / f)
+    put_file("mi355x/scripts/graph_floor.py", FLOOR / "bench/graph_floor.py")
     for f in ("env.sh", "launch_ll.sh", "launch_ht.sh"):
         put_file(f"mi355x/scripts/e2e824/{f}", E2E / "bench" / f)
     put_file("mi355x/scripts/e2e824/rt-base.json", E2E / "sources/rt-base.json")
     for f in ("kernel-ledger.csv", "kernel-ledger-summary.json", "budget.md"):
         put_file(f"mi355x/prior-base-cycle-ledger/{f}", FLOOR / "analysis" / f)
     # Analysis
-    for f in ("arms.json", "gb300_placement.json", "attribution_compare.json", "analyze.py",
-              "compare_attribution.py", "package_data.py", "build_page.py"):
+    for f in ("arms.json", "gb300_placement.json", "attribution_compare.json", "realtext.json",
+              "mi355x_trace_real.json", "analyze.py", "compare_attribution.py", "realtext.py", "mi355x_trace.py",
+              "export_flat.py", "package_data.py", "build_page.py"):
         put_file(f"analysis/{f}", CAMP / "analysis" / f)
     put("README.md", README)
     n = sum(1 for _ in DEST.rglob("*") if _.is_file())
