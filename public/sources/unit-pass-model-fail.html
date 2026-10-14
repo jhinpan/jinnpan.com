@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Green test, red model: why GPU kernels pass unit tests and fail end to end</title>
+<meta name="description" content="Why a GPU kernel can pass every unit test and still break an end-to-end model run: seven gaps between a test and a model, each traced through public bugs, and a validation ladder that closes them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Overpass+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Failure-inspection report: graph paper, ink, safety orange, pass/fail stamps */
+  --paper: #f4f0e6;
+  --paper-2: #ece6d8;
+  --paper-3: #e2dac8;
+  --card: #fbf9f3;
+  --ink: #1d1c1a;
+  --ink-2: #3a3833;
+  --ink-3: #66625a;
+  --ink-4: #98927f;
+  --rule: #cfc6b1;
+  --rule-2: #b4a98f;
+  --grid: rgba(29, 28, 26, 0.045);
+
+  --orange: #d9480f;
+  --orange-soft: #fbe3d3;
+  --pass: #2b8a3e;
+  --pass-soft: #e1f0e3;
+  --fail: #c92a2a;
+  --fail-soft: #f7dfdf;
+  --steel: #1c4f8c;
+
+  --display: 'Libre Franklin', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+  --serif: 'Libre Caslon Text', 'Noto Serif SC', Georgia, serif;
+  --mono: 'Overpass Mono', 'Noto Sans SC', ui-monospace, 'Courier New', monospace;
+
+  --max-content: 720px;
+  --rail-w: 212px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding-left: var(--rail-w);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.72;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+a { color: var(--steel); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--orange); }
+code {
+  font-family: var(--mono);
+  font-size: 0.84em;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 0 4px;
+}
+strong { font-weight: 700; }
+em { font-style: italic; }
+
+/* ============ LANGUAGE TOGGLE ============ */
+body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+.lang-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 300;
+  display: flex;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border: 1.5px solid var(--ink);
+  background: var(--card);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.lang-toggle button {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-right: 1.5px solid var(--ink);
+  color: var(--ink-2);
+  padding: 7px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.lang-toggle button:last-child { border-right: none; }
+.lang-toggle button:hover { color: var(--orange); }
+body[data-lang="en"] .lang-toggle button[data-set="en"],
+body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+  background: var(--orange);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ============ NAV RAIL ============ */
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-w);
+  height: 100vh;
+  overflow-y: auto;
+  padding: 28px 18px 40px;
+  background: var(--paper-2);
+  border-right: 1.5px solid var(--ink);
+  z-index: 5;
+}
+.rail .rail-home {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+.rail .rail-home:hover { color: var(--orange); }
+.rail .brand {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.rail .brand .g { color: var(--pass); }
+.rail .brand .r { color: var(--fail); }
+.rail .ref {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  margin-bottom: 22px;
+  text-transform: uppercase;
+}
+.rail ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: sec -1;
+}
+.rail li {
+  counter-increment: sec;
+  margin: 0 0 5px;
+}
+.rail li a {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  font-family: var(--display);
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  text-decoration: none;
+  padding: 3px 0;
+}
+.rail li a::before {
+  content: counter(sec, decimal-leading-zero);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-4);
+  padding-top: 2px;
+}
+.rail li a:hover { color: var(--orange); }
+.rail .divider { height: 1px; background: var(--rule-2); margin: 12px 0; }
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 72px 40px 40px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 18px;
+}
+.kicker .dot { width: 8px; height: 8px; background: var(--orange); display: inline-block; }
+.kicker .chip { border: 1px solid var(--rule-2); padding: 1px 7px; background: var(--card); }
+.masthead h1 {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 66px;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  margin: 0 0 22px;
+  max-width: 760px;
+}
+.masthead h1 .g { color: var(--pass); }
+.masthead h1 .r { color: var(--fail); }
+.masthead .subtitle {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 720px;
+  margin: 0 0 30px;
+}
+.stamp {
+  position: absolute;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  padding: 6px 14px;
+  border: 4px double currentColor;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.stamp.pass { color: var(--pass); top: 70px; right: 60px; transform: rotate(-8deg); }
+.stamp.fail { color: var(--fail); top: 132px; right: 26px; transform: rotate(7deg); }
+.masthead .meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rule-2);
+  border-left: 1px solid var(--rule-2);
+}
+.masthead .meta .item {
+  border-right: 1px solid var(--rule-2);
+  border-bottom: 1px solid var(--rule-2);
+  padding: 10px 12px;
+  background: rgba(251, 249, 243, 0.7);
+}
+.masthead .meta .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+.masthead .meta .value {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 22px;
+}
+.masthead .meta .value .unit {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+
+/* ============ ARTICLE ============ */
+.shell { max-width: 980px; margin: 0 auto; padding: 0 40px 80px; }
+.article { max-width: var(--max-content); margin: 0 auto; }
+section { padding-top: 34px; }
+h2 {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 32px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 26px 0 16px;
+}
+h2 .num {
+  display: block;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 8px;
+}
+h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 19px;
+  margin: 26px 0 8px;
+}
+p { margin: 0 0 15px; }
+.dropcap::first-letter {
+  font-family: var(--display);
+  font-weight: 900;
+  float: left;
+  font-size: 58px;
+  line-height: 0.86;
+  padding: 6px 10px 0 0;
+  color: var(--orange);
+}
+ul.tight, ol.tight { padding-left: 22px; margin: 0 0 16px; }
+ul.tight li, ol.tight li { margin: 0 0 8px; }
+
+.callout {
+  position: relative;
+  margin: 24px 0;
+  padding: 16px 18px 6px;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  border-left: 7px solid var(--orange);
+  box-shadow: 4px 4px 0 var(--paper-3);
+}
+.callout.pass { border-left-color: var(--pass); }
+.callout.fail { border-left-color: var(--fail); }
+.callout .ctag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 1px 7px;
+  margin-bottom: 8px;
+}
+.evidence {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  border-top: 1px dashed var(--rule-2);
+  padding-top: 8px;
+  margin: 4px 0 18px;
+}
+
+/* ============ PLATES ============ */
+.plate {
+  margin: 30px 0;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--paper-3);
+}
+.plate.wide {
+  width: min(960px, calc(100vw - var(--rail-w) - 60px));
+  max-width: none;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+.plate-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1.5px solid var(--ink);
+  padding: 7px 12px;
+  background: var(--paper-2);
+}
+.plate-meta .pn { color: var(--orange); font-weight: 700; }
+.plate svg { display: block; width: 100%; height: auto; }
+.plate .caption {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-2);
+  border-top: 1px solid var(--rule);
+  padding: 9px 14px 11px;
+  margin: 0;
+}
+svg text { font-family: var(--display); fill: var(--ink); }
+svg .t { font-size: 14px; font-weight: 600; }
+svg .ts { font-size: 12px; fill: var(--ink-3); font-weight: 500; }
+svg .tm { font-family: var(--mono); font-size: 11.5px; fill: var(--ink-3); }
+svg .th { font-size: 15px; font-weight: 800; }
+svg .tl { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--orange); }
+svg .box { fill: #fffdf8; stroke: var(--ink); stroke-width: 1.4; }
+svg .box-pass { fill: var(--pass-soft); stroke: var(--pass); stroke-width: 1.6; }
+svg .box-fail { fill: var(--fail-soft); stroke: var(--fail); stroke-width: 1.6; }
+svg .box-warn { fill: var(--orange-soft); stroke: var(--orange); stroke-width: 1.6; }
+svg .edge { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+svg .edge-o { stroke: var(--orange); stroke-width: 2; fill: none; }
+svg .grid-l { stroke: var(--rule); stroke-width: 1; }
+svg .cliff { stroke: var(--fail); stroke-width: 2; stroke-dasharray: 6 4; }
+svg .ok { fill: var(--pass); }
+svg .bad { fill: var(--fail); }
+svg .warn { fill: var(--orange); }
+
+/* ============ TABLES ============ */
+table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 14px; }
+th, td { border-bottom: 1px solid var(--rule); padding: 8px 8px; vertical-align: top; text-align: left; }
+th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1.5px solid var(--ink);
+}
+td .gap {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  padding: 0 5px;
+  white-space: nowrap;
+}
+.table-wrap { overflow-x: auto; }
+.cases td:first-child { white-space: nowrap; font-family: var(--mono); font-size: 12px; }
+
+/* ============ REFERENCES / COLOPHON ============ */
+.refs { padding-left: 20px; font-size: 14.5px; }
+.refs li { margin: 0 0 7px; }
+.colophon {
+  max-width: 980px;
+  margin: 40px auto 0;
+  padding: 26px 40px 60px;
+  border-top: 1.5px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.colophon .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.colophon .k { text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-4); margin-bottom: 4px; }
+
+@media (max-width: 900px) {
+  body { padding-left: 0; }
+  .rail { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1.5px solid var(--ink); }
+  .rail ol { display: none; }
+  .masthead { padding: 56px 20px 30px; }
+  .masthead h1 { font-size: 42px; }
+  .stamp { display: none; }
+  .masthead .meta { grid-template-columns: repeat(2, 1fr); }
+  .shell { padding: 0 18px 60px; }
+  .plate.wide { width: 100%; margin-left: 0; transform: none; }
+  .colophon .grid { grid-template-columns: 1fr 1fr; }
+  .lang-toggle { top: 10px; right: 10px; font-size: 10px; }
+}
+</style>
+</head>
+<body data-lang="en">
+
+<!-- ============ LANGUAGE TOGGLE ============ -->
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button type="button" data-set="en" aria-label="English">EN</button>
+  <button type="button" data-set="zh" aria-label="中文">中文</button>
+</div>
+
+<!-- ============ NAV RAIL ============ -->
+<nav class="rail">
+  <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+  <div class="brand"><span class="g">Green</span> test,<br><span class="r">red</span> model</div>
+  <div class="ref"><span lang="en">Guide</span><span lang="zh">教程</span> · validation · 2026.10</div>
+  <ol>
+    <li><a href="#prologue"><span lang="en">Prologue</span><span lang="zh">序言</span></a></li>
+    <li><a href="#gap"><span lang="en">The gap</span><span lang="zh">缺口在哪里</span></a></li>
+    <li><a href="#shapes"><span lang="en">Shapes and sizes</span><span lang="zh">形状与尺寸</span></a></li>
+    <li><a href="#data"><span lang="en">Real data</span><span lang="zh">真实数据</span></a></li>
+    <li><a href="#contracts"><span lang="en">Contracts</span><span lang="zh">接口契约</span></a></li>
+    <li><a href="#context"><span lang="en">Execution context</span><span lang="zh">执行环境</span></a></li>
+    <li><a href="#timing"><span lang="en">Rare races</span><span lang="zh">偶发竞争</span></a></li>
+    <li><a href="#multigpu"><span lang="en">Multi-GPU</span><span lang="zh">多卡</span></a></li>
+    <li><a href="#stack"><span lang="en">Untested software</span><span lang="zh">没测到的软件</span></a></li>
+    <li><a href="#newarch"><span lang="en">New architectures</span><span lang="zh">新架构</span></a></li>
+    <div class="divider"></div>
+    <li><a href="#ladder"><span lang="en">A validation ladder</span><span lang="zh">验证阶梯</span></a></li>
+    <li><a href="#cases"><span lang="en">Case index</span><span lang="zh">案例索引</span></a></li>
+    <li><a href="#epilogue"><span lang="en">Epilogue</span><span lang="zh">尾声</span></a></li>
+    <li><a href="#references"><span lang="en">References</span><span lang="zh">参考资料</span></a></li>
+  </ol>
+</nav>
+
+<!-- ============ MASTHEAD ============ -->
+<header class="masthead">
+  <div class="stamp pass">PASS</div>
+  <div class="stamp fail">FAIL</div>
+  <div class="kicker">
+    <span lang="en">Tutorial · Guide</span><span lang="zh">教程 · GUIDE</span>
+    <span class="dot"></span>
+    <span>2026.10</span>
+    <span class="chip">kernel validation</span>
+  </div>
+  <h1><span class="g">Green</span> test,<br><span class="r">red</span> model</h1>
+  <p class="subtitle" lang="en">Why a GPU kernel can pass every unit test and still break an end-to-end model run: seven gaps between a test and a model, each traced through public bugs, and a validation ladder that closes them.</p>
+  <p class="subtitle" lang="zh">为什么一个 GPU kernel 能通过所有单测， 却在端到端的模型运行里出错： 测试和模型之间有七个缺口， 每个都用公开的真实 bug 说明， 最后给出一套逐级关闭这些缺口的验证阶梯。</p>
+  <div class="meta">
+    <div class="item">
+      <div class="label" lang="en">Gaps</div>
+      <div class="label" lang="zh">缺口</div>
+      <div class="value">7<span class="unit" lang="en">test ≠ model</span><span class="unit" lang="zh">测试 ≠ 模型</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Public cases</div>
+      <div class="label" lang="zh">公开案例</div>
+      <div class="value">18<span class="unit">PRs / issues</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Plates</div>
+      <div class="label" lang="zh">图</div>
+      <div class="value">6<span class="unit" lang="en">hand-drawn</span><span class="unit" lang="zh">手绘</span></div>
+    </div>
+    <div class="item">
+      <div class="label" lang="en">Reading time</div>
+      <div class="label" lang="zh">阅读时长</div>
+      <div class="value">~25<span class="unit" lang="en">minutes</span><span class="unit" lang="zh">分钟</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+<main class="article">
+
+<!-- ============ § 00 PROLOGUE ============ -->
+<section id="prologue">
+<h2 lang="en"><span class="num">§ 00 · The phenomenon</span>Prologue</h2>
+<h2 lang="zh"><span class="num">§ 00 · 现象</span>序言</h2>
+
+<p class="dropcap" lang="en">A kernel pull request usually arrives with two pieces of evidence: a green unit test and a speedup table. Both are real. Then the kernel ships inside a model, and one of three things happens. The model starts to answer in garbage. A multi-GPU run hangs with no error. Or nothing happens for a week, until one request takes a path nobody tried. People who maintain kernel libraries learn to say it in one line: it passed the unit test and failed in the model.</p>
+<p lang="zh">一个 kernel PR 通常带着两样证据： 一个通过的单测， 一张加速比表格。 两样都是真的。 然后这个 kernel 进入模型， 接下来会发生三种情况之一： 模型开始输出乱码； 多卡运行挂住， 不报任何错； 或者一周都相安无事， 直到某个请求走进一条没人试过的路径。 维护 kernel 库的人会把它总结成一句话： 单测过了， 跑模型出问题。</p>
+
+<p lang="en">This is not one bug. It is a gap in what the test covers. A unit test checks a kernel at a handful of points: a few shapes, random inputs, one GPU, one stream, a fresh process. A model run is a distribution over a much larger space. The test proves correctness only at the points it checks, and a model spends almost all of its time somewhere else.</p>
+<p lang="zh">这不是某一个 bug， 而是测试覆盖范围上的缺口。 单测只在少数几个点上检查 kernel： 几个形状、 随机输入、 一张卡、 一个 stream、 一个新进程。 模型运行则是一个大得多的空间上的分布。 测试只能证明它检查过的点正确， 而模型几乎所有时间都在别处。</p>
+
+<p lang="en">This guide does three things. It names the seven dimensions along which a test and a model differ. For each one, it explains the mechanism from first principles and shows it with bugs from public kernel repositories. Then it turns the seven gaps into a validation ladder: what to test, in what order, and what each rung catches that the rung below cannot.</p>
+<p lang="zh">这篇 guide 做三件事。 第一， 列出测试和模型不同的七个维度。 第二， 对每个维度从第一性原理解释机制， 并用公开 kernel 仓库里的真实 bug 说明。 第三， 把七个缺口变成一套验证阶梯： 测什么、 按什么顺序测、 每一级能抓到下一级抓不到的哪类问题。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">The one-line version</span>
+  <span class="ctag" lang="zh">一句话版本</span>
+  <p lang="en">A unit test pins every dimension it does not vary. Every pinned dimension is a place where production can differ, and a place where a bug can hide in plain sight.</p>
+  <p lang="zh">单测会固定所有它没有改变的维度。 每一个被固定的维度， 都是生产环境可能不同的地方， 也是 bug 可以明目张胆藏起来的地方。</p>
+</div>
+</section>
+
+<!-- ============ § 01 THE GAP + PLATE I ============ -->
+<section id="gap">
+<h2 lang="en"><span class="num">§ 01 · A test is a point, a model is a distribution</span>The gap</h2>
+<h2 lang="zh"><span class="num">§ 01 · 测试是点， 模型是分布</span>缺口在哪里</h2>
+
+<p lang="en">Start from what must be true of any kernel. Its output depends on more than the values of its arguments. It depends on the <strong>shape</strong>, which decides the code paths and tile tails that run; on the <strong>values</strong>, which decide the numeric regimes it hits; on the <strong>layout and dtype</strong> the caller hands over; on the <strong>execution context</strong>, such as graph capture, streams and caches; on <strong>timing</strong>, meaning which wave arrives first; on <strong>how many GPUs</strong> take part; and on the <strong>software and hardware</strong> it is built and run with. These are the seven dimensions.</p>
+<p lang="zh">先从任何 kernel 都成立的事实出发。 kernel 的输出不只取决于参数的值， 还取决于： <strong>形状</strong>， 它决定哪些代码路径和 tile 尾块会执行； <strong>数值</strong>， 它决定会碰到哪些数值区间； 调用方传进来的<strong>布局和 dtype</strong>； <strong>执行环境</strong>， 例如 graph 捕获、 stream 和缓存； <strong>时序</strong>， 也就是哪个 wave 先到； 参与的 <strong>GPU 数量</strong>； 以及编译和运行它的<strong>软件与硬件</strong>。 这就是七个维度。</p>
+
+<p lang="en">A unit test is cheap because it pins most of them to convenient values: small tile-aligned shapes, <code>torch.randn</code> inputs, layouts produced by its own helper, eager mode on the default stream, one call, one GPU, the repository's own build. For a fast test, that is the right trade-off. The cost is that each pinned value hides a regime where the kernel's behavior changes. Plate I puts the two sides next to each other.</p>
+<p lang="zh">单测之所以便宜， 是因为它把大多数维度固定在方便的值上： 小的、 按 tile 对齐的形状， <code>torch.randn</code> 生成的输入， 测试自己的辅助函数生成的布局， 默认 stream 上的 eager 模式， 调用一次， 一张卡， 仓库自己的构建。 对快速测试来说， 这是正确的取舍。 代价是： 每个被固定的值都藏起了一个 kernel 行为会改变的区间。 图 I 把两边并排放在一起。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">I</span> · seven gaps between a test and a model</span><span lang="zh">图 <span class="pn">I</span> · 测试与模型之间的七个缺口</span><span>test → model</span></div>
+  <svg viewBox="0 0 960 610" role="img" aria-label="Seven gaps between a unit test and a model run">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/></marker>
+    </defs>
+    <rect x="10" y="12" width="300" height="40" class="box-pass"/>
+    <rect x="650" y="12" width="300" height="40" class="box-fail"/>
+    <g lang="en">
+      <text x="160" y="38" text-anchor="middle" class="th" style="fill:#2b8a3e">Unit test: passes</text>
+      <text x="800" y="38" text-anchor="middle" class="th" style="fill:#c92a2a">Model run: fails</text>
+      <text x="480" y="38" text-anchor="middle" class="ts">gap → public cases</text>
+    </g>
+    <g lang="zh">
+      <text x="160" y="38" text-anchor="middle" class="th" style="fill:#2b8a3e">单测： 通过</text>
+      <text x="800" y="38" text-anchor="middle" class="th" style="fill:#c92a2a">模型运行： 出错</text>
+      <text x="480" y="38" text-anchor="middle" class="ts">缺口 → 公开案例</text>
+    </g>
+
+    <!-- lane boxes and arrows (language neutral) -->
+    <g>
+      <rect x="10" y="70" width="300" height="58" class="box"/><rect x="650" y="70" width="300" height="58" class="box"/><line x1="316" y1="99" x2="642" y2="99" class="edge-o" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="146" width="300" height="58" class="box"/><rect x="650" y="146" width="300" height="58" class="box"/><line x1="316" y1="175" x2="642" y2="175" class="edge-o" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="222" width="300" height="58" class="box"/><rect x="650" y="222" width="300" height="58" class="box"/><line x1="316" y1="251" x2="642" y2="251" class="edge-o" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="298" width="300" height="58" class="box"/><rect x="650" y="298" width="300" height="58" class="box"/><line x1="316" y1="327" x2="642" y2="327" class="edge-o" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="374" width="300" height="58" class="box"/><rect x="650" y="374" width="300" height="58" class="box"/><line x1="316" y1="403" x2="642" y2="403" class="edge-o" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="450" width="300" height="58" class="box"/><rect x="650" y="450" width="300" height="58" class="box"/><line x1="316" y1="479" x2="642" y2="479" class="edge-o" marker-end="url(#arrowhead)"/>
+      <rect x="10" y="526" width="300" height="58" class="box"/><rect x="650" y="526" width="300" height="58" class="box"/><line x1="316" y1="555" x2="642" y2="555" class="edge-o" marker-end="url(#arrowhead)"/>
+      <text x="480" y="117" text-anchor="middle" class="tm">FlyDSL #879 · #1236 · #1020</text>
+      <text x="480" y="193" text-anchor="middle" class="tm">FlyDSL #1213 · #1020 · aiter #6127</text>
+      <text x="480" y="269" text-anchor="middle" class="tm">FlyDSL #1213 · #1234</text>
+      <text x="480" y="345" text-anchor="middle" class="tm">aiter #4494 · FlyDSL #171 · #317</text>
+      <text x="480" y="421" text-anchor="middle" class="tm">aiter #4841 · #6127 · FlyDSL #1235</text>
+      <text x="480" y="497" text-anchor="middle" class="tm">aiter #6446 · FlyDSL #954</text>
+      <text x="480" y="573" text-anchor="middle" class="tm">FlyDSL #1277 · aiter #3683 · #5133</text>
+    </g>
+
+    <g lang="en">
+      <text x="22" y="94" class="t">Shape: small, tile-aligned</text><text x="22" y="116" class="ts">e.g. 4096 × 4096, M ≤ 4096</text>
+      <text x="662" y="94" class="t">Tails, M = 1, tensors past 2³¹ / 2³² B</text><text x="662" y="116" class="ts">the largest unsharded deployment</text>
+      <text x="480" y="90" text-anchor="middle" class="tl">① shapes and sizes</text>
+
+      <text x="22" y="170" class="t">Values: torch.randn</text><text x="22" y="192" class="ts">scores almost never tie</text>
+      <text x="662" y="170" class="t">Trained weights, real activations</text><text x="662" y="192" class="ts">near-ties, peaked attention, skew</text>
+      <text x="480" y="166" text-anchor="middle" class="tl">② real data</text>
+
+      <text x="22" y="246" class="t">Layout: made by the test helper</text><text x="22" y="268" class="ts">producer and consumer always agree</text>
+      <text x="662" y="246" class="t">Checkpoint formats, strides, int64 ids</text><text x="662" y="268" class="ts">produced by someone else's code</text>
+      <text x="480" y="242" text-anchor="middle" class="tl">③ contracts</text>
+
+      <text x="22" y="322" class="t">Context: eager, default stream</text><text x="22" y="344" class="ts">fresh process, few shapes</text>
+      <text x="662" y="322" class="t">Graph capture and replay, side streams</text><text x="662" y="344" class="ts">hundreds of shapes in one process</text>
+      <text x="480" y="318" text-anchor="middle" class="tl">④ execution context</text>
+
+      <text x="22" y="398" class="t">Timing: one call</text><text x="22" y="420" class="ts">one benign schedule</text>
+      <text x="662" y="398" class="t">Billions of calls under load</text><text x="662" y="420" class="ts">a one-in-ten-million race will happen</text>
+      <text x="480" y="394" text-anchor="middle" class="tl">⑤ rare races</text>
+
+      <text x="22" y="474" class="t">Scale: one GPU</text><text x="22" y="496" class="ts">multi-GPU tests skipped by default</text>
+      <text x="662" y="474" class="t">TP / EP ranks exchanging data</text><text x="662" y="496" class="ts">message sizes change call to call</text>
+      <text x="480" y="470" text-anchor="middle" class="tl">⑥ multi-GPU</text>
+
+      <text x="22" y="550" class="t">Software: this repo, this build</text><text x="22" y="572" class="ts">the APIs the tests call</text>
+      <text x="662" y="550" class="t">A downstream copy, a pinned version</text><text x="662" y="572" class="ts">APIs the tests never call</text>
+      <text x="480" y="546" text-anchor="middle" class="tl">⑦ untested software</text>
+    </g>
+    <g lang="zh">
+      <text x="22" y="94" class="t">形状： 小， 按 tile 对齐</text><text x="22" y="116" class="ts">例如 4096 × 4096、 M ≤ 4096</text>
+      <text x="662" y="94" class="t">尾块、 M = 1、 超过 2³¹ / 2³² 字节的张量</text><text x="662" y="116" class="ts">不切分时的最大部署</text>
+      <text x="480" y="90" text-anchor="middle" class="tl">① 形状与尺寸</text>
+
+      <text x="22" y="170" class="t">数值： torch.randn</text><text x="22" y="192" class="ts">分数几乎从不相等</text>
+      <text x="662" y="170" class="t">训练过的权重、 真实的激活</text><text x="662" y="192" class="ts">分数接近、 注意力尖锐、 分布倾斜</text>
+      <text x="480" y="166" text-anchor="middle" class="tl">② 真实数据</text>
+
+      <text x="22" y="246" class="t">布局： 由测试辅助函数生成</text><text x="22" y="268" class="ts">生产方和消费方永远一致</text>
+      <text x="662" y="246" class="t">checkpoint 格式、 stride、 int64 索引</text><text x="662" y="268" class="ts">由别人写的代码生成</text>
+      <text x="480" y="242" text-anchor="middle" class="tl">③ 接口契约</text>
+
+      <text x="22" y="322" class="t">环境： eager、 默认 stream</text><text x="22" y="344" class="ts">新进程、 形状很少</text>
+      <text x="662" y="322" class="t">graph 捕获与回放、 旁路 stream</text><text x="662" y="344" class="ts">一个进程里上百种形状</text>
+      <text x="480" y="318" text-anchor="middle" class="tl">④ 执行环境</text>
+
+      <text x="22" y="398" class="t">时序： 调用一次</text><text x="22" y="420" class="ts">碰上一种无害的调度</text>
+      <text x="662" y="398" class="t">负载下的数十亿次调用</text><text x="662" y="420" class="ts">千万分之一的竞争一定会发生</text>
+      <text x="480" y="394" text-anchor="middle" class="tl">⑤ 偶发竞争</text>
+
+      <text x="22" y="474" class="t">规模： 一张卡</text><text x="22" y="496" class="ts">多卡测试默认被跳过</text>
+      <text x="662" y="474" class="t">TP / EP 的各个 rank 交换数据</text><text x="662" y="496" class="ts">每次调用的消息大小都在变</text>
+      <text x="480" y="470" text-anchor="middle" class="tl">⑥ 多卡</text>
+
+      <text x="22" y="550" class="t">软件： 本仓库、 本次构建</text><text x="22" y="572" class="ts">测试会调用的 API</text>
+      <text x="662" y="550" class="t">下游的副本、 锁定的版本</text><text x="662" y="572" class="ts">测试从不调用的 API</text>
+      <text x="480" y="546" text-anchor="middle" class="tl">⑦ 没测到的软件</text>
+    </g>
+  </svg>
+  <p class="caption" lang="en">A unit test pins each dimension to a convenient value; a model run sweeps it. Each arrow is a gap where a public bug has lived.</p>
+  <p class="caption" lang="zh">单测把每个维度固定在方便的值上， 模型运行则把它整个扫一遍。 每一条箭头都是一个真实 bug 待过的缺口。</p>
+</figure>
+
+<p lang="en">Why not test everything? Because the space is a product. Ten shapes times five value distributions times three layouts times four execution modes times three GPU counts is already 1,800 configurations, before timing is even considered, and timing is not a parameter you can set. Exhaustive testing is not the goal. The goal is to place test points where behavior changes: at boundaries, at the extremes of the data, at the contracts between kernels, and in modes only production uses.</p>
+<p lang="zh">为什么不全部测一遍？ 因为这个空间是乘积。 10 种形状 × 5 种数值分布 × 3 种布局 × 4 种执行模式 × 3 种 GPU 数量， 已经是 1,800 种配置， 这还没算时序， 而时序根本不是一个能设置的参数。 目标不是穷举， 而是把测试点放在行为会改变的地方： 边界、 数据的极端、 kernel 之间的契约， 以及只有生产环境才用的模式。</p>
+</section>
+
+<!-- ============ § 02 SHAPES + PLATE II ============ -->
+<section id="shapes">
+<h2 lang="en"><span class="num">§ 02 · Gap ① · boundaries the test never reaches</span>Shapes and sizes</h2>
+<h2 lang="zh"><span class="num">§ 02 · 缺口 ① · 测试碰不到的边界</span>形状与尺寸</h2>
+
+<p lang="en">Why do shapes matter at all? Because a kernel is written for the common case and patched for the rest. It computes full tiles fast and handles the last partial tile, the tail, with masks or clamps. It computes addresses in 32-bit arithmetic, because 64-bit address math costs registers and instructions on every load. Both choices are correct inside a range. Outside it, they fail without an error.</p>
+<p lang="zh">形状为什么重要？ 因为 kernel 是为常见情况写的， 其余情况靠补丁。 它高速处理完整的 tile， 最后那个不完整的 tile， 也就是尾块， 用 mask 或 clamp 处理。 它用 32 位算术计算地址， 因为 64 位地址运算在每次读取时都要多花寄存器和指令。 这两个选择在一个范围内都是对的。 超出范围， 它们会出错， 而且不报错。</p>
+
+<p lang="en">The 32-bit choice has two cliffs. A signed 32-bit index wraps at 2³¹. A 32-bit byte offset from a buffer's base wraps at 2³² bytes, which is 4 GiB. A test at typical sizes never comes near either. A model can cross both, and how far it goes depends on the deployment. In <a href="https://github.com/ROCm/FlyDSL/pull/879">FlyDSL #879</a>, the MoE stage-1 weight tensor of Kimi-K2.6 at tensor-parallel degree 1 is 385 × (2·2048) × 7168 × 0.5 bytes, about 5.3 GiB. The kernel addresses it through one buffer resource with a 32-bit offset, so experts past the 4 GiB mark read another expert's weights, and the model prints garbage. At TP 2 the same tensor is split to about 2.6 GiB, below the cliff. That is exactly why the bug only appears at TP 1. Plate II draws the cliff.</p>
+<p lang="zh">32 位的选择有两道悬崖。 有符号 32 位索引在 2³¹ 处回绕。 相对 buffer 起点的 32 位字节偏移在 2³² 字节， 也就是 4 GiB 处回绕。 典型尺寸的测试离两道悬崖都很远。 模型可以越过两道， 越过多少取决于部署方式。 在 <a href="https://github.com/ROCm/FlyDSL/pull/879">FlyDSL #879</a> 里， Kimi-K2.6 在张量并行度为 1 时， MoE 第一阶段的权重张量是 385 × (2·2048) × 7168 × 0.5 字节， 约 5.3 GiB。 kernel 用一个带 32 位偏移的 buffer resource 访问它， 于是 4 GiB 之后的 expert 读到了别的 expert 的权重， 模型输出乱码。 在 TP 2 时， 同一个张量被切成约 2.6 GiB， 落在悬崖之下。 这正是这个 bug 只在 TP 1 出现的原因。 图 II 画出了这道悬崖。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">II</span> · the 32-bit cliffs</span><span lang="zh">图 <span class="pn">II</span> · 32 位悬崖</span><span>bytes from one base</span></div>
+  <svg viewBox="0 0 960 360" role="img" aria-label="The 32-bit cliffs and how sharding moves a tensor below them">
+    <!-- axis 0..6 GiB over x 80..900 -->
+    <line x1="80" y1="290" x2="900" y2="290" class="edge"/>
+    <g class="tm">
+      <line x1="80" y1="290" x2="80" y2="296" class="edge"/><text x="80" y="312" text-anchor="middle" class="tm">0</text>
+      <line x1="216.7" y1="290" x2="216.7" y2="296" class="edge"/><text x="216.7" y="312" text-anchor="middle" class="tm">1 GiB</text>
+      <line x1="353.3" y1="290" x2="353.3" y2="296" class="edge"/><text x="353.3" y="312" text-anchor="middle" class="tm">2 GiB</text>
+      <line x1="490" y1="290" x2="490" y2="296" class="edge"/><text x="490" y="312" text-anchor="middle" class="tm">3 GiB</text>
+      <line x1="626.7" y1="290" x2="626.7" y2="296" class="edge"/><text x="626.7" y="312" text-anchor="middle" class="tm">4 GiB</text>
+      <line x1="763.3" y1="290" x2="763.3" y2="296" class="edge"/><text x="763.3" y="312" text-anchor="middle" class="tm">5 GiB</text>
+      <line x1="900" y1="290" x2="900" y2="296" class="edge"/><text x="900" y="312" text-anchor="middle" class="tm">6 GiB</text>
+    </g>
+    <line x1="353.3" y1="40" x2="353.3" y2="290" class="cliff"/>
+    <line x1="626.7" y1="40" x2="626.7" y2="290" class="cliff"/>
+    <!-- bars -->
+    <rect x="80" y="236" width="14" height="26" class="box-pass"/>
+    <rect x="80" y="166" width="359.4" height="30" class="box-pass"/>
+    <rect x="80" y="96" width="546.7" height="30" class="box-pass"/>
+    <rect x="626.7" y="96" width="172.3" height="30" class="box-fail"/>
+    <g lang="en">
+      <text x="359" y="56" class="tm" style="fill:#c92a2a">2³¹: a signed 32-bit index wraps</text>
+      <text x="632" y="56" class="tm" style="fill:#c92a2a">2³² B: a 32-bit byte offset wraps</text>
+      <text x="102" y="254" class="ts">a typical unit test: well under 0.1 GiB</text>
+      <text x="450" y="186" class="ts">Kimi-K2.6 stage-1 weights, TP 2: ≈ 2.6 GiB, correct</text>
+      <text x="90" y="88" class="ts">same tensor, TP 1: ≈ 5.3 GiB</text>
+      <text x="806" y="116" class="t" style="fill:#c92a2a">garbage</text>
+      <text x="640" y="146" class="ts" style="fill:#c92a2a">experts past 4 GiB read another expert's weights</text>
+      <text x="80" y="344" class="tm">x: bytes addressed from one buffer base · source: FlyDSL #879</text>
+    </g>
+    <g lang="zh">
+      <text x="359" y="56" class="tm" style="fill:#c92a2a">2³¹： 有符号 32 位索引回绕</text>
+      <text x="632" y="56" class="tm" style="fill:#c92a2a">2³² 字节： 32 位字节偏移回绕</text>
+      <text x="102" y="254" class="ts">典型单测： 远小于 0.1 GiB</text>
+      <text x="450" y="186" class="ts">Kimi-K2.6 第一阶段权重， TP 2： 约 2.6 GiB， 结果正确</text>
+      <text x="90" y="88" class="ts">同一张量， TP 1： 约 5.3 GiB</text>
+      <text x="806" y="116" class="t" style="fill:#c92a2a">乱码</text>
+      <text x="640" y="146" class="ts" style="fill:#c92a2a">4 GiB 之后的 expert 读到别人的权重</text>
+      <text x="80" y="344" class="tm">横轴： 相对同一个 buffer 起点访问的字节数 · 来源： FlyDSL #879</text>
+    </g>
+  </svg>
+  <p class="caption" lang="en">Same kernel, same model, two deployments. Sharding moves the tensor under the cliff, so the bug exists only at TP 1. Which cliff applies depends on the arithmetic: signed 32-bit index math breaks at 2³¹, a 32-bit buffer offset at 2³² bytes.</p>
+  <p class="caption" lang="zh">同一个 kernel， 同一个模型， 两种部署。 切分把张量挪到了悬崖之下， 所以 bug 只在 TP 1 存在。 适用哪道悬崖取决于具体算术： 有符号 32 位索引在 2³¹ 处出错， 32 位 buffer 偏移在 2³² 字节处出错。</p>
+</figure>
+
+<p lang="en">The quiet version is worse. In <a href="https://github.com/ROCm/FlyDSL/pull/1236">FlyDSL #1236</a>, a tensor of shape (4, 2²⁹) has 2³¹ elements. Each dimension fits in int32, but the total size, computed in int32, wraps to a negative number. The layout code divides by that size, so every lane writes to the wrong position. The wrong positions are still inside the buffer, so hardware bounds checking never fires and nothing reports an error. <a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> hit the same wall from the other side: an FP8 attention path packed its flattened shape as int32 and failed with <code>struct.error</code> once batch × sequence × heads × head-dim reached 2³¹. At head-dim 128 and 64 heads, that is any sequence of 131,072 tokens or more.</p>
+<p lang="zh">安静的版本更糟。 在 <a href="https://github.com/ROCm/FlyDSL/pull/1236">FlyDSL #1236</a> 里， 形状为 (4, 2²⁹) 的张量有 2³¹ 个元素。 每一维都放得进 int32， 但用 int32 计算的总大小回绕成了负数。 布局代码要除以这个大小， 于是每个 lane 都写到了错误的位置。 这些错误位置仍在 buffer 之内， 所以硬件越界检查从不触发， 也没有任何报错。 <a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> 从另一侧撞上了同一堵墙： 一条 FP8 attention 路径把展平后的形状按 int32 打包， 当 batch × 序列长度 × head 数 × head 维度达到 2³¹ 时， 直接报 <code>struct.error</code>。 在 head 维度 128、 64 个 head 时， 任何 131,072 个 token 以上的序列都会触发。</p>
+
+<p lang="en">Tails fail the same way. A refactor in <a href="https://github.com/ROCm/FlyDSL/pull/1131">FlyDSL #1131</a> passed its targeted tests and was merged. The full CI then failed on two FP16 tile shapes at M = 16 and M = 33, and the change was reverted in <a href="https://github.com/ROCm/FlyDSL/pull/1189">#1189</a> the next day. The tested points were simply not the points that broke.</p>
+<p lang="zh">尾块也是这样出错的。 <a href="https://github.com/ROCm/FlyDSL/pull/1131">FlyDSL #1131</a> 的一次重构通过了针对性测试， 被合入。 随后完整 CI 在 M = 16 和 M = 33 的两个 FP16 tile 形状上失败， 第二天这个改动就在 <a href="https://github.com/ROCm/FlyDSL/pull/1189">#1189</a> 里被回滚。 测过的点恰好不是出错的点。</p>
+
+<p lang="en">Every tuned kernel library has a structural version of this gap. The library picks a config from a table keyed by shape. A shape without an entry falls back to a default or a heuristic config. Tests usually run the tuned shapes, because those are the ones someone measured. So the fallback config is often the least-tested code that production runs, and production runs it exactly for the shapes nobody planned for.</p>
+<p lang="zh">每个带调优表的 kernel 库都有这个缺口的结构性版本。 库按形状从表里选配置。 表里没有的形状， 会退回默认配置或启发式配置。 测试通常跑的是调优过的形状， 因为那些是有人测过的。 所以回退配置往往是生产环境在跑的代码里测得最少的一段， 而生产环境恰恰在没人计划过的形状上运行它。</p>
+
+<div class="callout">
+  <span class="ctag" lang="en">Why not 64-bit everywhere?</span>
+  <span class="ctag" lang="zh">为什么不全用 64 位？</span>
+  <p lang="en">It is the safe default, but it costs registers and instructions on the hottest loops, so kernels keep 32-bit offsets where they can prove the range. The fix proposed in #879 keeps the fast path: it rebases the buffer per expert with a 64-bit base, so each 32-bit offset stays inside one expert. The rule is not "never use 32 bits". The rule is "prove the range for the largest deployment, not for the test".</p>
+  <p lang="zh">它是安全的默认选择， 但会在最热的循环里多花寄存器和指令， 所以 kernel 在能证明范围的地方保留 32 位偏移。 #879 提出的修复保留了快速路径： 用 64 位基址给每个 expert 单独设置 buffer， 让每个 32 位偏移都落在一个 expert 之内。 规则不是 「永远别用 32 位」， 而是 「按最大的部署证明范围， 而不是按测试」。</p>
+</div>
+<p class="evidence" lang="en">Test that catches it: one test per cliff, with tensors just below and just above 2³¹ elements and 2³² bytes; the largest single-GPU deployment of each model, not the sharded one; tails in every dimension; and an explicit list of production shapes that have no tuning entry.</p>
+<p class="evidence" lang="zh">能抓住它的测试： 每道悬崖一个测试， 张量刚好低于和刚好高于 2³¹ 个元素、 2³² 字节； 每个模型在单卡上的最大部署， 而不是切分后的部署； 每一维的尾块； 以及一份明确列出 「没有调优表项的生产形状」 的清单。</p>
+</section>
+
+<!-- ============ § 03 DATA ============ -->
+<section id="data">
+<h2 lang="en"><span class="num">§ 03 · Gap ② · real numbers are not random</span>Real data</h2>
+<h2 lang="zh"><span class="num">§ 03 · 缺口 ② · 真实的数不是随机的</span>真实数据</h2>
+
+<p lang="en">A unit test draws inputs from <code>torch.randn</code>. Real activations and weights are not random. Router scores cluster, so two experts often score almost the same. Trained attention is peaked, so a few keys take most of the weight and thousands take almost none. Warmup traffic can be identical tokens, so every token routes to the same expert. Code that is exact for random inputs can fail on each of these.</p>
+<p lang="zh">单测从 <code>torch.randn</code> 里取输入。 真实的激活和权重不是随机的。 路由分数会扎堆， 所以两个 expert 经常得分几乎一样。 训练过的 attention 很尖锐， 少数几个 key 拿走大部分权重， 成千上万个 key 几乎为零。 预热流量可能全是相同的 token， 于是所有 token 都路由到同一个 expert。 对随机输入精确无误的代码， 在这几种情况下都可能出错。</p>
+
+<p lang="en"><a href="https://github.com/ROCm/FlyDSL/pull/1213">FlyDSL #1213</a> is the cleanest example. The GLM-5 MonoKernel from <a href="https://github.com/ROCm/FlyDSL/pull/1204">#1204</a> passed its own tests and was merged. One day later, validation with real GLM checkpoints in the ATOM engine found several correctness gaps. The first: the kernel packed expert IDs into the router scores. Packing an ID into a score costs the score some precision. With random scores, near-ties almost never happen, so the packing never changed a winner. With real scores, two experts can be close enough that it does, and a captured TP8 routing replay picked expert 92 where expert 226 was correct. The fix keeps full FP32 scores and uses the expert ID only to break exact ties.</p>
+<p lang="zh"><a href="https://github.com/ROCm/FlyDSL/pull/1213">FlyDSL #1213</a> 是最干净的例子。 <a href="https://github.com/ROCm/FlyDSL/pull/1204">#1204</a> 的 GLM-5 MonoKernel 通过了自己的测试， 被合入。 一天之后， 在 ATOM 引擎里用真实的 GLM checkpoint 验证时， 发现了几处正确性问题。 第一处： kernel 把 expert ID 打包进了路由分数。 把 ID 塞进分数， 会让分数损失一些精度。 随机分数几乎不会出现接近的情况， 所以打包从没改变过赢家。 真实分数里， 两个 expert 可能接近到足以改变结果： 一次抓取的 TP8 路由回放里， 正确的是 expert 226， kernel 选了 expert 92。 修复保留完整的 FP32 分数， 只在分数完全相等时才用 expert ID 决定先后。</p>
+
+<p lang="en"><a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> shows the numeric side. An FP8 attention kernel cast the softmax probabilities to e4m3 before the PV product. e4m3 bottoms out at 2⁻⁹, so with thousands of keys most probabilities underflow to zero, while the normalizer had been summed before the cast and still counted them. With V set to all ones the output should be exactly 1.0. The kernel returned 0.637. The PR says it plainly: only peaked attention shows this, and a random-init model will not.</p>
+<p lang="zh"><a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> 展示了数值的一面。 一个 FP8 attention kernel 在做 PV 乘法之前， 把 softmax 概率转成了 e4m3。 e4m3 能表示的最小值是 2⁻⁹， 所以 key 有几千个时， 大部分概率下溢成 0； 而归一化因子是在转换之前求和的， 仍然把它们算在内。 V 全为 1 时， 输出应该正好是 1.0， kernel 返回 0.637。 PR 原文说得很直白： 只有尖锐的注意力会暴露这个问题， 随机初始化的模型不会。</p>
+
+<p lang="en"><a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a> adds a twist: the data distribution can expose a timing bug. Identical warmup tokens sent every token to the same expert. That skewed the schedule enough for a lagging wave to read its tile index from an LDS slot that the next stage had already reused. That is a race, covered in § 06. Random routing would have hidden it.</p>
+<p lang="zh"><a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a> 多了一层转折： 数据分布可以暴露时序 bug。 相同的预热 token 把所有 token 都送到同一个 expert， 调度因此严重倾斜， 一个落后的 wave 从一个已被下一阶段复用的 LDS 槽位里读出了自己的 tile 编号。 这是一个竞争， 留到 § 06 讲。 随机路由会把它藏起来。</p>
+
+<div class="callout pass">
+  <span class="ctag" lang="en">Test that catches it</span>
+  <span class="ctag" lang="zh">能抓住它的测试</span>
+  <p lang="en">Test with captured inputs. Record real activations, router scores and weights from one model run, and replay them against the reference. Add adversarial values on purpose: exact ties, near-ties, one-hot distributions, all tokens on one expert, extreme magnitudes.</p>
+  <p lang="zh">用抓取的输入做测试。 从一次模型运行里录下真实的激活、 路由分数和权重， 拿它们对照参考实现回放。 再刻意加入对抗性的值： 完全相等、 几乎相等、 one-hot 分布、 所有 token 落在同一个 expert、 极端的量级。</p>
+</div>
+</section>
+
+<!-- ============ § 04 CONTRACTS + PLATE III ============ -->
+<section id="contracts">
+<h2 lang="en"><span class="num">§ 04 · Gap ③ · correct relative to what?</span>Contracts</h2>
+<h2 lang="zh"><span class="num">§ 04 · 缺口 ③ · 相对什么才算正确？</span>接口契约</h2>
+
+<p lang="en">A kernel is not correct in isolation. It is correct relative to a contract: this layout, this dtype, these strides, this index width, these rows to skip. A model is a chain of kernels plus a framework, and every link in the chain is a contract between a producer and a consumer.</p>
+<p lang="zh">kernel 不是孤立地正确的。 它相对一份契约正确： 这种布局、 这种 dtype、 这些 stride、 这种索引宽度、 跳过这些行。 模型是一串 kernel 加一个框架， 链条上的每一环都是生产方和消费方之间的契约。</p>
+
+<p lang="en">A unit test hides contracts by construction. The test's helper produces the input in the layout the kernel expects, and the reference reads it the same way, so producer and consumer always agree. In the model, the producer is a checkpoint loader, a previous kernel, or a framework that someone else wrote. Plate III shows the two chains.</p>
+<p lang="zh">单测在结构上就把契约藏起来了。 测试的辅助函数按 kernel 期望的布局生成输入， 参考实现也按同样的方式读取， 所以生产方和消费方永远一致。 在模型里， 生产方是 checkpoint 加载器、 上一个 kernel， 或者别人写的框架。 图 III 对比了这两条链。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">III</span> · who writes the input?</span><span lang="zh">图 <span class="pn">III</span> · 输入是谁写的？</span><span>producer → consumer</span></div>
+  <svg viewBox="0 0 960 330" role="img" aria-label="Contract chain in a unit test versus in a model">
+    <defs>
+      <marker id="arrowink" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d1c1a"/></marker>
+    </defs>
+    <rect x="30" y="58" width="230" height="64" class="box"/>
+    <rect x="350" y="58" width="200" height="64" class="box"/>
+    <rect x="620" y="58" width="190" height="64" class="box"/>
+    <rect x="840" y="70" width="96" height="40" class="box-pass"/>
+    <line x1="262" y1="90" x2="346" y2="90" class="edge" marker-end="url(#arrowink)"/>
+    <line x1="552" y1="90" x2="616" y2="90" class="edge" marker-end="url(#arrowink)"/>
+    <line x1="812" y1="90" x2="836" y2="90" class="edge" marker-end="url(#arrowink)"/>
+    <text x="888" y="96" text-anchor="middle" class="th" style="fill:#2b8a3e">PASS</text>
+
+    <rect x="30" y="206" width="230" height="64" class="box-warn"/>
+    <rect x="350" y="206" width="200" height="64" class="box"/>
+    <rect x="620" y="206" width="190" height="64" class="box-fail"/>
+    <rect x="840" y="218" width="96" height="40" class="box-fail"/>
+    <line x1="262" y1="238" x2="346" y2="238" class="edge-o" marker-end="url(#arrowhead)"/>
+    <line x1="552" y1="238" x2="616" y2="238" class="edge" marker-end="url(#arrowink)"/>
+    <line x1="812" y1="238" x2="836" y2="238" class="edge" marker-end="url(#arrowink)"/>
+    <text x="888" y="244" text-anchor="middle" class="th" style="fill:#c92a2a">FAIL</text>
+    <text x="304" y="80" text-anchor="middle" class="tm">layout L</text>
+    <g lang="en">
+      <text x="30" y="40" class="tl">IN THE TEST</text>
+      <text x="145" y="86" text-anchor="middle" class="t">test helper</text><text x="145" y="106" text-anchor="middle" class="ts">writes layout L</text>
+      <text x="450" y="86" text-anchor="middle" class="t">kernel</text><text x="450" y="106" text-anchor="middle" class="ts">expects L</text>
+      <text x="715" y="86" text-anchor="middle" class="t">reference</text><text x="715" y="106" text-anchor="middle" class="ts">reads L</text>
+      <text x="30" y="188" class="tl">IN THE MODEL</text>
+      <text x="145" y="234" text-anchor="middle" class="t">checkpoint / prev. kernel</text><text x="145" y="254" text-anchor="middle" class="ts">written by someone else</text>
+      <text x="304" y="228" text-anchor="middle" class="tm" style="fill:#d9480f">L′ · int64 · BF16</text>
+      <text x="450" y="234" text-anchor="middle" class="t">kernel</text><text x="450" y="254" text-anchor="middle" class="ts">still expects L</text>
+      <text x="715" y="234" text-anchor="middle" class="t">wrong values</text><text x="715" y="254" text-anchor="middle" class="ts">no error raised</text>
+      <text x="30" y="306" class="tm">examples: alternate scale layout, default dtype, short context (FlyDSL #1213); int64 index tensors (FlyDSL #1234 review)</text>
+    </g>
+    <g lang="zh">
+      <text x="30" y="40" class="tl">在测试里</text>
+      <text x="145" y="86" text-anchor="middle" class="t">测试辅助函数</text><text x="145" y="106" text-anchor="middle" class="ts">写出布局 L</text>
+      <text x="450" y="86" text-anchor="middle" class="t">kernel</text><text x="450" y="106" text-anchor="middle" class="ts">期望 L</text>
+      <text x="715" y="86" text-anchor="middle" class="t">参考实现</text><text x="715" y="106" text-anchor="middle" class="ts">按 L 读取</text>
+      <text x="30" y="188" class="tl">在模型里</text>
+      <text x="145" y="234" text-anchor="middle" class="t">checkpoint / 上一个 kernel</text><text x="145" y="254" text-anchor="middle" class="ts">由别人写的代码生成</text>
+      <text x="304" y="228" text-anchor="middle" class="tm" style="fill:#d9480f">L′ · int64 · BF16</text>
+      <text x="450" y="234" text-anchor="middle" class="t">kernel</text><text x="450" y="254" text-anchor="middle" class="ts">仍然期望 L</text>
+      <text x="715" y="234" text-anchor="middle" class="t">数值错误</text><text x="715" y="254" text-anchor="middle" class="ts">不报任何错</text>
+      <text x="30" y="306" class="tm">例子： 另一种 scale 布局、 默认 dtype、 很短的上下文（FlyDSL #1213）； int64 索引张量（FlyDSL #1234 评审）</text>
+    </g>
+  </svg>
+  <p class="caption" lang="en">In a unit test the producer and the consumer are written by the same person, in the same file, so the contract always holds. In the model, the producer is someone else's code.</p>
+  <p class="caption" lang="zh">在单测里， 生产方和消费方由同一个人在同一个文件里写成， 所以契约永远成立。 在模型里， 生产方是别人的代码。</p>
+</figure>
+
+<p lang="en">#1213 again shows three seams at once. Real GLM checkpoints used a UV weight-scale layout the kernel did not support; the fix supports both the 64-row and the 128-row layouts and derives which one from the tensor shapes. The reference implementation followed the caller's default dtype, so a BF16 default silently changed the reference itself; the fix keeps the reference in FP32. And short contexts, such as the first decode steps of a new request, let the fused indexer select beyond the available context and left output slots uninitialized.</p>
+<p lang="zh">#1213 又一次同时展示了三处接缝。 真实的 GLM checkpoint 用了一种 kernel 不支持的 UV 权重 scale 布局； 修复同时支持 64 行和 128 行两种布局， 并从张量形状推断用哪一种。 参考实现跟随调用方的默认 dtype， 于是默认 dtype 一改成 BF16， 参考实现本身就悄悄变了； 修复把参考实现固定在 FP32。 还有很短的上下文， 例如新请求刚开始的几步 decode， 会让融合的 indexer 选到超出实际上下文的位置， 并留下未初始化的输出槽位。</p>
+
+<p lang="en">Index width is a contract too. In <a href="https://github.com/ROCm/FlyDSL/pull/1234">FlyDSL #1234</a>, an automated review of a decode MonoKernel pointed out that the kernel read several index buffers as raw int32 while checking only their element counts. PyTorch's default integer dtype is int64, so passing a default tensor would reinterpret half-words as row numbers and read arbitrary cache addresses. This is a review finding, not an observed failure, but it is the same seam.</p>
+<p lang="zh">索引宽度也是契约。 在 <a href="https://github.com/ROCm/FlyDSL/pull/1234">FlyDSL #1234</a> 里， 一次对 decode MonoKernel 的自动评审指出： kernel 把几个索引 buffer 当作原始 int32 读取， 却只检查了元素个数。 PyTorch 默认的整数 dtype 是 int64， 传入一个默认张量， 就会把半个字当作行号， 读到任意的 cache 地址。 这是评审发现， 不是实际观察到的故障， 但它是同一条接缝。</p>
+
+<div class="callout pass">
+  <span class="ctag" lang="en">Test that catches it</span>
+  <span class="ctag" lang="zh">能抓住它的测试</span>
+  <p lang="en">Test the seams. For every kernel boundary, feed the consumer with the real producer: the checkpoint loader, the previous kernel, the framework's own buffers. Validate dtype, shape, stride and layout at the kernel entry instead of trusting the caller.</p>
+  <p lang="zh">测接缝。 对每一个 kernel 边界， 用真实的生产方喂给消费方： checkpoint 加载器、 上一个 kernel、 框架自己的 buffer。 在 kernel 入口检查 dtype、 形状、 stride 和布局， 不要信任调用方。</p>
+</div>
+</section>
+
+<!-- ============ § 05 EXECUTION CONTEXT ============ -->
+<section id="context">
+<h2 lang="en"><span class="num">§ 05 · Gap ④ · production does not call kernels like a test does</span>Execution context</h2>
+<h2 lang="zh"><span class="num">§ 05 · 缺口 ④ · 生产环境调用 kernel 的方式和测试不一样</span>执行环境</h2>
+
+<p lang="en">Inference engines record kernels into CUDA or HIP graphs and replay them. They run kernels on side streams. They keep one process alive for days and call the same kernel with hundreds of shapes. Each of these changes what the kernel and its host code must get right.</p>
+<p lang="zh">推理引擎会把 kernel 录进 CUDA 或 HIP graph 再回放。 它们在旁路 stream 上运行 kernel。 它们让一个进程活好几天， 用上百种形状调用同一个 kernel。 每一点都会改变 kernel 和它的 host 代码必须做对的事情。</p>
+
+<p lang="en">Graph capture freezes host decisions. <a href="https://github.com/ROCm/aiter/pull/4494">aiter #4494</a> is a split-K GEMM that coordinates its partial sums through a semaphore workspace. Under graph capture, the ownership of that workspace was wrong, and on replay the kernel spun forever. In the PR's words, the device wedges; it does not return a wrong number and it does not recover. Kimi-K3 at TP 8 hung during warmup as soon as the draft model was graphed, so the server never became ready. No eager test can see this, because eager mode re-runs the host code on every call. The fix changes only how the semaphore is allocated under capture; no kernel code changed.</p>
+<p lang="zh">graph 捕获会把 host 端的决定冻结下来。 <a href="https://github.com/ROCm/aiter/pull/4494">aiter #4494</a> 里的 split-K GEMM 通过一块 semaphore 工作区协调各部分的累加。 在 graph 捕获下， 这块工作区的归属是错的， 回放时 kernel 会一直空转。 用 PR 原文的话说： 设备卡死， 不返回错误的数字， 也不会恢复。 Kimi-K3 在 TP 8 下， draft 模型一进 graph 就在预热时挂住， 服务器永远无法就绪。 eager 测试看不到这个问题， 因为 eager 模式每次调用都会重新执行 host 代码。 修复只改了捕获时 semaphore 的分配方式， 没有改 kernel 代码。</p>
+
+<p lang="en">Capture also breaks host code that is correct in eager mode. <a href="https://github.com/ROCm/FlyDSL/pull/171">FlyDSL #171</a> fixed a segfault inside <code>hipStreamEndCapture</code> on PyTorch 2.9, while the same tests passed on 2.8. One of its three causes: exporting a tensor through DLPack during capture recorded stream synchronization events on the capture stream and corrupted the capture.</p>
+<p lang="zh">捕获还会弄坏在 eager 模式下正确的 host 代码。 <a href="https://github.com/ROCm/FlyDSL/pull/171">FlyDSL #171</a> 修复了 PyTorch 2.9 上 <code>hipStreamEndCapture</code> 里的段错误， 而同样的测试在 2.8 上能通过。 三个原因之一是： 捕获期间通过 DLPack 导出张量， 会在捕获 stream 上记录 stream 同步事件， 从而破坏捕获。</p>
+
+<p lang="en">Long-lived processes stress caches. A JIT compiler caches compiled kernels by a key. If the key misses anything that changes the generated code, one shape gets another shape's kernel. <a href="https://github.com/ROCm/FlyDSL/issues/317">FlyDSL issue #317</a> reported exactly that: a cached kernel reused for a different shape produced wrong outputs, and turning the cache off fixed them. <a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a> found the same pattern in a launcher whose cache key ignored the spec object, so different stage configs could share one compiled kernel. A test that calls one shape per process cannot see a cache collision.</p>
+<p lang="zh">长时间运行的进程会考验缓存。 JIT 编译器按一个 key 缓存编译好的 kernel。 如果 key 漏掉了任何会改变生成代码的因素， 一个形状就会拿到另一个形状的 kernel。 <a href="https://github.com/ROCm/FlyDSL/issues/317">FlyDSL issue #317</a> 报告的正是这种情况： 缓存的 kernel 被用到另一个形状上， 输出错误， 关掉缓存就恢复正常。 <a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a> 在一个 launcher 里发现了同样的模式： 它的缓存 key 忽略了配置对象， 于是不同阶段的配置可能共用同一个编译结果。 每个进程只调用一种形状的测试， 看不到缓存冲突。</p>
+
+<div class="callout pass">
+  <span class="ctag" lang="en">Test that catches it</span>
+  <span class="ctag" lang="zh">能抓住它的测试</span>
+  <p lang="en">Run tests the way production runs kernels: capture and replay inside the test, use a non-default stream, and call several shapes in one process before you check the last one.</p>
+  <p lang="zh">按生产环境运行 kernel 的方式跑测试： 在测试里捕获并回放， 使用非默认 stream， 在同一个进程里先调用几种形状， 再检查最后一次的结果。</p>
+</div>
+</section>
+
+<!-- ============ § 06 TIMING + PLATE IV ============ -->
+<section id="timing">
+<h2 lang="en"><span class="num">§ 06 · Gap ⑤ · a test samples a probability</span>Rare races</h2>
+<h2 lang="zh"><span class="num">§ 06 · 缺口 ⑤ · 测试只是在对概率抽样</span>偶发竞争</h2>
+
+<p lang="en">A data race on a GPU depends on which wave arrives first. Most of the time the arrival order is benign, and the kernel passes. A missing barrier or fence can be harmless thousands or millions of times in a row. A test that calls the kernel once, or a hundred times, is sampling a probability. It is not proving correctness.</p>
+<p lang="zh">GPU 上的数据竞争取决于哪个 wave 先到。 大多数时候到达顺序是无害的， kernel 也就通过了。 少一个 barrier 或 fence， 可能连续成千上万次、 甚至上百万次都没事。 调用一次或一百次的测试， 只是在对一个概率抽样， 而不是在证明正确性。</p>
+
+<p lang="en"><a href="https://github.com/ROCm/aiter/pull/4841">aiter #4841</a> puts a number on it. A multi-block radix top-k used a cross-block barrier in which thread 0 signalled arrival while other waves in its block still had atomic histogram updates in flight; a block barrier does not wait for those. One candidate fix still left the race open, and a detector caught it 7 times in 292,889,600 row-launches, about once in 42 million. That rate would never show up in a unit test. The PR states the stakes: the race can permanently wedge the GPU in the GLM-5.2 indexer path and stall the whole DP-attention service, while the health endpoint keeps answering. The final fix completed 311,936,000 row-launches with no stuck event.</p>
+<p lang="zh"><a href="https://github.com/ROCm/aiter/pull/4841">aiter #4841</a> 给出了具体的数字。 一个多 block 的 radix top-k 用了跨 block 的 barrier： 线程 0 宣布到达时， 同一个 block 里的其他 wave 还有原子的直方图更新没有完成， 而 block barrier 不会等这些更新。 有一个候选修复仍然留着这个竞争， 检测器在 292,889,600 次行级调用里抓到 7 次， 大约四千两百万次一次。 这个频率在单测里永远看不到。 PR 写明了后果： 这个竞争可能让 GLM-5.2 的 indexer 路径永久卡死 GPU， 让整个 DP-attention 服务停住， 而健康检查接口还在正常应答。 最终的修复跑完了 311,936,000 次行级调用， 没有一次卡死。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">IV</span> · why a rare race becomes certain</span><span lang="zh">图 <span class="pn">IV</span> · 偶发竞争为什么会变成必然</span><span>1 − (1 − p)^N</span></div>
+  <svg viewBox="0 0 960 380" role="img" aria-label="Probability of seeing at least one failure versus number of calls">
+    <line x1="80" y1="300" x2="830" y2="300" class="edge"/>
+    <line x1="80" y1="60" x2="80" y2="300" class="edge"/>
+    <line x1="80" y1="180" x2="830" y2="180" class="grid-l"/>
+    <line x1="80" y1="60" x2="830" y2="60" class="grid-l"/>
+    <text x="70" y="304" text-anchor="end" class="tm">0%</text>
+    <text x="70" y="184" text-anchor="end" class="tm">50%</text>
+    <text x="70" y="64" text-anchor="end" class="tm">100%</text>
+    <text x="80" y="320" text-anchor="middle" class="tm">10⁰</text>
+    <text x="228" y="320" text-anchor="middle" class="tm">10²</text>
+    <text x="376" y="320" text-anchor="middle" class="tm">10⁴</text>
+    <text x="524" y="320" text-anchor="middle" class="tm">10⁶</text>
+    <text x="672" y="320" text-anchor="middle" class="tm">10⁸</text>
+    <text x="820" y="320" text-anchor="middle" class="tm">10¹⁰</text>
+    <polyline points="80,300 450,299.4 524,294.2 561,282.5 598,248.9 635,172.6 672,82.1 709,60.1 746,60 820,60" style="fill:none;stroke:#c92a2a;stroke-width:2.5"/>
+    <circle cx="302" cy="300" r="6" class="ok"/>
+    <circle cx="639" cy="161.5" r="6" class="warn"/>
+    <circle cx="742" cy="60" r="6" class="bad"/>
+    <line x1="302" y1="294" x2="302" y2="232" class="edge" style="stroke-dasharray:3 3"/>
+    <line x1="639" y1="155" x2="560" y2="118" class="edge" style="stroke-dasharray:3 3"/>
+    <line x1="742" y1="66" x2="742" y2="104" class="edge" style="stroke-dasharray:3 3"/>
+    <g lang="en">
+      <text x="480" y="34" text-anchor="middle" class="tm">p = 7 / 292,889,600 ≈ 2.4 × 10⁻⁸ per call (aiter #4841, a candidate fix that left the race open)</text>
+      <text x="455" y="352" text-anchor="middle" class="tm">number of calls N (log scale)</text>
+      <text x="302" y="222" text-anchor="middle" class="ts" style="fill:#2b8a3e">unit test, 10³ calls: 0.002%</text>
+      <text x="440" y="112" class="ts" style="fill:#d9480f">1 hour at 10⁴ calls/s: ≈ 58%</text>
+      <text x="752" y="120" class="ts" style="fill:#c92a2a">1 day: ≈ 100%</text>
+    </g>
+    <g lang="zh">
+      <text x="480" y="34" text-anchor="middle" class="tm">p = 7 / 292,889,600 ≈ 每次调用 2.4 × 10⁻⁸（aiter #4841 中一个仍留着竞争的候选修复）</text>
+      <text x="455" y="352" text-anchor="middle" class="tm">调用次数 N（对数刻度）</text>
+      <text x="302" y="222" text-anchor="middle" class="ts" style="fill:#2b8a3e">单测， 10³ 次调用： 0.002%</text>
+      <text x="440" y="112" class="ts" style="fill:#d9480f">每秒 10⁴ 次， 1 小时： 约 58%</text>
+      <text x="752" y="120" class="ts" style="fill:#c92a2a">1 天： 约 100%</text>
+    </g>
+  </svg>
+  <p class="caption" lang="en">P(at least one failure) = 1 − (1 − p)^N. A test samples the curve at the far left; a service lives at the far right. The rate of 10⁴ calls per second is an assumption for illustration, not a measurement.</p>
+  <p class="caption" lang="zh">P（至少出错一次）= 1 − (1 − p)^N。 测试只在曲线的最左端抽样， 服务则活在最右端。 每秒 10⁴ 次调用是为了示意而做的假设， 不是测量值。</p>
+</figure>
+
+<p lang="en">The arithmetic is simple. If one call fails with probability p, then N independent calls see at least one failure with probability 1 − (1 − p)^N. With p ≈ 2.4 × 10⁻⁸, a test of 1,000 calls catches the race with probability 0.002%. A service doing 10,000 row-launches a second crosses 50% in about half an hour and certainty within a day. The model is not unlucky. It simply runs the test billions of times.</p>
+<p lang="zh">算术很简单。 如果单次调用出错的概率是 p， 那么 N 次独立调用至少出错一次的概率是 1 − (1 − p)^N。 当 p ≈ 2.4 × 10⁻⁸ 时， 1,000 次调用的测试抓到这个竞争的概率是 0.002%。 一个每秒做 10,000 次行级调用的服务， 大约半小时就超过 50%， 一天之内几乎必然出现。 不是模型运气差， 而是它把这个测试跑了几十亿遍。</p>
+
+<p lang="en">Other public races follow the same shape. In <a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a>, three block-broadcast values lived in an LDS slot that the next stage reused. Under skewed routing a lagging wave read the next stage's bytes as its tile index and faulted. Before the fix it failed within a few calls under that routing; after it, 150 back-to-back calls at four sizes ran clean. In <a href="https://github.com/ROCm/FlyDSL/pull/1235">FlyDSL #1235</a>, two block reductions shared one LDS slot without a barrier between them, and the PR notes that a test cannot force the wave order that triggers the race, so the evidence is the code itself. In <a href="https://github.com/ROCm/FlyDSL/pull/1107">FlyDSL #1107</a>, an automated review flagged a workgroup barrier that only half the waves execute: a deadlock waiting for the right schedule.</p>
+<p lang="zh">其他公开的竞争也是同一个形态。 在 <a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a> 里， 三个 block 广播值放在一个会被下一阶段复用的 LDS 槽位里。 路由倾斜时， 一个落后的 wave 把下一阶段的字节当成自己的 tile 编号读出来， 随即出错。 修复前， 这种路由下几次调用之内就会出错； 修复后， 四种大小各连续跑 150 次都没有问题。 在 <a href="https://github.com/ROCm/FlyDSL/pull/1235">FlyDSL #1235</a> 里， 两次 block 归约共用一个 LDS 槽位， 中间没有 barrier； PR 写明测试无法强制触发竞争所需的 wave 顺序， 所以证据只能是代码本身。 在 <a href="https://github.com/ROCm/FlyDSL/pull/1107">FlyDSL #1107</a> 里， 自动评审指出一个只有一半 wave 会执行的 workgroup barrier： 这是一个在等待合适调度的死锁。</p>
+
+<div class="callout pass">
+  <span class="ctag" lang="en">Test that catches it</span>
+  <span class="ctag" lang="zh">能抓住它的测试</span>
+  <p lang="en">Turn probability into evidence. Call the same input many times and require bit-identical output. Run a synchronization sanitizer where one exists. Stress the kernel under concurrency with skewed inputs, such as every token on one expert.</p>
+  <p lang="zh">把概率变成证据。 用同一个输入调用很多次， 要求输出逐位一致。 有同步 sanitizer 的地方就跑一遍。 在并发负载下用倾斜的输入给 kernel 加压， 例如所有 token 都落在同一个 expert。</p>
+</div>
+</section>
+
+<!-- ============ § 07 MULTI-GPU + PLATE V ============ -->
+<section id="multigpu">
+<h2 lang="en"><span class="num">§ 07 · Gap ⑥ · hangs, not wrong numbers</span>Multi-GPU</h2>
+<h2 lang="zh"><span class="num">§ 07 · 缺口 ⑥ · 挂起， 而不是算错</span>多卡</h2>
+
+<p lang="en">A multi-GPU kernel adds states that do not exist on one GPU: two ranks arriving in different orders, a fast rank lapping a slow one, slots reused across calls of different sizes. When such a protocol is wrong, the usual symptom is not a wrong number. It is a hang: every rank waits for a signal that will never come. Hangs are expensive to debug and easy to mistake for infrastructure trouble.</p>
+<p lang="zh">多卡 kernel 带来了单卡上不存在的状态： 两个 rank 以不同顺序到达、 快的 rank 套圈慢的 rank、 不同大小的调用复用同一批槽位。 这类协议出错时， 常见症状不是算错， 而是挂起： 每个 rank 都在等一个永远不会来的信号。 挂起很难调试， 也很容易被误认为是基础设施的问题。</p>
+
+<p lang="en"><a href="https://github.com/ROCm/aiter/pull/6446">aiter #6446</a> is a textbook case. An all-reduce derived its bank offset and per-rank slot stride from the current message size. Consecutive calls alternate banks, but the banks stay disjoint only when both calls have the same size. A rank that has all its peers' data for call k moves on to call k+1 while a slower peer is still reading call k. With a different size, the call-(k+1) stores can land on the peer's unread slots, and the peer polls forever for a flag that has been overwritten. It surfaced in vLLM's CI as an RCCL watchdog timeout while serving Kimi-K3 at TP 2. A reviewer explained why the repository's own CI never saw it: multi-GPU CI ran the test file without its size argument, so it never reached the TP 2 and TP 4 cases that hang. Plate V shows the overwrite.</p>
+<p lang="zh"><a href="https://github.com/ROCm/aiter/pull/6446">aiter #6446</a> 是一个教科书式的例子。 一个 all-reduce 按当前消息大小计算 bank 偏移和每个 rank 的槽位步长。 相邻两次调用交替使用两个 bank， 但只有两次调用大小相同时， 两个 bank 才不会重叠。 一个 rank 收齐了第 k 次的全部数据， 就进入第 k+1 次， 而较慢的 rank 还在读第 k 次。 大小一变， 第 k+1 次的写入就可能落在慢 rank 还没读的槽位上， 慢 rank 于是一直轮询一个已被覆盖的标志。 它在 vLLM 的 CI 里以 RCCL watchdog 超时的形式出现， 当时在用 TP 2 跑 Kimi-K3。 一位评审者解释了仓库自己的 CI 为什么从没看到它： 多卡 CI 运行这个测试文件时没带大小参数， 所以永远走不到会挂起的 TP 2 和 TP 4 用例。 图 V 画出了这次覆盖。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">V</span> · a fast rank overwrites a slow rank's unread slots</span><span lang="zh">图 <span class="pn">V</span> · 快的 rank 覆盖了慢 rank 还没读的槽位</span><span>size-derived stride</span></div>
+  <svg viewBox="0 0 960 390" role="img" aria-label="Size-derived slot stride lets consecutive calls overlap; a fixed stride keeps them disjoint">
+    <!-- top strip: size-derived stride -->
+    <g>
+      <rect x="150" y="96" width="60" height="40" class="box-warn"/><rect x="210" y="96" width="60" height="40" class="box-warn"/><rect x="270" y="96" width="60" height="40" class="box-warn"/><rect x="330" y="96" width="60" height="40" class="box-warn"/>
+      <rect x="390" y="96" width="60" height="40" class="box-fail"/><rect x="450" y="96" width="60" height="40" class="box-fail"/>
+      <rect x="510" y="96" width="60" height="40" class="box"/><rect x="570" y="96" width="60" height="40" class="box"/><rect x="630" y="96" width="60" height="40" class="box"/><rect x="690" y="96" width="60" height="40" class="box"/><rect x="750" y="96" width="60" height="40" class="box"/><rect x="810" y="96" width="60" height="40" class="box"/>
+      <line x1="150" y1="84" x2="510" y2="84" class="edge"/><line x1="150" y1="78" x2="150" y2="90" class="edge"/><line x1="510" y1="78" x2="510" y2="90" class="edge"/>
+      <line x1="390" y1="150" x2="750" y2="150" class="edge-o"/><line x1="390" y1="144" x2="390" y2="156" class="edge-o"/><line x1="750" y1="144" x2="750" y2="156" class="edge-o"/>
+    </g>
+    <!-- bottom strip: fixed stride -->
+    <g>
+      <rect x="150" y="262" width="60" height="40" class="box-warn"/><rect x="210" y="262" width="60" height="40" class="box-warn"/><rect x="270" y="262" width="60" height="40" class="box-warn"/><rect x="330" y="262" width="60" height="40" class="box-warn"/><rect x="390" y="262" width="60" height="40" class="box-warn"/><rect x="450" y="262" width="60" height="40" class="box-warn"/>
+      <rect x="510" y="262" width="60" height="40" class="box-pass"/><rect x="570" y="262" width="60" height="40" class="box-pass"/><rect x="630" y="262" width="60" height="40" class="box-pass"/><rect x="690" y="262" width="60" height="40" class="box-pass"/><rect x="750" y="262" width="60" height="40" class="box-pass"/><rect x="810" y="262" width="60" height="40" class="box-pass"/>
+    </g>
+    <g lang="en">
+      <text x="20" y="40" class="tl">SIZE-DERIVED STRIDE (BUG)</text>
+      <text x="20" y="121" class="ts">slow rank's</text><text x="20" y="137" class="ts">scratch slots</text>
+      <text x="330" y="72" text-anchor="middle" class="ts">call k (size A): not yet read by the slow rank</text>
+      <text x="570" y="172" text-anchor="middle" class="ts" style="fill:#d9480f">call k+1 (size B) from the fast rank lands here</text>
+      <text x="450" y="196" text-anchor="middle" class="t" style="fill:#c92a2a">overlap: overwritten before read → slow rank polls forever → hang</text>
+      <text x="20" y="232" class="tl">FIXED STRIDE (FIX)</text>
+      <text x="20" y="287" class="ts">slow rank's</text><text x="20" y="303" class="ts">scratch slots</text>
+      <text x="330" y="326" text-anchor="middle" class="ts">call k: its own slot range</text>
+      <text x="690" y="326" text-anchor="middle" class="ts" style="fill:#2b8a3e">call k+1: its own slot range</text>
+      <text x="20" y="372" class="tm">at TP 4, sizes [32768, 28800] repeated never overlap; [32768, 32768, 28800] does (aiter #6446)</text>
+    </g>
+    <g lang="zh">
+      <text x="20" y="40" class="tl">按大小计算步长（bug）</text>
+      <text x="20" y="121" class="ts">慢 rank 的</text><text x="20" y="137" class="ts">scratch 槽位</text>
+      <text x="330" y="72" text-anchor="middle" class="ts">第 k 次（大小 A）： 慢 rank 还没读</text>
+      <text x="570" y="172" text-anchor="middle" class="ts" style="fill:#d9480f">快 rank 的第 k+1 次（大小 B） 写到这里</text>
+      <text x="450" y="196" text-anchor="middle" class="t" style="fill:#c92a2a">重叠： 还没读就被覆盖 → 慢 rank 永远轮询 → 挂起</text>
+      <text x="20" y="232" class="tl">固定步长（修复）</text>
+      <text x="20" y="287" class="ts">慢 rank 的</text><text x="20" y="303" class="ts">scratch 槽位</text>
+      <text x="330" y="326" text-anchor="middle" class="ts">第 k 次： 独占一段槽位</text>
+      <text x="690" y="326" text-anchor="middle" class="ts" style="fill:#2b8a3e">第 k+1 次： 独占另一段槽位</text>
+      <text x="20" y="372" class="tm">TP 4 下， 大小序列 [32768, 28800] 循环从不重叠， [32768, 32768, 28800] 会重叠（aiter #6446）</text>
+    </g>
+  </svg>
+  <p class="caption" lang="en">Banks derived from the message size stay disjoint only when consecutive calls have the same size. A test that repeats one size never forms the overlap, and even the order of sizes matters. The fix gives every allowed size a fixed slot stride.</p>
+  <p class="caption" lang="zh">按消息大小计算的 bank， 只有相邻两次调用大小相同时才不重叠。 一直重复同一个大小的测试永远构造不出这种重叠， 连大小的先后顺序都有影响。 修复给所有允许的大小一个固定的槽位步长。</p>
+</figure>
+
+<p lang="en"><a href="https://github.com/ROCm/FlyDSL/pull/954">FlyDSL #954</a> fixed multi-rank dispatch synchronization and completion handling in a fused MoE that could hang; the PR says the problems were found during review and serving tests, not by unit tests. In the same repository, the default test script excludes every multi_gpu test, as a review of <a href="https://github.com/ROCm/FlyDSL/pull/1277">FlyDSL #1277</a> noted. That is a reasonable cost trade-off, but it means a single-GPU green check says nothing about the protocol.</p>
+<p lang="zh"><a href="https://github.com/ROCm/FlyDSL/pull/954">FlyDSL #954</a> 修复了一个融合 MoE 里会导致挂起的多 rank dispatch 同步和完成处理问题； PR 写明这些问题是在评审和 serving 测试中发现的， 不是靠单测。 在同一个仓库里， 默认的测试脚本排除了所有 multi_gpu 测试， 这一点在 <a href="https://github.com/ROCm/FlyDSL/pull/1277">FlyDSL #1277</a> 的评审中被指出。 这是合理的成本取舍， 但也意味着单卡的绿色结果对协议本身什么也说明不了。</p>
+
+<div class="callout pass">
+  <span class="ctag" lang="en">Test that catches it</span>
+  <span class="ctag" lang="zh">能抓住它的测试</span>
+  <p lang="en">Test protocols, not just math. Run TP 2 and TP 4, and EP where it applies, with message sizes that change between consecutive calls. Wrap every multi-GPU test in a watchdog, so a hang fails the test instead of the CI runner.</p>
+  <p lang="zh">测协议， 而不只是测数学。 跑 TP 2 和 TP 4， 适用时也跑 EP， 并让相邻调用的消息大小不断变化。 给每个多卡测试套上看门狗， 让挂起变成测试失败， 而不是把 CI 机器拖死。</p>
+</div>
+</section>
+
+<!-- ============ § 08 STACK ============ -->
+<section id="stack">
+<h2 lang="en"><span class="num">§ 08 · Gap ⑦ · production runs a different copy</span>The software you didn't test</h2>
+<h2 lang="zh"><span class="num">§ 08 · 缺口 ⑦ · 生产环境跑的是另一份副本</span>没测到的软件</h2>
+
+<p lang="en">In production, the model rarely runs your repository's kernel. It runs a downstream library's copy, pinned to some version, reached through an API your tests may not cover. So a change can keep your CI green and still break production.</p>
+<p lang="zh">在生产环境里， 模型很少直接运行你仓库里的 kernel。 它运行的是某个下游库里的副本， 锁定在某个版本上， 通过你的测试未必覆盖的 API 调用。 所以一个改动可以让你的 CI 保持全绿， 同时弄坏生产环境。</p>
+
+<p lang="en"><a href="https://github.com/ROCm/FlyDSL/pull/1277">FlyDSL #1277</a> states the problem directly: a change under the compiler or expression layers "could break a kernel vLLM runs in production while CI here stayed green". Its sharpest example was a legacy allocator that nothing in the repository used anymore, but three vLLM decode kernels did. Deleting it per the deprecation plan would have failed no test in the repository. The PR's answer is a contract test that freezes the API surface downstream code imports.</p>
+<p lang="zh"><a href="https://github.com/ROCm/FlyDSL/pull/1277">FlyDSL #1277</a> 把问题说得很直接： 编译器层或表达式层的一个改动， 「可能弄坏 vLLM 在生产环境运行的 kernel， 而这里的 CI 仍然全绿」。 它最尖锐的例子是一个旧的分配器： 仓库里已经没有任何代码使用它， 但 vLLM 的三个 decode kernel 在用。 按弃用计划删掉它， 仓库里不会有任何测试失败。 这个 PR 的办法是加一个契约测试， 冻结下游代码导入的 API。</p>
+
+<p lang="en">Import-time coupling fails even earlier. In <a href="https://github.com/ROCm/aiter/pull/3683">aiter #3683</a>, importing the FlyDSL ops on an architecture that FlyDSL ships no kernels for crashed with a <code>KeyError</code> while registering configs, and that took down every flash-attention import on that GPU. A model failed to start because of a kernel it never meant to call.</p>
+<p lang="zh">导入阶段的耦合出错得更早。 在 <a href="https://github.com/ROCm/aiter/pull/3683">aiter #3683</a> 里， 在一个 FlyDSL 根本不提供 kernel 的架构上导入 FlyDSL 算子， 注册配置时直接抛出 <code>KeyError</code>， 连带这张卡上所有 flash-attention 的导入都失败了。 一个模型因为一个它根本不打算调用的 kernel 而启动不了。</p>
+
+<p lang="en">Tests can also report success without running. <a href="https://github.com/ROCm/aiter/issues/5133">aiter #5133</a> found that op tests were run as scripts, so 141 pytest test functions never executed; the files exited 0 having executed no test, and CI recorded that as a pass. <a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> found the runtime version of the same problem: an FP8 kernel never read a tuning flag, so the flag did nothing and every test of it passed trivially.</p>
+<p lang="zh">测试也可能没跑就报告成功。 <a href="https://github.com/ROCm/aiter/issues/5133">aiter #5133</a> 发现算子测试是以脚本方式运行的， 所以有 141 个 pytest 测试函数从未执行； 这些文件一个测试都没跑就以 0 退出， CI 把它记为通过。 <a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> 发现了同一问题的运行时版本： 一个 FP8 kernel 从来没有读取某个调优开关， 所以这个开关什么也没做， 针对它的每个测试都毫无意义地通过了。</p>
+
+<div class="callout pass">
+  <span class="ctag" lang="en">Test that catches it</span>
+  <span class="ctag" lang="zh">能抓住它的测试</span>
+  <p lang="en">Test the copy the engine runs, at the version it pins. Add contract tests for every API a downstream project imports. Make the test runner fail when it collects nothing, and check that a flag under test changes the generated code.</p>
+  <p lang="zh">测引擎实际运行的那份副本， 用它锁定的版本。 给下游项目导入的每个 API 加契约测试。 让测试框架在一个用例都没收集到时直接失败， 并确认被测的开关真的改变了生成的代码。</p>
+</div>
+</section>
+
+<!-- ============ § 09 NEW ARCHITECTURES ============ -->
+<section id="newarch">
+<h2 lang="en"><span class="num">§ 09 · every gap at once</span>Why a new architecture makes it worse</h2>
+<h2 lang="zh"><span class="num">§ 09 · 所有缺口同时变大</span>为什么新架构更严重</h2>
+
+<p lang="en">Every gap above exists on mature hardware. On a new GPU architecture, each one widens at the same time. None of this requires a new kind of bug. It only requires more of the seven gaps to be open at once.</p>
+<p lang="zh">上面每一个缺口在成熟的硬件上都存在。 到了一个新的 GPU 架构上， 它们会同时变大。 这不需要任何新类型的 bug， 只需要七个缺口里有更多个同时敞开。</p>
+<ul class="tight" lang="en">
+  <li><strong>New memory and synchronization mechanisms.</strong> Code ported from the previous generation carries assumptions about wave size, bounds checking and barrier semantics. They hold for common shapes and break at the edges, where tests rarely go. (Gaps ①, ⑤)</li>
+  <li><strong>Young compilers.</strong> Code generation changes from release to release, so a result on one toolchain version does not carry over to the next. (Gap ⑦)</li>
+  <li><strong>Sparse tuning tables.</strong> Few shapes have measured configs, so more production shapes take the fallback path. (Gap ①)</li>
+  <li><strong>Few CI machines.</strong> Without the new hardware in CI, correctness rests on the author's own runs, on the author's toolchain. (Gaps ④, ⑦)</li>
+  <li><strong>Larger single-GPU memory.</strong> A model that used to be split across GPUs now fits on one, so per-GPU tensors grow and cross the 32-bit cliffs. (Gap ①)</li>
+</ul>
+<ul class="tight" lang="zh">
+  <li><strong>新的内存和同步机制。</strong> 从上一代移植过来的代码， 带着对 wave 大小、 越界检查和 barrier 语义的假设。 这些假设对常见形状成立， 在边界上失效， 而测试很少走到边界。 （缺口 ①、 ⑤）</li>
+  <li><strong>年轻的编译器。</strong> 代码生成随版本变化， 在一个工具链版本上得到的结论， 换个版本就不一定成立。 （缺口 ⑦）</li>
+  <li><strong>稀疏的调优表。</strong> 测过配置的形状很少， 于是更多的生产形状走进回退路径。 （缺口 ①）</li>
+  <li><strong>很少的 CI 机器。</strong> CI 里没有新硬件， 正确性只能靠作者自己在自己的工具链上跑。 （缺口 ④、 ⑦）</li>
+  <li><strong>更大的单卡显存。</strong> 以前要切到多张卡上的模型， 现在一张卡就放得下， 单卡上的张量变大， 越过 32 位悬崖。 （缺口 ①）</li>
+</ul>
+</section>
+
+<!-- ============ § 10 LADDER + PLATE VI ============ -->
+<section id="ladder">
+<h2 lang="en"><span class="num">§ 10 · from cheap to complete</span>A validation ladder</h2>
+<h2 lang="zh"><span class="num">§ 10 · 从便宜到完整</span>验证阶梯</h2>
+
+<p lang="en">The gaps suggest an order. Each rung catches a class of bugs the rung below cannot, and costs more to run. Climb it in order, and the end-to-end run at the top rarely fails. When it does fail, the rung that should have caught the bug tells you which test to add.</p>
+<p lang="zh">这些缺口给出了一个顺序。 每一级都能抓到下一级抓不到的一类 bug， 运行成本也更高。 按顺序往上爬， 顶端的端到端运行就很少出错。 万一出错， 本该抓住这个 bug 的那一级会告诉你该补哪个测试。</p>
+
+<figure class="plate wide">
+  <div class="plate-meta"><span lang="en">Plate <span class="pn">VI</span> · the validation ladder</span><span lang="zh">图 <span class="pn">VI</span> · 验证阶梯</span><span>gap → rung</span></div>
+  <svg viewBox="0 0 960 520" role="img" aria-label="Eight rungs of the validation ladder from boundary unit tests to the end-to-end model">
+    <line x1="120" y1="40" x2="120" y2="500" class="edge" style="stroke-width:3"/>
+    <line x1="760" y1="40" x2="760" y2="500" class="edge" style="stroke-width:3"/>
+    <g>
+      <rect x="120" y="446" width="640" height="46" class="box"/>
+      <rect x="120" y="392" width="640" height="46" class="box"/>
+      <rect x="120" y="338" width="640" height="46" class="box"/>
+      <rect x="120" y="284" width="640" height="46" class="box"/>
+      <rect x="120" y="230" width="640" height="46" class="box"/>
+      <rect x="120" y="176" width="640" height="46" class="box"/>
+      <rect x="120" y="122" width="640" height="46" class="box"/>
+      <rect x="120" y="54" width="640" height="60" class="box-warn"/>
+      <text x="140" y="474" class="tl">①</text><text x="140" y="420" class="tl">②</text><text x="140" y="366" class="tl">③</text><text x="140" y="312" class="tl">④</text>
+      <text x="140" y="258" class="tl">⑤</text><text x="140" y="204" class="tl">⑥</text><text x="140" y="150" class="tl">⑦</text><text x="140" y="90" class="tl">e2e</text>
+      <line x1="830" y1="490" x2="830" y2="70" class="edge-o" marker-end="url(#arrowhead)"/>
+    </g>
+    <g lang="en">
+      <text x="180" y="466" class="t">Boundary unit tests</text><text x="180" y="484" class="ts">tails · 2³¹ / 2³² · untuned shapes · guard pages</text>
+      <text x="180" y="412" class="t">Replay real inputs</text><text x="180" y="430" class="ts">captured activations and scores · ties · skew</text>
+      <text x="180" y="358" class="t">Test the seams</text><text x="180" y="376" class="ts">real producer → consumer · checks at kernel entry</text>
+      <text x="180" y="304" class="t">Production execution modes</text><text x="180" y="322" class="ts">graph capture and replay · side streams · many shapes</text>
+      <text x="180" y="250" class="t">Repeat for determinism</text><text x="180" y="268" class="ts">N calls, bit-identical · sanitizer · skewed load</text>
+      <text x="180" y="196" class="t">Multi-GPU protocols</text><text x="180" y="214" class="ts">TP 2 / TP 4 / EP · changing sizes · watchdog</text>
+      <text x="180" y="142" class="t">Downstream</text><text x="180" y="160" class="ts">the engine's copy and version · API contract tests</text>
+      <text x="180" y="80" class="th">End-to-end model</text><text x="180" y="100" class="ts">fixed-seed accuracy eval · throughput · single GPU, then multi-GPU</text>
+      <text x="842" y="290" class="tm" style="fill:#d9480f">cost</text><text x="842" y="306" class="tm" style="fill:#d9480f">per run</text>
+    </g>
+    <g lang="zh">
+      <text x="180" y="466" class="t">边界单测</text><text x="180" y="484" class="ts">尾块 · 2³¹ / 2³² · 未调优的形状 · guard page</text>
+      <text x="180" y="412" class="t">回放真实输入</text><text x="180" y="430" class="ts">抓取的激活和分数 · 相等 · 倾斜</text>
+      <text x="180" y="358" class="t">测接缝</text><text x="180" y="376" class="ts">真实生产方 → 消费方 · kernel 入口检查</text>
+      <text x="180" y="304" class="t">生产执行模式</text><text x="180" y="322" class="ts">graph 捕获与回放 · 旁路 stream · 多种形状</text>
+      <text x="180" y="250" class="t">重复跑， 要求确定性</text><text x="180" y="268" class="ts">N 次调用逐位一致 · sanitizer · 倾斜负载</text>
+      <text x="180" y="196" class="t">多卡协议</text><text x="180" y="214" class="ts">TP 2 / TP 4 / EP · 变化的大小 · 看门狗</text>
+      <text x="180" y="142" class="t">下游</text><text x="180" y="160" class="ts">引擎用的副本和版本 · API 契约测试</text>
+      <text x="180" y="80" class="th">端到端模型</text><text x="180" y="100" class="ts">固定随机种子的精度评测 · 吞吐 · 先单卡， 再多卡</text>
+      <text x="842" y="290" class="tm" style="fill:#d9480f">每次运行</text><text x="842" y="306" class="tm" style="fill:#d9480f">的成本</text>
+    </g>
+  </svg>
+  <p class="caption" lang="en">Each rung closes one gap and costs more than the rung below. The model at the top exercises all seven dimensions at once, which is why it is the last rung and not the only one.</p>
+  <p class="caption" lang="zh">每一级关闭一个缺口， 成本也比下一级高。 顶端的模型同时覆盖全部七个维度， 所以它是最后一级， 而不是唯一的一级。</p>
+</figure>
+
+<ol class="tight" lang="en">
+  <li><strong>Boundary unit tests (①).</strong> Tails in every dimension, M = 1, sizes just below and above 2³¹ elements and 2³² bytes, the largest unsharded deployment, and every production shape with no tuning entry. Put a guard page after the tensor, so an out-of-bounds read faults instead of silently reading a neighbour.</li>
+  <li><strong>Replay real inputs (②).</strong> Captured activations, router scores and weights from one model run, plus adversarial ties, peaks and extremes.</li>
+  <li><strong>Test the seams (③).</strong> Real producers feeding real consumers. Validate dtype, shape, stride and layout at the kernel entry.</li>
+  <li><strong>Production execution modes (④).</strong> Graph capture and replay, side streams, several shapes in one process.</li>
+  <li><strong>Repeat for determinism (⑤).</strong> The same input many times with bit-identical output, a sanitizer where available, skewed inputs under load.</li>
+  <li><strong>Multi-GPU protocols (⑥).</strong> TP 2, TP 4 and EP with changing message sizes, under a watchdog.</li>
+  <li><strong>Downstream (⑦).</strong> The copy and version the engine runs, API contract tests, and a test runner that fails when it collects no tests.</li>
+  <li><strong>The model, end to end.</strong> An accuracy evaluation with a fixed seed, such as GSM8K, and a throughput run, first on one GPU and then on several.</li>
+</ol>
+<ol class="tight" lang="zh">
+  <li><strong>边界单测（①）。</strong> 每一维的尾块、 M = 1、 刚好低于和高于 2³¹ 个元素与 2³² 字节的大小、 不切分时的最大部署， 以及每一个没有调优表项的生产形状。 在张量后面放一页 guard page， 让越界读直接报错， 而不是悄悄读到相邻的数据。</li>
+  <li><strong>回放真实输入（②）。</strong> 从一次模型运行里抓取的激活、 路由分数和权重， 再加上刻意构造的相等、 尖峰和极端值。</li>
+  <li><strong>测接缝（③）。</strong> 用真实的生产方喂真实的消费方。 在 kernel 入口检查 dtype、 形状、 stride 和布局。</li>
+  <li><strong>生产执行模式（④）。</strong> graph 捕获与回放、 旁路 stream、 同一进程里的多种形状。</li>
+  <li><strong>重复跑， 要求确定性（⑤）。</strong> 同一个输入跑很多次， 输出逐位一致； 有 sanitizer 就用上； 在负载下使用倾斜的输入。</li>
+  <li><strong>多卡协议（⑥）。</strong> TP 2、 TP 4 和 EP， 消息大小不断变化， 并套上看门狗。</li>
+  <li><strong>下游（⑦）。</strong> 引擎实际运行的副本和版本、 API 契约测试， 以及一个没收集到用例就会失败的测试框架。</li>
+  <li><strong>端到端模型。</strong> 固定随机种子的精度评测， 例如 GSM8K， 再加一次吞吐测试， 先单卡， 再多卡。</li>
+</ol>
+
+<div class="callout">
+  <span class="ctag" lang="en">How I use it</span>
+  <span class="ctag" lang="zh">我怎么用它</span>
+  <p lang="en">Before I call a kernel change done, I write down which rungs it has climbed. A green unit test is rung one. A speedup table is not a rung at all. If the kernel is not on any engine's call path yet, I say so, because then even a perfect end-to-end run says nothing about it.</p>
+  <p lang="zh">在说一个 kernel 改动完成之前， 我会写下它爬到了哪几级。 一个通过的单测是第一级。 一张加速比表格根本不算一级。 如果这个 kernel 还不在任何引擎的调用路径上， 我会明确写出来， 因为那样的话， 就算端到端运行完美， 也说明不了它的任何问题。</p>
+</div>
+</section>
+
+<!-- ============ § 11 CASES ============ -->
+<section id="cases">
+<h2 lang="en"><span class="num">§ 11 · every public case in this guide</span>Case index</h2>
+<h2 lang="zh"><span class="num">§ 11 · 本文引用的全部公开案例</span>案例索引</h2>
+
+<p lang="en">All cases come from public pull requests and issues. Each row names the gap, what the test missed, and the source. Rows marked "review" are findings from code review, not observed failures.</p>
+<p lang="zh">所有案例都来自公开的 PR 和 issue。 每一行列出所属的缺口、 测试漏掉了什么， 以及来源。 标为 「评审」 的行是代码评审中的发现， 不是实际观察到的故障。</p>
+
+<div class="table-wrap">
+<table class="cases">
+  <thead>
+    <tr><th><span lang="en">Source</span><span lang="zh">来源</span></th><th><span lang="en">Gap</span><span lang="zh">缺口</span></th><th><span lang="en">What the test missed</span><span lang="zh">测试漏掉了什么</span></th></tr>
+  </thead>
+  <tbody>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/879">FlyDSL #879</a></td><td><span class="gap">①</span></td><td><span lang="en">A ≈ 5.3 GiB weight tensor at TP 1 wraps a 32-bit buffer offset; garbage output. TP 2 shards it below 4 GiB.</span><span lang="zh">TP 1 下约 5.3 GiB 的权重张量让 32 位 buffer 偏移回绕， 输出乱码。 TP 2 切分后低于 4 GiB。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1236">FlyDSL #1236</a></td><td><span class="gap">①</span></td><td><span lang="en">A size of 2³¹ elements computed in int32 sends every lane to a wrong, in-bounds address; no error.</span><span lang="zh">用 int32 计算 2³¹ 个元素的大小， 每个 lane 都写到错误但仍在范围内的地址， 不报错。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a></td><td><span class="gap">①②⑦</span></td><td><span lang="en">FP8 softmax underflow hidden by random init; int32 shape overflow at 2³¹; a tuning flag the kernel never read.</span><span lang="zh">随机初始化掩盖了 FP8 softmax 下溢； 形状在 2³¹ 处 int32 溢出； 一个 kernel 从不读取的调优开关。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1131">FlyDSL #1131</a> → <a href="https://github.com/ROCm/FlyDSL/pull/1189">#1189</a></td><td><span class="gap">①</span></td><td><span lang="en">Targeted tests passed; full CI failed on FP16 tiles at M = 16 and M = 33; reverted the next day.</span><span lang="zh">针对性测试通过； 完整 CI 在 M = 16 和 M = 33 的 FP16 tile 上失败； 第二天回滚。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1204">FlyDSL #1204</a> → <a href="https://github.com/ROCm/FlyDSL/pull/1213">#1213</a></td><td><span class="gap">②③</span></td><td><span lang="en">Real checkpoints: near-tie router scores picked the wrong expert; unsupported scale layout; default-dtype reference; short contexts.</span><span lang="zh">真实 checkpoint： 路由分数接近时选错 expert； 不支持的 scale 布局； 跟随默认 dtype 的参考实现； 很短的上下文。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1234">FlyDSL #1234</a></td><td><span class="gap">③</span></td><td><span lang="en">Review: index buffers read as raw int32, while PyTorch defaults to int64.</span><span lang="zh">评审： 索引 buffer 按原始 int32 读取， 而 PyTorch 默认是 int64。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/aiter/pull/4494">aiter #4494</a></td><td><span class="gap">④⑥</span></td><td><span lang="en">Split-K semaphore ownership under graph capture; replay spins forever; TP 8 warmup hangs.</span><span lang="zh">graph 捕获下 split-K semaphore 的归属错误； 回放时一直空转； TP 8 预热挂起。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/171">FlyDSL #171</a></td><td><span class="gap">④</span></td><td><span lang="en">Graph capture segfaults on PyTorch 2.9 while the same tests pass on 2.8; DLPack sync events on the capture stream.</span><span lang="zh">PyTorch 2.9 上 graph 捕获段错误， 同样的测试在 2.8 上通过； DLPack 在捕获 stream 上记录了同步事件。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/issues/317">FlyDSL #317</a></td><td><span class="gap">④</span></td><td><span lang="en">A cached kernel reused for a different shape gives wrong outputs; disabling the cache fixes it.</span><span lang="zh">缓存的 kernel 被用到另一个形状上， 输出错误； 关掉缓存就正常。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a></td><td><span class="gap">②④⑤</span></td><td><span lang="en">Identical warmup tokens skew routing and expose an LDS slot-reuse race; a cache key that ignored the config object.</span><span lang="zh">相同的预热 token 让路由倾斜， 暴露 LDS 槽位复用竞争； 缓存 key 忽略了配置对象。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/aiter/pull/4841">aiter #4841</a></td><td><span class="gap">⑤</span></td><td><span lang="en">A cross-block barrier race: 7 stuck events in 292,889,600 row-launches for a candidate fix; can wedge a whole service.</span><span lang="zh">跨 block barrier 竞争： 一个候选修复在 292,889,600 次行级调用里卡死 7 次； 可能让整个服务停住。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1235">FlyDSL #1235</a></td><td><span class="gap">⑤</span></td><td><span lang="en">Two reductions share an LDS slot with no barrier between them; a test cannot force the wave order.</span><span lang="zh">两次归约共用一个 LDS 槽位， 中间没有 barrier； 测试无法强制触发所需的 wave 顺序。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1107">FlyDSL #1107</a></td><td><span class="gap">⑤</span></td><td><span lang="en">Review: a workgroup barrier executed by only half the waves.</span><span lang="zh">评审： 一个只有一半 wave 会执行的 workgroup barrier。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/aiter/pull/6446">aiter #6446</a></td><td><span class="gap">⑥</span></td><td><span lang="en">All-reduce deadlock when consecutive calls change size; CI never reached TP 2 and TP 4.</span><span lang="zh">相邻调用大小变化时 all-reduce 死锁； CI 从未跑到 TP 2 和 TP 4。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/954">FlyDSL #954</a></td><td><span class="gap">⑥</span></td><td><span lang="en">Multi-rank dispatch synchronization hangs, found in review and serving tests.</span><span lang="zh">多 rank dispatch 同步导致挂起， 在评审和 serving 测试中发现。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/FlyDSL/pull/1277">FlyDSL #1277</a></td><td><span class="gap">⑥⑦</span></td><td><span lang="en">A downstream API used only by vLLM kernels; deleting it would fail no local test. Multi-GPU tests excluded by default.</span><span lang="zh">一个只有 vLLM kernel 在用的下游 API， 删掉它本地不会有测试失败。 多卡测试默认被排除。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/aiter/pull/3683">aiter #3683</a></td><td><span class="gap">⑦</span></td><td><span lang="en">An import-time KeyError on an unsupported architecture takes down every flash-attention import.</span><span lang="zh">在不受支持的架构上， 导入阶段的 KeyError 让所有 flash-attention 导入失败。</span></td></tr>
+    <tr><td><a href="https://github.com/ROCm/aiter/issues/5133">aiter #5133</a></td><td><span class="gap">⑦</span></td><td><span lang="en">141 pytest functions never executed; files exited 0 and CI recorded a pass.</span><span lang="zh">141 个 pytest 函数从未执行； 文件以 0 退出， CI 记为通过。</span></td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ EPILOGUE ============ -->
+<section id="epilogue">
+<h2 lang="en"><span class="num">§ 12 · not bad luck</span>Epilogue</h2>
+<h2 lang="zh"><span class="num">§ 12 · 不是运气不好</span>尾声</h2>
+<p lang="en">"It passed the unit test and failed in the model" sounds like bad luck. It is not. A unit test is a sample, and a model is the population. Every public bug in this guide lived in a dimension the test held still: a size past a 32-bit cliff, a near-tie between two router scores, a layout written by a different loader, a graph replay, one race in forty million calls, a second GPU, a downstream copy. Name the dimension, and the missing test is usually obvious.</p>
+<p lang="zh">「单测过了， 跑模型出问题」 听起来像运气不好， 其实不是。 单测是样本， 模型是总体。 本文里的每一个公开 bug， 都待在测试固定不动的某个维度里： 越过 32 位悬崖的大小、 两个几乎相等的路由分数、 由另一个加载器写出的布局、 一次 graph 回放、 四千万次调用里的一次竞争、 第二张卡、 一份下游副本。 说出是哪个维度， 缺的那个测试通常就一目了然。</p>
+</section>
+
+<!-- ============ REFERENCES ============ -->
+<section id="references">
+<h2 lang="en"><span class="num">§ 13 · sources</span>References</h2>
+<h2 lang="zh"><span class="num">§ 13 · 来源</span>参考资料</h2>
+<p lang="en">Public repositories: <a href="https://github.com/ROCm/FlyDSL">ROCm/FlyDSL</a>, a Python DSL for GPU kernels; <a href="https://github.com/ROCm/aiter">ROCm/aiter</a>, a kernel library used by inference engines; and <a href="https://github.com/ROCm/ATOM">ROCm/ATOM</a>, an inference engine. Every claim above links to the pull request or issue that states it.</p>
+<p lang="zh">公开仓库： <a href="https://github.com/ROCm/FlyDSL">ROCm/FlyDSL</a>， 一个写 GPU kernel 的 Python DSL； <a href="https://github.com/ROCm/aiter">ROCm/aiter</a>， 一个被推理引擎调用的 kernel 库； 以及 <a href="https://github.com/ROCm/ATOM">ROCm/ATOM</a>， 一个推理引擎。 上文每一处论断都链接到陈述它的 PR 或 issue。</p>
+<ol class="refs">
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/879">FlyDSL #879</a> · <span lang="en">MoE stage-1 weights past 4 GiB at TP 1</span><span lang="zh">TP 1 下 MoE 第一阶段权重超过 4 GiB</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1236">FlyDSL #1236</a>, <a href="https://github.com/ROCm/FlyDSL/issues/1176">#1176</a> · <span lang="en">dynamic layout sizes at 2³¹</span><span lang="zh">动态布局大小在 2³¹ 处回绕</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1020">FlyDSL #1020</a> · <span lang="en">FP8 attention softmax, int32 shapes, an unread flag</span><span lang="zh">FP8 attention 的 softmax、 int32 形状、 一个没被读取的开关</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1131">FlyDSL #1131</a>, <a href="https://github.com/ROCm/FlyDSL/pull/1189">#1189</a> · <span lang="en">refactor and revert</span><span lang="zh">重构与回滚</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1204">FlyDSL #1204</a>, <a href="https://github.com/ROCm/FlyDSL/pull/1213">#1213</a> · <span lang="en">MonoKernel and real-checkpoint fixes</span><span lang="zh">MonoKernel 及真实 checkpoint 暴露问题的修复</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1234">FlyDSL #1234</a> · <span lang="en">decode MonoKernel review</span><span lang="zh">decode MonoKernel 的评审</span></li>
+  <li><a href="https://github.com/ROCm/aiter/pull/4494">aiter #4494</a> · <span lang="en">split-K semaphore under graph capture</span><span lang="zh">graph 捕获下的 split-K semaphore</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/171">FlyDSL #171</a> · <span lang="en">graph capture segfault on PyTorch 2.9</span><span lang="zh">PyTorch 2.9 上的 graph 捕获段错误</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/issues/317">FlyDSL #317</a> · <span lang="en">cached kernel reused across shapes</span><span lang="zh">缓存 kernel 被跨形状复用</span></li>
+  <li><a href="https://github.com/ROCm/aiter/pull/6127">aiter #6127</a> · <span lang="en">LDS broadcast race and cache key</span><span lang="zh">LDS 广播竞争与缓存 key</span></li>
+  <li><a href="https://github.com/ROCm/aiter/pull/4841">aiter #4841</a> · <span lang="en">radix top-k cross-block barrier</span><span lang="zh">radix top-k 的跨 block barrier</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1235">FlyDSL #1235</a> · <span lang="en">reduction slot reuse in quant norms</span><span lang="zh">量化 norm 中归约槽位的复用</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1107">FlyDSL #1107</a> · <span lang="en">divergent workgroup barrier (review)</span><span lang="zh">分叉的 workgroup barrier（评审）</span></li>
+  <li><a href="https://github.com/ROCm/aiter/pull/6446">aiter #6446</a> · <span lang="en">all-reduce slots across call sizes</span><span lang="zh">不同调用大小下的 all-reduce 槽位</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/954">FlyDSL #954</a> · <span lang="en">multi-rank dispatch hangs</span><span lang="zh">多 rank dispatch 挂起</span></li>
+  <li><a href="https://github.com/ROCm/FlyDSL/pull/1277">FlyDSL #1277</a> · <span lang="en">downstream API contract tests</span><span lang="zh">下游 API 契约测试</span></li>
+  <li><a href="https://github.com/ROCm/aiter/pull/3683">aiter #3683</a> · <span lang="en">import-time crash on unsupported architectures</span><span lang="zh">不受支持的架构上导入即崩溃</span></li>
+  <li><a href="https://github.com/ROCm/aiter/issues/5133">aiter #5133</a> · <span lang="en">tests that never ran</span><span lang="zh">从未运行的测试</span></li>
+</ol>
+</section>
+
+</main>
+</div>
+
+<footer class="colophon">
+  <div class="grid">
+    <div><div class="k" lang="en">Sources</div><div class="k" lang="zh">来源</div><span lang="en">Public PRs and issues in ROCm/FlyDSL and ROCm/aiter, read 2026-10</span><span lang="zh">ROCm/FlyDSL 与 ROCm/aiter 的公开 PR 和 issue， 2026 年 10 月阅读</span></div>
+    <div><div class="k" lang="en">Typography</div><div class="k" lang="zh">字体</div>Libre Franklin · Libre Caslon Text · Overpass Mono</div>
+    <div><div class="k" lang="en">Palette</div><div class="k" lang="zh">配色</div><span lang="en">graph paper · ink · safety orange · pass green · fail red</span><span lang="zh">方格纸 · 墨色 · 安全橙 · 通过绿 · 失败红</span></div>
+    <div><div class="k" lang="en">Compiled for</div><div class="k" lang="zh">发布于</div>jinnpan.com · 2026.10</div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  var KEY = 'unit-pass-model-fail-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
