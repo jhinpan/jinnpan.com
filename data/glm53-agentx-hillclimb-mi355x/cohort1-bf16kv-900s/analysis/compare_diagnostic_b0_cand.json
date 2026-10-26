@@ -1,0 +1,162 @@
+{
+  "cohort": {
+    "model": "zai-org/GLM-5.3",
+    "infmax_model_prefix": "glm5.3",
+    "framework": "sglang",
+    "precision": "fp8",
+    "scenario_type": "agentic-coding",
+    "dataset.loader": "semianalysis_cc_traces_weka_062126",
+    "dataset.num_dataset_entries": "393"
+  },
+  "noise_floor": {
+    "tput_gpu": 0.02204767991348966,
+    "out_tput_gpu": 0.03597767265298435,
+    "e2e_int_p90": 0.2703335115362515,
+    "e2e_int_p50": 0.0010335664506903042,
+    "intvty_p90": 0.007267679187039855,
+    "ttft_p50": 0.21718512073091145,
+    "ttft_p90": 0.44199143398940666,
+    "e2el_p90": 0.14171583009737065
+  },
+  "points": [
+    {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c1-b0-r1/agentx_out/agentx-glm53-l1-c1-b0-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c1-cand-r1/agentx_out/agentx-glm53-l1-c1-cand-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2628.79822,
+        "out_tput_gpu": 11.11221,
+        "e2e_int_p90": 75.72185,
+        "e2e_int_p50": 168.21019,
+        "intvty_p90": 201.58428,
+        "ttft_p50": 0.28576,
+        "ttft_p90": 1.69926,
+        "e2el_p90": 14.88722
+      },
+      "candidate": {
+        "tput_gpu": 2791.81734,
+        "out_tput_gpu": 12.38756,
+        "e2e_int_p90": 77.18519,
+        "e2e_int_p50": 222.1505,
+        "intvty_p90": 281.73896,
+        "ttft_p50": 0.28577,
+        "ttft_p90": 1.64631,
+        "e2el_p90": 12.02011
+      },
+      "gain": {
+        "tput_gpu": 0.062012793054919246,
+        "out_tput_gpu": 0.11477014923224105,
+        "e2e_int_p90": 0.01932520137846616,
+        "e2e_int_p50": 0.3206720710558615,
+        "intvty_p90": 0.3976236639087136,
+        "ttft_p50": -3.499317633059995e-05,
+        "ttft_p90": 0.03216283688977173,
+        "e2el_p90": 0.23852610333848845
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 96,
+          "total": 107,
+          "error_dropped": 2,
+          "duration_s": 891.08061,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 105,
+          "total": 116,
+          "error_dropped": 2,
+          "duration_s": 902.9317,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 2 requests on errors",
+        "candidate dropped 2 requests on errors"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c2-b0-r1/agentx_out/agentx-glm53-l1-c2-b0-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c2-cand-r1/agentx_out/agentx-glm53-l1-c2-cand-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2165.50594,
+        "out_tput_gpu": 15.7688,
+        "e2e_int_p90": 62.7799,
+        "e2e_int_p50": 149.44711,
+        "intvty_p90": 149.62448,
+        "ttft_p50": 0.39618,
+        "ttft_p90": 2.67699,
+        "e2el_p90": 16.66142
+      },
+      "candidate": {
+        "tput_gpu": 2548.52878,
+        "out_tput_gpu": 20.05396,
+        "e2e_int_p90": 67.05765,
+        "e2e_int_p50": 189.96976,
+        "intvty_p90": 156.54863,
+        "ttft_p50": 0.39715,
+        "ttft_p90": 2.43145,
+        "e2el_p90": 13.65846
+      },
+      "gain": {
+        "tput_gpu": 0.17687452752958044,
+        "out_tput_gpu": 0.271749277053422,
+        "e2e_int_p90": 0.06813884698765049,
+        "e2e_int_p50": 0.27115044245418995,
+        "intvty_p90": 0.04627685255781677,
+        "ttft_p50": -0.0024424021150699637,
+        "ttft_p90": 0.10098500894527951,
+        "e2el_p90": 0.21986080421950938
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 108,
+          "total": 130,
+          "error_dropped": 2,
+          "duration_s": 904.94343,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 117,
+          "total": 139,
+          "error_dropped": 7,
+          "duration_s": 879.01573,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 2 requests on errors",
+        "candidate dropped 7 requests on errors",
+        "durations differ: 905 s vs 879 s"
+      ]
+    }
+  ],
+  "unpaired": {
+    "baseline": [],
+    "candidate": []
+  }
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "key": "glm5.3/agentic-coding/baseline/p90-e2el",
+    "status": "WARN",
+    "measuredPoints": 4,
+    "invalidPoints": 0,
+    "frontierPoints": 3,
+    "recommendedPoints": 5,
+    "canonicalRestriction": false,
+    "frontier": [
+      {
+        "x": 21.97624,
+        "y": 2172.62143
+      },
+      {
+        "x": 22.07727,
+        "y": 3215.48409
+      },
+      {
+        "x": 23.28788,
+        "y": 6958.83083
+      }
+    ]
+  },
+  {
+    "key": "glm5.3/agentic-coding/candidate/p90-e2el",
+    "status": "WARN",
+    "measuredPoints": 4,
+    "invalidPoints": 0,
+    "frontierPoints": 2,
+    "recommendedPoints": 5,
+    "canonicalRestriction": false,
+    "frontier": [
+      {
+        "x": 17.74301,
+        "y": 3683.40736
+      },
+      {
+        "x": 21.50622,
+        "y": 7164.71178
+      }
+    ]
+  }
+]

@@ -1,0 +1,230 @@
+{
+  "cohort": {
+    "model": "zai-org/GLM-5.3",
+    "infmax_model_prefix": "glm5.3",
+    "framework": "sglang",
+    "precision": "fp8",
+    "scenario_type": "agentic-coding",
+    "dataset.loader": "semianalysis_cc_traces_weka_062126",
+    "dataset.num_dataset_entries": "393"
+  },
+  "noise_floor": {
+    "tput_gpu": 0.02204767991348966,
+    "out_tput_gpu": 0.03597767265298435,
+    "e2e_int_p90": 0.2703335115362515,
+    "e2e_int_p50": 0.0010335664506903042,
+    "intvty_p90": 0.007267679187039855,
+    "ttft_p50": 0.21718512073091145,
+    "ttft_p90": 0.44199143398940666,
+    "e2el_p90": 0.14171583009737065
+  },
+  "points": [
+    {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c1-base-r2/agentx_out/agentx-glm53-l1-c1-base-r2.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c1-cand-r2/agentx_out/agentx-glm53-l1-c1-cand-r2.json"
+      },
+      "baseline": {
+        "tput_gpu": 2615.78702,
+        "out_tput_gpu": 11.44026,
+        "e2e_int_p90": 94.00219,
+        "e2e_int_p50": 177.86935,
+        "intvty_p90": 205.74425,
+        "ttft_p50": 0.22985,
+        "ttft_p90": 1.22344,
+        "e2el_p90": 14.22297
+      },
+      "candidate": {
+        "tput_gpu": 2735.02946,
+        "out_tput_gpu": 12.63716,
+        "e2e_int_p90": 91.00188,
+        "e2e_int_p50": 225.44269,
+        "intvty_p90": 280.42935,
+        "ttft_p50": 0.28166,
+        "ttft_p90": 1.86699,
+        "e2el_p90": 12.47838
+      },
+      "gain": {
+        "tput_gpu": 0.045585683806933064,
+        "out_tput_gpu": 0.10462174810712344,
+        "e2e_int_p90": -0.03191744788073558,
+        "e2e_int_p50": 0.2674622693566935,
+        "intvty_p90": 0.3629996950097025,
+        "ttft_p50": -0.1839451821344884,
+        "ttft_p90": -0.3446992217419482,
+        "e2el_p90": 0.13980901367004384
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "within noise"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 97,
+          "total": 109,
+          "error_dropped": 6,
+          "duration_s": 892.96457,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 105,
+          "total": 117,
+          "error_dropped": 4,
+          "duration_s": 911.50796,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 6 requests on errors",
+        "candidate dropped 4 requests on errors",
+        "durations differ: 893 s vs 912 s"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c2-base-r2/agentx_out/agentx-glm53-l1-c2-base-r2.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c2-cand-r2/agentx_out/agentx-glm53-l1-c2-cand-r2.json"
+      },
+      "baseline": {
+        "tput_gpu": 2384.8596,
+        "out_tput_gpu": 15.95008,
+        "e2e_int_p90": 78.61978,
+        "e2e_int_p50": 161.69938,
+        "intvty_p90": 162.7191,
+        "ttft_p50": 0.3148,
+        "ttft_p90": 1.88115,
+        "e2el_p90": 14.36614
+      },
+      "candidate": {
+        "tput_gpu": 2266.25486,
+        "out_tput_gpu": 21.50309,
+        "e2e_int_p90": 71.47732,
+        "e2e_int_p50": 191.32372,
+        "intvty_p90": 175.45444,
+        "ttft_p50": 0.38098,
+        "ttft_p90": 2.7393,
+        "e2el_p90": 13.95888
+      },
+      "gain": {
+        "tput_gpu": -0.049732378375649366,
+        "out_tput_gpu": 0.3481493509750422,
+        "e2e_int_p90": -0.09084813007617165,
+        "e2e_int_p50": 0.18320626832335418,
+        "intvty_p90": 0.07826579670118639,
+        "ttft_p50": -0.17370990603181258,
+        "ttft_p90": -0.31327346402365563,
+        "e2el_p90": 0.029175693178822293
+      },
+      "verdict": {
+        "tput_gpu": "baseline ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "within noise"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 112,
+          "total": 134,
+          "error_dropped": 12,
+          "duration_s": 898.96859,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 114,
+          "total": 136,
+          "error_dropped": 2,
+          "duration_s": 919.53057,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 12 requests on errors",
+        "candidate dropped 2 requests on errors",
+        "durations differ: 899 s vs 920 s"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c4-base-r2/agentx_out/agentx-glm53-l1-c4-base-r2.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c4-cand-r2/agentx_out/agentx-glm53-l1-c4-cand-r2.json"
+      },
+      "baseline": {
+        "tput_gpu": 2810.72956,
+        "out_tput_gpu": 23.98791,
+        "e2e_int_p90": 90.28935,
+        "e2e_int_p50": 146.24928,
+        "intvty_p90": 157.41758,
+        "ttft_p50": 0.20656,
+        "ttft_p90": 0.80594,
+        "e2el_p90": 17.46208
+      },
+      "candidate": {
+        "tput_gpu": 2905.90908,
+        "out_tput_gpu": 25.81232,
+        "e2e_int_p90": 79.41407,
+        "e2e_int_p50": 165.92352,
+        "intvty_p90": 147.39826,
+        "ttft_p50": 0.21632,
+        "ttft_p90": 1.087,
+        "e2el_p90": 14.12614
+      },
+      "gain": {
+        "tput_gpu": 0.0338629234752843,
+        "out_tput_gpu": 0.07605539623918878,
+        "e2e_int_p90": -0.12044920026559058,
+        "e2e_int_p50": 0.13452538022751281,
+        "intvty_p90": -0.0636480372776661,
+        "ttft_p50": -0.04511834319526631,
+        "ttft_p90": -0.2585648574057038,
+        "e2el_p90": 0.23615368387967273
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "baseline ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 206,
+          "total": 250,
+          "error_dropped": 15,
+          "duration_s": 917.41546,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 211,
+          "total": 255,
+          "error_dropped": 8,
+          "duration_s": 926.75723,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 15 requests on errors",
+        "candidate dropped 8 requests on errors"
+      ]
+    }
+  ],
+  "unpaired": {
+    "baseline": [],
+    "candidate": []
+  }
+}

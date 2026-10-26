@@ -1,0 +1,228 @@
+[
+ {
+  "conc": 1,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: base (local)",
+  "source": "local 3600 s",
+  "tput": 1991.06458,
+  "int90": 103.27075,
+  "e2el90": 23.29659,
+  "ttft90": 1.70778
+ },
+ {
+  "conc": 1,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: + monokernel (local)",
+  "source": "local 3600 s",
+  "tput": 2376.55499,
+  "int90": 118.98106,
+  "e2el90": 19.12103,
+  "ttft90": 1.25965
+ },
+ {
+  "conc": 1,
+  "curve": "GLM-5.3 MI355X TileRT FP8 (disagg, 16 GPUs)",
+  "source": "InferenceX 2026-10-07 id 444205",
+  "tput": 1533.93437,
+  "int90": 98.3908246911341,
+  "e2el90": 12.73896,
+  "ttft90": 1.8007,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/37176931565/attempts/1",
+  "image": "ghcr.io/tile-ai/tilert-rocm-decode:0.1.6"
+ },
+ {
+  "conc": 1,
+  "curve": "GLM-5.2 MI355X SGLang FP8 TP8",
+  "source": "InferenceX 2026-09-19 id 442726",
+  "tput": 2799.42312,
+  "int90": 61.87020428508142,
+  "e2el90": 13.29508,
+  "ttft90": 1.85335,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35403089860/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.19-rocm720-mi35x-20260917"
+ },
+ {
+  "conc": 1,
+  "curve": "GLM-5.2 MI355X SGLang FP4 TP8",
+  "source": "InferenceX 2026-10-06 id 444159",
+  "tput": 3087.41074,
+  "int90": 69.63592022254346,
+  "e2el90": 12.43682,
+  "ttft90": 1.67439,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/37326853365/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.20-rocm720-mi35x-20260930"
+ },
+ {
+  "conc": 1,
+  "curve": "GLM-5.2 MI355X ATOM FP4 TP8",
+  "source": "InferenceX 2026-09-22 id 442942",
+  "tput": 2142.82095,
+  "int90": 93.34015470000104,
+  "e2el90": 21.95911,
+  "ttft90": 1.37015,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35693365964/attempts/3",
+  "image": "rocm/atom-dev:nightly_202609211553"
+ },
+ {
+  "conc": 1,
+  "curve": "GLM-5.3 B300 SGLang FP4 TP8",
+  "source": "InferenceX 2026-10-22 id 446063",
+  "tput": 3650.70235,
+  "int90": 114.13991871553591,
+  "e2el90": 7.16267,
+  "ttft90": 1.51132,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/39551262792/attempts/1",
+  "image": "lmsysorg/sglang:v0.5.20-cu130@sha256:b27fce60bc5494c118c4910702812bcfa8cee67abcdd1ff8b0902f21647552f4"
+ },
+ {
+  "conc": 2,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: base (local)",
+  "source": "local 3600 s",
+  "tput": 2172.62143,
+  "int90": 94.80624,
+  "e2el90": 21.97624,
+  "ttft90": 0.99271
+ },
+ {
+  "conc": 2,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: + monokernel (local)",
+  "source": "local 3600 s",
+  "tput": 2499.71767,
+  "int90": 104.1367,
+  "e2el90": 18.40218,
+  "ttft90": 0.9889
+ },
+ {
+  "conc": 2,
+  "curve": "GLM-5.2 MI355X SGLang FP8 TP8",
+  "source": "InferenceX 2026-09-19 id 442728",
+  "tput": 2784.98788,
+  "int90": 66.63401745739755,
+  "e2el90": 11.12638,
+  "ttft90": 1.49385,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35403089860/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.19-rocm720-mi35x-20260917"
+ },
+ {
+  "conc": 2,
+  "curve": "GLM-5.2 MI355X SGLang FP4 TP8",
+  "source": "InferenceX 2026-10-06 id 444153",
+  "tput": 3118.02003,
+  "int90": 77.35272488106223,
+  "e2el90": 12.29978,
+  "ttft90": 1.48031,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/37326853365/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.20-rocm720-mi35x-20260930"
+ },
+ {
+  "conc": 2,
+  "curve": "GLM-5.2 MI355X ATOM FP4 TP8",
+  "source": "InferenceX 2026-09-22 id 442948",
+  "tput": 2368.92064,
+  "int90": 98.15397745818406,
+  "e2el90": 18.25044,
+  "ttft90": 1.01795,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35693365964/attempts/3",
+  "image": "rocm/atom-dev:nightly_202609211553"
+ },
+ {
+  "conc": 4,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: base (local)",
+  "source": "local 3600 s",
+  "tput": 3215.48409,
+  "int90": 93.46917,
+  "e2el90": 22.07727,
+  "ttft90": 0.92356
+ },
+ {
+  "conc": 4,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: + monokernel (local)",
+  "source": "local 3600 s",
+  "tput": 3683.40736,
+  "int90": 106.00268,
+  "e2el90": 17.74301,
+  "ttft90": 0.94967
+ },
+ {
+  "conc": 4,
+  "curve": "GLM-5.2 MI355X SGLang FP8 TP8",
+  "source": "InferenceX 2026-09-19 id 442722",
+  "tput": 4012.14239,
+  "int90": 64.21672779089,
+  "e2el90": 10.8292,
+  "ttft90": 1.57161,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35403089860/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.19-rocm720-mi35x-20260917"
+ },
+ {
+  "conc": 4,
+  "curve": "GLM-5.2 MI355X SGLang FP4 TP8",
+  "source": "InferenceX 2026-10-06 id 444154",
+  "tput": 4344.56441,
+  "int90": 77.31218624441479,
+  "e2el90": 10.51324,
+  "ttft90": 1.5091,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/37326853365/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.20-rocm720-mi35x-20260930"
+ },
+ {
+  "conc": 4,
+  "curve": "GLM-5.2 MI355X ATOM FP4 TP8",
+  "source": "InferenceX 2026-09-22 id 442951",
+  "tput": 3562.77923,
+  "int90": 104.51029551036149,
+  "e2el90": 16.57007,
+  "ttft90": 1.20168,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35693365964/attempts/3",
+  "image": "rocm/atom-dev:nightly_202609211553"
+ },
+ {
+  "conc": 4,
+  "curve": "GLM-5.3 B300 SGLang FP4 TP8",
+  "source": "InferenceX 2026-10-22 id 446068",
+  "tput": 4793.06701,
+  "int90": 114.53632817717451,
+  "e2el90": 5.21445,
+  "ttft90": 1.38558,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/39551262792/attempts/1",
+  "image": "lmsysorg/sglang:v0.5.20-cu130@sha256:b27fce60bc5494c118c4910702812bcfa8cee67abcdd1ff8b0902f21647552f4"
+ },
+ {
+  "conc": 10,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: base (local)",
+  "source": "local 3600 s",
+  "tput": 6958.83083,
+  "int90": 66.57524,
+  "e2el90": 23.28788,
+  "ttft90": 0.97092
+ },
+ {
+  "conc": 10,
+  "curve": "GLM-5.3 MI355X SGLang FP8 TP8, this work: + monokernel (local)",
+  "source": "local 3600 s",
+  "tput": 7164.71178,
+  "int90": 73.03045,
+  "e2el90": 21.50622,
+  "ttft90": 0.96281
+ },
+ {
+  "conc": 10,
+  "curve": "GLM-5.2 MI355X SGLang FP8 TP8",
+  "source": "InferenceX 2026-09-19 id 442731",
+  "tput": 8172.43681,
+  "int90": 51.68249068699905,
+  "e2el90": 13.48483,
+  "ttft90": 1.5142,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/35403089860/attempts/1",
+  "image": "lmsysorg/sglang-rocm:v0.5.19-rocm720-mi35x-20260917"
+ },
+ {
+  "conc": 10,
+  "curve": "GLM-5.3 B300 SGLang FP4 TP8",
+  "source": "InferenceX 2026-10-22 id 446060",
+  "tput": 9399.25608,
+  "int90": 115.93865063212372,
+  "e2el90": 5.83451,
+  "ttft90": 1.27756,
+  "url": "https://github.com/SemiAnalysisAI/InferenceX/actions/runs/39551262792/attempts/1",
+  "image": "lmsysorg/sglang:v0.5.20-cu130@sha256:b27fce60bc5494c118c4910702812bcfa8cee67abcdd1ff8b0902f21647552f4"
+ }
+]

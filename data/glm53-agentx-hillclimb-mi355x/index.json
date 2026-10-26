@@ -1,0 +1,521 @@
+{
+ "cohort1-bf16kv-900s": {
+  "agentx-glm53-l1-c1-b0-r1": {
+   "arm": "b0",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c1-b1-r1": {
+   "arm": "b1",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c1-base-r1": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c1-base-r2": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c1-cand-r1": {
+   "coverage": {
+    "decode_batch_lines": 723,
+    "running_le_2": 723,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 697,
+     "2": 26
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c1-cand-r2": {
+   "coverage": {
+    "decode_batch_lines": 742,
+    "running_le_2": 742,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 712,
+     "2": 30
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c2-b0-r1": {
+   "arm": "b0",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c2-b1-r1": {
+   "arm": "b1",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c2-base-r1": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c2-base-r2": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c2-cand-r1": {
+   "coverage": {
+    "decode_batch_lines": 1084,
+    "running_le_2": 1052,
+    "share_running_le_2": 0.9705,
+    "running_req_histogram": {
+     "1": 927,
+     "2": 125,
+     "3": 32
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c2-cand-r2": {
+   "coverage": {
+    "decode_batch_lines": 1112,
+    "running_le_2": 1078,
+    "share_running_le_2": 0.9694,
+    "running_req_histogram": {
+     "1": 934,
+     "2": 144,
+     "3": 34
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c4-base-r1": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c4-base-r2": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c4-cand-r1": {
+   "coverage": {
+    "decode_batch_lines": 1109,
+    "running_le_2": 1065,
+    "share_running_le_2": 0.9603,
+    "running_req_histogram": {
+     "1": 865,
+     "2": 200,
+     "3": 38,
+     "4": 6
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1-c4-cand-r2": {
+   "coverage": {
+    "decode_batch_lines": 1293,
+    "running_le_2": 1245,
+    "share_running_le_2": 0.9629,
+    "running_req_histogram": {
+     "1": 1038,
+     "2": 207,
+     "3": 43,
+     "4": 5
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand",
+   "kind": "agentx_rendered"
+  },
+  "gsm8k-glm53-l1-c2-baseq": {
+   "gsm8k": {
+    "n": 500,
+    "strict_match": 0.98,
+    "flexible_extract": 0.98,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "arm": "baseq",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l1-c2-candq": {
+   "gsm8k": {
+    "n": 500,
+    "strict_match": 0.984,
+    "flexible_extract": 0.984,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "coverage": {
+    "decode_batch_lines": 413,
+    "running_le_2": 413,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 7,
+     "2": 406
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "candq",
+   "kind": "gsm8k"
+  }
+ },
+ "cohort2-fp8kv-900s": {
+  "agentx-glm53-l1f-c1-base-r1": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c1-base-r2": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c1-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 723,
+    "running_le_2": 723,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 696,
+     "2": 27
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c1-cand8-r2": {
+   "coverage": {
+    "decode_batch_lines": 745,
+    "running_le_2": 745,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 719,
+     "2": 26
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c2-base-r1": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c2-base-r2": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c2-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 1081,
+    "running_le_2": 1048,
+    "share_running_le_2": 0.9695,
+    "running_req_histogram": {
+     "1": 915,
+     "2": 133,
+     "3": 31,
+     "4": 2
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c2-cand8-r2": {
+   "coverage": {
+    "decode_batch_lines": 1097,
+    "running_le_2": 1053,
+    "share_running_le_2": 0.9599,
+    "running_req_histogram": {
+     "1": 910,
+     "2": 143,
+     "3": 44
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c4-base-r1": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c4-base-r2": {
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c4-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 1216,
+    "running_le_2": 1137,
+    "share_running_le_2": 0.935,
+    "running_req_histogram": {
+     "1": 878,
+     "2": 259,
+     "3": 78,
+     "4": 1
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l1f-c4-cand8-r2": {
+   "coverage": {
+    "decode_batch_lines": 1125,
+    "running_le_2": 1084,
+    "share_running_le_2": 0.9636,
+    "running_req_histogram": {
+     "1": 890,
+     "2": 194,
+     "3": 33,
+     "4": 8
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "gsm8k-glm53-l1f-c2-baseq": {
+   "gsm8k": {
+    "n": 500,
+    "strict_match": 0.986,
+    "flexible_extract": 0.984,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "arm": "baseq",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l1f-c2-cand8q": {
+   "gsm8k": {
+    "n": 500,
+    "strict_match": 0.988,
+    "flexible_extract": 0.988,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "coverage": {
+    "decode_batch_lines": 448,
+    "running_le_2": 448,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 11,
+     "2": 437
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8q",
+   "kind": "gsm8k"
+  }
+ },
+ "cohort3-fp8kv-3600s": {
+  "agentx-glm53-l2ov-c1-base-r1": {
+   "requests_csv_rows": 250,
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c1-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 4094,
+    "running_le_2": 4094,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 3940,
+     "2": 154
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path"
+   },
+   "requests_csv_rows": 272,
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c10-base-r1": {
+   "requests_csv_rows": 1520,
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c10-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 4435,
+    "running_le_2": 2061,
+    "share_running_le_2": 0.4647,
+    "running_req_histogram": {
+     "1": 1014,
+     "2": 1047,
+     "3": 942,
+     "4": 668,
+     "5": 367,
+     "6": 219,
+     "7": 93,
+     "8": 55,
+     "9": 16,
+     "10": 13,
+     "11": 1
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 14 captured decode graphs); every other step runs the standard path"
+   },
+   "requests_csv_rows": 1535,
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c2-base-r1": {
+   "requests_csv_rows": 403,
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c2-base-r2": {
+   "requests_csv_rows": 427,
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c2-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 4352,
+    "running_le_2": 4306,
+    "share_running_le_2": 0.9894,
+    "running_req_histogram": {
+     "1": 3820,
+     "2": 486,
+     "3": 43,
+     "4": 3
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "requests_csv_rows": 434,
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c4-base-r1": {
+   "requests_csv_rows": 589,
+   "arm": "base",
+   "kind": "agentx_rendered"
+  },
+  "agentx-glm53-l2ov-c4-cand8-r1": {
+   "coverage": {
+    "decode_batch_lines": 4992,
+    "running_le_2": 4799,
+    "share_running_le_2": 0.9613,
+    "running_req_histogram": {
+     "1": 3905,
+     "2": 894,
+     "3": 121,
+     "4": 47,
+     "5": 20,
+     "6": 5
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path"
+   },
+   "requests_csv_rows": 638,
+   "arm": "cand8",
+   "kind": "agentx_rendered"
+  },
+  "gsm8k-glm53-l2ov-c10-baseq": {
+   "gsm8k": {
+    "n": 1319,
+    "strict_match": 0.978013646702047,
+    "flexible_extract": 0.9787717968157695,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "arm": "baseq",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l2ov-c10-baseq-r2": {
+   "gsm8k": {
+    "n": 1319,
+    "strict_match": 0.9757391963608795,
+    "flexible_extract": 0.9742228961334344,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "arm": "baseq",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l2ov-c10-cand8q": {
+   "gsm8k": {
+    "n": 1319,
+    "strict_match": 0.9719484457922669,
+    "flexible_extract": 0.9719484457922669,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "coverage": {
+    "decode_batch_lines": 302,
+    "running_le_2": 75,
+    "share_running_le_2": 0.2483,
+    "running_req_histogram": {
+     "1": 74,
+     "2": 1,
+     "6": 1,
+     "8": 1,
+     "9": 26,
+     "10": 199
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 14 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8q",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l2ov-c10-cand8q-r2": {
+   "gsm8k": {
+    "n": 1319,
+    "strict_match": 0.9787717968157695,
+    "flexible_extract": 0.9787717968157695,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "coverage": {
+    "decode_batch_lines": 236,
+    "running_le_2": 51,
+    "share_running_le_2": 0.2161,
+    "running_req_histogram": {
+     "1": 51,
+     "4": 1,
+     "7": 1,
+     "8": 1,
+     "9": 25,
+     "10": 157
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 14 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8q",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l2ov-c2-baseq": {
+   "gsm8k": {
+    "n": 1319,
+    "strict_match": 0.9742228961334344,
+    "flexible_extract": 0.9734647460197119,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "arm": "baseq",
+   "kind": "gsm8k"
+  },
+  "gsm8k-glm53-l2ov-c2-cand8q": {
+   "gsm8k": {
+    "n": 1319,
+    "strict_match": 0.9711902956785443,
+    "flexible_extract": 0.9711902956785443,
+    "harness": "lm-evaluation-harness 0.4.9.2",
+    "n_shot": 5
+   },
+   "coverage": {
+    "decode_batch_lines": 1097,
+    "running_le_2": 1097,
+    "share_running_le_2": 1.0,
+    "running_req_histogram": {
+     "1": 18,
+     "2": 1079
+    },
+    "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+   },
+   "arm": "cand8q",
+   "kind": "gsm8k"
+  }
+ }
+}

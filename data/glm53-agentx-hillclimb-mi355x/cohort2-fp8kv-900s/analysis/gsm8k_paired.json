@@ -1,0 +1,22 @@
+{
+ "gate": 0.94,
+ "filters": {
+  "flexible-extract": {
+   "n": 500,
+   "base": 0.984,
+   "cand": 0.988,
+   "only_base_right": 1,
+   "only_cand_right": 3,
+   "mcnemar_p": 0.625
+  },
+  "strict-match": {
+   "n": 500,
+   "base": 0.986,
+   "cand": 0.988,
+   "only_base_right": 1,
+   "only_cand_right": 2,
+   "mcnemar_p": 1.0
+  }
+ },
+ "pass": true
+}

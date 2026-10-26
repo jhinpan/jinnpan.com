@@ -1,0 +1,445 @@
+{
+ "e2e-glm53-fp8kv-verify-check": {
+  "tests_passed": [
+   "test_each_covered_verify_layer_within_its_numerics_with_fp8_kv"
+  ],
+  "tests_failed": [],
+  "violation_lines": 0,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999881,
+    "max": 0.999996,
+    "checks": 288
+   },
+   "layer.index.max_abs": {
+    "min": 0.0625,
+    "max": 0.25,
+    "checks": 288
+   },
+   "layer.index.rel": {
+    "min": 0.00272756,
+    "max": 0.0154312,
+    "checks": 288
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.991912,
+    "max": 1.0,
+    "checks": 288
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 288
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.131306,
+    "checks": 288
+   },
+   "layer.kv.cosine": {
+    "min": 0.999261,
+    "max": 0.999993,
+    "checks": 1200
+   },
+   "layer.kv.max_abs": {
+    "min": 0.0625,
+    "max": 1.0,
+    "checks": 1200
+   },
+   "layer.kv.rel": {
+    "min": 0.0037235,
+    "max": 0.0384613,
+    "checks": 1200
+   },
+   "layer.streams.cosine": {
+    "min": 0.991399,
+    "max": 0.999996,
+    "checks": 1200
+   },
+   "layer.streams.max_abs": {
+    "min": 0.000976562,
+    "max": 7.0,
+    "checks": 1200
+   },
+   "layer.streams.rel": {
+    "min": 0.0030321,
+    "max": 0.132081,
+    "checks": 1200
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.0175781,
+    "checks": 288
+   },
+   "layer.topk_exact.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 288
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 288
+   }
+  },
+  "summary": "1 passed, 7 deselected, 4 warnings in 145.94s (0:02:25)"
+ },
+ "e2e-glm53-fp8kv-decode-check-local": {
+  "tests_passed": [
+   "test_fp8_decode"
+  ],
+  "tests_failed": [],
+  "violation_lines": 0,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999921,
+    "max": 1.0,
+    "checks": 342
+   },
+   "layer.index.max_abs": {
+    "min": 0.03125,
+    "max": 0.25,
+    "checks": 342
+   },
+   "layer.index.rel": {
+    "min": 0.000935808,
+    "max": 0.0126423,
+    "checks": 342
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.983282,
+    "max": 1.0,
+    "checks": 342
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 342
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.196116,
+    "checks": 342
+   },
+   "layer.kv.cosine": {
+    "min": 0.999077,
+    "max": 1.0,
+    "checks": 1425
+   },
+   "layer.kv.max_abs": {
+    "min": 0.00195312,
+    "max": 0.5,
+    "checks": 1425
+   },
+   "layer.kv.rel": {
+    "min": 8.73331e-05,
+    "max": 0.0469244,
+    "checks": 1425
+   },
+   "layer.streams.cosine": {
+    "min": 0.98245,
+    "max": 0.999986,
+    "checks": 1425
+   },
+   "layer.streams.max_abs": {
+    "min": 0.000244141,
+    "max": 5.0,
+    "checks": 1425
+   },
+   "layer.streams.rel": {
+    "min": 0.0052262,
+    "max": 0.187358,
+    "checks": 1425
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.012207,
+    "checks": 342
+   },
+   "layer.topk_exact.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 342
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 342
+   }
+  },
+  "summary": "1 passed, 8 deselected, 4 warnings in 131.19s (0:02:11)"
+ },
+ "e2e-glm53-bf16-verify-check": {
+  "tests_passed": [
+   "test_each_covered_verify_layer_within_its_numerics"
+  ],
+  "tests_failed": [],
+  "violation_lines": 0,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999869,
+    "max": 0.999996,
+    "checks": 324
+   },
+   "layer.index.max_abs": {
+    "min": 0.0625,
+    "max": 0.25,
+    "checks": 324
+   },
+   "layer.index.rel": {
+    "min": 0.00271419,
+    "max": 0.0162178,
+    "checks": 324
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.989094,
+    "max": 1.0,
+    "checks": 324
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 324
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.154303,
+    "checks": 324
+   },
+   "layer.kv.cosine": {
+    "min": 0.999617,
+    "max": 0.999997,
+    "checks": 1350
+   },
+   "layer.kv.max_abs": {
+    "min": 0.0146484,
+    "max": 0.123047,
+    "checks": 1350
+   },
+   "layer.kv.rel": {
+    "min": 0.0025429,
+    "max": 0.0276755,
+    "checks": 1350
+   },
+   "layer.streams.cosine": {
+    "min": 0.996859,
+    "max": 1.0,
+    "checks": 1350
+   },
+   "layer.streams.max_abs": {
+    "min": 0.000488281,
+    "max": 2.0,
+    "checks": 1350
+   },
+   "layer.streams.rel": {
+    "min": 0.000782708,
+    "max": 0.0793386,
+    "checks": 1350
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.0161133,
+    "checks": 324
+   },
+   "layer.topk_exact.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 324
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 324
+   }
+  },
+  "summary": "1 passed, 7 deselected, 4 warnings in 146.94s (0:02:26)"
+ },
+ "e2e-glm53-fp8kv-neg-verify-check": {
+  "tests_passed": [],
+  "tests_failed": [
+   "test_each_covered_verify_layer_within_its_numerics_with_fp8_kv"
+  ],
+  "violation_lines": 1189,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999872,
+    "max": 0.999996,
+    "checks": 306
+   },
+   "layer.index.max_abs": {
+    "min": 0.125,
+    "max": 0.5,
+    "checks": 306
+   },
+   "layer.index.rel": {
+    "min": 0.00293492,
+    "max": 0.0159951,
+    "checks": 306
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.986064,
+    "max": 1.0,
+    "checks": 306
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 306
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.176777,
+    "checks": 306
+   },
+   "layer.kv.cosine": {
+    "min": 0.0950054,
+    "max": 0.999988,
+    "checks": 1275
+   },
+   "layer.kv.max_abs": {
+    "min": 0.03125,
+    "max": 5.75,
+    "checks": 1275
+   },
+   "layer.kv.rel": {
+    "min": 0.00498757,
+    "max": 1.34576,
+    "checks": 1275
+   },
+   "layer.streams.cosine": {
+    "min": 0.99425,
+    "max": 0.999998,
+    "checks": 1275
+   },
+   "layer.streams.max_abs": {
+    "min": 0.000488281,
+    "max": 4.0,
+    "checks": 1275
+   },
+   "layer.streams.rel": {
+    "min": 0.0018371,
+    "max": 0.107322,
+    "checks": 1275
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.0151367,
+    "checks": 306
+   },
+   "layer.topk_exact.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 306
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 306
+   }
+  },
+  "summary": "1 failed, 7 deselected, 4 warnings in 180.85s (0:03:00)"
+ },
+ "e2e-glm53-fp8kv-full": {
+  "tests_passed": [
+   "test_covered_steps_match_prefill",
+   "test_each_covered_layer_past_the_parallel_top_k",
+   "test_each_covered_layer_within_its_numerics",
+   "test_each_covered_verify_layer_within_its_numerics",
+   "test_each_covered_verify_layer_within_its_numerics_with_fp8_kv",
+   "test_a_stalled_rank_stops_the_server_without_tokens"
+  ],
+  "tests_failed": [
+   "test_gsm8k_past_the_largest_width",
+   "test_gsm8k_and_accept_length_past_the_largest_width"
+  ],
+  "violation_lines": 0,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999948,
+    "max": 1.0,
+    "checks": 288
+   },
+   "layer.index.max_abs": {
+    "min": 0.03125,
+    "max": 0.5,
+    "checks": 288
+   },
+   "layer.index.rel": {
+    "min": 0.00072832,
+    "max": 0.0102526,
+    "checks": 288
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.982093,
+    "max": 1.0,
+    "checks": 288
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 288
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.204124,
+    "checks": 288
+   },
+   "layer.kv.cosine": {
+    "min": 0.999597,
+    "max": 0.999998,
+    "checks": 1200
+   },
+   "layer.kv.max_abs": {
+    "min": 0.0078125,
+    "max": 0.109375,
+    "checks": 1200
+   },
+   "layer.kv.rel": {
+    "min": 0.00199427,
+    "max": 0.0284277,
+    "checks": 1200
+   },
+   "layer.streams.cosine": {
+    "min": 0.991543,
+    "max": 0.999995,
+    "checks": 1200
+   },
+   "layer.streams.max_abs": {
+    "min": 0.00012207,
+    "max": 1.5,
+    "checks": 1200
+   },
+   "layer.streams.rel": {
+    "min": 0.00315215,
+    "max": 0.130586,
+    "checks": 1200
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.0605469,
+    "checks": 288
+   },
+   "layer.topk_exact.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 288
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 288
+   }
+  },
+  "summary": "2 failed, 6 passed, 4 warnings in 1194.58s (0:19:54)"
+ },
+ "e2e-glm53-fp8kv-gsm8k": {
+  "tests_passed": [
+   "test_gsm8k_past_the_largest_width",
+   "test_gsm8k_and_accept_length_past_the_largest_width"
+  ],
+  "tests_failed": [],
+  "violation_lines": 0,
+  "metrics_first_test": {},
+  "summary": "2 passed, 6 deselected, 4 warnings in 519.08s (0:08:39)"
+ }
+}

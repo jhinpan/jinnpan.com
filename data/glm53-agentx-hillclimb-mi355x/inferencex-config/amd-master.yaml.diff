@@ -1,0 +1,25 @@
+diff --git a/inferencex-e2e/configs/amd-master.yaml b/inferencex-e2e/configs/amd-master.yaml
+index 6bba904af..519e2ff69 100644
+--- a/inferencex-e2e/configs/amd-master.yaml
++++ b/inferencex-e2e/configs/amd-master.yaml
+@@ -1486,6 +1486,20 @@ glm5.2-fp4-mi355x-atom-agentic-mtp:
+        - { tp: 4, kv-offloading: none, conc-list: [2, 4, 8, 10], spec-decoding: mtp, srt-recipe: agentic.yaml }
+        - { tp: 8, kv-offloading: none, conc-list: [1, 2, 4], spec-decoding: mtp, srt-recipe: agentic.yaml }
+ 
++glm5.3-fp8-mi355x-sglang-agentic-mtp:
++  image: lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024
++  model: zai-org/GLM-5.3
++  model-prefix: glm5.3
++  runner: cluster:mi355x-amds
++  precision: fp8
++  framework: sglang
++  multinode: false
++  srt-recipe-dir: glm5.3/sglang/mi355x-fp8-mtp
++  scenarios:
++    agentic-coding:
++    - search-space:
++      - { tp: 8, ep: 1, kv-offloading: none, conc-list: [1, 2, 4, 10], spec-decoding: mtp, srt-recipe: agentic.yaml }
++
+ dsv4-fp4-mi355x-sglang-agentic-mtp:
+   image: lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261019
+   model: deepseek-ai/DeepSeek-V4-Pro-0813

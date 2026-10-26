@@ -1,0 +1,219 @@
+{
+ "note": "rank 0, TP8; one prefill of about 100k cached + 2048 new tokens per request",
+ "base_fp8_e4m3_kv": {
+  "ttft_s": [
+   0.22008967399597168,
+   0.22014784812927246,
+   0.22089648246765137,
+   0.2182755470275879,
+   0.22219014167785645,
+   0.21912050247192383,
+   0.2182772159576416,
+   0.2181711196899414
+  ],
+  "ttft_median_ms": 219.60508823394775,
+  "kernel_launches": 2553,
+  "kernel_total_ms": 174.78401100000016,
+  "tilelang_main_kernel_ms": 52.08184199999996,
+  "tilelang_main_kernel_launches": 158,
+  "grid2080_per_layer_us_median": 644.363,
+  "grid4160_per_layer_us_median": 7.759,
+  "grids": [
+   "[2080, 1, 1]",
+   "[4160, 1, 1]"
+  ],
+  "top_kernels": [
+   {
+    "name": "main_kernel",
+    "launches": 158,
+    "total_ms": 52.082
+   },
+   {
+    "name": "aiter::fmoe_bf16_blockscaleFp8_g1u1_vs_ps_silu_64x256",
+    "launches": 76,
+    "total_ms": 27.091
+   },
+   {
+    "name": "_ZN5aiter26cross_device_reduce_2stageIDF16bLi8ELb0ELb0EEEvPNS_8RankDataES2_NS_11RankSignalsEPNS_6SignalEPT_ii",
+    "launches": 160,
+    "total_ms": 25.168
+   },
+   {
+    "name": "_gluon_fp8_mqa_logits_kernel_NUM_HEADS_32_HEAD_SIZE_128_BLOCK_KV_64_NUM_WARPS_2_NUM_BUFFERS_2_NUM_CHAINS_2_USE_BUFFER_LOAD_1_USE_BUFFER_STORE_1_USE_PADDED_SHARE",
+    "launches": 22,
+    "total_ms": 21.212
+   },
+   {
+    "name": "void sgl::dsa_topk::coop_topk_kernel<2048u, 12u, 4096u, 1024u>(sgl::dsa_topk::CoopParams<2048u>)",
+    "launches": 22,
+    "total_ms": 15.065
+   },
+   {
+    "name": "_ZN2ck59kernel_gemm_xdl_cshuffle_v3_multi_d_blockscale_b_preshuffleINS_58GridwiseGemmMultiD_blockscale_xdl_cshuffle_v3_b_preshuffleINS_13tensor_layout4gemm8RowM",
+    "launches": 208,
+    "total_ms": 8.557
+   },
+   {
+    "name": "_batched_gemm_a8w8_a_per_token_group_prequant_w_per_batched_tensor_quant_kernel_HAS_BIAS_0_BLOCK_SIZE_M_64_BLOCK_SIZE_N_256_BLOCK_SIZE_K_128_GROUP_SIZE_M_1_EVEN",
+    "launches": 158,
+    "total_ms": 4.701
+   },
+   {
+    "name": "_ZN7ck_tile6kentryINS_11kernel_attrILb1EEELi4ENS_21QuantGemmMultiDKernelINS_21GemmTile1DPartitionerINS_13TileGemmShapeINS_8sequenceIJLi192ELi256ELi128EEEENS6_IJ",
+    "launches": 79,
+    "total_ms": 4.413
+   },
+   {
+    "name": "_ZN5aiter24add_rmsnorm_quant_kernelIDF16bDF16bLi256ELi24ELb1ELb0ELb1ELi1ELb0EEEvPT0_PT_PfS4_S4_S4_dbiiiiiiibb",
+    "launches": 158,
+    "total_ms": 2.85
+   },
+   {
+    "name": "_ZN5aiter37dynamic_per_group_scaled_quant_kernelIDF16bDB8_Li32ELi128ELb1ELi64ELb0ELb0ELi0ELb0ELb0ELb0ELb0ELb0EEEvPT0_PfPKT_PKfliilPKii",
+    "launches": 363,
+    "total_ms": 2.526
+   },
+   {
+    "name": "hgemm_bf16_t64x64x128x4_ks1_w2x2x2_gm4_bias0_lnt_pft_0",
+    "launches": 76,
+    "total_ms": 2.133
+   },
+   {
+    "name": "void at::native::(anonymous namespace)::CatArrayBatchedCopy<at::native::(anonymous namespace)::OpaqueType<1u>, unsigned int, 3, 64, 64>(at::native::(anonymous n",
+    "launches": 79,
+    "total_ms": 1.654
+   },
+   {
+    "name": "void aiter::opus_moe_sorting_entry<aiter::MoeSortingMultiPhaseKernel_P23<aiter::MoeSortingProblemMp<int, float, unsigned char, 16, false, false, true> >, aiter:",
+    "launches": 76,
+    "total_ms": 0.896
+   },
+   {
+    "name": "void fast_hadamard_transform_kernel<fast_hadamard_transform_kernel_traits<16, 7, c10::BFloat16> >(HadamardParamsBase)",
+    "launches": 44,
+    "total_ms": 0.652
+   },
+   {
+    "name": "_fused_qk_rope_cat_and_cache_mla_kernel_QH_8_KH_1_QH_PER_KH_8_BLOCK_D_nope_512_BLOCK_D_pe_64_BLOCK_D_HALF_pe_32_BLOCK_SIZE_1_REUSE_FREQS_FRONT_PART_1_IS_NEOX_0_",
+    "launches": 79,
+    "total_ms": 0.607
+   }
+  ],
+  "request": {
+   "warm_prefix_s": 7.744604825973511,
+   "warm_s": [
+    0.23653531074523926,
+    0.21443700790405273
+   ],
+   "profiled_s": 0.22241473197937012
+  }
+ },
+ "b0_bf16_kv": {
+  "ttft_s": [
+   0.26856541633605957,
+   0.26944541931152344,
+   0.269545316696167,
+   0.268829345703125,
+   0.2450559139251709,
+   0.2685105800628662,
+   0.2689385414123535,
+   0.268923282623291
+  ],
+  "ttft_median_ms": 268.876314163208,
+  "kernel_launches": 2553,
+  "kernel_total_ms": 225.0200870000005,
+  "tilelang_main_kernel_ms": 102.9292520000001,
+  "tilelang_main_kernel_launches": 158,
+  "grid2080_per_layer_us_median": 1275.769,
+  "grid4160_per_layer_us_median": 7.919,
+  "grids": [
+   "[2080, 1, 1]",
+   "[4160, 1, 1]"
+  ],
+  "top_kernels": [
+   {
+    "name": "main_kernel",
+    "launches": 158,
+    "total_ms": 102.929
+   },
+   {
+    "name": "aiter::fmoe_bf16_blockscaleFp8_g1u1_vs_ps_silu_64x256",
+    "launches": 76,
+    "total_ms": 27.016
+   },
+   {
+    "name": "_ZN5aiter26cross_device_reduce_2stageIDF16bLi8ELb0ELb0EEEvPNS_8RankDataES2_NS_11RankSignalsEPNS_6SignalEPT_ii",
+    "launches": 160,
+    "total_ms": 24.052
+   },
+   {
+    "name": "_gluon_fp8_mqa_logits_kernel_NUM_HEADS_32_HEAD_SIZE_128_BLOCK_KV_64_NUM_WARPS_2_NUM_BUFFERS_2_NUM_CHAINS_2_USE_BUFFER_LOAD_1_USE_BUFFER_STORE_1_USE_PADDED_SHARE",
+    "launches": 22,
+    "total_ms": 21.205
+   },
+   {
+    "name": "void sgl::dsa_topk::coop_topk_kernel<2048u, 12u, 4096u, 1024u>(sgl::dsa_topk::CoopParams<2048u>)",
+    "launches": 22,
+    "total_ms": 15.296
+   },
+   {
+    "name": "_ZN2ck59kernel_gemm_xdl_cshuffle_v3_multi_d_blockscale_b_preshuffleINS_58GridwiseGemmMultiD_blockscale_xdl_cshuffle_v3_b_preshuffleINS_13tensor_layout4gemm8RowM",
+    "launches": 208,
+    "total_ms": 8.598
+   },
+   {
+    "name": "_batched_gemm_a8w8_a_per_token_group_prequant_w_per_batched_tensor_quant_kernel_HAS_BIAS_0_BLOCK_SIZE_M_64_BLOCK_SIZE_N_256_BLOCK_SIZE_K_128_GROUP_SIZE_M_1_EVEN",
+    "launches": 158,
+    "total_ms": 4.726
+   },
+   {
+    "name": "_ZN7ck_tile6kentryINS_11kernel_attrILb1EEELi4ENS_21QuantGemmMultiDKernelINS_21GemmTile1DPartitionerINS_13TileGemmShapeINS_8sequenceIJLi192ELi256ELi128EEEENS6_IJ",
+    "launches": 79,
+    "total_ms": 4.417
+   },
+   {
+    "name": "_ZN5aiter24add_rmsnorm_quant_kernelIDF16bDF16bLi256ELi24ELb1ELb0ELb1ELi1ELb0EEEvPT0_PT_PfS4_S4_S4_dbiiiiiiibb",
+    "launches": 158,
+    "total_ms": 2.881
+   },
+   {
+    "name": "_ZN5aiter37dynamic_per_group_scaled_quant_kernelIDF16bDB8_Li32ELi128ELb1ELi64ELb0ELb0ELi0ELb0ELb0ELb0ELb0ELb0EEEvPT0_PfPKT_PKfliilPKii",
+    "launches": 363,
+    "total_ms": 2.497
+   },
+   {
+    "name": "hgemm_bf16_t64x64x128x4_ks1_w2x2x2_gm4_bias0_lnt_pft_0",
+    "launches": 76,
+    "total_ms": 2.145
+   },
+   {
+    "name": "void at::native::(anonymous namespace)::CatArrayBatchedCopy<at::native::(anonymous namespace)::OpaqueType<2u>, unsigned int, 3, 64, 64>(at::native::(anonymous n",
+    "launches": 79,
+    "total_ms": 1.74
+   },
+   {
+    "name": "void aiter::opus_moe_sorting_entry<aiter::MoeSortingMultiPhaseKernel_P23<aiter::MoeSortingProblemMp<int, float, unsigned char, 16, false, false, true> >, aiter:",
+    "launches": 76,
+    "total_ms": 0.895
+   },
+   {
+    "name": "_fused_qk_rope_cat_and_cache_mla_kernel_QH_8_KH_1_QH_PER_KH_8_BLOCK_D_nope_512_BLOCK_D_pe_64_BLOCK_D_HALF_pe_32_BLOCK_SIZE_1_REUSE_FREQS_FRONT_PART_1_IS_NEOX_0_",
+    "launches": 79,
+    "total_ms": 0.735
+   },
+   {
+    "name": "void fast_hadamard_transform_kernel<fast_hadamard_transform_kernel_traits<16, 7, c10::BFloat16> >(HadamardParamsBase)",
+    "launches": 44,
+    "total_ms": 0.653
+   }
+  ],
+  "request": {
+   "warm_prefix_s": 9.720580339431763,
+   "warm_s": [
+    0.2905771732330322,
+    0.2694730758666992
+   ],
+   "profiled_s": 0.2743339538574219
+  }
+ }
+}

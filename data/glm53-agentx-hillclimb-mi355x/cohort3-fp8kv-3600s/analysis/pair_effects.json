@@ -1,0 +1,237 @@
+{
+ "effects": [
+  {
+   "conc": 1,
+   "run": "base-r1",
+   "ok": 238,
+   "accept": 2.989922437902104,
+   "cached": 0.9757305531396957,
+   "requests": 238,
+   "time_to_first_token": 0.0,
+   "inter_token_latency": 0.0,
+   "request_latency": 0.0
+  },
+  {
+   "conc": 1,
+   "run": "cand8-r1",
+   "ok": 260,
+   "accept": 2.990465190283687,
+   "cached": 0.9788905257984403,
+   "requests": 238,
+   "time_to_first_token": -1.4298278859472102,
+   "inter_token_latency": -26.566872083032965,
+   "request_latency": -24.398015805133
+  },
+  {
+   "conc": 2,
+   "run": "base-r1",
+   "ok": 381,
+   "accept": 2.9897821187077387,
+   "cached": 0.9696370013265263,
+   "requests": 359,
+   "time_to_first_token": 0.5470488306742682,
+   "inter_token_latency": 0.04297080866066949,
+   "request_latency": 0.14395773503377285
+  },
+  {
+   "conc": 2,
+   "run": "base-r2",
+   "ok": 404,
+   "accept": 2.9899876953157922,
+   "cached": 0.9659496533705195,
+   "requests": 359,
+   "time_to_first_token": -0.54407248848789,
+   "inter_token_latency": -0.04295235168779721,
+   "request_latency": -0.14375079464571394
+  },
+  {
+   "conc": 2,
+   "run": "cand8-r1",
+   "ok": 412,
+   "accept": 2.990051444038738,
+   "cached": 0.970633201408724,
+   "requests": 359,
+   "time_to_first_token": -0.6695101814471083,
+   "inter_token_latency": -27.212281558288897,
+   "request_latency": -20.8140032957834
+  },
+  {
+   "conc": 4,
+   "run": "base-r1",
+   "ok": 545,
+   "accept": 2.990581628014665,
+   "cached": 0.9744990235675292,
+   "requests": 545,
+   "time_to_first_token": 0.0,
+   "inter_token_latency": 0.0,
+   "request_latency": 0.0
+  },
+  {
+   "conc": 4,
+   "run": "cand8-r1",
+   "ok": 593,
+   "accept": 2.9899816165616278,
+   "cached": 0.9763022280116682,
+   "requests": 544,
+   "time_to_first_token": -0.2163698803846259,
+   "inter_token_latency": -17.04956750918798,
+   "request_latency": -13.7079507696797
+  },
+  {
+   "conc": 10,
+   "run": "base-r1",
+   "ok": 1410,
+   "accept": 2.990150708136144,
+   "cached": 0.9656903710640018,
+   "requests": 1410,
+   "time_to_first_token": 0.0,
+   "inter_token_latency": 0.0,
+   "request_latency": 0.0
+  },
+  {
+   "conc": 10,
+   "run": "cand8-r1",
+   "ok": 1425,
+   "accept": 2.989996682719255,
+   "cached": 0.9665076211334329,
+   "requests": 1410,
+   "time_to_first_token": -1.1033132857005912,
+   "inter_token_latency": -2.7654896539899054,
+   "request_latency": -2.449604984610565
+  }
+ ],
+ "tail": [
+  {
+   "conc": 1,
+   "run": "cand8-r1",
+   "subset": "all",
+   "requests": 238,
+   "osl": 754.5,
+   "ttft_share": 0.09889300442327079,
+   "e2el_per_token": -24.39801580513302,
+   "ttft": -1.4298278859472102,
+   "itl": -26.566872083032965
+  },
+  {
+   "conc": 1,
+   "run": "cand8-r1",
+   "subset": "slowest 20%",
+   "requests": 48,
+   "osl": 207.5,
+   "ttft_share": 0.5037601527806499,
+   "e2el_per_token": -15.442509661366788,
+   "ttft": -1.1805567231427117,
+   "itl": -27.366255444519695
+  },
+  {
+   "conc": 1,
+   "run": "cand8-r1",
+   "subset": "slowest 10%",
+   "requests": 24,
+   "osl": 129.5,
+   "ttft_share": 0.6929583356268821,
+   "e2el_per_token": -13.600231466909818,
+   "ttft": -5.107689018326756,
+   "itl": -27.597467045341638
+  },
+  {
+   "conc": 2,
+   "run": "cand8-r1",
+   "subset": "all",
+   "requests": 359,
+   "osl": 272,
+   "ttft_share": 0.1979818237410371,
+   "e2el_per_token": -20.81400329578341,
+   "ttft": -0.6695101814471083,
+   "itl": -27.212281558288897
+  },
+  {
+   "conc": 2,
+   "run": "cand8-r1",
+   "subset": "slowest 20%",
+   "requests": 72,
+   "osl": 112.5,
+   "ttft_share": 0.4170013941277182,
+   "e2el_per_token": -11.37213299816212,
+   "ttft": -0.5848066793689322,
+   "itl": -26.463749088374634
+  },
+  {
+   "conc": 2,
+   "run": "cand8-r1",
+   "subset": "slowest 10%",
+   "requests": 36,
+   "osl": 101.5,
+   "ttft_share": 0.5848210162278645,
+   "e2el_per_token": -8.276922419637456,
+   "ttft": -0.9778836666293977,
+   "itl": -29.02673109462589
+  },
+  {
+   "conc": 4,
+   "run": "cand8-r1",
+   "subset": "all",
+   "requests": 544,
+   "osl": 347.0,
+   "ttft_share": 0.14666894347231785,
+   "e2el_per_token": -13.7079507696797,
+   "ttft": -0.2163698803846259,
+   "itl": -17.04956750918798
+  },
+  {
+   "conc": 4,
+   "run": "cand8-r1",
+   "subset": "slowest 20%",
+   "requests": 109,
+   "osl": 115,
+   "ttft_share": 0.3750912740554229,
+   "e2el_per_token": -9.341967122769068,
+   "ttft": -1.383066491868623,
+   "itl": -15.053264204147975
+  },
+  {
+   "conc": 4,
+   "run": "cand8-r1",
+   "subset": "slowest 10%",
+   "requests": 55,
+   "osl": 103,
+   "ttft_share": 0.5818057963438368,
+   "e2el_per_token": -5.905254574411334,
+   "ttft": -1.5860192202587275,
+   "itl": -14.981767024100812
+  },
+  {
+   "conc": 10,
+   "run": "cand8-r1",
+   "subset": "all",
+   "requests": 1410,
+   "osl": 405.0,
+   "ttft_share": 0.0902360680800019,
+   "e2el_per_token": -2.4496049846104984,
+   "ttft": -1.1033132857005912,
+   "itl": -2.7654896539899054
+  },
+  {
+   "conc": 10,
+   "run": "cand8-r1",
+   "subset": "slowest 20%",
+   "requests": 282,
+   "osl": 241.0,
+   "ttft_share": 0.19065313103377318,
+   "e2el_per_token": -19.170804350586156,
+   "ttft": -1.383095133607426,
+   "itl": -18.33079085178597
+  },
+  {
+   "conc": 10,
+   "run": "cand8-r1",
+   "subset": "slowest 10%",
+   "requests": 141,
+   "osl": 180,
+   "ttft_share": 0.3111858311705926,
+   "e2el_per_token": -22.355623835760962,
+   "ttft": -1.1521731752524689,
+   "itl": -20.394004857797842
+  }
+ ]
+}

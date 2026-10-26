@@ -1,0 +1,161 @@
+{
+  "cohort": {
+    "model": "zai-org/GLM-5.3",
+    "infmax_model_prefix": "glm5.3",
+    "framework": "sglang",
+    "precision": "fp8",
+    "scenario_type": "agentic-coding",
+    "dataset.loader": "semianalysis_cc_traces_weka_062126",
+    "dataset.num_dataset_entries": "393"
+  },
+  "noise_floor": {
+    "tput_gpu": 0.02204767991348966,
+    "out_tput_gpu": 0.03597767265298435,
+    "e2e_int_p90": 0.2703335115362515,
+    "e2e_int_p50": 0.0010335664506903042,
+    "intvty_p90": 0.007267679187039855,
+    "ttft_p50": 0.21718512073091145,
+    "ttft_p90": 0.44199143398940666,
+    "e2el_p90": 0.14171583009737065
+  },
+  "points": [
+    {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c1-base-r1/agentx_out/agentx-glm53-l1-c1-base-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c1-b0-r1/agentx_out/agentx-glm53-l1-c1-b0-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2559.35909,
+        "out_tput_gpu": 11.04296,
+        "e2e_int_p90": 73.99804,
+        "e2e_int_p50": 178.05338,
+        "intvty_p90": 207.25048,
+        "ttft_p50": 0.27977,
+        "ttft_p90": 1.76419,
+        "e2el_p90": 16.23859
+      },
+      "candidate": {
+        "tput_gpu": 2628.79822,
+        "out_tput_gpu": 11.11221,
+        "e2e_int_p90": 75.72185,
+        "e2e_int_p50": 168.21019,
+        "intvty_p90": 201.58428,
+        "ttft_p50": 0.28576,
+        "ttft_p90": 1.69926,
+        "e2el_p90": 14.88722
+      },
+      "gain": {
+        "tput_gpu": 0.02713145266379957,
+        "out_tput_gpu": 0.006270963582227784,
+        "e2e_int_p90": 0.023295346741616374,
+        "e2e_int_p50": -0.0552822417636778,
+        "intvty_p90": -0.02733986430333002,
+        "ttft_p50": -0.020961646136618106,
+        "ttft_p90": 0.03821075056200929,
+        "e2el_p90": 0.09077383151454743
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "within noise",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "baseline ahead",
+        "intvty_p90": "baseline ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "within noise"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 95,
+          "total": 107,
+          "error_dropped": 5,
+          "duration_s": 896.65725,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 96,
+          "total": 107,
+          "error_dropped": 2,
+          "duration_s": 891.08061,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 5 requests on errors",
+        "candidate dropped 2 requests on errors"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c2-base-r1/agentx_out/agentx-glm53-l1-c2-base-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c2-b0-r1/agentx_out/agentx-glm53-l1-c2-b0-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2404.10586,
+        "out_tput_gpu": 17.80784,
+        "e2e_int_p90": 77.95904,
+        "e2e_int_p50": 160.77037,
+        "intvty_p90": 161.17764,
+        "ttft_p50": 0.32503,
+        "ttft_p90": 1.99582,
+        "e2el_p90": 15.08513
+      },
+      "candidate": {
+        "tput_gpu": 2165.50594,
+        "out_tput_gpu": 15.7688,
+        "e2e_int_p90": 62.7799,
+        "e2e_int_p50": 149.44711,
+        "intvty_p90": 149.62448,
+        "ttft_p50": 0.39618,
+        "ttft_p90": 2.67699,
+        "e2el_p90": 16.66142
+      },
+      "gain": {
+        "tput_gpu": -0.09924684431325337,
+        "out_tput_gpu": -0.11450237648136996,
+        "e2e_int_p90": -0.19470660490431901,
+        "e2e_int_p50": -0.07043126168086822,
+        "intvty_p90": -0.07167966971100947,
+        "ttft_p50": -0.17959008531475595,
+        "ttft_p90": -0.25445369612886115,
+        "e2el_p90": -0.09460718234100096
+      },
+      "verdict": {
+        "tput_gpu": "baseline ahead",
+        "out_tput_gpu": "baseline ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "baseline ahead",
+        "intvty_p90": "baseline ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "within noise"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 115,
+          "total": 137,
+          "error_dropped": 4,
+          "duration_s": 903.76641,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 108,
+          "total": 130,
+          "error_dropped": 2,
+          "duration_s": 904.94343,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 4 requests on errors",
+        "candidate dropped 2 requests on errors"
+      ]
+    }
+  ],
+  "unpaired": {
+    "baseline": [],
+    "candidate": []
+  }
+}

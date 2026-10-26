@@ -1,0 +1,229 @@
+{
+  "cohort": {
+    "model": "zai-org/GLM-5.3",
+    "infmax_model_prefix": "glm5.3",
+    "framework": "sglang",
+    "precision": "fp8",
+    "scenario_type": "agentic-coding",
+    "dataset.loader": "semianalysis_cc_traces_weka_062126",
+    "dataset.num_dataset_entries": "393"
+  },
+  "noise_floor": {
+    "tput_gpu": 0.02204767991348966,
+    "out_tput_gpu": 0.03597767265298435,
+    "e2e_int_p90": 0.2703335115362515,
+    "e2e_int_p50": 0.0010335664506903042,
+    "intvty_p90": 0.007267679187039855,
+    "ttft_p50": 0.21718512073091145,
+    "ttft_p90": 0.44199143398940666,
+    "e2el_p90": 0.14171583009737065
+  },
+  "points": [
+    {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c1-base-r1/agentx_out/agentx-glm53-l1-c1-base-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c1-cand-r1/agentx_out/agentx-glm53-l1-c1-cand-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2559.35909,
+        "out_tput_gpu": 11.04296,
+        "e2e_int_p90": 73.99804,
+        "e2e_int_p50": 178.05338,
+        "intvty_p90": 207.25048,
+        "ttft_p50": 0.27977,
+        "ttft_p90": 1.76419,
+        "e2el_p90": 16.23859
+      },
+      "candidate": {
+        "tput_gpu": 2791.81734,
+        "out_tput_gpu": 12.38756,
+        "e2e_int_p90": 77.18519,
+        "e2e_int_p50": 222.1505,
+        "intvty_p90": 281.73896,
+        "ttft_p50": 0.28577,
+        "ttft_p90": 1.64631,
+        "e2el_p90": 12.02011
+      },
+      "gain": {
+        "tput_gpu": 0.09082674287803827,
+        "out_tput_gpu": 0.12176083224063117,
+        "e2e_int_p90": 0.04307073538704542,
+        "e2e_int_p50": 0.24766235833321448,
+        "intvty_p90": 0.3594128225903266,
+        "ttft_p50": -0.020995905798369296,
+        "ttft_p90": 0.0716025535895426,
+        "e2el_p90": 0.35095186316930516
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 95,
+          "total": 107,
+          "error_dropped": 5,
+          "duration_s": 896.65725,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 105,
+          "total": 116,
+          "error_dropped": 2,
+          "duration_s": 902.9317,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 5 requests on errors",
+        "candidate dropped 2 requests on errors"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c2-base-r1/agentx_out/agentx-glm53-l1-c2-base-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c2-cand-r1/agentx_out/agentx-glm53-l1-c2-cand-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2404.10586,
+        "out_tput_gpu": 17.80784,
+        "e2e_int_p90": 77.95904,
+        "e2e_int_p50": 160.77037,
+        "intvty_p90": 161.17764,
+        "ttft_p50": 0.32503,
+        "ttft_p90": 1.99582,
+        "e2el_p90": 15.08513
+      },
+      "candidate": {
+        "tput_gpu": 2548.52878,
+        "out_tput_gpu": 20.05396,
+        "e2e_int_p90": 67.05765,
+        "e2e_int_p50": 189.96976,
+        "intvty_p90": 156.54863,
+        "ttft_p50": 0.39715,
+        "ttft_p90": 2.43145,
+        "e2el_p90": 13.65846
+      },
+      "gain": {
+        "tput_gpu": 0.06007344451961871,
+        "out_tput_gpu": 0.12613096254234102,
+        "e2e_int_p90": -0.1398348414757289,
+        "e2e_int_p50": 0.18162171300594743,
+        "intvty_p90": -0.028719926659802164,
+        "ttft_p50": -0.18159385622560753,
+        "ttft_p90": -0.17916469596331408,
+        "e2el_p90": 0.1044532106840741
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "baseline ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "within noise"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 115,
+          "total": 137,
+          "error_dropped": 4,
+          "duration_s": 903.76641,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 117,
+          "total": 139,
+          "error_dropped": 7,
+          "duration_s": 879.01573,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 4 requests on errors",
+        "candidate dropped 7 requests on errors",
+        "durations differ: 904 s vs 879 s"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-l1-c4-base-r1/agentx_out/agentx-glm53-l1-c4-base-r1.json",
+        "candidate": "$WORK/runs/agentx-glm53-l1-c4-cand-r1/agentx_out/agentx-glm53-l1-c4-cand-r1.json"
+      },
+      "baseline": {
+        "tput_gpu": 2392.54022,
+        "out_tput_gpu": 19.75404,
+        "e2e_int_p90": 91.7173,
+        "e2e_int_p50": 157.66296,
+        "intvty_p90": 157.88697,
+        "ttft_p50": 0.21251,
+        "ttft_p90": 0.77513,
+        "e2el_p90": 19.31644
+      },
+      "candidate": {
+        "tput_gpu": 2741.53543,
+        "out_tput_gpu": 22.74643,
+        "e2e_int_p90": 85.24852,
+        "e2e_int_p50": 182.17894,
+        "intvty_p90": 151.90325,
+        "ttft_p50": 0.27121,
+        "ttft_p90": 1.15348,
+        "e2el_p90": 15.83384
+      },
+      "gain": {
+        "tput_gpu": 0.14586806402778052,
+        "out_tput_gpu": 0.15148243093564662,
+        "e2e_int_p90": -0.07052955113157489,
+        "e2e_int_p50": 0.15549612921132527,
+        "intvty_p90": -0.037898757573218256,
+        "ttft_p50": -0.21643744699679213,
+        "ttft_p90": -0.3280074210216042,
+        "e2el_p90": 0.21994664591785695
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "within noise",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "baseline ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "within noise",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 156,
+          "total": 200,
+          "error_dropped": 17,
+          "duration_s": 928.39228,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        },
+        "candidate": {
+          "successful": 167,
+          "total": 211,
+          "error_dropped": 7,
+          "duration_s": 919.70465,
+          "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+        }
+      },
+      "checks": [
+        "baseline dropped 17 requests on errors",
+        "candidate dropped 7 requests on errors"
+      ]
+    }
+  ],
+  "unpaired": {
+    "baseline": [],
+    "candidate": []
+  }
+}
