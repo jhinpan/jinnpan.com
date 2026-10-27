@@ -777,11 +777,11 @@
       <div class="shelf-count">6 records</div>
     </div>
     <div class="grid">
-      <article class="entry" data-kind="experiments" data-search="experiment 006 model hill-climbing hill-climb hillclimb glm-5.3 glm53 mi355x gfx950 rocm sglang sgl-amd-mono monokernel decode kernel fp8 e4m3 kv cache bf16 dsa tilelang prefill ttft itl inferencex agentx aiperf 3600 interactivity pareto gsm8k mcnemar eagle mtp cookbook pin bump">
+      <article class="entry" data-kind="experiments" data-search="experiment 006 retrospective ablation pr ladder context length model hill-climbing hill-climb hillclimb glm-5.3 glm53 mi355x gfx950 rocm sglang sgl-amd-mono monokernel decode kernel fp8 e4m3 kv cache bf16 dsa tilelang prefill ttft itl inferencex agentx aiperf 3600 interactivity pareto gsm8k mcnemar eagle mtp cookbook pin bump">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 006</span></div>
         <div class="entry-body">
-          <h3>GLM-5.3 AgentX hill-climbing on MI355X</h3>
-          <p>The glm53 decode monokernel reduced ITL by 28–30%, but the AgentX score did not improve. The monokernel accepted only a BF16 KV cache, and BF16 KV made one DSA prefill kernel 2× slower. With the FP8 KV cache of the recipe, throughput increased by 15–19% and interactivity by 10–15% at concurrency 1–4. GSM8K did not change.</p>
+          <h3>GLM-5.3 monokernel hill-climbing on MI355X: a retrospective</h3>
+          <p>Five sgl-amd-mono PRs built the glm53 monokernel. An ablation on InferenceX AgentX shows what each one added: #15 alone was slower above 192k tokens, #24 and #42 cut ITL by about 30% at all context lengths, and #60 turned that into a score gain on the FP8 recipe. Final: +15–19% throughput at concurrency 1–4 over 3600 s.</p>
           <div class="tags"><span class="tag">GLM-5.3</span><span class="tag">MI355X</span><span class="tag">monokernel</span><span class="tag">InferenceX AgentX</span></div>
         </div>
         <div class="links"><a class="link primary" href="./glm53-agentx-hillclimb-mi355x.html">Deep dive →</a></div>

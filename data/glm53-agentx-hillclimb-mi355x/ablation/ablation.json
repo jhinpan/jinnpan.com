@@ -1,0 +1,2583 @@
+{
+ "bf16": {
+  "effects": [
+   {
+    "step": "#15",
+    "conc": 1,
+    "run": "agentx-glm53-tp8-c1-mtpmono",
+    "requests": 231,
+    "time_to_first_token": 0.25041622440959976,
+    "inter_token_latency": -0.03583814287572151,
+    "request_latency": 1.958753611630737,
+    "accept": 2.9898512422738373,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 15,
+      "itl": -12.639794940174731
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 62,
+      "itl": -23.97660373719759
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 35,
+      "itl": -16.370581329294954
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 119,
+      "itl": 11.698184974610637
+     }
+    ]
+   },
+   {
+    "step": "#24",
+    "conc": 1,
+    "run": "agentx-glm53-tp8-c1-mtpptopk",
+    "requests": 234,
+    "time_to_first_token": -0.34823857167662897,
+    "inter_token_latency": -14.347319585485385,
+    "request_latency": -13.161992367573273,
+    "accept": 2.990005787149926,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 15,
+      "itl": -22.66834152394135
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 62,
+      "itl": -29.15380371883026
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 35,
+      "itl": -26.125802075639914
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 122,
+      "itl": -12.363126784830259
+     }
+    ]
+   },
+   {
+    "step": "#42",
+    "conc": 1,
+    "run": "agentx-glm53-tp8-c1-mtpscore",
+    "requests": 234,
+    "time_to_first_token": -0.39348745778351457,
+    "inter_token_latency": -30.51451680145031,
+    "request_latency": -27.074410734352085,
+    "accept": 2.990042305471429,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 15,
+      "itl": -26.201275712485362
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 62,
+      "itl": -32.811678380953005
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 35,
+      "itl": -31.890756296485577
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 122,
+      "itl": -30.19250256977327
+     }
+    ]
+   },
+   {
+    "step": "#15",
+    "conc": 2,
+    "run": "agentx-glm53-tp8-c2-mtpmono",
+    "requests": 374,
+    "time_to_first_token": -0.24181730544501345,
+    "inter_token_latency": -6.716353259498442,
+    "request_latency": -5.245086022236089,
+    "accept": 2.9893863395673073,
+    "coverage": 0.9799,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 122,
+      "itl": -12.863563500146713
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 100,
+      "itl": -21.911688026169053
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 41,
+      "itl": -15.517440471946585
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 110,
+      "itl": 7.773484256307772
+     }
+    ]
+   },
+   {
+    "step": "#24",
+    "conc": 2,
+    "run": "agentx-glm53-tp8-c2-mtpptopk",
+    "requests": 377,
+    "time_to_first_token": -0.39333601554062403,
+    "inter_token_latency": -19.587275529165694,
+    "request_latency": -15.771202043920873,
+    "accept": 2.9898812142542894,
+    "coverage": 0.983,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 122,
+      "itl": -28.576293374501528
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 100,
+      "itl": -26.368716403534663
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 44,
+      "itl": -25.68273825366234
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 110,
+      "itl": -12.048949955500666
+     }
+    ]
+   },
+   {
+    "step": "#42",
+    "conc": 2,
+    "run": "agentx-glm53-tp8-c2-mtpscore",
+    "requests": 376,
+    "time_to_first_token": -1.7519978178842543,
+    "inter_token_latency": -31.191826398614953,
+    "request_latency": -25.743061296860837,
+    "accept": 2.9900901763706655,
+    "coverage": 0.9847,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 122,
+      "itl": -33.16449320210663
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 100,
+      "itl": -32.47037440122904
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 44,
+      "itl": -31.87259562122563
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 110,
+      "itl": -30.28443055510347
+     }
+    ]
+   },
+   {
+    "step": "#15",
+    "conc": 4,
+    "run": "agentx-glm53-tp8-c4-mtpmono",
+    "requests": 493,
+    "time_to_first_token": 0.4112749785080805,
+    "inter_token_latency": 4.517447475973557,
+    "request_latency": 2.9129050172693294,
+    "accept": 2.9900576050986643,
+    "coverage": 0.9215,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 162,
+      "itl": -0.9089071759621481
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 140,
+      "itl": -19.478687867089672
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 54,
+      "itl": 13.54154820589386
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 135,
+      "itl": 24.08157024432993
+     }
+    ]
+   },
+   {
+    "step": "#24",
+    "conc": 4,
+    "run": "agentx-glm53-tp8-c4-mtpptopk",
+    "requests": 501,
+    "time_to_first_token": -0.23472628290835962,
+    "inter_token_latency": -15.80132984540381,
+    "request_latency": -11.491236266978289,
+    "accept": 2.989824513551918,
+    "coverage": 0.9301,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 166,
+      "itl": -17.657683539042967
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 141,
+      "itl": -26.211899271944628
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 54,
+      "itl": -25.723011392490324
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 138,
+      "itl": -5.685419141838299
+     }
+    ]
+   },
+   {
+    "step": "#42",
+    "conc": 4,
+    "run": "agentx-glm53-tp8-c4-mtpscore",
+    "requests": 489,
+    "time_to_first_token": -0.38456551468815103,
+    "inter_token_latency": -28.543226263242683,
+    "request_latency": -21.132359490738793,
+    "accept": 2.990069868180139,
+    "coverage": 0.9495,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 157,
+      "itl": -33.32408433196882
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 139,
+      "itl": -22.36120432905779
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 54,
+      "itl": -32.89023173044691
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 138,
+      "itl": -25.164675906336377
+     }
+    ]
+   }
+  ],
+  "headline": {
+   "#15 -mtpmono": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.027,
+     "out_tput_gpu": 0.027,
+     "e2e_int_p90": 0.027,
+     "e2e_int_p50": 0.027,
+     "intvty_p90": 0.027,
+     "ttft_p50": 0.027,
+     "ttft_p90": 0.027,
+     "e2el_p90": 0.027
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c1-mtpref/agentx_out/agentx-glm53-tp8-c1-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c1-mtpmono/agentx_out/agentx-glm53-tp8-c1-mtpmono.json"
+      },
+      "baseline": {
+       "tput_gpu": 1920.62585,
+       "out_tput_gpu": 14.69308,
+       "e2e_int_p90": 85.29512,
+       "e2e_int_p50": 175.86281,
+       "intvty_p90": 178.49257,
+       "ttft_p50": 0.4762,
+       "ttft_p90": 2.35391,
+       "e2el_p90": 24.17706
+      },
+      "candidate": {
+       "tput_gpu": 1875.33005,
+       "out_tput_gpu": 14.4616,
+       "e2e_int_p90": 82.34182,
+       "e2e_int_p50": 165.03629,
+       "intvty_p90": 167.9752,
+       "ttft_p50": 0.48796,
+       "ttft_p90": 2.44681,
+       "e2el_p90": 27.78368
+      },
+      "gain": {
+       "tput_gpu": -0.02358387501657333,
+       "out_tput_gpu": -0.015754355111385676,
+       "e2e_int_p90": -0.03462448965427334,
+       "e2e_int_p50": -0.06156230529922724,
+       "intvty_p90": -0.05892329299757404,
+       "ttft_p50": -0.024100336093122343,
+       "ttft_p90": -0.03796780297612001,
+       "e2el_p90": -0.1298107378144292
+      },
+      "verdict": {
+       "tput_gpu": "within noise",
+       "out_tput_gpu": "within noise",
+       "e2e_int_p90": "baseline ahead",
+       "e2e_int_p50": "baseline ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "baseline ahead",
+       "e2el_p90": "baseline ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 234,
+        "total": 246,
+        "error_dropped": 4,
+        "duration_s": 3614.15076,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 231,
+        "total": 243,
+        "error_dropped": 6,
+        "duration_s": 3608.26378,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 4 requests on errors",
+       "candidate dropped 6 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c2-mtpref/agentx_out/agentx-glm53-tp8-c2-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c2-mtpmono/agentx_out/agentx-glm53-tp8-c2-mtpmono.json"
+      },
+      "baseline": {
+       "tput_gpu": 2043.70383,
+       "out_tput_gpu": 17.89039,
+       "e2e_int_p90": 77.24115,
+       "e2e_int_p50": 142.65273,
+       "intvty_p90": 149.59479,
+       "ttft_p50": 0.39022,
+       "ttft_p90": 1.63482,
+       "e2el_p90": 23.31827
+      },
+      "candidate": {
+       "tput_gpu": 2017.75097,
+       "out_tput_gpu": 17.74113,
+       "e2e_int_p90": 79.34557,
+       "e2e_int_p50": 151.20706,
+       "intvty_p90": 135.41773,
+       "ttft_p50": 0.36905,
+       "ttft_p90": 1.32626,
+       "e2el_p90": 25.96187
+      },
+      "gain": {
+       "tput_gpu": -0.012698933974204962,
+       "out_tput_gpu": -0.008343026619319183,
+       "e2e_int_p90": 0.02724480409729768,
+       "e2e_int_p50": 0.0599661149141697,
+       "intvty_p90": -0.094769744320641,
+       "ttft_p50": 0.05736350088063946,
+       "ttft_p90": 0.23265423069383062,
+       "e2el_p90": -0.10182625519656341
+      },
+      "verdict": {
+       "tput_gpu": "within noise",
+       "out_tput_gpu": "within noise",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "candidate ahead",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "baseline ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 377,
+        "total": 399,
+        "error_dropped": 6,
+        "duration_s": 3601.48729,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 374,
+        "total": 396,
+        "error_dropped": 5,
+        "duration_s": 3619.67438,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 6 requests on errors",
+       "candidate dropped 5 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c4-mtpref/agentx_out/agentx-glm53-tp8-c4-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c4-mtpmono/agentx_out/agentx-glm53-tp8-c4-mtpmono.json"
+      },
+      "baseline": {
+       "tput_gpu": 2960.7337,
+       "out_tput_gpu": 22.10583,
+       "e2e_int_p90": 66.97791,
+       "e2e_int_p50": 144.39914,
+       "intvty_p90": 128.60112,
+       "ttft_p50": 0.33323,
+       "ttft_p90": 1.71617,
+       "e2el_p90": 24.58619
+      },
+      "candidate": {
+       "tput_gpu": 2879.79214,
+       "out_tput_gpu": 21.16792,
+       "e2e_int_p90": 62.63508,
+       "e2e_int_p50": 131.35199,
+       "intvty_p90": 106.45879,
+       "ttft_p50": 0.32495,
+       "ttft_p90": 1.61642,
+       "e2el_p90": 25.35763
+      },
+      "gain": {
+       "tput_gpu": -0.02733834522165912,
+       "out_tput_gpu": -0.042428173925159185,
+       "e2e_int_p90": -0.06483973596667902,
+       "e2e_int_p50": -0.09035476250066299,
+       "intvty_p90": -0.1721783604995043,
+       "ttft_p50": 0.02548084320664712,
+       "ttft_p90": 0.06171044654235902,
+       "e2el_p90": -0.030422401462597337
+      },
+      "verdict": {
+       "tput_gpu": "baseline ahead",
+       "out_tput_gpu": "baseline ahead",
+       "e2e_int_p90": "baseline ahead",
+       "e2e_int_p50": "baseline ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "baseline ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 501,
+        "total": 545,
+        "error_dropped": 6,
+        "duration_s": 3600.66176,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 493,
+        "total": 538,
+        "error_dropped": 12,
+        "duration_s": 3601.52821,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 6 requests on errors",
+       "candidate dropped 12 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   },
+   "#24 -mtpptopk": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.027,
+     "out_tput_gpu": 0.027,
+     "e2e_int_p90": 0.027,
+     "e2e_int_p50": 0.027,
+     "intvty_p90": 0.027,
+     "ttft_p50": 0.027,
+     "ttft_p90": 0.027,
+     "e2el_p90": 0.027
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c1-mtpref/agentx_out/agentx-glm53-tp8-c1-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c1-mtpptopk/agentx_out/agentx-glm53-tp8-c1-mtpptopk.json"
+      },
+      "baseline": {
+       "tput_gpu": 1920.62585,
+       "out_tput_gpu": 14.69308,
+       "e2e_int_p90": 85.29512,
+       "e2e_int_p50": 175.86281,
+       "intvty_p90": 178.49257,
+       "ttft_p50": 0.4762,
+       "ttft_p90": 2.35391,
+       "e2el_p90": 24.17706
+      },
+      "candidate": {
+       "tput_gpu": 2135.3351,
+       "out_tput_gpu": 16.00193,
+       "e2e_int_p90": 88.95574,
+       "e2e_int_p50": 204.05448,
+       "intvty_p90": 203.7979,
+       "ttft_p50": 0.48856,
+       "ttft_p90": 2.08779,
+       "e2el_p90": 22.57903
+      },
+      "gain": {
+       "tput_gpu": 0.11179129448872094,
+       "out_tput_gpu": 0.08907934891799418,
+       "e2e_int_p90": 0.042917109443072476,
+       "e2e_int_p50": 0.16030489902896483,
+       "intvty_p90": 0.1417724558506832,
+       "ttft_p50": -0.025298837399705176,
+       "ttft_p90": 0.12746492702810142,
+       "e2el_p90": 0.0707749624319558
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 234,
+        "total": 246,
+        "error_dropped": 4,
+        "duration_s": 3614.15076,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 246,
+        "total": 258,
+        "error_dropped": 3,
+        "duration_s": 3591.98137,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 4 requests on errors",
+       "candidate dropped 3 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c2-mtpref/agentx_out/agentx-glm53-tp8-c2-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c2-mtpptopk/agentx_out/agentx-glm53-tp8-c2-mtpptopk.json"
+      },
+      "baseline": {
+       "tput_gpu": 2043.70383,
+       "out_tput_gpu": 17.89039,
+       "e2e_int_p90": 77.24115,
+       "e2e_int_p50": 142.65273,
+       "intvty_p90": 149.59479,
+       "ttft_p50": 0.39022,
+       "ttft_p90": 1.63482,
+       "e2el_p90": 23.31827
+      },
+      "candidate": {
+       "tput_gpu": 2348.33592,
+       "out_tput_gpu": 19.50794,
+       "e2e_int_p90": 85.011,
+       "e2e_int_p50": 176.63928,
+       "intvty_p90": 154.80926,
+       "ttft_p50": 0.38689,
+       "ttft_p90": 1.49122,
+       "e2el_p90": 20.31525
+      },
+      "gain": {
+       "tput_gpu": 0.14905882424264982,
+       "out_tput_gpu": 0.09041446273669829,
+       "e2e_int_p90": 0.10059210666853091,
+       "e2e_int_p50": 0.23824675489911784,
+       "intvty_p90": 0.03485729683500338,
+       "ttft_p50": 0.00860709762464773,
+       "ttft_p90": 0.09629699172489636,
+       "e2el_p90": 0.14782097192995414
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 377,
+        "total": 399,
+        "error_dropped": 6,
+        "duration_s": 3601.48729,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 409,
+        "total": 431,
+        "error_dropped": 8,
+        "duration_s": 3614.33634,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 6 requests on errors",
+       "candidate dropped 8 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c4-mtpref/agentx_out/agentx-glm53-tp8-c4-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c4-mtpptopk/agentx_out/agentx-glm53-tp8-c4-mtpptopk.json"
+      },
+      "baseline": {
+       "tput_gpu": 2960.7337,
+       "out_tput_gpu": 22.10583,
+       "e2e_int_p90": 66.97791,
+       "e2e_int_p50": 144.39914,
+       "intvty_p90": 128.60112,
+       "ttft_p50": 0.33323,
+       "ttft_p90": 1.71617,
+       "e2el_p90": 24.58619
+      },
+      "candidate": {
+       "tput_gpu": 3131.53184,
+       "out_tput_gpu": 23.60519,
+       "e2e_int_p90": 64.10394,
+       "e2e_int_p50": 152.33173,
+       "intvty_p90": 123.71822,
+       "ttft_p50": 0.33457,
+       "ttft_p90": 1.80927,
+       "e2el_p90": 26.89562
+      },
+      "gain": {
+       "tput_gpu": 0.05768777516194712,
+       "out_tput_gpu": 0.06782645121219155,
+       "e2e_int_p90": -0.04290922186135693,
+       "e2e_int_p50": 0.05493516097118034,
+       "intvty_p90": -0.03796934272423136,
+       "ttft_p50": -0.004005140927160089,
+       "ttft_p90": -0.0514572175518303,
+       "e2el_p90": -0.08586639757700332
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "baseline ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "baseline ahead",
+       "e2el_p90": "baseline ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 501,
+        "total": 545,
+        "error_dropped": 6,
+        "duration_s": 3600.66176,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 536,
+        "total": 580,
+        "error_dropped": 10,
+        "duration_s": 3598.88525,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 6 requests on errors",
+       "candidate dropped 10 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   },
+   "#42 -mtpscore": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.027,
+     "out_tput_gpu": 0.027,
+     "e2e_int_p90": 0.027,
+     "e2e_int_p50": 0.027,
+     "intvty_p90": 0.027,
+     "ttft_p50": 0.027,
+     "ttft_p90": 0.027,
+     "e2el_p90": 0.027
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c1-mtpref/agentx_out/agentx-glm53-tp8-c1-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c1-mtpscore/agentx_out/agentx-glm53-tp8-c1-mtpscore.json"
+      },
+      "baseline": {
+       "tput_gpu": 1920.62585,
+       "out_tput_gpu": 14.69308,
+       "e2e_int_p90": 85.29512,
+       "e2e_int_p50": 175.86281,
+       "intvty_p90": 178.49257,
+       "ttft_p50": 0.4762,
+       "ttft_p90": 2.35391,
+       "e2el_p90": 24.17706
+      },
+      "candidate": {
+       "tput_gpu": 2385.56346,
+       "out_tput_gpu": 17.54825,
+       "e2e_int_p90": 99.18282,
+       "e2e_int_p50": 243.4976,
+       "intvty_p90": 216.05836,
+       "ttft_p50": 0.48558,
+       "ttft_p90": 1.9455,
+       "e2el_p90": 18.73307
+      },
+      "gain": {
+       "tput_gpu": 0.2420760972263285,
+       "out_tput_gpu": 0.1943207278528396,
+       "e2e_int_p90": 0.16281939693619063,
+       "e2e_int_p50": 0.3845883618031578,
+       "intvty_p90": 0.21046136542266147,
+       "ttft_p50": -0.019317105317352423,
+       "ttft_p90": 0.20992546903109743,
+       "e2el_p90": 0.29060853346515003
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 234,
+        "total": 246,
+        "error_dropped": 4,
+        "duration_s": 3614.15076,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 261,
+        "total": 272,
+        "error_dropped": 2,
+        "duration_s": 3614.77598,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 4 requests on errors",
+       "candidate dropped 2 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c2-mtpref/agentx_out/agentx-glm53-tp8-c2-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c2-mtpscore/agentx_out/agentx-glm53-tp8-c2-mtpscore.json"
+      },
+      "baseline": {
+       "tput_gpu": 2043.70383,
+       "out_tput_gpu": 17.89039,
+       "e2e_int_p90": 77.24115,
+       "e2e_int_p50": 142.65273,
+       "intvty_p90": 149.59479,
+       "ttft_p50": 0.39022,
+       "ttft_p90": 1.63482,
+       "e2el_p90": 23.31827
+      },
+      "candidate": {
+       "tput_gpu": 2418.06399,
+       "out_tput_gpu": 20.59367,
+       "e2e_int_p90": 92.82286,
+       "e2e_int_p50": 198.62537,
+       "intvty_p90": 184.90627,
+       "ttft_p50": 0.38499,
+       "ttft_p90": 1.25233,
+       "e2el_p90": 17.63389
+      },
+      "gain": {
+       "tput_gpu": 0.18317730509904662,
+       "out_tput_gpu": 0.15110235159770125,
+       "e2e_int_p90": 0.20172809441599449,
+       "e2e_int_p50": 0.3923699181922422,
+       "intvty_p90": 0.23604752545192254,
+       "ttft_p50": 0.013584768435543904,
+       "ttft_p90": 0.3054226921019221,
+       "e2el_p90": 0.322355419025524
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 377,
+        "total": 399,
+        "error_dropped": 6,
+        "duration_s": 3601.48729,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 427,
+        "total": 450,
+        "error_dropped": 8,
+        "duration_s": 3600.6086,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 6 requests on errors",
+       "candidate dropped 8 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-tp8-c4-mtpref/agentx_out/agentx-glm53-tp8-c4-mtpref.json",
+       "candidate": "$WORK/runs/agentx-glm53-tp8-c4-mtpscore/agentx_out/agentx-glm53-tp8-c4-mtpscore.json"
+      },
+      "baseline": {
+       "tput_gpu": 2960.7337,
+       "out_tput_gpu": 22.10583,
+       "e2e_int_p90": 66.97791,
+       "e2e_int_p50": 144.39914,
+       "intvty_p90": 128.60112,
+       "ttft_p50": 0.33323,
+       "ttft_p90": 1.71617,
+       "e2el_p90": 24.58619
+      },
+      "candidate": {
+       "tput_gpu": 3656.59802,
+       "out_tput_gpu": 25.63189,
+       "e2e_int_p90": 72.4978,
+       "e2e_int_p50": 173.2147,
+       "intvty_p90": 146.33403,
+       "ttft_p50": 0.34777,
+       "ttft_p90": 1.65262,
+       "e2el_p90": 21.62148
+      },
+      "gain": {
+       "tput_gpu": 0.2350310397723374,
+       "out_tput_gpu": 0.15950814785058953,
+       "e2e_int_p90": 0.08241358979400837,
+       "e2e_int_p50": 0.1995549280972173,
+       "intvty_p90": 0.13789078975361968,
+       "ttft_p50": -0.041809241740230596,
+       "ttft_p90": 0.038454091079618946,
+       "e2el_p90": 0.13711873562771837
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "baseline ahead",
+       "ttft_p90": "candidate ahead",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 501,
+        "total": 545,
+        "error_dropped": 6,
+        "duration_s": 3600.66176,
+        "image": ""
+       },
+       "candidate": {
+        "successful": 582,
+        "total": 627,
+        "error_dropped": 11,
+        "duration_s": 3591.79531,
+        "image": ""
+       }
+      },
+      "checks": [
+       "baseline dropped 6 requests on errors",
+       "candidate dropped 11 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   }
+  },
+  "by_isl": {
+   "#15": [
+    {
+     "lo": 0,
+     "hi": 64000,
+     "n": 137,
+     "itl": -12.774020842107959
+    },
+    {
+     "lo": 64000,
+     "hi": 128000,
+     "n": 162,
+     "itl": -23.026301574422583
+    },
+    {
+     "lo": 128000,
+     "hi": 192000,
+     "n": 76,
+     "itl": -16.16186227725631
+    },
+    {
+     "lo": 192000,
+     "hi": 1000000000,
+     "n": 229,
+     "itl": 10.875472294648647
+    }
+   ],
+   "#24": [
+    {
+     "lo": 0,
+     "hi": 64000,
+     "n": 137,
+     "itl": -28.267776214760808
+    },
+    {
+     "lo": 64000,
+     "hi": 128000,
+     "n": 162,
+     "itl": -28.528127085675813
+    },
+    {
+     "lo": 128000,
+     "hi": 192000,
+     "n": 79,
+     "itl": -26.064657004779523
+    },
+    {
+     "lo": 192000,
+     "hi": 1000000000,
+     "n": 232,
+     "itl": -12.29920577023752
+    }
+   ],
+   "#42": [
+    {
+     "lo": 0,
+     "hi": 64000,
+     "n": 137,
+     "itl": -33.1400840393073
+    },
+    {
+     "lo": 64000,
+     "hi": 128000,
+     "n": 162,
+     "itl": -32.59303191752277
+    },
+    {
+     "lo": 128000,
+     "hi": 192000,
+     "n": 79,
+     "itl": -31.890756296485577
+    },
+    {
+     "lo": 192000,
+     "hi": 1000000000,
+     "n": 232,
+     "itl": -30.22721886458929
+    }
+   ]
+  }
+ },
+ "fp8": {
+  "effects": [
+   {
+    "step": "F1",
+    "conc": 1,
+    "run": "agentx-glm53-abl-c1-f1-r1",
+    "requests": 96,
+    "time_to_first_token": 0.35475245236609165,
+    "inter_token_latency": -17.21298963104525,
+    "request_latency": -9.584211466439086,
+    "accept": 2.989173768333272,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 6,
+      "itl": -27.09886041474203
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 45,
+      "itl": -21.68971070135871
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 8,
+      "itl": -14.21281814679064
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 35,
+      "itl": 16.61850089066743
+     }
+    ]
+   },
+   {
+    "step": "F2",
+    "conc": 1,
+    "run": "agentx-glm53-abl-c1-f2-r1",
+    "requests": 96,
+    "time_to_first_token": 0.4715921968284409,
+    "inter_token_latency": -23.575937383237257,
+    "request_latency": -14.94992234538678,
+    "accept": 2.99105570328418,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 6,
+      "itl": -29.317558365597375
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 45,
+      "itl": -26.01165495843446
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 8,
+      "itl": -23.01563247737557
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 35,
+      "itl": -9.449960206126296
+     }
+    ]
+   },
+   {
+    "step": "F3",
+    "conc": 1,
+    "run": "agentx-glm53-l1f-c1-cand8-r1",
+    "requests": 96,
+    "time_to_first_token": -1.4941892547286506,
+    "inter_token_latency": -28.27965242658419,
+    "request_latency": -24.766222845551734,
+    "accept": 2.9908750584932147,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 6,
+      "itl": -26.34248157311354
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 45,
+      "itl": -29.077265889965563
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 8,
+      "itl": -28.315339070824365
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 35,
+      "itl": -26.013366786331915
+     }
+    ]
+   },
+   {
+    "step": "F3",
+    "conc": 1,
+    "run": "agentx-glm53-l1f-c1-cand8-r2",
+    "requests": 95,
+    "time_to_first_token": -2.0019542267445622,
+    "inter_token_latency": -28.36281259241522,
+    "request_latency": -25.061565060028922,
+    "accept": 2.990588693451029,
+    "coverage": 1.0,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 2 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 6,
+      "itl": -29.665669685368414
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 45,
+      "itl": -29.290750898916073
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 8,
+      "itl": -28.361977042182097
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 35,
+      "itl": -26.04578423330053
+     }
+    ]
+   },
+   {
+    "step": "F1",
+    "conc": 2,
+    "run": "agentx-glm53-abl-c2-f1-r1",
+    "requests": 116,
+    "time_to_first_token": -1.2652177707370038,
+    "inter_token_latency": -11.69896879014506,
+    "request_latency": -9.529566159099778,
+    "accept": 2.9900347722839453,
+    "coverage": 0.9389,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 13,
+      "itl": -2.651575641532422
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 48,
+      "itl": -19.225495689858285
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 34,
+      "itl": -12.130231403010361
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 21,
+      "itl": 16.002466544902273
+     }
+    ]
+   },
+   {
+    "step": "F2",
+    "conc": 2,
+    "run": "agentx-glm53-abl-c2-f2-r1",
+    "requests": 116,
+    "time_to_first_token": -0.14907246553330644,
+    "inter_token_latency": -21.258510531600237,
+    "request_latency": -14.17552085607815,
+    "accept": 2.9910494612708916,
+    "coverage": 0.9695,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 13,
+      "itl": -15.972786405351979
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 48,
+      "itl": -24.50487278248693
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 34,
+      "itl": -22.033836809172634
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 21,
+      "itl": -9.390203382415995
+     }
+    ]
+   },
+   {
+    "step": "F3",
+    "conc": 2,
+    "run": "agentx-glm53-l1f-c2-cand8-r1",
+    "requests": 116,
+    "time_to_first_token": -0.9748721279066008,
+    "inter_token_latency": -28.217792465694956,
+    "request_latency": -21.6300850013181,
+    "accept": 2.990454163162321,
+    "coverage": 0.9695,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 13,
+      "itl": -14.925140215484067
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 48,
+      "itl": -28.45070210563009
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 34,
+      "itl": -28.100144722637587
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 21,
+      "itl": -26.253533436342313
+     }
+    ]
+   },
+   {
+    "step": "F3",
+    "conc": 2,
+    "run": "agentx-glm53-l1f-c2-cand8-r2",
+    "requests": 116,
+    "time_to_first_token": -0.17459286474325042,
+    "inter_token_latency": -26.679712954670254,
+    "request_latency": -19.515028916442212,
+    "accept": 2.989078035552877,
+    "coverage": 0.9599,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 13,
+      "itl": -17.240392633728074
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 48,
+      "itl": -28.16469685788674
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 34,
+      "itl": -27.095756070026034
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 21,
+      "itl": -23.92458540127699
+     }
+    ]
+   },
+   {
+    "step": "base rerun",
+    "conc": 2,
+    "run": "agentx-glm53-abl-c2-base-r3",
+    "requests": 116,
+    "time_to_first_token": -0.7330702964076341,
+    "inter_token_latency": -0.07765172294154077,
+    "request_latency": -0.2724816817620157,
+    "accept": 2.9898445947378463,
+    "coverage": null,
+    "route": null
+   },
+   {
+    "step": "F1",
+    "conc": 4,
+    "run": "agentx-glm53-abl-c4-f1-r1",
+    "requests": 154,
+    "time_to_first_token": 0.09796696469788202,
+    "inter_token_latency": -13.053984069550085,
+    "request_latency": -5.064125108917317,
+    "accept": 2.990365025466893,
+    "coverage": 0.9798,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 81,
+      "itl": -13.734716390921841
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 49,
+      "itl": -19.78591707070887
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 0,
+      "itl": null
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 24,
+      "itl": 29.391149415793972
+     }
+    ]
+   },
+   {
+    "step": "F2",
+    "conc": 4,
+    "run": "agentx-glm53-abl-c4-f2-r1",
+    "requests": 160,
+    "time_to_first_token": -0.5609771133550878,
+    "inter_token_latency": -15.86879439621508,
+    "request_latency": -12.93682647013281,
+    "accept": 2.990090455451131,
+    "coverage": 0.9035,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 83,
+      "itl": -25.746898574754983
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 52,
+      "itl": -14.205624477190382
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 0,
+      "itl": null
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 25,
+      "itl": -4.250074732900844
+     }
+    ]
+   },
+   {
+    "step": "F3",
+    "conc": 4,
+    "run": "agentx-glm53-l1f-c4-cand8-r1",
+    "requests": 160,
+    "time_to_first_token": -0.6549049288783859,
+    "inter_token_latency": -21.16175328573553,
+    "request_latency": -16.615325186901973,
+    "accept": 2.9905940745733632,
+    "coverage": 0.935,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 83,
+      "itl": -26.852615628421628
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 52,
+      "itl": -21.16175328573553
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 0,
+      "itl": null
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 25,
+      "itl": -13.62480600353041
+     }
+    ]
+   },
+   {
+    "step": "F3",
+    "conc": 4,
+    "run": "agentx-glm53-l1f-c4-cand8-r2",
+    "requests": 160,
+    "time_to_first_token": -1.5837740505519227,
+    "inter_token_latency": -26.986455084052952,
+    "request_latency": -21.62217903557592,
+    "accept": 2.9898952228733795,
+    "coverage": 0.9636,
+    "route": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 8 captured decode graphs); every other step runs the standard path",
+    "by_isl": [
+     {
+      "lo": 0,
+      "hi": 64000,
+      "n": 83,
+      "itl": -27.405491611008593
+     },
+     {
+      "lo": 64000,
+      "hi": 128000,
+      "n": 52,
+      "itl": -27.469930041061154
+     },
+     {
+      "lo": 128000,
+      "hi": 192000,
+      "n": 0,
+      "itl": null
+     },
+     {
+      "lo": 192000,
+      "hi": 1000000000,
+      "n": 25,
+      "itl": -25.22767591218861
+     }
+    ]
+   }
+  ],
+  "headline": {
+   "F1 -f1-r1": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.019712074963235127,
+     "out_tput_gpu": 0.033974601757032596,
+     "e2e_int_p90": 0.1966069243753401,
+     "e2e_int_p50": 0.020798772510648877,
+     "intvty_p90": 0.019273757951817183,
+     "ttft_p50": 0.15656871218668966,
+     "ttft_p90": 0.4057784367718704,
+     "e2el_p90": 0.13417922628629775
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c1-base-r1/agentx_out/agentx-glm53-l1f-c1-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-abl-c1-f1-r1/agentx_out/agentx-glm53-abl-c1-f1-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2617.15066,
+       "out_tput_gpu": 11.06297,
+       "e2e_int_p90": 72.12925,
+       "e2e_int_p50": 176.46426,
+       "intvty_p90": 203.48808,
+       "ttft_p50": 0.26763,
+       "ttft_p90": 1.65917,
+       "e2el_p90": 16.17639
+      },
+      "candidate": {
+       "tput_gpu": 2631.80459,
+       "out_tput_gpu": 11.28051,
+       "e2e_int_p90": 69.2197,
+       "e2e_int_p50": 175.73244,
+       "intvty_p90": 177.01421,
+       "ttft_p50": 0.23857,
+       "ttft_p90": 1.6699,
+       "e2el_p90": 14.22532
+      },
+      "gain": {
+       "tput_gpu": 0.005599192367473638,
+       "out_tput_gpu": 0.01966379733471202,
+       "e2e_int_p90": -0.040338004346364253,
+       "e2e_int_p50": -0.004147128716035731,
+       "intvty_p90": -0.1301003478926137,
+       "ttft_p50": 0.12180911262941674,
+       "ttft_p90": -0.006425534463141425,
+       "e2el_p90": 0.13715473535920464
+      },
+      "verdict": {
+       "tput_gpu": "within noise",
+       "out_tput_gpu": "within noise",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "within noise",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 96,
+        "total": 107,
+        "error_dropped": 5,
+        "duration_s": 895.04648,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 98,
+        "total": 109,
+        "error_dropped": 10,
+        "duration_s": 905.62143,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 5 requests on errors",
+       "candidate dropped 10 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c2-base-r1/agentx_out/agentx-glm53-l1f-c2-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-abl-c2-f1-r1/agentx_out/agentx-glm53-abl-c2-f1-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2417.5922,
+       "out_tput_gpu": 19.02357,
+       "e2e_int_p90": 75.84102,
+       "e2e_int_p50": 155.36437,
+       "intvty_p90": 143.64603,
+       "ttft_p50": 0.31604,
+       "ttft_p90": 1.88958,
+       "e2el_p90": 17.05921
+      },
+      "candidate": {
+       "tput_gpu": 2462.47781,
+       "out_tput_gpu": 19.37677,
+       "e2e_int_p90": 78.23516,
+       "e2e_int_p50": 167.24199,
+       "intvty_p90": 138.90795,
+       "ttft_p50": 0.31235,
+       "ttft_p90": 1.85743,
+       "e2el_p90": 15.41732
+      },
+      "gain": {
+       "tput_gpu": 0.018566245374219692,
+       "out_tput_gpu": 0.018566441524908273,
+       "e2e_int_p90": 0.03156787711979603,
+       "e2e_int_p50": 0.0764500895539948,
+       "intvty_p90": -0.032984413143892666,
+       "ttft_p50": 0.01181367056186966,
+       "ttft_p90": 0.017308862245145162,
+       "e2el_p90": 0.10649645982570255
+      },
+      "verdict": {
+       "tput_gpu": "within noise",
+       "out_tput_gpu": "within noise",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "within noise"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 117,
+        "total": 139,
+        "error_dropped": 3,
+        "duration_s": 926.62686,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 117,
+        "total": 139,
+        "error_dropped": 6,
+        "duration_s": 909.73627,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 3 requests on errors",
+       "candidate dropped 6 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c4-base-r1/agentx_out/agentx-glm53-l1f-c4-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-abl-c4-f1-r1/agentx_out/agentx-glm53-abl-c4-f1-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2537.74224,
+       "out_tput_gpu": 21.38458,
+       "e2e_int_p90": 97.14229,
+       "e2e_int_p50": 157.81265,
+       "intvty_p90": 157.14875,
+       "ttft_p50": 0.21466,
+       "ttft_p90": 0.78299,
+       "e2el_p90": 20.08692
+      },
+      "candidate": {
+       "tput_gpu": 2384.19549,
+       "out_tput_gpu": 18.97472,
+       "e2e_int_p90": 94.29472,
+       "e2e_int_p50": 151.62225,
+       "intvty_p90": 121.31083,
+       "ttft_p50": 0.2279,
+       "ttft_p90": 0.75033,
+       "e2el_p90": 17.36486
+      },
+      "gain": {
+       "tput_gpu": -0.060505258406385654,
+       "out_tput_gpu": -0.11269148143194763,
+       "e2e_int_p90": -0.029313391726713545,
+       "e2e_int_p50": -0.03922625974533711,
+       "intvty_p90": -0.22805093899887852,
+       "ttft_p50": -0.058095655989469086,
+       "ttft_p90": 0.04352751456026005,
+       "e2el_p90": 0.15675680656221802
+      },
+      "verdict": {
+       "tput_gpu": "baseline ahead",
+       "out_tput_gpu": "baseline ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "baseline ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 161,
+        "total": 205,
+        "error_dropped": 19,
+        "duration_s": 910.74966,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 156,
+        "total": 200,
+        "error_dropped": 12,
+        "duration_s": 928.24823,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 19 requests on errors",
+       "candidate dropped 12 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   },
+   "F2 -f2-r1": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.019712074963235127,
+     "out_tput_gpu": 0.033974601757032596,
+     "e2e_int_p90": 0.1966069243753401,
+     "e2e_int_p50": 0.020798772510648877,
+     "intvty_p90": 0.019273757951817183,
+     "ttft_p50": 0.15656871218668966,
+     "ttft_p90": 0.4057784367718704,
+     "e2el_p90": 0.13417922628629775
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c1-base-r1/agentx_out/agentx-glm53-l1f-c1-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-abl-c1-f2-r1/agentx_out/agentx-glm53-abl-c1-f2-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2617.15066,
+       "out_tput_gpu": 11.06297,
+       "e2e_int_p90": 72.12925,
+       "e2e_int_p50": 176.46426,
+       "intvty_p90": 203.48808,
+       "ttft_p50": 0.26763,
+       "ttft_p90": 1.65917,
+       "e2el_p90": 16.17639
+      },
+      "candidate": {
+       "tput_gpu": 2701.89956,
+       "out_tput_gpu": 11.95842,
+       "e2e_int_p90": 75.12227,
+       "e2e_int_p50": 205.59859,
+       "intvty_p90": 227.90768,
+       "ttft_p50": 0.25209,
+       "ttft_p90": 1.7311,
+       "e2el_p90": 12.83262
+      },
+      "gain": {
+       "tput_gpu": 0.032382125070323564,
+       "out_tput_gpu": 0.08094119391085752,
+       "e2e_int_p90": 0.04149523251662823,
+       "e2e_int_p50": 0.16510045716906085,
+       "intvty_p90": 0.12000506368726849,
+       "ttft_p50": 0.06164465071998104,
+       "ttft_p90": -0.041551614580324636,
+       "e2el_p90": 0.2605679900129514
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 96,
+        "total": 107,
+        "error_dropped": 5,
+        "duration_s": 895.04648,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 101,
+        "total": 112,
+        "error_dropped": 5,
+        "duration_s": 905.34518,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 5 requests on errors",
+       "candidate dropped 5 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c2-base-r1/agentx_out/agentx-glm53-l1f-c2-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-abl-c2-f2-r1/agentx_out/agentx-glm53-abl-c2-f2-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2417.5922,
+       "out_tput_gpu": 19.02357,
+       "e2e_int_p90": 75.84102,
+       "e2e_int_p50": 155.36437,
+       "intvty_p90": 143.64603,
+       "ttft_p50": 0.31604,
+       "ttft_p90": 1.88958,
+       "e2el_p90": 17.05921
+      },
+      "candidate": {
+       "tput_gpu": 2497.021,
+       "out_tput_gpu": 19.64858,
+       "e2e_int_p90": 78.10099,
+       "e2e_int_p50": 177.27081,
+       "intvty_p90": 162.93058,
+       "ttft_p50": 0.33331,
+       "ttft_p90": 1.97622,
+       "e2el_p90": 17.01336
+      },
+      "gain": {
+       "tput_gpu": 0.0328545070587174,
+       "out_tput_gpu": 0.03285450627826436,
+       "e2e_int_p90": 0.02979878171469741,
+       "e2e_int_p50": 0.14100041084065795,
+       "intvty_p90": 0.13425049059831307,
+       "ttft_p50": -0.051813626953886804,
+       "ttft_p90": -0.043841272732792924,
+       "e2el_p90": 0.002694940917020494
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "within noise",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "within noise"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 117,
+        "total": 139,
+        "error_dropped": 3,
+        "duration_s": 926.62686,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 117,
+        "total": 139,
+        "error_dropped": 11,
+        "duration_s": 897.15134,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 3 requests on errors",
+       "candidate dropped 11 requests on errors",
+       "durations differ: 927 s vs 897 s"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c4-base-r1/agentx_out/agentx-glm53-l1f-c4-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-abl-c4-f2-r1/agentx_out/agentx-glm53-abl-c4-f2-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2537.74224,
+       "out_tput_gpu": 21.38458,
+       "e2e_int_p90": 97.14229,
+       "e2e_int_p50": 157.81265,
+       "intvty_p90": 157.14875,
+       "ttft_p50": 0.21466,
+       "ttft_p90": 0.78299,
+       "e2el_p90": 20.08692
+      },
+      "candidate": {
+       "tput_gpu": 2746.46032,
+       "out_tput_gpu": 23.226,
+       "e2e_int_p90": 92.67581,
+       "e2e_int_p50": 168.81166,
+       "intvty_p90": 153.26243,
+       "ttft_p50": 0.21692,
+       "ttft_p90": 0.98524,
+       "e2el_p90": 17.9892
+      },
+      "gain": {
+       "tput_gpu": 0.08224557904667273,
+       "out_tput_gpu": 0.08610971082901786,
+       "e2e_int_p90": -0.04597873902293226,
+       "e2e_int_p50": 0.06969663078340038,
+       "intvty_p90": -0.024730199890231508,
+       "ttft_p50": -0.010418587497695087,
+       "ttft_p90": -0.20527993179326864,
+       "e2el_p90": 0.11660996597958762
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "baseline ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "within noise"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 161,
+        "total": 205,
+        "error_dropped": 19,
+        "duration_s": 910.74966,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 176,
+        "total": 220,
+        "error_dropped": 16,
+        "duration_s": 912.64622,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 19 requests on errors",
+       "candidate dropped 16 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   },
+   "F3 -cand8-r1": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.019712074963235127,
+     "out_tput_gpu": 0.033974601757032596,
+     "e2e_int_p90": 0.1966069243753401,
+     "e2e_int_p50": 0.020798772510648877,
+     "intvty_p90": 0.019273757951817183,
+     "ttft_p50": 0.15656871218668966,
+     "ttft_p90": 0.4057784367718704,
+     "e2el_p90": 0.13417922628629775
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c1-base-r1/agentx_out/agentx-glm53-l1f-c1-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-l1f-c1-cand8-r1/agentx_out/agentx-glm53-l1f-c1-cand8-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2617.15066,
+       "out_tput_gpu": 11.06297,
+       "e2e_int_p90": 72.12925,
+       "e2e_int_p50": 176.46426,
+       "intvty_p90": 203.48808,
+       "ttft_p50": 0.26763,
+       "ttft_p90": 1.65917,
+       "e2el_p90": 16.17639
+      },
+      "candidate": {
+       "tput_gpu": 2787.25915,
+       "out_tput_gpu": 12.36738,
+       "e2e_int_p90": 78.43337,
+       "e2e_int_p50": 232.006,
+       "intvty_p90": 277.25663,
+       "ttft_p50": 0.23108,
+       "ttft_p90": 1.21704,
+       "e2el_p90": 10.5023
+      },
+      "gain": {
+       "tput_gpu": 0.06499759169386143,
+       "out_tput_gpu": 0.11790775894719063,
+       "e2e_int_p90": 0.0874003264972254,
+       "e2e_int_p50": 0.31474781352325953,
+       "intvty_p90": 0.3625202518004984,
+       "ttft_p50": 0.1581703306214297,
+       "ttft_p90": 0.36328304739367656,
+       "e2el_p90": 0.540271178694191
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "candidate ahead",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 96,
+        "total": 107,
+        "error_dropped": 5,
+        "duration_s": 895.04648,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 105,
+        "total": 116,
+        "error_dropped": 3,
+        "duration_s": 904.40519,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 5 requests on errors",
+       "candidate dropped 3 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c2-base-r1/agentx_out/agentx-glm53-l1f-c2-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-l1f-c2-cand8-r1/agentx_out/agentx-glm53-l1f-c2-cand8-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2417.5922,
+       "out_tput_gpu": 19.02357,
+       "e2e_int_p90": 75.84102,
+       "e2e_int_p50": 155.36437,
+       "intvty_p90": 143.64603,
+       "ttft_p50": 0.31604,
+       "ttft_p90": 1.88958,
+       "e2el_p90": 17.05921
+      },
+      "candidate": {
+       "tput_gpu": 2867.26018,
+       "out_tput_gpu": 20.21061,
+       "e2e_int_p90": 81.50331,
+       "e2e_int_p50": 192.95409,
+       "intvty_p90": 171.36121,
+       "ttft_p50": 0.29103,
+       "ttft_p90": 1.76555,
+       "e2el_p90": 12.08719
+      },
+      "gain": {
+       "tput_gpu": 0.18599827547425085,
+       "out_tput_gpu": 0.06239838263795905,
+       "e2e_int_p90": 0.07465999270579426,
+       "e2e_int_p50": 0.24194556319444405,
+       "intvty_p90": 0.19294080038271866,
+       "ttft_p50": 0.08593615778442087,
+       "ttft_p90": 0.07025006371952092,
+       "e2el_p90": 0.4113462268732435
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 117,
+        "total": 139,
+        "error_dropped": 3,
+        "duration_s": 926.62686,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 123,
+        "total": 145,
+        "error_dropped": 6,
+        "duration_s": 879.64942,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 3 requests on errors",
+       "candidate dropped 6 requests on errors",
+       "durations differ: 927 s vs 880 s"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c4-base-r1/agentx_out/agentx-glm53-l1f-c4-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-l1f-c4-cand8-r1/agentx_out/agentx-glm53-l1f-c4-cand8-r1.json"
+      },
+      "baseline": {
+       "tput_gpu": 2537.74224,
+       "out_tput_gpu": 21.38458,
+       "e2e_int_p90": 97.14229,
+       "e2e_int_p50": 157.81265,
+       "intvty_p90": 157.14875,
+       "ttft_p50": 0.21466,
+       "ttft_p90": 0.78299,
+       "e2el_p90": 20.08692
+      },
+      "candidate": {
+       "tput_gpu": 2991.61751,
+       "out_tput_gpu": 27.00449,
+       "e2e_int_p90": 92.0393,
+       "e2e_int_p50": 167.56828,
+       "intvty_p90": 161.53189,
+       "ttft_p50": 0.2153,
+       "ttft_p90": 0.91101,
+       "e2el_p90": 16.55517
+      },
+      "gain": {
+       "tput_gpu": 0.17885002773173686,
+       "out_tput_gpu": 0.26280198161478974,
+       "e2e_int_p90": -0.05253108610060564,
+       "e2e_int_p50": 0.06181779470783866,
+       "intvty_p90": 0.027891663153540858,
+       "ttft_p50": -0.0029725963771481956,
+       "ttft_p90": -0.1405253509840726,
+       "e2el_p90": 0.21333214941314393
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 161,
+        "total": 205,
+        "error_dropped": 19,
+        "duration_s": 910.74966,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 212,
+        "total": 256,
+        "error_dropped": 12,
+        "duration_s": 903.64598,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 19 requests on errors",
+       "candidate dropped 12 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   },
+   "F3 -cand8-r2": {
+    "cohort": {
+     "model": "zai-org/GLM-5.3",
+     "infmax_model_prefix": "glm5.3",
+     "framework": "sglang",
+     "precision": "fp8",
+     "scenario_type": "agentic-coding",
+     "dataset.loader": "semianalysis_cc_traces_weka_062126",
+     "dataset.num_dataset_entries": "393"
+    },
+    "noise_floor": {
+     "tput_gpu": 0.019712074963235127,
+     "out_tput_gpu": 0.033974601757032596,
+     "e2e_int_p90": 0.1966069243753401,
+     "e2e_int_p50": 0.020798772510648877,
+     "intvty_p90": 0.019273757951817183,
+     "ttft_p50": 0.15656871218668966,
+     "ttft_p90": 0.4057784367718704,
+     "e2el_p90": 0.13417922628629775
+    },
+    "points": [
+     {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c1-base-r1/agentx_out/agentx-glm53-l1f-c1-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-l1f-c1-cand8-r2/agentx_out/agentx-glm53-l1f-c1-cand8-r2.json"
+      },
+      "baseline": {
+       "tput_gpu": 2617.15066,
+       "out_tput_gpu": 11.06297,
+       "e2e_int_p90": 72.12925,
+       "e2e_int_p50": 176.46426,
+       "intvty_p90": 203.48808,
+       "ttft_p50": 0.26763,
+       "ttft_p90": 1.65917,
+       "e2el_p90": 16.17639
+      },
+      "candidate": {
+       "tput_gpu": 2779.44526,
+       "out_tput_gpu": 12.84243,
+       "e2e_int_p90": 105.70205,
+       "e2e_int_p50": 237.20143,
+       "intvty_p90": 278.5745,
+       "ttft_p50": 0.22941,
+       "ttft_p90": 1.57953,
+       "e2el_p90": 11.11003
+      },
+      "gain": {
+       "tput_gpu": 0.06201194393600562,
+       "out_tput_gpu": 0.1608483074617395,
+       "e2e_int_p90": 0.4654533355053603,
+       "e2e_int_p50": 0.3441896393071322,
+       "intvty_p90": 0.3689966508111926,
+       "ttft_p50": 0.16660128154831955,
+       "ttft_p90": 0.05042006166391255,
+       "e2el_p90": 0.45601677043176303
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "candidate ahead",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "candidate ahead",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 96,
+        "total": 107,
+        "error_dropped": 5,
+        "duration_s": 895.04648,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 105,
+        "total": 117,
+        "error_dropped": 8,
+        "duration_s": 896.93856,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 5 requests on errors",
+       "candidate dropped 8 requests on errors"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c2-base-r1/agentx_out/agentx-glm53-l1f-c2-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-l1f-c2-cand8-r2/agentx_out/agentx-glm53-l1f-c2-cand8-r2.json"
+      },
+      "baseline": {
+       "tput_gpu": 2417.5922,
+       "out_tput_gpu": 19.02357,
+       "e2e_int_p90": 75.84102,
+       "e2e_int_p50": 155.36437,
+       "intvty_p90": 143.64603,
+       "ttft_p50": 0.31604,
+       "ttft_p90": 1.88958,
+       "e2el_p90": 17.05921
+      },
+      "candidate": {
+       "tput_gpu": 2517.23579,
+       "out_tput_gpu": 22.02053,
+       "e2e_int_p90": 81.72365,
+       "e2e_int_p50": 189.4246,
+       "intvty_p90": 167.10658,
+       "ttft_p50": 0.31665,
+       "ttft_p90": 1.95867,
+       "e2el_p90": 13.78939
+      },
+      "gain": {
+       "tput_gpu": 0.041216045452165284,
+       "out_tput_gpu": 0.1575393051882481,
+       "e2e_int_p90": 0.07756528063572987,
+       "e2e_int_p50": 0.2192280636802375,
+       "intvty_p90": 0.16332195188408627,
+       "ttft_p50": -0.0019264171798515362,
+       "ttft_p90": -0.03527393588506478,
+       "e2el_p90": 0.23712579019086433
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 117,
+        "total": 139,
+        "error_dropped": 3,
+        "duration_s": 926.62686,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 118,
+        "total": 140,
+        "error_dropped": 6,
+        "duration_s": 901.04556,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 3 requests on errors",
+       "candidate dropped 6 requests on errors",
+       "durations differ: 927 s vs 901 s"
+      ]
+     },
+     {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+       "baseline": "$WORK/runs/agentx-glm53-l1f-c4-base-r1/agentx_out/agentx-glm53-l1f-c4-base-r1.json",
+       "candidate": "$WORK/runs/agentx-glm53-l1f-c4-cand8-r2/agentx_out/agentx-glm53-l1f-c4-cand8-r2.json"
+      },
+      "baseline": {
+       "tput_gpu": 2537.74224,
+       "out_tput_gpu": 21.38458,
+       "e2e_int_p90": 97.14229,
+       "e2e_int_p50": 157.81265,
+       "intvty_p90": 157.14875,
+       "ttft_p50": 0.21466,
+       "ttft_p90": 0.78299,
+       "e2el_p90": 20.08692
+      },
+      "candidate": {
+       "tput_gpu": 2794.87762,
+       "out_tput_gpu": 23.06936,
+       "e2e_int_p90": 107.19562,
+       "e2e_int_p50": 187.55047,
+       "intvty_p90": 168.25784,
+       "ttft_p50": 0.23171,
+       "ttft_p90": 0.83604,
+       "e2el_p90": 15.42653
+      },
+      "gain": {
+       "tput_gpu": 0.10132446705856157,
+       "out_tput_gpu": 0.078784806622342,
+       "e2e_int_p90": 0.10349076596814832,
+       "e2e_int_p50": 0.18843749217822525,
+       "intvty_p90": 0.07069155815747807,
+       "ttft_p50": -0.07358335850848052,
+       "ttft_p90": -0.06345390172719012,
+       "e2el_p90": 0.30210228742303036
+      },
+      "verdict": {
+       "tput_gpu": "candidate ahead",
+       "out_tput_gpu": "candidate ahead",
+       "e2e_int_p90": "within noise",
+       "e2e_int_p50": "candidate ahead",
+       "intvty_p90": "candidate ahead",
+       "ttft_p50": "within noise",
+       "ttft_p90": "within noise",
+       "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+       "baseline": {
+        "successful": 161,
+        "total": 205,
+        "error_dropped": 19,
+        "duration_s": 910.74966,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       },
+       "candidate": {
+        "successful": 174,
+        "total": 218,
+        "error_dropped": 18,
+        "duration_s": 912.25448,
+        "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024"
+       }
+      },
+      "checks": [
+       "baseline dropped 19 requests on errors",
+       "candidate dropped 18 requests on errors"
+      ]
+     }
+    ],
+    "unpaired": {
+     "baseline": [],
+     "candidate": []
+    }
+   }
+  },
+  "by_isl": {
+   "F1": [
+    {
+     "lo": 0,
+     "hi": 64000,
+     "n": 19,
+     "itl": -7.867158422961651
+    },
+    {
+     "lo": 64000,
+     "hi": 128000,
+     "n": 93,
+     "itl": -20.017202508215306
+    },
+    {
+     "lo": 128000,
+     "hi": 192000,
+     "n": 42,
+     "itl": -12.854048375861016
+    },
+    {
+     "lo": 192000,
+     "hi": 1000000000,
+     "n": 56,
+     "itl": 16.467376802349044
+    }
+   ],
+   "F2": [
+    {
+     "lo": 0,
+     "hi": 64000,
+     "n": 19,
+     "itl": -16.26205270740583
+    },
+    {
+     "lo": 64000,
+     "hi": 128000,
+     "n": 93,
+     "itl": -25.65086865590095
+    },
+    {
+     "lo": 128000,
+     "hi": 192000,
+     "n": 42,
+     "itl": -22.394037903630792
+    },
+    {
+     "lo": 192000,
+     "hi": 1000000000,
+     "n": 56,
+     "itl": -9.420086722071574
+    }
+   ],
+   "F3": [
+    {
+     "lo": 0,
+     "hi": 64000,
+     "n": 38,
+     "itl": -26.16130602025004
+    },
+    {
+     "lo": 64000,
+     "hi": 128000,
+     "n": 186,
+     "itl": -28.842071798816715
+    },
+    {
+     "lo": 128000,
+     "hi": 192000,
+     "n": 84,
+     "itl": -27.991520128042822
+    },
+    {
+     "lo": 192000,
+     "hi": 1000000000,
+     "n": 112,
+     "itl": -26.048702169950054
+    }
+   ]
+  }
+ }
+}

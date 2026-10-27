@@ -40,7 +40,9 @@ def pr(n, repo="sgl-project/sgl-amd-mono"):
 def sg(x, nd=1):
     """Signed number with a real minus sign."""
     s = f"{abs(x):.{nd}f}"
-    return ("+" if x > 0 else "−" if x < 0 else "±") + s
+    if float(s) == 0:
+        return s
+    return ("+" if x > 0 else "−") + s
 
 
 def mcnemar_p(b, c):
@@ -190,6 +192,40 @@ itl_lo, itl_hi = round(min(itl1)), round(max(itl1))
 ttft_up = round(100 * (pz["ttft_median_ms"] / pb["ttft_median_ms"] - 1))
 k_ratio = pz["grid2080_per_layer_us_median"] / pb["grid2080_per_layer_us_median"]
 other_delta = abs((pz["kernel_total_ms"] - pz["tilelang_main_kernel_ms"]) - (pb["kernel_total_ms"] - pb["tilelang_main_kernel_ms"]))
+
+# ----------------------------------------------------------------------------- cover
+def cover_svg():
+    """Ridgelines of per-request ITL: one curve per 20-minute window of each 3600-s run."""
+    runs = [(c, grp, f"agentx-glm53-l2ov-c{c}-{arm}-r1") for c in CONCS for grp, arm in (("base", "base"), ("mono", "cand8"))]
+    ridges = []
+    for c, grp, rid in runs:
+        with (D / f"{C3}/requests/{rid}.csv").open() as f:
+            rows = [r for r in csv.DictReader(f) if r["phase"] == "profiling" and r["cancelled"] == "0" and r["itl_ms"] and float(r["itl_ms"]) > 0]
+        t0 = min(float(r["start_s"]) for r in rows)
+        for w in range(3):
+            xs = [math.log10(float(r["itl_ms"])) for r in rows if w * 1200 <= float(r["start_s"]) - t0 < (w + 1) * 1200]
+            if len(xs) > 5:
+                ridges.append((grp, xs))
+    lo, hi = math.log10(2.6), math.log10(16.0)
+    W, H, top, step, amp, n = 1600, 300, 62, 9.4, 50, 120
+    grid = [lo + (hi - lo) * i / (n - 1) for i in range(n)]
+    px = lambda v: 160 + (v - lo) / (hi - lo) * (W - 320)  # noqa: E731
+    out = [f'<svg viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">']
+    for i, (grp, xs) in enumerate(ridges):
+        m = sum(xs) / len(xs)
+        sd = (sum((x - m) ** 2 for x in xs) / len(xs)) ** 0.5
+        h = max(0.02, 1.06 * sd * len(xs) ** -0.2)
+        dens = [sum(math.exp(-0.5 * ((gx - x) / h) ** 2) for x in xs) for gx in grid]
+        peak = max(dens)
+        keep = [k for k, d in enumerate(dens) if d / peak > 0.004]
+        base_y = top + i * step
+        pts = [(px(grid[k]), base_y - amp * dens[k] / peak) for k in range(keep[0], keep[-1] + 1)]
+        d_attr = (f"M{pts[0][0] - 60:.0f},{base_y:.1f} " + " ".join(f"L{x:.0f},{y:.1f}" for x, y in pts)
+                  + f" L{pts[-1][0] + 60:.0f},{base_y:.1f}")
+        out.append(f'<path d="{d_attr}" class="ridge {grp}"/>')
+    out.append("</svg>")
+    return "".join(out)
+
 
 # ----------------------------------------------------------------------------- plates
 ARROW = '<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" class="ahd"/></marker></defs>'
@@ -391,327 +427,647 @@ def plate_upstream():
     ])
 
 
+# ----------------------------------------------------------------------------- retrospective data
+abl = J("ablation/ablation.json")
+tl = J("prs/timelines.json")
+LADDER_STEPS = {"bf16": ("#15", "#24", "#42"), "fp8": ("F1", "F2", "F3")}
+
+
+def ladder_eff(lad, step, c, m):
+    """Mean over the runs of one step at one concurrency (F3 has two runs)."""
+    vals = [e[m] for e in abl[lad]["effects"] if e["step"] == step and e["conc"] == c]
+    return sum(vals) / len(vals) if vals else None
+
+
+def ladder_runs(lad, step, c):
+    return [e for e in abl[lad]["effects"] if e["step"] == step and e["conc"] == c]
+
+
+def ladder_head(lad, step, c, m):
+    """Headline gain (%) of one step at one concurrency; F3 averages its two runs."""
+    vals = []
+    for key, h in abl[lad]["headline"].items():
+        if key.split()[0] == step and "points" in h:
+            vals += [100 * p["gain"][m] for p in h["points"] if p["point"].endswith(f"c{c}")]
+    return sum(vals) / len(vals) if vals else None
+
+
+drift = next((e for e in abl["fp8"]["effects"] if e["step"] == "base rerun"), None)
+fp8_ready = all(ladder_eff("fp8", s, c, "inter_token_latency") is not None for s in LADDER_STEPS["fp8"] for c in (1, 2, 4))
+ISL_BINS = (("below 64k", "64k 以下"), ("64k to 128k", "64k 到 128k"), ("128k to 192k", "128k 到 192k"), ("192k or more", "192k 及以上"))
+isl_v = lambda lad, s: [r["itl"] for r in abl[lad]["by_isl"][s]]  # noqa: E731
+isl_n = lambda lad, s: [r["n"] for r in abl[lad]["by_isl"][s]]  # noqa: E731
+
+
+def isl_share(lad, step, c):
+    rows = ladder_runs(lad, step, c)[0]["by_isl"]
+    return [100 * r["n"] / sum(q["n"] for q in rows) for r in rows]
+
+
+def plate_arch():
+    box = lambda x, y, w, h, cls="box": f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="9" class="{cls}"/>'  # noqa: E731
+    out = [f'<svg viewBox="0 0 1040 330" role="img" aria-label="monokernel step">{ARROW}',
+           box(10, 40, 210, 96), svg_text(115, 72, "SGLang", "SGLang", "lbl b", "middle"),
+           svg_text(115, 94, "embedding", "embedding", "lbl s", "middle"),
+           svg_text(115, 112, "dense layers 0 to 2", "dense 层 0 到 2", "lbl s", "middle"),
+           box(270, 24, 500, 128, "box mono"),
+           svg_text(520, 54, "75 monokernel launches: layers 3 to 77", "75 次 monokernel launch：第 3 到 77 层", "lbl b", "middle"),
+           svg_text(520, 80, "one launch per MoE decoder layer", "每个 MoE decoder 层一次 launch", "lbl s", "middle"),
+           svg_text(520, 102, "18 launches run the indexer", "18 次 launch 运行 indexer", "lbl s", "middle"),
+           svg_text(520, 124, "57 launches reuse the top-k of the layer before", "57 次 launch 复用上一层的 top-k", "lbl s", "middle"),
+           box(820, 40, 210, 96), svg_text(925, 72, "SGLang", "SGLang", "lbl b", "middle"),
+           svg_text(925, 94, "final norm, logits", "final norm、logits", "lbl s", "middle"),
+           svg_text(925, 112, "sampling, scheduling", "采样、调度", "lbl s", "middle"),
+           '<line x1="220" y1="88" x2="268" y2="88" class="edge" marker-end="url(#ah)"/>',
+           '<line x1="770" y1="88" x2="818" y2="88" class="edge" marker-end="url(#ah)"/>',
+           svg_text(20, 196, "Stages of one launch, in order:", "一次 launch 的各个阶段，按顺序：", "lbl b")]
+    stages = [(("q / kv projections", "RoPE"), ("q / kv 投影", "RoPE")), (("KV norm", "MLA cache write"), ("KV norm", "写 MLA cache")),
+              (("indexer scores", "top-2048"), ("indexer 打分", "top-2048")), (("sparse MLA", "o_proj"), ("稀疏 MLA", "o_proj")),
+              (("TP all-reduce", ""), ("TP all-reduce", "")), (("RMSNorm", "router (f32)"), ("RMSNorm", "router（f32）")),
+              (("experts", "1 shared + 8 routed"), ("专家", "1 共享 + 8 路由")), (("TP all-reduce", ""), ("TP all-reduce", ""))]
+    w, gap = 120, 8
+    for i, (lines_en, lines_zh) in enumerate(stages):
+        x = 10 + i * (w + gap)
+        cls = "box st-open" if i == 2 else "box"
+        out.append(box(x, 212, w, 70, cls))
+        out.append(nt(x + 12, 236, str(i + 1), "lbl b"))
+        for j, (we, wz) in enumerate(zip(lines_en, lines_zh)):
+            if we or wz:
+                out.append(svg_text(x + w / 2, 256 + j * 16, we, wz, "lbl s", "middle"))
+    out.append(svg_text(20, 312, "Stage 3 runs only on the 18 indexer layers. It is the stage that grows with the context.",
+                        "阶段 3 只在 18 个 indexer 层运行。它是随上下文变长而变慢的阶段。", "lbl s"))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def plate_timeline():
+    days = {f"10-{d:02d}": d for d in range(16, 27)}
+    X0, X1 = 70, 1010
+    sx = lambda d: X0 + (d - 16) / 10 * (X1 - X0)  # noqa: E731
+    out = ['<svg viewBox="0 0 1040 280" role="img" aria-label="PR timeline">',
+           f'<line x1="{X0}" y1="150" x2="{X1}" y2="150" class="axis"/>']
+    for lab, d in days.items():
+        out.append(f'<line x1="{sx(d):.0f}" y1="146" x2="{sx(d):.0f}" y2="154" class="axis"/>' + nt(sx(d), 172, lab, "lbl s", "middle"))
+    items = [(18, "#7", "decode monokernel", "decode monokernel", "mono", 1),
+             (22, "#15", "MTP verify steps", "MTP verify 步", "mono", 2),
+             (25, "#24", "parallel top-k", "并行 top-k", "mono", 1),
+             (25.25, "#42", "per-wave scoring", "按 wave 打分", "mono", 2),
+             (26, "#60", "FP8 KV cache", "FP8 KV cache", "mono", 3)]
+    for d, num, en, zh_, cls, level in items:
+        x, y = sx(d), 150 - 34 * level
+        tx, anchor = (x - 8, "end") if x > 850 else (x + 8, "start")
+        out.append(f'<line x1="{x:.0f}" y1="150" x2="{x:.0f}" y2="{y - 10}" class="edge {cls}"/>')
+        out.append(f'<circle cx="{x:.0f}" cy="150" r="6" class="pt {cls}"/>')
+        out.append(nt(tx, y, num, "lbl b", anchor))
+        out.append(svg_text(tx, y + 15, en, zh_, "lbl s", anchor))
+    side = [(18.5, "#11 #12", "common refactors", "公共层重构", 1, "start"), (22.1, "#25", "SGLang interface", "SGLang 接口", 1, "start"),
+            (21.1, "#19", "open: guarded waits", "未合并：guarded wait", 2, "start"), (20.9, "#18", "closed: A4W4, TP4", "已关闭：A4W4、TP4", 3, "end")]
+    for d, num, en, zh_, level, anchor in side:
+        x, y = sx(d), 150 + 6 + 30 * level
+        tx = x + 8 if anchor == "start" else x - 8
+        out.append(f'<line x1="{x:.0f}" y1="150" x2="{x:.0f}" y2="{y - 12}" class="edge ref"/>')
+        out.append(f'<circle cx="{x:.0f}" cy="150" r="4" class="refpt"/>')
+        out.append(nt(tx, y, num, "lbl b", anchor))
+        out.append(svg_text(tx, y + 15, en, zh_, "lbl s", anchor))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def plate_longctx():
+    keys = ("8k", "32k", "64k", "128k", "256k")
+    out = ['<svg viewBox="0 0 1040 330" role="img" aria-label="estimated step time">']
+    builds = (("#15", "ref", "pr24", "step_before_ms"), ("#24", "base", "pr24", "step_after_ms"), ("#42", "mono", "pr42", "step_after_ms"))
+    for panel, (rows, x0) in enumerate(((1, 70), (4, 590))):
+        W, Y0, Y1 = 400, 270, 50
+        vals = [r[f] for _, _, pr_, f in builds for r in tl[pr_]["rows"] if r["rows"] == rows and r["keys"] in keys]
+        ymax = math.ceil(max(vals) / 2) * 2
+        sx = lambda i: x0 + i * W / (len(keys) - 1)  # noqa: E731
+        sy = lambda v: Y0 - v / ymax * (Y0 - Y1)  # noqa: E731
+        out.append(svg_text(x0, 28, f"{rows} row{'s' if rows > 1 else ''} in the step: estimated step (ms)", f"一步 {rows} 行：预估单步时间（毫秒）", "lbl b"))
+        for v in range(0, ymax + 1, 2):
+            out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0 + W}" y2="{sy(v):.1f}" class="grid"/>' + nt(x0 - 8, sy(v) + 4, str(v), "lbl s", "end"))
+        for i, k in enumerate(keys):
+            out.append(nt(sx(i), Y0 + 18, k, "lbl s", "middle"))
+        out.append(svg_text(x0 + W / 2, Y0 + 40, "keys per row", "每行的 key 数", "lbl s", "middle"))
+        for name, cls, pr_, f in builds:
+            pts_ = [(sx(i), sy(next(r[f] for r in tl[pr_]["rows"] if r["rows"] == rows and r["keys"] == k))) for i, k in enumerate(keys)]
+            out.append('<polyline points="' + " ".join(f"{x:.1f},{y:.1f}" for x, y in pts_) + f'" class="line {cls}"/>')
+            for x, y in pts_:
+                out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" class="pt {cls}"/>')
+            out.append(nt(pts_[-1][0] + 8, pts_[-1][1] + 4, name, "lbl b"))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def plate_ladder(lad):
+    steps = LADDER_STEPS[lad]
+    cls = {"#15": "ref", "#24": "base", "#42": "mono", "F1": "ref", "F2": "base", "F3": "mono"}
+    lab = {"#15": ("#15", "#15"), "#24": ("+ #24", "+ #24"), "#42": ("+ #42", "+ #42"),
+           "F1": ("F1: #7 #15", "F1：#7 #15"), "F2": ("F2: + #24", "F2：+ #24"), "F3": ("F3: + #42", "F3：+ #42")}
+    zero, scale = 560, 12.0
+    out = [f'<svg viewBox="0 0 1040 300" role="img" aria-label="ladder">',
+           svg_text(20, 24, "ITL on the same requests, against the base (cumulative)", "同一批请求的 ITL，相对 base（累积）", "lbl b"),
+           f'<line x1="{zero}" y1="36" x2="{zero}" y2="252" class="axis"/>']
+    for i, c in enumerate((1, 2, 4)):
+        y = 44 + i * 70
+        out.append(nt(20, y + 30, f"c{c}", "lbl b"))
+        for j, s in enumerate(steps):
+            v = ladder_eff(lad, s, c, "inter_token_latency")
+            yy = y + j * 19
+            if v is None:
+                out.append(svg_text(zero + 8, yy + 13, f"{lab[s][0]}: pending", f"{lab[s][1]}：待测", "lbl s"))
+                continue
+            w = abs(v) * scale
+            x = zero - w if v < 0 else zero
+            out.append(f'<rect x="{x:.1f}" y="{yy}" width="{w:.1f}" height="15" class="bar {cls[s]}"/>')
+            out.append(nt(x - 6 if v < 0 else x + w + 6, yy + 12, f"{sg(v)}%", "lbl s", "end" if v < 0 else "start"))
+            out.append(svg_text(zero + 8 if v < 0 else zero - 8, yy + 12, lab[s][0], lab[s][1], "lbl s", "start" if v < 0 else "end"))
+    out.append(nt(zero, 270, "0", "lbl s", "middle"))
+    out.append(svg_text(zero - 170, 290, "← faster", "← 更快", "lbl s", "middle"))
+    out.append("</svg>")
+    return "".join(out)
+
+
+def plate_isl():
+    names = {"#15": "#15", "#24": "+ #24", "#42": "+ #42", "F1": "F1", "F2": "F2", "F3": "F3"}
+    ticks = ("< 64k", "64k–128k", "128k–192k", "≥ 192k")
+    YMAX, YMIN, Y1, Y0, W = 20, -35, 50, 280, 380
+    sy = lambda v: Y1 + (YMAX - v) / (YMAX - YMIN) * (Y0 - Y1)  # noqa: E731
+    out = ['<svg viewBox="0 0 1040 330" role="img" aria-label="ITL change by input length">']
+    for lad, x0, en, zh_ in (("bf16", 70, "BF16 ladder, 3600 s: ITL change (%)", "BF16 阶梯，3600 秒：ITL 变化（%）"),
+                             ("fp8", 590, "FP8 ladder, 900 s: ITL change (%)", "FP8 阶梯，900 秒：ITL 变化（%）")):
+        sx = lambda i: x0 + 30 + i * (W - 60) / 3  # noqa: E731
+        out.append(svg_text(x0, 28, en, zh_, "lbl b"))
+        for v in range(-30, YMAX + 1, 10):
+            out.append(f'<line x1="{x0}" y1="{sy(v):.1f}" x2="{x0 + W}" y2="{sy(v):.1f}" class="{"axis" if v == 0 else "grid"}"/>'
+                       + nt(x0 - 8, sy(v) + 4, sg(v, 0) if v else "0", "lbl s", "end"))
+        for i, t in enumerate(ticks):
+            out.append(nt(sx(i), Y0 + 20, t, "lbl s", "middle"))
+        out.append(svg_text(x0 + W / 2, Y0 + 42, "input length of the request", "请求的输入长度", "lbl s", "middle"))
+        for s, cls in zip(LADDER_STEPS[lad], ("ref", "base", "mono")):
+            runs_per_conc = len(ladder_runs(lad, s, 1))
+            pts_ = [(sx(i), sy(v), n // runs_per_conc) for i, (v, n) in enumerate(zip(isl_v(lad, s), isl_n(lad, s))) if v is not None]
+            out.append('<polyline points="' + " ".join(f"{x:.1f},{y:.1f}" for x, y, _ in pts_) + f'" class="line {cls}"/>')
+            for x, y, n in pts_:
+                out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4.5" class="pt {cls}{" hollow" if n < 30 else ""}"/>')
+            out.append(nt(pts_[-1][0] + 12, pts_[-1][1] + 4, names[s], "lbl b"))
+    out.append("</svg>")
+    return "".join(out)
+
+
 # ----------------------------------------------------------------------------- sections
-cell = lambda c, m, nd, unit="": f"{B(c, m):.{nd}f} → <b>{K(c, m):.{nd}f}</b>{unit}<br><span class=\"up\">{sg(g(c, m))}%</span>"  # noqa: E731
+T24 = {(r["keys"], r["rows"]): r for r in tl["pr24"]["rows"]}
+T42 = {(r["keys"], r["rows"]): r for r in tl["pr42"]["rows"]}
+b0c = {c: eff[C1][(c, "b0-r1")]["time_to_first_token"] for c in (1, 2)}
+
+
+def prng(vals, zh_text=False):
+    lo, hi = round(min(vals)), round(max(vals))
+    return f"{lo}% {'到' if zh_text else 'to'} {hi}%" if lo != hi else f"{lo}%"
+
+
+def trio(lad, step, m="inter_token_latency"):
+    vals = [ladder_eff(lad, step, c, m) for c in (1, 2, 4)]
+    return " / ".join("…" if v is None else f"{sg(v)}%" for v in vals)
+
+
+def trio_head(lad, step, m):
+    vals = [ladder_head(lad, step, c, m) for c in (1, 2, 4)]
+    return " / ".join("…" if v is None else f"{sg(v)}%" for v in vals)
+
+
+cell = lambda c, m, nd, unit="": f"{B(c, m):.{nd}f} → <b>{K(c, m):.{nd}f}</b>{unit}<br><span class=\"{'up' if g(c, m) > 0 else 'flat'}\">{sg(g(c, m))}%</span>"  # noqa: E731
 score_rows = [[f"c{c}", cell(c, "tput_gpu", 0), cell(c, "e2e_int_p90", 1), cell(c, "e2el_p90", 1, " s"), cell(c, "ttft_p90", 2, " s")] for c in CONCS]
 score_head = [("Concurrency", "并发"), ("Throughput (tok/s/GPU)", "吞吐（tok/s/GPU）"), ("Interactivity", "交互性"), ("P90 E2EL", "P90 E2EL"), ("P90 TTFT", "P90 TTFT")]
+pend = ("pending", "待测")
+
+contrib_rows = [
+    [pr(7), sp("decode monokernel: one launch per MoE layer", "decode monokernel：每个 MoE 层一次 launch"), "-", "-",
+     sp("Base of all later PRs. It cannot serve the MTP recipe alone.", "后续所有 PR 的基础。它本身不能用于 MTP 配方。")],
+    [pr(15), sp("MTP verify steps on the monokernel", "monokernel 运行 MTP 的 verify 步"), trio("bf16", "#15"), trio("fp8", "F1"),
+     sp("Needed for the recipe. Faster below 192k tokens, slower above (section 09).", "配方需要它。192k token 以下更快，以上更慢（第 09 节）。")],
+    [pr(24), sp("top-k of a long row on up to 16 CTAs", "长行的 top-k 分给最多 16 个 CTA"), trio("bf16", "#24"), trio("fp8", "F2"),
+     sp("Removes most of the loss above 192k.", "去掉了 192k 以上的大部分损失。")],
+    [pr(42), sp("score 16 keys per wave, reads in flight", "每个 wave 给 16 个 key 打分，读取提前发出"), trio("bf16", "#42"), trio("fp8", "F3"),
+     sp("Largest gain, almost equal at all context lengths.", "收益最大，各个上下文长度下几乎相同。")],
+    [pr(60), sp("use the FP8 E4M3 KV cache of the recipe", "使用配方的 FP8 E4M3 KV cache"), "-", "-",
+     sp("Removes the TTFT cost of BF16 KV. The ITL gain becomes a score gain.", "去掉 BF16 KV 的 TTFT 代价，ITL 收益才变成分数收益。")],
+]
 
 s_result = section("result", "01", ("Result", "结果"), "".join([
-    P("We ran the InferenceX recipe in two groups: without the monokernel (base) and with it (monokernel). Each run used the 3600-s window of InferenceX.",
-      "我们用 InferenceX 的配方跑了两组：不开 monokernel（base 组）和开 monokernel（monokernel 组）。每次都用 InferenceX 的 3600 秒窗口。"),
-    P(f"The monokernel group is better on all three headline metrics at each concurrency. Each gain is larger than the A/A noise at concurrency 2. The A/A noise is {100 * noise3['tput_gpu']:.1f}% for throughput, {100 * noise3['e2e_int_p90']:.1f}% for interactivity, and {100 * noise3['e2el_p90']:.1f}% for P90 E2EL.",
-      f"在每个并发点，monokernel 组的三个头条指标都更好。每个增益都大于 c2 的 A/A 噪声。A/A 噪声是：吞吐 {100 * noise3['tput_gpu']:.1f}%，交互性 {100 * noise3['e2e_int_p90']:.1f}%，P90 E2EL {100 * noise3['e2el_p90']:.1f}%。"),
+    P("This record reviews the glm53 monokernel work for GLM-5.3 on MI355X. Five PRs built the monokernel. For each PR, we measured what it added on InferenceX AgentX.",
+      "这份记录复盘 GLM-5.3 在 MI355X 上的 glm53 monokernel 工作。monokernel 由五个 PR 构成。对每个 PR，我们都测量了它在 InferenceX AgentX 上带来的收益。"),
+    P("The table gives the ITL change on the same requests against the base, at concurrency 1, 2, and 4. Each row includes the PRs above it. The BF16 ladder is the PR campaign (3600 s, BF16 KV in both groups). The FP8 ladder uses the real recipe (900 s, FP8 KV).",
+      "下表是同一批请求相对 base 的 ITL 变化，并发为 1、2、4。每一行都包含它上面的所有 PR。BF16 阶梯是 PR 开发时的测试（3600 秒，两组都用 BF16 KV）。FP8 阶梯使用正式配方（900 秒，FP8 KV）。"),
+    table([("PR", "PR"), ("Change", "改动"), ("ITL, BF16 ladder", "ITL，BF16 阶梯"), ("ITL, FP8 ladder", "ITL，FP8 阶梯"), ("Verdict", "结论")], contrib_rows, "contrib"),
+    P(f"We measured the final result in the 3600-s window of InferenceX. With all five PRs, the recipe beats the recipe without the monokernel on all three headline metrics. Each gain is larger than the A/A noise at concurrency 2: {100 * noise3['tput_gpu']:.1f}% for throughput, {100 * noise3['e2e_int_p90']:.1f}% for interactivity, {100 * noise3['e2el_p90']:.1f}% for P90 E2EL.",
+      f"最终结果是在 InferenceX 的 3600 秒窗口下测得的。加上全部五个 PR 后，三个头条指标都好于不开 monokernel 的配方。每个增益都大于 c2 的 A/A 噪声：吞吐 {100 * noise3['tput_gpu']:.1f}%，交互性 {100 * noise3['e2e_int_p90']:.1f}%，P90 E2EL {100 * noise3['e2el_p90']:.1f}%。"),
     table(score_head, score_rows, "score"),
     P("Each cell shows base → monokernel and the gain. For a latency, the gain is base / monokernel − 1. A positive gain is always better.",
       "每格显示 base → monokernel 和增益。延迟的增益等于 base / monokernel − 1。增益为正，总是表示更好。", "small"),
+]))
+
+s_mono = section("monokernel", "02", ("What the monokernel does", "monokernel 做了什么"), "".join([
+    P("On the normal path, SGLang runs a GLM-5.3 decode step layer by layer. For one request at TP8, a step launches 1,821 GPU kernels and takes 11.70 ms of GPU time.",
+      "在 normal path 上，SGLang 逐层运行 GLM-5.3 的一个 decode 步。TP8、单请求时，一步要发起 1,821 个 GPU kernel，GPU 时间是 11.70 ms。"),
+    P(f"The monokernel replaces each of the 75 MoE decoder layers (layers 3 to 77) with one persistent launch. Then the same step has 212 kernels and takes 5.59 ms ({pr(7)}, no MTP).",
+      f"monokernel 把 75 个 MoE decoder 层（第 3 到 77 层）各换成一次常驻 launch。这样同一步只有 212 个 kernel，用时 5.59 ms（{pr(7)}，不开 MTP）。"),
+    plate("I", ("One decode or verify step", "一个 decode 或 verify 步"), plate_arch(),
+          ("SGLang keeps the embedding, the dense layers, the logits, sampling, and scheduling. The monokernel runs the MoE layers.",
+           "SGLang 保留 embedding、dense 层、logits、采样和调度。monokernel 运行 MoE 层。")),
     UL([
-        ("The monokernel code is the same in Test 1 and Test 3. Only the KV cache type changed (sections 04 to 06).",
-         "测试 1 和测试 3 的 monokernel 代码相同。只有 KV cache 的类型变了（第 04 到 06 节）。"),
-        (f"Accuracy did not change. On 1319 GSM8K questions, the two groups differ by {ob} to {oc} questions (McNemar p = {mcnemar_p(ob, oc):.2f}). Two runs of the monokernel group differ by {rerun_c['only_a']} to {rerun_c['only_b']} (section 09).",
-         f"精度没有变化。在 1319 道 GSM8K 题上，两组只有一方答对的题是 {ob} 对 {oc}（McNemar p = {mcnemar_p(ob, oc):.2f}）。monokernel 组自己跑两次，也差 {rerun_c['only_a']} 对 {rerun_c['only_b']}（第 09 节）。"),
-        ("The InferenceX submission waits for three steps: an SGLang pin update, a new image, and the cookbook PR (section 11).",
-         "提交 InferenceX 之前还有三步：SGLang 更新 pin、发布新镜像、合并 cookbook PR（第 11 节）。"),
+        ("Coverage: at TP8 the monokernel runs steps of 8 rows or fewer. A step with fewer rows runs at the next width (2, 4, or 8) with pad rows. Larger steps use the normal path.",
+         "覆盖范围：TP8 时，monokernel 运行 8 行以内的步。行数不够时，按下一档宽度（2、4 或 8）运行，多出的是填充行。更大的步走 normal path。"),
+        ("With MTP (3 draft steps), each request has 4 verify rows. Thus the monokernel serves verify steps of one or two requests.",
+         "开 MTP（3 个 draft 步）时，每个请求有 4 个 verify 行。所以 monokernel 负责 1 到 2 个请求的 verify 步。"),
+        ("GLM-5.3 uses DeepSeek Sparse Attention. On an indexer layer, each row scores all keys of its context and keeps the top 2048. The other layers reuse that selection.",
+         "GLM-5.3 使用 DeepSeek 稀疏注意力。在 indexer 层，每一行给上下文中的所有 key 打分，保留前 2048 个。其他层复用这个选择结果。"),
+        ("The indexer stage grows with the context. AgentX contexts are long: the median input of a request is 89k to 285k tokens.",
+         "indexer 阶段随上下文变长而变慢。AgentX 的上下文很长：请求输入的中位数是 89k 到 285k token。"),
     ]),
 ]))
 
-s_steps = section("steps", "02", ("Test sequence", "测试过程"), "".join([
-    P("The work had five steps. We wrote the decision rule of each test before the test started.",
-      "整个工作分五步。每次测试的判定规则都在测试开始前写好。"),
-    plate("I", ("Steps and results", "步骤和结果"), plate_steps(),
-          ("Each box shows the change and the result. Green: passed or merged. Amber: inside noise. Red: no-go.",
-           "每个方框写明改动和结果。绿色：通过或已合并。琥珀色：在噪声内。红色：no-go。")),
-]))
-
 s_metric = section("metric", "03", ("How InferenceX scores AgentX", "InferenceX 怎样给 AgentX 打分"), "".join([
-    P("AgentX replays recorded multi-turn agent sessions. The prompts are long. Each turn adds text to the prompt and reuses the cached prefix. Concurrency is the number of live sessions.",
-      "AgentX 回放录制的多轮 agent 会话。prompt 很长。每一轮都在 prompt 后面追加内容，并复用已缓存的前缀。并发数是同时在跑的会话数。"),
-    P("InferenceX reports three headline metrics at each concurrency:", "InferenceX 在每个并发点报告三个头条指标："),
+    P("AgentX replays recorded multi-turn agent sessions. Each turn adds text to the prompt and reuses the cached prefix. Concurrency is the number of live sessions.",
+      "AgentX 回放录制的多轮 agent 会话。每一轮都在 prompt 后面追加内容，并复用已缓存的前缀。并发数是同时在跑的会话数。"),
     UL([("Throughput: total tokens per second per GPU.", "吞吐：每张 GPU 每秒处理的总 token 数。"),
         ("Interactivity: 1 / P90 of (E2EL / OSL), in tokens per second per user. This page uses \"interactivity\" for this metric.",
          "交互性：1 / (E2EL / OSL) 的 P90，单位是每用户每秒 token。本页用“交互性”指这个指标。"),
         ("P90 E2EL: the 90th percentile of the end-to-end latency.", "P90 E2EL：端到端延迟的 90 分位。")]),
-    P("Interactivity is sensitive to TTFT, for these reasons:", "交互性对 TTFT 很敏感，原因如下："),
-    OL([("E2EL = TTFT + (OSL − 1) × ITL.", "E2EL = TTFT + (OSL − 1) × ITL。"),
-        ("For a long reply, most of E2EL is ITL. For a short reply, most of E2EL is TTFT.", "长回复的 E2EL 主要是 ITL。短回复的 E2EL 主要是 TTFT。"),
-        ("The P90 of E2EL / OSL comes from the short replies.", "E2EL / OSL 的 P90 由短回复决定。"),
-        ("Thus a faster decode changes interactivity only a little. A longer TTFT makes interactivity worse.",
-         "所以 decode 变快，交互性只改善一点。TTFT 变长，交互性就变差。")]),
+    P("Interactivity is sensitive to TTFT. E2EL = TTFT + (OSL − 1) × ITL. For a short reply, most of E2EL is TTFT, and the P90 of E2EL / OSL comes from the short replies. Thus a faster decode helps interactivity only a little, and a longer TTFT makes it worse.",
+      "交互性对 TTFT 很敏感。E2EL = TTFT + (OSL − 1) × ITL。短回复的 E2EL 主要是 TTFT，而 E2EL / OSL 的 P90 由短回复决定。所以 decode 变快，交互性只改善一点；TTFT 变长，交互性就变差。"),
     plate("II", ("TTFT share and change per output token", "TTFT 的占比和每个输出 token 的变化"), plate_anatomy(),
-          ("Concurrency 1, mean of two runs. In Test 1 the monokernel helps all requests but not the slowest 10%. In Test 2 it helps both.",
-           "c1，两次运行的平均。测试 1 中，monokernel 让全部请求变快，但最慢的 10% 没有变快。测试 2 中，两者都变快。")),
-    callout("We judge by the P90 metric, not the median, because InferenceX publishes the P90. In Test 1 the median improved, but the P90 did not.",
-            "我们按 P90 指标判断，不看中位数，因为 InferenceX 发布的是 P90。测试 1 中，中位数变好了，但 P90 没有。"),
+          ("Test 1 and Test 2 at concurrency 1, mean of two runs. With BF16 KV, the slowest 10% did not get faster.",
+           "测试 1 和测试 2，c1，两次运行的平均。使用 BF16 KV 时，最慢的 10% 没有变快。")),
 ]))
 
-b0 = {c: eff[C1].get((c, "b0-r1")) for c in (1, 2)}
-b1 = {c: eff[C1].get((c, "b1-r1")) for c in (1, 2)}
-diag_rows = [[f"c{c}", sp(*name), f"{sg(d['time_to_first_token'])}%", f"{sg(d['inter_token_latency'])}%", f"{sg(d['request_latency'])}%"]
-             for c in (1, 2) for name, d in ((("b0: BF16 KV, no monokernel", "b0：BF16 KV，不开 monokernel"), b0[c]),
-                                             (("b1: BF16 KV, monokernel 05e0bb02", "b1：BF16 KV，monokernel 05e0bb02"), b1[c])) if d]
-s_attempt = section("attempt", "04", ("Test 1: BF16 KV cache", "测试 1：BF16 KV cache"), "".join([
-    P(f"{pr(7)} added the glm53 monokernel. The monokernel runs the verify step of GLM-5.3 when one or two requests are running. In #7, the monokernel accepted only a BF16 KV cache. The SGLang cookbook cells for GLM-5.3 on MI355X also use BF16 KV. #7 listed FP8 KV as out of scope.",
-      f"{pr(7)} 加入了 glm53 monokernel。同时运行 1 到 2 个请求时，monokernel 负责 GLM-5.3 的 verify 步。在 #7 中，monokernel 只接受 BF16 KV cache。SGLang cookbook 里 GLM-5.3 在 MI355X 上的配置也用 BF16 KV。#7 把 FP8 KV 列为不在范围内。"),
-    P("The InferenceX recipe uses an FP8 E4M3 KV cache. Thus Test 1 changed the recipe to BF16 KV and added the monokernel.",
-      "InferenceX 的配方使用 FP8 E4M3 KV cache。所以测试 1 把配方改成 BF16 KV，再开启 monokernel。"),
-    P(f"Test 1 used 900-s windows. On the same requests, the monokernel changed ITL by {rng(pv[C1]['inter_token_latency'])} and E2EL by {rng(pv[C1]['request_latency'])}. But TTFT changed by {rng(pv[C1]['time_to_first_token'])}.",
-      f"测试 1 使用 900 秒窗口。在同一批请求上，monokernel 让 ITL 变化 {zrng(pv[C1]['inter_token_latency'])}，E2EL 变化 {zrng(pv[C1]['request_latency'])}。但 TTFT 变化了 {zrng(pv[C1]['time_to_first_token'])}。"),
-    P(f"For the slowest 10% of requests, E2EL per output token changed by {rng(tv[C1], 1)}. Interactivity did not improve. The decision rule gave no-go.",
-      f"对最慢的 10% 请求，每个输出 token 的 E2EL 变化 {zrng(tv[C1], 1)}。交互性没有改善。判定规则给出 no-go。"),
-    P("Two extra groups isolated the cause:", "另外两组用来找出原因："),
-    UL([("b0 uses BF16 KV without the monokernel. TTFT also increased. Thus BF16 KV causes the TTFT increase.",
-         "b0 使用 BF16 KV，不开 monokernel。TTFT 同样变长。所以 TTFT 变长是 BF16 KV 造成的。"),
-        (f"b1 uses BF16 KV with the monokernel version in the image (05e0bb02). The gain was small. That version does not include {pr(24)} and {pr(42)}.",
-         f"b1 使用 BF16 KV 和镜像自带的 monokernel 版本（05e0bb02）。收益很小。这个版本不包含 {pr(24)} 和 {pr(42)}。")]),
-    table([("Concurrency", "并发"), ("Group", "组"), ("TTFT", "TTFT"), ("ITL", "ITL"), ("E2EL", "E2EL")], diag_rows),
-]))
-
-prof_rows = [
-    [sp("TTFT, median of 8", "TTFT，8 次的中位数"), f"{pb['ttft_median_ms']:.0f} ms", f"{pz['ttft_median_ms']:.0f} ms", f"{sg(ttft_up, 0)}%"],
-    [sp(f"All GPU kernels ({pb['kernel_launches']} launches)", f"全部 GPU kernel（{pb['kernel_launches']} 次 launch）"), f"{pb['kernel_total_ms']:.1f} ms", f"{pz['kernel_total_ms']:.1f} ms", f"{sg(pz['kernel_total_ms'] - pb['kernel_total_ms'])} ms"],
-    [sp("TileLang <code>main_kernel</code>, 2 per layer", "TileLang <code>main_kernel</code>，每层 2 次"), f"{pb['tilelang_main_kernel_ms']:.1f} ms", f"{pz['tilelang_main_kernel_ms']:.1f} ms", f"{sg(pz['tilelang_main_kernel_ms'] - pb['tilelang_main_kernel_ms'])} ms"],
-    [sp("Its grid-2080 launch, per layer", "其中 grid 2080 的 launch，每层"), f"{pb['grid2080_per_layer_us_median']:.0f} µs", f"{pz['grid2080_per_layer_us_median']:.0f} µs", f"×{k_ratio:.2f}"],
-    [sp("Its grid-4160 launch, per layer", "其中 grid 4160 的 launch，每层"), f"{pb['grid4160_per_layer_us_median']:.1f} µs", f"{pz['grid4160_per_layer_us_median']:.1f} µs", sp("no change", "不变")],
+pr_rows = [
+    [pr(7), "10-18", sp("adds the decode monokernel", "加入 decode monokernel"),
+     sp("TPOT 11.24 → 5.60 ms, TP8, 1 request, 8192 in / 256 out, no MTP", "TPOT 11.24 → 5.60 ms，TP8，单请求，8192 输入 / 256 输出，不开 MTP")],
+    [pr(15), "10-22", sp("serves MTP verify steps; fixes 3 defects", "运行 MTP verify 步；修复 3 个缺陷"),
+     sp("verify step 13.56 → 8.35 ms, 1 request, 4096-token prompts", "verify 步 13.56 → 8.35 ms，单请求，4096 token 的 prompt")],
+    [pr(24), "10-25", sp("selects a long row's top-k on up to 16 CTAs", "长行的 top-k 分给最多 16 个 CTA 选"),
+     sp(f"selection at 256k keys, 1 row: {T24[('256k', 1)]['selection_us_before']:.0f} → {T24[('256k', 1)]['selection_us_after']:.0f} µs",
+        f"256k key、1 行时，选择阶段 {T24[('256k', 1)]['selection_us_before']:.0f} → {T24[('256k', 1)]['selection_us_after']:.0f} µs")],
+    [pr(42), "10-25", sp("scores 16 keys per wave over 32 heads", "每个 wave 为 32 个 head 给 16 个 key 打分"),
+     sp(f"score stage at 256k keys, 1 row: {T42[('256k', 1)]['score_us_before']:.0f} → {T42[('256k', 1)]['score_us_after']:.0f} µs",
+        f"256k key、1 行时，打分阶段 {T42[('256k', 1)]['score_us_before']:.0f} → {T42[('256k', 1)]['score_us_after']:.0f} µs")],
+    [pr(60), "10-26", sp("reads and writes SGLang's FP8 E4M3 MLA cache", "读写 SGLang 的 FP8 E4M3 MLA cache"),
+     sp("TTFT stays at the recipe's value (section 07)", "TTFT 保持在配方的水平（第 07 节）")],
+    [f"{pr(11)} {pr(12)} {pr(25)}", "10-18 – 10-22", sp("common code and the SGLang interface", "公共代码和 SGLang 接口"), sp("no GLM-5.3 speed change measured", "没有测到 GLM-5.3 的速度变化")],
+    [pr(55), "10-25", sp("test settings only", "只改测试设置"), "-"],
 ]
-s_cause = section("cause", "05", ("Root cause", "根因"), "".join([
-    P("We profiled one prefill that is similar to an AgentX request. It has about 100k cached tokens and 2048 new tokens. We used TP8 and the GPU trace of rank 0. The base group uses FP8 E4M3 KV. The b0 group uses BF16 KV. Neither group uses the monokernel.",
-      "我们 profile 了一次和 AgentX 请求相似的 prefill。它有约 10 万个已缓存 token 和 2048 个新 token。我们用 TP8，取 rank 0 的 GPU trace。base 组使用 FP8 E4M3 KV，b0 组使用 BF16 KV。两组都不开 monokernel。"),
-    table([("", ""), ("FP8 E4M3 KV", "FP8 E4M3 KV"), ("BF16 KV", "BF16 KV"), ("Change", "变化")], prof_rows),
-    P(f"One kernel causes the increase. The other kernels change by {other_delta:.1f} ms in total.",
-      f"变慢来自一个 kernel。其他 kernel 合计只变化 {other_delta:.1f} ms。"),
-    P(f"The grid of this kernel (2080) matches the DSA sparse attention of prefill. We did not confirm this in the source code. For each new token, this kernel reads 2048 selected KV rows. A KV row has 576 bytes in FP8 and 1152 bytes in BF16. If the reads limit the kernel, BF16 doubles its time. The trace shows ×{k_ratio:.2f}.",
-      f"这个 kernel 的 grid（2080）和 prefill 的 DSA 稀疏 attention 相符。我们没有在源码中确认这一点。对每个新 token，这个 kernel 读取 2048 行选中的 KV。一行 KV 在 FP8 下是 576 字节，在 BF16 下是 1152 字节。如果读取是瓶颈，BF16 会让它的时间翻倍。trace 显示的是 ×{k_ratio:.2f}。"),
-    plate("III", ("Prefill time with FP8 and BF16 KV", "FP8 和 BF16 KV 下的 prefill 时间"), plate_rootcause(),
-          ("With BF16 KV, the TileLang kernel takes about 2× longer. The other kernels do not change.",
-           "使用 BF16 KV 时，TileLang kernel 的时间约为 2 倍。其他 kernel 不变。")),
-    callout("We did not keep BF16 KV and optimize this kernel, for three reasons. The kernel is part of the SGLang DSA backend, not the monokernel. The recipe already uses FP8 KV. FP8 also halves the bytes of all other DSA reads.",
-            "我们没有保留 BF16 KV 去优化这个 kernel，原因有三点。这个 kernel 属于 SGLang 的 DSA 后端，不属于 monokernel。配方本来就使用 FP8 KV。FP8 还让其他所有 DSA 读取的字节数减半。"),
+s_prs = section("prs", "04", ("The PR series", "PR 系列"), "".join([
+    P("Five PRs changed the GLM-5.3 path. Each PR measured its own change in its description. Those tests used short prompts or kernel timelines, not the AgentX workload.",
+      "五个 PR 改动了 GLM-5.3 的路径。每个 PR 都在正文里测量了自己的改动。那些测试用的是短 prompt 或 kernel timeline，不是 AgentX 负载。"),
+    plate("III", ("Merged PRs and other work", "已合并的 PR 和其他工作"), plate_timeline(),
+          ("Raspberry: GLM-5.3 PRs. Gray: common code, an open PR (#19), and a closed PR (#18).",
+           "覆盆子红：GLM-5.3 的 PR。灰色：公共代码、未合并的 PR（#19）和已关闭的 PR（#18）。")),
+    table([("PR", "PR"), ("Merged", "合并"), ("Change", "改动"), ("Measured in the PR", "PR 自己的测量")], pr_rows),
+]))
+
+s_long = section("longctx", "05", ("Why long contexts were slow", "长上下文为什么慢"), "".join([
+    P(f"The PRs measured each stage with a debug build. At 256k keys and one row, the exact top-2048 selection took {T24[('256k', 1)]['selection_us_before']:.0f} µs on one CTA. The other CTAs of the launch waited for it. A launch without the indexer took about 54 µs at all contexts.",
+      f"这些 PR 用 debug 版本测量了每个阶段。256k key、1 行时，精确的 top-2048 选择在一个 CTA 上要 {T24[('256k', 1)]['selection_us_before']:.0f} µs。这次 launch 的其他 CTA 都在等它。不带 indexer 的 launch 在任何上下文下都约 54 µs。"),
+    UL([
+        ("#24 splits the selection of a row longer than 32768 keys over up to 16 CTAs. Each CTA builds a histogram of its chunks. One CTA finds the threshold. Each CTA then gathers its candidates. The result is still the exact top-2048.",
+         "#24 把超过 32768 个 key 的行分给最多 16 个 CTA 来选。每个 CTA 给自己的分块建直方图。一个 CTA 找出阈值。然后每个 CTA 收集自己的候选。结果仍然是精确的 top-2048。"),
+        ("#42 changes the score stage. Before, two waves read each key and added their results through LDS with two barriers. Each tile also waited for two memory round trips. Now one wave scores a group of 16 keys over all 32 heads, and the reads of the next groups are in flight.",
+         "#42 改了打分阶段。原来每个 key 被两个 wave 读取，两者再经过 LDS 和两次 barrier 相加。每个 tile 还要等两次内存往返。现在一个 wave 为全部 32 个 head 给一组 16 个 key 打分，后面几组的读取提前发出。"),
+    ]),
+    plate("IV", ("Estimated step time by context", "不同上下文下的预估单步时间"), plate_longctx(),
+          ("From the kernel timelines of #24 and #42 (debug builds, decode steps). At 8k keys the builds are equal.",
+           "数据来自 #24 和 #42 的 kernel timeline（debug 版本，decode 步）。8k key 时，三个版本一样快。")),
+    P(f"At 256k keys and one row, the estimated step falls from {T24[('256k', 1)]['step_before_ms']:.2f} ms (#15) to {T24[('256k', 1)]['step_after_ms']:.2f} ms (#24) and {T42[('256k', 1)]['step_after_ms']:.2f} ms (#42). At four rows, it falls from {T24[('256k', 4)]['step_before_ms']:.2f} ms to {T24[('256k', 4)]['step_after_ms']:.2f} ms and {T42[('256k', 4)]['step_after_ms']:.2f} ms.",
+      f"256k key、1 行时，预估单步时间从 {T24[('256k', 1)]['step_before_ms']:.2f} ms（#15）降到 {T24[('256k', 1)]['step_after_ms']:.2f} ms（#24），再降到 {T42[('256k', 1)]['step_after_ms']:.2f} ms（#42）。4 行时，从 {T24[('256k', 4)]['step_before_ms']:.2f} ms 降到 {T24[('256k', 4)]['step_after_ms']:.2f} ms，再降到 {T42[('256k', 4)]['step_after_ms']:.2f} ms。"),
+]))
+
+bf16_rows = []
+for s in LADDER_STEPS["bf16"]:
+    for c in (1, 2, 4):
+        bf16_rows.append([s, f"c{c}", f"{sg(ladder_eff('bf16', s, c, 'time_to_first_token'))}%", f"{sg(ladder_eff('bf16', s, c, 'inter_token_latency'))}%",
+                          f"{sg(ladder_eff('bf16', s, c, 'request_latency'))}%", f"{sg(ladder_head('bf16', s, c, 'tput_gpu'))}%", f"{sg(ladder_head('bf16', s, c, 'e2e_int_p90'))}%"])
+s_bf16 = section("ablation-bf16", "06", ("Ablation 1: the PR ladder with BF16 KV", "Ablation 1：BF16 KV 下的 PR 阶梯"), "".join([
+    P("The PR campaign ran each PR on AgentX for 3600 s. Both groups used a BF16 KV cache, because the monokernel accepted only BF16 KV before #60. Setup: image 20261019, SGLang e45cbce599, simulated accept length 2.99.",
+      "PR 开发期间，每个 PR 都在 AgentX 上跑了 3600 秒。两组都用 BF16 KV cache，因为 #60 之前 monokernel 只接受 BF16 KV。环境：镜像 20261019，SGLang e45cbce599，模拟接受长度 2.99。"),
+    plate("V", ("ITL with BF16 KV, cumulative", "BF16 KV 下的 ITL，累积"), plate_ladder("bf16"),
+          ("Each bar includes the PRs above it. The base is the normal path with MTP and BF16 KV.", "每根柱子都包含它上面的 PR。base 是开 MTP、BF16 KV 的 normal path。")),
+    table([("Up to", "累积到"), ("Concurrency", "并发"), ("TTFT", "TTFT"), ("ITL", "ITL"), ("E2EL", "E2EL"), ("Throughput", "吞吐"), ("Interactivity", "交互性")], bf16_rows),
+    UL([
+        (f"#15 alone does not reduce ITL at concurrency 1 ({sg(ladder_eff('bf16', '#15', 1, 'inter_token_latency'))}%). At concurrency 4, ITL is worse ({sg(ladder_eff('bf16', '#15', 4, 'inter_token_latency'))}%). Throughput is 1% to 3% lower.",
+         f"只有 #15 时，c1 的 ITL 没有降低（{sg(ladder_eff('bf16', '#15', 1, 'inter_token_latency'))}%）。c4 的 ITL 反而变差（{sg(ladder_eff('bf16', '#15', 4, 'inter_token_latency'))}%）。吞吐低 1% 到 3%。"),
+        (f"With #24, ITL decreases by {prng([abs(ladder_eff('bf16', '#24', c, 'inter_token_latency')) for c in (1, 2, 4)])}.",
+         f"加上 #24 后，ITL 降低 {prng([abs(ladder_eff('bf16', '#24', c, 'inter_token_latency')) for c in (1, 2, 4)], True)}。"),
+        (f"With #42, ITL decreases by {prng([abs(ladder_eff('bf16', '#42', c, 'inter_token_latency')) for c in (1, 2, 4)])}, about twice the effect of #24 alone.",
+         f"再加上 #42 后，ITL 降低 {prng([abs(ladder_eff('bf16', '#42', c, 'inter_token_latency')) for c in (1, 2, 4)], True)}，大约是只有 #24 时的两倍。"),
+        ("TTFT does not change in this ladder, because both groups use BF16 KV.", "这个阶梯里 TTFT 不变，因为两组都用 BF16 KV。"),
+    ]),
+    callout("The short-prompt test of #15 showed a 38.5% faster verify step. On AgentX at concurrency 1, #15 alone gave no net gain. A kernel test must use the context lengths of the target workload.",
+            "#15 在短 prompt 测试中，verify 步快了 38.5%。可是在 AgentX 的 c1 上，只有 #15 时没有净收益。kernel 测试必须使用目标负载的上下文长度。"),
 ]))
 
 e2e_rows = []
-for rid, en, zh_ in (("e2e-glm53-fp8kv-verify-check", "FP8 verify check (new test)", "FP8 verify check（新测试）"),
-                     ("e2e-glm53-fp8kv-decode-check-local", "FP8 decode check", "FP8 decode check"),
-                     ("e2e-glm53-bf16-verify-check", "BF16 verify check (regression)", "BF16 verify check（回归）"),
+for rid, en, zh_ in (("e2e-glm53-fp8kv-verify-check", "F3 (main): FP8 verify check", "F3（main）：FP8 verify check"),
+                     ("e2e-glm53-abl-f1-fp8-verify", "F1: FP8 verify check", "F1：FP8 verify check"),
+                     ("e2e-glm53-abl-f2-fp8-verify", "F2: FP8 verify check", "F2：FP8 verify check"),
+                     ("e2e-glm53-bf16-verify-check", "F3: BF16 verify check (regression)", "F3：BF16 verify check（回归）"),
                      ("e2e-glm53-fp8kv-neg-verify-check", "Negative control: latent bytes swapped", "负对照：交换 latent 的字节")):
     v = e2e[rid]
     kv, stv = e2ec(rid), e2ec(rid, "layer.streams.cosine")
     state = sp("fails, as expected", "按预期失败") if v["tests_failed"] else sp("passes", "通过")
     e2e_rows.append([sp(en, zh_), state, str(kv["checks"]), f"{kv['min']:.5f}", "-" if not stv else f"{stv['min']:.5f}", str(v["violation_lines"])])
-s_fix = section("fix", "06", ("Fix: use the FP8 KV cache", "修复：使用 FP8 KV cache"), "".join([
-    P("The monokernel already had an FP8 path. It uses the ATOM layout, which stores FP8 KV as E4M3 values without block scales. The SGLang DSA backend on HIP uses the same format.",
-      "monokernel 本来就有 FP8 路径。它使用 ATOM 布局，用不带分块 scale 的 E4M3 值存储 FP8 KV。SGLang 在 HIP 上的 DSA 后端使用同样的格式。"),
-    P("Each row has 576 bytes: 512 latent values and 64 rope values. SGLang stores the rows as <code>uint8</code> and reads them as <code>float8_e4m3fn</code>. Both SGLang and the monokernel round a value to BF16 first and then convert it to E4M3.",
-      "每行 576 字节：512 个 latent 值和 64 个 rope 值。SGLang 用 <code>uint8</code> 存储这些行，用 <code>float8_e4m3fn</code> 读取。SGLang 和 monokernel 都先把值舍入到 BF16，再转成 E4M3。"),
-    P(f"Thus {pr(60)} changed only the integration code:", f"所以 {pr(60)} 只改了集成代码："),
-    UL([("The spec accepts <code>fp8_e4m3</code>.", "spec 接受 <code>fp8_e4m3</code>。"),
-        ("The build selects the FP8 version of the monokernel.", "构建时选择 FP8 版本的 monokernel。"),
-        ("The runtime checks the dtype and the 576-byte row stride. Then it binds the SGLang KV rows.", "runtime 检查 dtype 和 576 字节的行步长，然后绑定 SGLang 的 KV 行。")]),
-    P(f"#60 merged as {a(f'{GH}/sgl-project/sgl-amd-mono/commit/0a107f15362714c45be34ca37e4dec286fa3d303', '<code>0a107f1</code>')} on 2026-10-26. The kernel code did not change.",
-      f"#60 于 2026-10-26 合并，提交是 {a(f'{GH}/sgl-project/sgl-amd-mono/commit/0a107f15362714c45be34ca37e4dec286fa3d303', '<code>0a107f1</code>')}。kernel 代码没有改动。"),
-    plate("IV", ("One KV cache, two users", "同一个 KV cache，两个使用方"), plate_datapath(),
-          ("SGLang and the monokernel read and write the same rows in the same format. Thus each step can use either path.",
-           "SGLang 和 monokernel 用同样的格式读写同样的行。所以每一步都可以走任意一条路径。")),
-    P("The e2e checks run SGLang and the monokernel on the same steps. They compare the KV output and the stream output of each layer by cosine similarity.",
-      "e2e check 让 SGLang 和 monokernel 跑同样的步。它们逐层比较 KV 输出和 stream 输出的 cosine 相似度。"),
-    P("A negative control shows that the checks can fail. We swap the E4M3 byte pairs of the latent. Then the minimum KV cosine is 0.095, and the check reports 1189 violations.",
-      "负对照证明这些检查能够失败。我们交换 latent 中两两相邻的 E4M3 字节。这时 KV cosine 的最小值是 0.095，检查报告 1189 次违例。"),
+s_gap = section("baseline", "07", ("The baseline gap and #60", "对照组的差距与 #60"), "".join([
+    P("The InferenceX recipe uses an FP8 E4M3 KV cache. The PR campaign compared against a BF16 baseline. Thus its gains did not show what the monokernel adds to the real recipe.",
+      "InferenceX 的配方使用 FP8 E4M3 KV cache。PR 开发期间的对照组用的是 BF16。所以那些收益不能说明 monokernel 给正式配方带来了多少。"),
+    plate("VI", ("Tests on the real recipe", "在正式配方上的测试"), plate_steps(),
+          ("Each box shows the change and the result. Green: passed or merged. Amber: inside noise. Red: no-go.",
+           "每个方框写明改动和结果。绿色：通过或已合并。琥珀色：在噪声内。红色：no-go。")),
+    P(f"Test 1 compared the monokernel with all PRs up to #42 (BF16 KV) against the recipe (FP8 KV), at 900 s. On the same requests, ITL changed by {rng(pv[C1]['inter_token_latency'])}, but TTFT changed by {rng(pv[C1]['time_to_first_token'])}. Interactivity did not improve. The decision rule gave no-go.",
+      f"测试 1 用包含 #42 及以前所有 PR 的 monokernel（BF16 KV），和配方（FP8 KV）比较，窗口 900 秒。在同一批请求上，ITL 变化 {zrng(pv[C1]['inter_token_latency'])}，但 TTFT 变化 {zrng(pv[C1]['time_to_first_token'])}。交互性没有改善，判定规则给出 no-go。"),
+    P(f"BF16 KV alone causes the TTFT cost. Without the monokernel, BF16 KV changed TTFT by {sg(b0c[1])}% at concurrency 1 and by {sg(b0c[2])}% at concurrency 2.",
+      f"TTFT 的代价来自 BF16 KV 本身。不开 monokernel 时，BF16 KV 让 c1 的 TTFT 变化 {sg(b0c[1])}%，c2 变化 {sg(b0c[2])}%。"),
+    P(f"A prefill profile found the cause. With BF16 KV, one TileLang kernel of the DSA prefill takes ×{k_ratio:.2f} its FP8 time, and TTFT increases by {ttft_up}%. By its grid, this kernel is the sparse attention, which reads 1152 bytes per KV row in BF16 and 576 in FP8. We did not confirm the kernel identity in the source.",
+      f"一次 prefill profile 找到了原因。使用 BF16 KV 时，DSA prefill 里的一个 TileLang kernel 耗时是 FP8 下的 ×{k_ratio:.2f}，TTFT 增加 {ttft_up}%。按 grid 判断，这个 kernel 是稀疏 attention：BF16 下每行 KV 读 1152 字节，FP8 下读 576 字节。我们没有在源码中确认这个 kernel 的身份。"),
+    plate("VII", ("Prefill time with FP8 and BF16 KV", "FP8 和 BF16 KV 下的 prefill 时间"), plate_rootcause(),
+          ("With BF16 KV, the TileLang kernel takes about 2× longer. The other kernels do not change.",
+           "使用 BF16 KV 时，TileLang kernel 的时间约为 2 倍。其他 kernel 不变。")),
+    P(f"{pr(60)} let the monokernel use the FP8 cache of the recipe. The monokernel already had an FP8 path in the same format as SGLang: 576-byte E4M3 rows without block scales. #60 changed only the integration: the spec, the build, and the binding of the KV rows.",
+      f"{pr(60)} 让 monokernel 使用配方的 FP8 cache。monokernel 本来就有 FP8 路径，格式和 SGLang 相同：每行 576 字节的 E4M3，没有分块 scale。#60 只改了集成部分：spec、构建，以及 KV 行的绑定。"),
+    plate("VIII", ("One KV cache, two users", "同一个 KV cache，两个使用方"), plate_datapath(),
+          ("SGLang and the monokernel read and write the same rows in the same format.", "SGLang 和 monokernel 用同样的格式读写同样的行。")),
+    P("The e2e checks run SGLang and the monokernel on the same steps and compare each layer by cosine similarity. The negative control shows that the checks can fail. F1 and F2 are the ablation builds of section 08.",
+      "e2e check 让 SGLang 和 monokernel 跑同样的步，逐层比较 cosine 相似度。负对照证明这些检查能够失败。F1 和 F2 是第 08 节的 ablation 版本。"),
     table([("Check", "检查"), ("Result", "结果"), ("Checks", "次数"), ("Min KV cosine", "KV cosine 最小值"), ("Min stream cosine", "stream cosine 最小值"), ("Violations", "违例")], e2e_rows),
-    callout("The monokernel does not quantize the cache with its own block scales. Reason: SGLang owns the cache. The monokernel must use the same rows as the SGLang prefill and decode. Otherwise the two paths give different results.",
-            "monokernel 不用自己的分块 scale 量化 cache。原因：cache 归 SGLang 管理。monokernel 必须和 SGLang 的 prefill、decode 使用同样的行。否则两条路径的结果会不同。"),
+    P(f"Test 2 repeated the 900-s tests with #60. ITL changed by {rng(pv[C2]['inter_token_latency'])}, and TTFT by {rng(pv[C2]['time_to_first_token'])}. But the A/A noise of interactivity in 900 s was {100 * noise2['e2e_int_p90']:.0f}%. Test 3 used the 3600-s window, where the A/A noise was {100 * noise3['e2e_int_p90']:.1f}% (section 10).",
+      f"测试 2 用 #60 重做 900 秒测试。ITL 变化 {zrng(pv[C2]['inter_token_latency'])}，TTFT 变化 {zrng(pv[C2]['time_to_first_token'])}。但 900 秒内交互性的 A/A 噪声有 {100 * noise2['e2e_int_p90']:.0f}%。测试 3 改用 3600 秒窗口，A/A 噪声降到 {100 * noise3['e2e_int_p90']:.1f}%（第 10 节）。"),
 ]))
 
-s_score = section("score", "07", ("Tests 2 and 3: FP8 KV cache", "测试 2 和 3：FP8 KV cache"), "".join([
-    P(f"Test 2 repeated the 900-s tests with #60. On the same requests, ITL changed by {rng(pv[C2]['inter_token_latency'])} and E2EL by {rng(pv[C2]['request_latency'])}. TTFT changed by {rng(pv[C2]['time_to_first_token'])}. For the slowest 10% of requests, E2EL per output token changed by {rng(tv[C2], 1)}.",
-      f"测试 2 用 #60 重做 900 秒测试。在同一批请求上，ITL 变化 {zrng(pv[C2]['inter_token_latency'])}，E2EL 变化 {zrng(pv[C2]['request_latency'])}。TTFT 变化 {zrng(pv[C2]['time_to_first_token'])}。对最慢的 10% 请求，每个输出 token 的 E2EL 变化 {zrng(tv[C2], 1)}。"),
-    P(f"But in a 900-s window, the A/A noise of interactivity was {100 * noise2['e2e_int_p90']:.0f}% ({100 * noise1['e2e_int_p90']:.0f}% in Test 1). The second run at concurrency 2 was inside this noise. Thus the decision rule gave no-go again. The 900-s window was too short to measure a P90 reliably.",
-      f"但在 900 秒窗口中，交互性的 A/A 噪声是 {100 * noise2['e2e_int_p90']:.0f}%（测试 1 中是 {100 * noise1['e2e_int_p90']:.0f}%）。c2 的第二次运行落在噪声内。所以判定规则又给出 no-go。900 秒窗口太短，不能可靠地测量 P90。"),
-    P(f"Test 3 used the 3600-s window of InferenceX at concurrency 1, 2, 4, and 10. Each point used a new server. An A/A pair at concurrency 2 measured the noise: {100 * noise3['e2e_int_p90']:.1f}% for interactivity.",
-      f"测试 3 使用 InferenceX 的 3600 秒窗口，并发为 1、2、4、10。每个点都用新的服务器。c2 的一组 A/A 测量噪声：交互性的噪声是 {100 * noise3['e2e_int_p90']:.1f}%。"),
-    P("All nine runs were valid:", "九次运行全部有效："),
-    UL([("Each run completed the full 3600-s window.", "每次运行都跑满 3600 秒。"),
-        ("Failed and cancelled requests were far below 10%.", "失败和取消的请求远低于 10%。"),
-        ("The InferenceX validator passed.", "InferenceX 的 validator 通过。"),
-        ("The measured accept length was 2.990. The InferenceX target is 2.99.", "实测的接受长度是 2.990。InferenceX 的目标值是 2.99。")]),
-    plate("V", ("Throughput and interactivity at 3600 s", "3600 秒的吞吐和交互性"), plate_score(),
-          ("Each arrow goes from the base group to the monokernel group at one concurrency. Hollow points are published InferenceX results.",
-           "每个箭头从某个并发点的 base 组指向 monokernel 组。空心点是 InferenceX 已发布的结果。")),
-    P(f"InferenceX Check 14 recommends at least five Pareto-frontier points for each curve (throughput against P90 E2EL). Our four points give {par['baseline']['frontierPoints']} frontier points without the monokernel and {par['candidate']['frontierPoints']} with it.",
-      f"InferenceX 的 Check 14 建议每条曲线至少有 5 个 Pareto 前沿点（吞吐对 P90 E2EL）。我们的 4 个点里，不开 monokernel 有 {par['baseline']['frontierPoints']} 个前沿点，开了有 {par['candidate']['frontierPoints']} 个。"),
-    P("The reason: AgentX P90 E2EL does not increase with concurrency. At concurrency 4, P90 E2EL is lower than at 1 and 2, and throughput is higher. Thus concurrency 4 dominates concurrency 1 and 2.",
-      "原因：AgentX 的 P90 E2EL 不随并发单调增加。c4 的 P90 E2EL 比 c1、c2 低，吞吐又更高。所以 c4 支配 c1 和 c2。"),
+fp8_rows = []
+for s in LADDER_STEPS["fp8"]:
+    for c in (1, 2, 4):
+        runs_ = ladder_runs("fp8", s, c)
+        if not runs_:
+            fp8_rows.append([s, f"c{c}", *[sp(*pend)] * 4])
+            continue
+        fp8_rows.append([s, f"c{c}", f"{sg(ladder_eff('fp8', s, c, 'time_to_first_token'))}%", f"{sg(ladder_eff('fp8', s, c, 'inter_token_latency'))}%",
+                         f"{sg(ladder_eff('fp8', s, c, 'request_latency'))}%", f"{100 * sum(e['coverage'] for e in runs_) / len(runs_):.0f}%"])
+fp8_find = []
+if fp8_ready:
+    f1 = [ladder_eff("fp8", "F1", c, "inter_token_latency") for c in (1, 2, 4)]
+    f2 = [ladder_eff("fp8", "F2", c, "inter_token_latency") for c in (1, 2, 4)]
+    f3 = [ladder_eff("fp8", "F3", c, "inter_token_latency") for c in (1, 2, 4)]
+    ttft_fp8 = math.ceil(max(abs(e["time_to_first_token"]) for e in abl["fp8"]["effects"] if e["step"] in LADDER_STEPS["fp8"]))
+    fp8_find = [
+        (f"F1 (#7, #15) changes ITL by {' / '.join(f'{sg(v)}%' for v in f1)} at concurrency 1, 2, and 4.",
+         f"F1（#7、#15）让 c1、c2、c4 的 ITL 分别变化 {' / '.join(f'{sg(v)}%' for v in f1)}。"),
+        (f"F2 (+ #24) changes ITL by {' / '.join(f'{sg(v)}%' for v in f2)}.", f"F2（+ #24）让 ITL 分别变化 {' / '.join(f'{sg(v)}%' for v in f2)}。"),
+        (f"F3 (+ #42) changes ITL by {' / '.join(f'{sg(v)}%' for v in f3)}.", f"F3（+ #42）让 ITL 分别变化 {' / '.join(f'{sg(v)}%' for v in f3)}。"),
+        (f"TTFT stays within {ttft_fp8}% in every build, because all builds use the FP8 cache of the recipe.",
+         f"每个版本的 TTFT 变化都在 {ttft_fp8}% 以内，因为所有版本都使用配方的 FP8 cache。"),
+        (f"At concurrency 1, F1 and #15 of the BF16 ladder differ: {sg(ladder_eff('fp8', 'F1', 1, 'inter_token_latency'))}% against {sg(ladder_eff('bf16', '#15', 1, 'inter_token_latency'))}%. Section 09 explains this difference.",
+         f"在 c1，F1 和 BF16 阶梯的 #15 结果不同：{sg(ladder_eff('fp8', 'F1', 1, 'inter_token_latency'))}% 对 {sg(ladder_eff('bf16', '#15', 1, 'inter_token_latency'))}%。第 09 节解释了这个差别。"),
+    ]
+    if drift:
+        fp8_find.append((f"Drift check: a new base run at concurrency 2 differs from the old base runs by {sg(drift['inter_token_latency'])}% in ITL and {sg(drift['time_to_first_token'])}% in TTFT.",
+                         f"漂移检查：c2 新跑的 base 和以前的 base 相比，ITL 差 {sg(drift['inter_token_latency'])}%，TTFT 差 {sg(drift['time_to_first_token'])}%。"))
+s_fp8 = section("ablation-fp8", "08", ("Ablation 2: the PR ladder with FP8 KV", "Ablation 2：FP8 KV 下的 PR 阶梯"), "".join([
+    P("To measure each PR on the real recipe, we cherry-picked #60 onto two older commits. F1 is 05e0bb02 (#7, #15) plus #60. F2 is 240d587 (#7, #15, #24) plus #60. F3 is main (all five PRs). Each build passed the FP8 layer check with 0 violations (section 07).",
+      "为了在正式配方上测量每个 PR，我们把 #60 cherry-pick 到两个更早的提交上。F1 是 05e0bb02（#7、#15）加 #60。F2 是 240d587（#7、#15、#24）加 #60。F3 是 main（全部五个 PR）。每个版本都通过了 FP8 逐层检查，违例为 0（第 07 节）。"),
+    P("Each point ran for 900 s on a new server, at concurrency 1, 2, and 4. We compare the same requests against the two base runs of Test 2. For F3 we use the two monokernel runs of Test 2.",
+      "每个点用新的服务器跑 900 秒，并发为 1、2、4。我们把同一批请求和测试 2 的两次 base 运行比较。F3 使用测试 2 里 monokernel 组的两次运行。"),
+    plate("IX", ("ITL with FP8 KV, cumulative", "FP8 KV 下的 ITL，累积"), plate_ladder("fp8"),
+          ("Each bar includes the PRs above it. The base is the recipe without the monokernel.", "每根柱子都包含它上面的 PR。base 是不开 monokernel 的配方。")),
+    table([("Build", "版本"), ("Concurrency", "并发"), ("TTFT", "TTFT"), ("ITL", "ITL"), ("E2EL", "E2EL"), ("Coverage", "覆盖率")], fp8_rows),
+    UL(fp8_find) if fp8_find else P("The 900-s runs are in progress.", "900 秒的运行还在进行中。"),
+    P(f"We use the paired metrics here. In 900-s windows, the A/A noise of the headline interactivity is {100 * noise2['e2e_int_p90']:.0f}%, too high for this comparison.",
+      f"这里用的是配对指标。900 秒窗口下，头条交互性的 A/A 噪声有 {100 * noise2['e2e_int_p90']:.0f}%，太大，不适合这种比较。", "small"),
 ]))
 
-gain_rows = [[f"c{c}", str(eff[C3][(c, 'cand8-r1')]["requests"]), f"{sg(ttft3[c])}%", f"{sg(itl3[c])}%", f"{sg(e2el3[c])}%",
-              f"{sg(tail[C3][(c, 'cand8-r1', 'slowest 10%')]['e2el_per_token'])}%", f"{100 * share[c]:.0f}%"] for c in CONCS]
-s_gain = section("gain", "08", ("Source of the gain", "收益来源"), "".join([
-    P("We compared the same requests across runs. A pair has the same conversation and turn, and the input lengths differ by 8 tokens or less. For each metric, we took the median log change against the base group.",
-      "我们在不同运行之间比较同一批请求。一对请求属于同一个会话和同一轮，输入长度相差不超过 8 个 token。对每个指标，我们取相对 base 组的对数变化中位数。"),
-    P("Coverage is the share of decode steps with one or two running requests. We read it from the server log. The monokernel runs only these steps.",
-      "覆盖率是同时运行 1 到 2 个请求的 decode 步所占的比例。我们从服务器日志中读取。monokernel 只运行这些步。"),
-    table([("Concurrency", "并发"), ("Pairs", "配对数"), ("TTFT", "TTFT"), ("ITL", "ITL"), ("E2EL", "E2EL"), ("Slowest 10%, E2EL per token", "最慢 10%，每 token E2EL"), ("Coverage", "覆盖率")], gain_rows),
-    plate("VI", ("Coverage and gain", "覆盖率和收益"), plate_gain(),
+pct = lambda vals: [f"{sg(v)}%" if v is not None else "-" for v in vals]  # noqa: E731
+ctx_rows = []
+for b_s, f_s in zip(LADDER_STEPS["bf16"], LADDER_STEPS["fp8"]):
+    ctx_rows.append([sp(f"{'' if b_s == '#15' else '+ '}{b_s}, BF16", f"{'' if b_s == '#15' else '+ '}{b_s}，BF16"), *pct(isl_v("bf16", b_s))])
+    ctx_rows.append([sp(f"{f_s}, FP8", f"{f_s}，FP8"), *pct(isl_v("fp8", f_s))])
+ctx_rows.append([sp("Requests, BF16", "请求数，BF16"), *map(str, isl_n("bf16", "#15"))])
+ctx_rows.append([sp("Requests, FP8", "请求数，FP8"), *map(str, isl_n("fp8", "F1"))])
+big = [i for i, n in enumerate(isl_n("fp8", "F1")) if n >= 30]
+gap_pts = [isl_v("fp8", f)[i] - isl_v("bf16", b)[i] for b, f in zip(LADDER_STEPS["bf16"], LADDER_STEPS["fp8"]) for i in big]
+assert all(d > 0 for d in gap_pts), "the FP8 ladder is no longer less favorable in every large bin"
+cov_min = min(e["coverage"] for lad in ("bf16", "fp8") for e in abl[lad]["effects"] if e["conc"] in (1, 2) and e["coverage"] is not None)
+below = lambda lad, s: [abs(v) for v in isl_v(lad, s)[:3]]  # noqa: E731
+b15c1, f1c1 = ladder_eff("bf16", "#15", 1, "inter_token_latency"), ladder_eff("fp8", "F1", 1, "inter_token_latency")
+mix = {lad: (s, isl_share(lad, s, 1), [r["itl"] for r in ladder_runs(lad, s, 1)[0]["by_isl"]]) for lad, s in (("bf16", "#15"), ("fp8", "F1"))}
+mix_rows = []
+for lad, en, zh_ in (("bf16", "3600 s, #15 (BF16)", "3600 秒，#15（BF16）"), ("fp8", "900 s, F1 (FP8)", "900 秒，F1（FP8）")):
+    s, shares, itls = mix[lad]
+    mix_rows.append([sp(f"{en}: share of requests", f"{zh_}：请求占比"), *[f"{v:.0f}%" for v in shares], "-"])
+    mix_rows.append([sp(f"{en}: ITL change", f"{zh_}：ITL 变化"), *pct(itls), f"<b>{sg(ladder_eff(lad, s, 1, 'inter_token_latency'))}%</b>"])
+bin_head = [("Build", "版本"), *ISL_BINS]
+s_ctx = section("context", "09", ("Gain by context length", "按上下文长度看收益"), "".join([
+    P(f"The first steps of the two ladders disagree. At concurrency 1, #15 changed ITL by {sg(b15c1)}%, but F1 changed it by {sg(f1c1)}%.",
+      f"两个阶梯的第一步结果不一致。在 c1，#15 让 ITL 变化 {sg(b15c1)}%，F1 却让它变化 {sg(f1c1)}%。"),
+    P(f"To find the cause, we put each pair of requests into a bin by its input length. We pooled concurrency 1 and 2, where the coverage is {math.floor(100 * cov_min)}% or more. Then we compared the two ladders in the same bin.",
+      f"为了找出原因，我们按输入长度把每一对请求分段。我们合并了 c1 和 c2，这两个并发下覆盖率都在 {math.floor(100 * cov_min)}% 以上。然后在同一段内比较两个阶梯。"),
+    plate("X", ("ITL change by input length", "按输入长度划分的 ITL 变化"), plate_isl(),
+          ("Median change of ITL on the same requests, concurrency 1 and 2 pooled. Up is slower. Hollow point: fewer than 30 requests.",
+           "同一批请求上 ITL 变化的中位数，合并 c1 和 c2。向上表示更慢。空心点：请求数少于 30。")),
+    table(bin_head, ctx_rows, "bins"),
+    P("F3 pools its two runs at each concurrency. The other steps of a ladder have up to 3 more or fewer pairs than the first step.",
+      "F3 合并了每个并发下的两次运行。同一阶梯的其他步，配对数和第一步最多相差 3 个。", "small"),
+    UL([
+        (f"In each bin with 30 or more requests, the two ladders agree in direction. The FP8 results are {round(min(gap_pts))} to {round(max(gap_pts))} percentage points worse.",
+         f"在请求数不少于 30 的各段中，两个阶梯的方向一致。FP8 阶梯的结果差 {round(min(gap_pts))} 到 {round(max(gap_pts))} 个百分点。"),
+        (f"#15 alone makes ITL {prng(below('bf16', '#15'))} lower below 192k, but changes it by {sg(isl_v('bf16', '#15')[3])}% at 192k or more. F1 shows the same pattern: {prng(below('fp8', 'F1'))} lower, and {sg(isl_v('fp8', 'F1')[3])}% at 192k or more.",
+         f"只有 #15 时，192k 以下 ITL 降低 {prng(below('bf16', '#15'), True)}，192k 及以上却变化 {sg(isl_v('bf16', '#15')[3])}%。F1 的规律相同：192k 以下降低 {prng(below('fp8', 'F1'), True)}，192k 及以上变化 {sg(isl_v('fp8', 'F1')[3])}%。"),
+        ("This agrees with section 05. Before #24, one CTA selected the top-2048 of a long row, and the other CTAs waited for it.",
+         "这和第 05 节一致：#24 之前，长行的 top-2048 由一个 CTA 选出，其他 CTA 都在等它。"),
+        (f"#24 removes most of this loss. At 192k or more, ITL changes by {sg(isl_v('bf16', '#24')[3])}% (BF16) and {sg(isl_v('fp8', 'F2')[3])}% (FP8).",
+         f"#24 去掉了大部分损失。192k 及以上，ITL 变化 {sg(isl_v('bf16', '#24')[3])}%（BF16）和 {sg(isl_v('fp8', 'F2')[3])}%（FP8）。"),
+        (f"#42 makes the gain almost equal at all lengths. ITL is {prng([abs(v) for v in isl_v('bf16', '#42')])} lower (BF16) and {prng([abs(v) for v in isl_v('fp8', 'F3')])} lower (FP8).",
+         f"#42 让各段的收益几乎相同。ITL 降低 {prng([abs(v) for v in isl_v('bf16', '#42')], True)}（BF16）和 {prng([abs(v) for v in isl_v('fp8', 'F3')], True)}（FP8）。"),
+    ]),
+    P("The aggregate values differ because the two windows contain different requests. The aggregate is the median change over all requests of a run.",
+      "汇总值不同，是因为两个窗口包含的请求不同。汇总值是一次运行中所有请求变化的中位数。"),
+    table([("Window and build, c1", "窗口和版本，c1"), *ISL_BINS, ("All requests", "全部请求")], mix_rows, "bins"),
+    P(f"At concurrency 1, {mix['bf16'][1][3]:.0f}% of the 3600-s requests are 192k or more, against {mix['fp8'][1][3]:.0f}% of the 900-s requests. These long requests are slower with #15 alone. Thus the median in the 3600-s window is near zero.",
+      f"在 c1，3600 秒窗口里有 {mix['bf16'][1][3]:.0f}% 的请求在 192k 及以上，900 秒窗口里只有 {mix['fp8'][1][3]:.0f}%。只有 #15 时，这些长请求变慢。所以 3600 秒窗口的中位数接近 0。"),
+    P("The two ladders also differ in image, SGLang commit, KV type, and window. Thus we cannot assign the remaining difference in each bin to one cause.",
+      "两个阶梯的镜像、SGLang 提交、KV 类型和窗口都不同。所以每一段里剩下的差别，无法归于某一个原因。"),
+    callout("Compare two ablations in the same context bin. Two windows of the same workload can have different context mixes.",
+            "比较两组 ablation 时，要在同一个上下文长度段内比较。同一负载的两个窗口，上下文长度的分布可以不同。"),
+]))
+
+gain_rows = [[f"c{c}", str(eff[C3][(c, 'cand8-r1')]["requests"]), f"{sg(ttft3[c])}%", f"{sg(itl3[c])}%", f"{sg(e2el3[c])}%", f"{100 * share[c]:.0f}%"] for c in CONCS]
+s_final = section("final", "10", ("Result at 3600 s", "3600 秒的结果"), "".join([
+    P(f"Test 3 used the 3600-s window of InferenceX at concurrency 1, 2, 4, and 10. Each point used a new server. All nine runs were valid, and the measured accept length was 2.990 (target 2.99).",
+      "测试 3 使用 InferenceX 的 3600 秒窗口，并发为 1、2、4、10。每个点都用新的服务器。九次运行全部有效，实测接受长度是 2.990（目标值 2.99）。"),
+    plate("XI", ("Throughput and interactivity at 3600 s", "3600 秒的吞吐和交互性"), plate_score(),
+          ("Each arrow goes from the base group to the monokernel group. Hollow points are published InferenceX results.",
+           "每个箭头从 base 组指向 monokernel 组。空心点是 InferenceX 已发布的结果。")),
+    table([("Concurrency", "并发"), ("Pairs", "配对数"), ("TTFT", "TTFT"), ("ITL", "ITL"), ("E2EL", "E2EL"), ("Coverage", "覆盖率")], gain_rows),
+    plate("XII", ("Coverage and gain", "覆盖率和收益"), plate_gain(),
           ("Left: decode steps by the number of running requests. Right: change of ITL and E2EL on the same requests.",
            "左：按同时运行的请求数划分 decode 步。右：同一批请求上 ITL 和 E2EL 的变化。")),
-    UL([
-        (f"At concurrency 1, {100 * hist_share[1].get('1', 0):.0f}% of decode steps have one request. At concurrency 4, {100 * hist_share[4].get('1', 0):.0f}% have one request and {100 * hist_share[4].get('2', 0):.0f}% have two.",
-         f"c1 时，{100 * hist_share[1].get('1', 0):.0f}% 的 decode 步只有 1 个请求。c4 时，{100 * hist_share[4].get('1', 0):.0f}% 有 1 个请求，{100 * hist_share[4].get('2', 0):.0f}% 有 2 个请求。"),
-        (f"Coverage is above 95% at both points. But ITL decreases by {abs(itl3[1]):.1f}% at concurrency 1 and by only {abs(itl3[4]):.1f}% at concurrency 4.",
-         f"两个点的覆盖率都高于 95%。但 ITL 在 c1 降低 {abs(itl3[1]):.1f}%，在 c4 只降低 {abs(itl3[4]):.1f}%。"),
-        ("A possible reason: a step with two requests gains less than a step with one request. We did not measure this. The reason is not verified.",
-         "一个可能的原因：2 个请求的步比 1 个请求的步收益小。我们没有测量这一点。这个原因未经验证。"),
-        (f"At concurrency 10, coverage is {100 * share[10]:.0f}%, so the gain is smaller.", f"c10 的覆盖率是 {100 * share[10]:.0f}%，所以收益更小。"),
-        ("TTFT changes by less than 1.5% at each point. The FP8 KV cache keeps the prefill time unchanged.", "每个点的 TTFT 变化都小于 1.5%。FP8 KV cache 让 prefill 时间保持不变。"),
-    ]),
+    P(f"Coverage is the share of decode steps with one or two running requests. At concurrency 10 it is {100 * share[10]:.0f}%, so the gain is smaller there.",
+      f"覆盖率是同时运行 1 到 2 个请求的 decode 步所占的比例。c10 的覆盖率是 {100 * share[10]:.0f}%，所以那里的收益更小。"),
 ]))
 
-q_rows = [[sp("Test 1: FP8 KV vs BF16 KV + monokernel", "测试 1：FP8 KV 对 BF16 KV + monokernel"), "c2", str(gsm1["filters"]["strict-match"]["n"]),
-           f"{gsm1['filters']['strict-match']['base']:.3f}", f"{gsm1['filters']['strict-match']['cand']:.3f}",
-           f"{gsm1['filters']['strict-match']['only_base_right']} / {gsm1['filters']['strict-match']['only_cand_right']}", f"{gsm1['filters']['strict-match']['mcnemar_p']:.2f}"],
-          [sp("Test 2: base vs monokernel", "测试 2：base 对 monokernel"), "c2", str(gsm2["filters"]["strict-match"]["n"]),
-           f"{gsm2['filters']['strict-match']['base']:.3f}", f"{gsm2['filters']['strict-match']['cand']:.3f}",
-           f"{gsm2['filters']['strict-match']['only_base_right']} / {gsm2['filters']['strict-match']['only_cand_right']}", f"{gsm2['filters']['strict-match']['mcnemar_p']:.2f}"]]
-for r in strict3:
-    lab = {"base vs cand8": ("Test 3: base vs monokernel", "测试 3：base 对 monokernel"), "rerun of base": ("Test 3: base, two runs", "测试 3：base 的两次运行"),
-           "rerun of cand8": ("Test 3: monokernel, two runs", "测试 3：monokernel 的两次运行")}[r["kind"]]
-    q_rows.append([sp(f"{lab[0]} ({r['a']} / {r['b']})", f"{lab[1]}（{r['a']} / {r['b']}）"), r["a"].split()[0], str(r["n"]),
-                   f"{r['acc_a']:.3f}", f"{r['acc_b']:.3f}", f"{r['only_a']} / {r['only_b']}", f"{r['mcnemar_p']:.2f}"])
-s_quality = section("accuracy", "09", ("Accuracy", "精度"), "".join([
-    P("We measured GSM8K with real MTP acceptance and the strict-match filter. We used the InferenceX eval (lm-evaluation-harness). Tests 1 and 2 used 500 questions. Test 3 used all 1319 questions. At concurrency 10, we ran each group two times to measure the run-to-run variation.",
-      "我们用真实的 MTP 接受和 strict-match 过滤测量 GSM8K。评测用的是 InferenceX 的 eval（lm-evaluation-harness）。测试 1 和 2 用 500 题。测试 3 用全部 1319 题。在 c10，每组跑两次，用来测量两次运行之间的波动。"),
-    table([("Pair", "对比"), ("Concurrency", "并发"), ("Questions", "题数"), ("A", "A"), ("B", "B"), ("Only A right / only B right", "只有 A 对 / 只有 B 对"), ("McNemar p", "McNemar p")], q_rows),
-    UL([
-        (f"All three base-vs-monokernel pairs together: {ob} to {oc} (p = {mcnemar_p(ob, oc):.2f}).", f"三组 base 对 monokernel 合计：{ob} 对 {oc}（p = {mcnemar_p(ob, oc):.2f}）。"),
-        (f"The first pair alone gives {pairs3[0]['only_a']} to {pairs3[0]['only_b']}. But two runs of the monokernel group give {rerun_c['only_a']} to {rerun_c['only_b']}. Thus the difference in the first pair is run-to-run variation.",
-         f"只看第一组是 {pairs3[0]['only_a']} 对 {pairs3[0]['only_b']}。但 monokernel 组的两次运行就差 {rerun_c['only_a']} 对 {rerun_c['only_b']}。所以第一组的差别是两次运行之间的波动。"),
-        (f"In the first pair, the monokernel group answered {len(lost)} questions wrong. In {len(runaway)} of them, the model did not stop reasoning and gave no answer ({runaway[0] // 1000}k and {runaway[-1] // 1000}k characters). The other {len(lost) - len(runaway)} are normal solution errors. None shows corrupted numbers.",
-         f"第一组中，monokernel 组答错 {len(lost)} 题。其中 {len(runaway)} 题，模型一直推理、没有给出答案（{runaway[0] // 1000}k 和 {runaway[-1] // 1000}k 字符）。其余 {len(lost) - len(runaway)} 题是普通的解题错误。没有一题显示数值被破坏。"),
-        (f"Coverage in the GSM8K runs: {100 * gcov['gsm8k-glm53-l2ov-c2-cand8q']:.0f}% at concurrency 2, and {100 * gcov['gsm8k-glm53-l2ov-c10-cand8q']:.0f}% and {100 * gcov['gsm8k-glm53-l2ov-c10-cand8q-r2']:.0f}% at concurrency 10.",
-         f"GSM8K 运行的覆盖率：c2 是 {100 * gcov['gsm8k-glm53-l2ov-c2-cand8q']:.0f}%，c10 是 {100 * gcov['gsm8k-glm53-l2ov-c10-cand8q']:.0f}% 和 {100 * gcov['gsm8k-glm53-l2ov-c10-cand8q-r2']:.0f}%。"),
-        ("InferenceX runs its eval at the highest concurrency of a configuration. There the monokernel runs only about a quarter of the steps. Thus the concurrency-2 result is the accuracy evidence for the monokernel path.",
-         "InferenceX 在一个配置的最高并发点跑 eval。在那里，monokernel 只运行约四分之一的步。所以 c2 的结果才是 monokernel 路径的精度证据。"),
-    ]),
+nogain_rows = [
+    [sp(f"{pr(15)} alone on AgentX", f"只有 {pr(15)} 时的 AgentX"),
+     sp(f"ITL {trio('bf16', '#15')} (BF16 ladder); {sg(isl_v('bf16', '#15')[3])}% and {sg(isl_v('fp8', 'F1')[3])}% at 192k or more",
+        f"ITL {trio('bf16', '#15')}（BF16 阶梯）；192k 及以上 {sg(isl_v('bf16', '#15')[3])}% 和 {sg(isl_v('fp8', 'F1')[3])}%"),
+     sp("needed, but slower at long contexts until #24", "必需，但在 #24 之前长上下文更慢")],
+    [sp(f"{pr(19)}: cheaper guarded waits (open)", f"{pr(19)}：更便宜的 guarded wait（未合并）"), sp("TPOT c1 −2.5%, c4 −0.6%, c8 +2.3% (no MTP, fixed length)", "TPOT c1 −2.5%、c4 −0.6%、c8 +2.3%（不开 MTP，固定长度）"),
+     sp("small, and slower at c8", "收益小，c8 还变慢")],
+    [sp("histogram in the score stage (local attempt)", "在打分阶段建直方图（本地尝试）"), sp("correct, but global atomics slowed scoring: 0.87× to 1.17×", "结果正确，但全局 atomic 拖慢了打分：0.87× 到 1.17×"),
+     sp("dropped", "已放弃")],
+    [sp("route to the normal path by context length", "按上下文长度切回 normal path"), sp("not possible: the route is fixed for each captured decode graph", "做不到：每个 decode graph 捕获时路由就固定了"),
+     sp("dropped", "已放弃")],
+    [sp("f32 against bf16 expert routing (SGLang normal path)", "专家路由用 f32 还是 bf16（SGLang normal path）"),
+     sp("accept length unchanged; c1 TPOT 5.36 → 5.52 ms with f32 (+3.0%); GSM8K 97.73% vs 97.57% (p = 0.77)", "接受长度不变；c1 TPOT 用 f32 时 5.36 → 5.52 ms（+3.0%）；GSM8K 97.73% 对 97.57%（p = 0.77）"),
+     sp("no accuracy gain, small speed cost", "没有精度收益，速度略有损失")],
+    [sp("monokernel with BF16 KV (Test 1)", "monokernel 配 BF16 KV（测试 1）"), sp(f"ITL {rng(pv[C1]['inter_token_latency'])}, TTFT {rng(pv[C1]['time_to_first_token'])}", f"ITL {zrng(pv[C1]['inter_token_latency'])}，TTFT {zrng(pv[C1]['time_to_first_token'])}"),
+     sp("no-go against the FP8 recipe", "和 FP8 配方相比 no-go")],
+    [sp("900-s windows for P90 decisions", "用 900 秒窗口判定 P90"), sp(f"A/A noise of interactivity {100 * noise2['e2e_int_p90']:.0f}%", f"交互性的 A/A 噪声 {100 * noise2['e2e_int_p90']:.0f}%"),
+     sp("too noisy; use 3600 s", "噪声太大；改用 3600 秒")],
+    [sp(f"{pr(18)}: A4W4, TP4 16-token scheduling, indexer CP (closed)", f"{pr(18)}：A4W4、TP4 16 token 调度、indexer CP（已关闭）"), sp("not measured here", "这里没有测"), "-"],
+]
+s_nogain = section("nogain", "11", ("What did not help", "没有帮助的尝试"), "".join([
+    P("These changes or methods gave a small gain, no gain, or a loss. Some of them were needed anyway.",
+      "这些改动或方法的收益很小、没有收益，或者带来了损失。其中有一些仍然是必需的。"),
+    table([("Item", "项目"), ("Measurement", "测量结果"), ("Verdict", "结论")], nogain_rows),
+]))
+
+q_rows = [
+    [pr(7), sp("GSM8K 1319, thinking", "GSM8K 1319，thinking"), "97.35% → 97.27%", sp("McNemar p = 1.00", "McNemar p = 1.00")],
+    [pr(7), sp("AIME26, 30 × 8", "AIME26，30 × 8"), "82.92% → 86.67%", sp("inside noise", "在噪声内")],
+    [pr(15), sp("GSM8K 1319, 5-shot, MTP", "GSM8K 1319，5-shot，MTP"), "92.65% → 92.34%", sp("p = 0.70; accept length 3.253 → 3.288", "p = 0.70；接受长度 3.253 → 3.288")],
+    [pr(24), sp("exact top-k against an oracle", "精确 top-k 对照 oracle"), sp("312 rows, 0 differ", "312 行，0 行不同"), sp("8k to 256k keys", "8k 到 256k key")],
+    [pr(42), sp("scores against #24 in one launch", "同一次 launch 里和 #24 的打分比较"), sp("59.6M keys, all bitwise equal", "5960 万个 key，全部逐位相等"), sp("decode and MTP verify", "decode 和 MTP verify")],
+    [pr(60), sp("GSM8K 1319, three pairs, strict-match", "GSM8K 1319，三组，strict-match"), f"{ob} / {oc}", sp(f"McNemar p = {mcnemar_p(ob, oc):.2f}", f"McNemar p = {mcnemar_p(ob, oc):.2f}")],
+]
+s_quality = section("accuracy", "12", ("Accuracy", "精度"), "".join([
+    P("Each PR tested accuracy in its own way. No PR showed a measurable loss. The last row compares base and monokernel answers on the real recipe at 3600-s settings.",
+      "每个 PR 用自己的方法测试了精度。没有一个 PR 显示出可测量的损失。最后一行是在正式配方上，比较 base 和 monokernel 的答案。"),
+    table([("PR", "PR"), ("Test", "测试"), ("Result", "结果"), ("Note", "说明")], q_rows),
+    P(f"For #60, two runs of the monokernel group differ by {rerun_c['only_a']} to {rerun_c['only_b']} questions, more than the base-vs-monokernel pairs. Thus the differences are run-to-run variation.",
+      f"对 #60，monokernel 组自己跑两次就差 {rerun_c['only_a']} 对 {rerun_c['only_b']} 题，比 base 对 monokernel 的差别还大。所以这些差别是两次运行之间的波动。"),
 ]))
 
 ref_rows = [[f"c{r['conc']}", E(r["curve"]), f"{r['tput']:.0f}", f"{r['int90']:.1f}", f"{r['e2el90']:.1f}", a(r["url"], E(r["source"])) if r.get("url") else E(r["source"])]
             for r in refs3 if "this work" not in r["curve"]]
-osl_rows = []
-for c in (1, 4, 10):
-    o = osl_local[c]
-    osl_rows.append([f"c{c}", sp("monokernel group (3600 s)", "monokernel 组（3600 秒）"), f"{o['p50']:.0f}", f"{o['p90']:.0f}"])
-    if c in osl_b300:
-        r = osl_b300[c]
-        osl_rows.append([f"c{c}", sp("GLM-5.3 B300 SGLang FP4 (published)", "GLM-5.3 B300 SGLang FP4（已发布）"), f"{r['median_output_tokens_actual']:.0f}", f"{r['p90_output_tokens_actual']:.0f}"])
-s_refs = section("refs", "10", ("Comparison with published results", "和已发布结果比较"), "".join([
-    P("The InferenceX API has no vLLM AgentX result for GLM-5.x models.", "InferenceX 的 API 里没有 GLM-5.x 模型的 vLLM AgentX 结果。"),
-    P(f"For GLM-5.3 on MI355X, InferenceX published one point: TileRT at concurrency 1 on 16 GPUs. At concurrency 1, the monokernel group has {sg(rel(K(1, 'tput_gpu'), tile['tput']), 0)}% throughput per GPU and {sg(rel(K(1, 'e2e_int_p90'), tile['int90']), 0)}% interactivity against it.",
-      f"对 MI355X 上的 GLM-5.3，InferenceX 只发布了一个点：TileRT，c1，16 张 GPU。在 c1，monokernel 组相对它的每卡吞吐是 {sg(rel(K(1, 'tput_gpu'), tile['tput']), 0)}%，交互性是 {sg(rel(K(1, 'e2e_int_p90'), tile['int90']), 0)}%。"),
-    P(f"GLM-5.3 on B300 with NVFP4 is better. At concurrency 10, our throughput is {abs(rel(K(10, 'tput_gpu'), b300[10]['tput'])):.0f}% lower, and our interactivity is {abs(rel(K(10, 'e2e_int_p90'), b300[10]['int90'])):.0f}% lower.",
-      f"B300 上的 GLM-5.3 NVFP4 更好。在 c10，我们的吞吐低 {abs(rel(K(10, 'tput_gpu'), b300[10]['tput'])):.0f}%，交互性低 {abs(rel(K(10, 'e2e_int_p90'), b300[10]['int90'])):.0f}%。"),
+s_refs = section("refs", "13", ("Comparison with published results", "和已发布结果比较"), "".join([
+    P(f"The InferenceX API has no vLLM AgentX result for GLM-5.x. For GLM-5.3 on MI355X, it has one TileRT point at concurrency 1 on 16 GPUs. Against it, the monokernel group has {sg(rel(K(1, 'tput_gpu'), tile['tput']), 0)}% throughput per GPU and {sg(rel(K(1, 'e2e_int_p90'), tile['int90']), 0)}% interactivity.",
+      f"InferenceX 的 API 里没有 GLM-5.x 的 vLLM AgentX 结果。MI355X 上的 GLM-5.3 只有一个 TileRT 的点：c1，16 张 GPU。和它相比，monokernel 组的每卡吞吐是 {sg(rel(K(1, 'tput_gpu'), tile['tput']), 0)}%，交互性是 {sg(rel(K(1, 'e2e_int_p90'), tile['int90']), 0)}%。"),
+    P(f"GLM-5.3 on B300 with NVFP4 is better. At concurrency 10, our throughput is {abs(rel(K(10, 'tput_gpu'), b300[10]['tput'])):.0f}% lower and our interactivity is {abs(rel(K(10, 'e2e_int_p90'), b300[10]['int90'])):.0f}% lower. Our P90 output length is {min(osl_ratio):.1f} to {max(osl_ratio):.1f} times the B300 value, so do not compare E2EL directly.",
+      f"B300 上的 GLM-5.3 NVFP4 更好。在 c10，我们的吞吐低 {abs(rel(K(10, 'tput_gpu'), b300[10]['tput'])):.0f}%，交互性低 {abs(rel(K(10, 'e2e_int_p90'), b300[10]['int90'])):.0f}%。我们的 P90 输出长度是 B300 的 {min(osl_ratio):.1f} 到 {max(osl_ratio):.1f} 倍，所以不要直接比较 E2EL。"),
     table([("Concurrency", "并发"), ("Published configuration", "已发布配置"), ("Throughput", "吞吐"), ("Interactivity", "交互性"), ("P90 E2EL (s)", "P90 E2EL（秒）"), ("Source", "来源")], ref_rows),
-    P(f"Do not compare E2EL directly between these configurations, because the reply lengths are different. At the same concurrency, our P90 output length is {min(osl_ratio):.1f} to {max(osl_ratio):.1f} times the B300 value. The median lengths are similar.",
-      f"不要直接比较这些配置的 E2EL，因为回复长度不同。在同样的并发下，我们的 P90 输出长度是 B300 的 {min(osl_ratio):.1f} 到 {max(osl_ratio):.1f} 倍。中位数长度相近。"),
-    P("An older image gives the same lengths. Thus the image and the chat template are not the cause. The weights are a possible cause (FP8 here, NVFP4 on B300). We did not verify this. Interactivity divides by the output length. Thus it is the best metric for this comparison.",
-      "旧镜像上的长度也一样。所以原因不是镜像，也不是 chat template。权重可能是原因（这里是 FP8，B300 上是 NVFP4）。我们没有验证这一点。交互性除以了输出长度，所以它最适合这种比较。"),
-    table([("Concurrency", "并发"), ("Run", "运行"), ("Median OSL", "OSL 中位数"), ("P90 OSL", "OSL P90")], osl_rows),
 ]))
 
-s_up = section("upstream", "11", ("Steps to an InferenceX submission", "提交 InferenceX 还需要的步骤"), "".join([
+s_up = section("upstream", "14", ("Steps to an InferenceX submission", "提交 InferenceX 还需要的步骤"), "".join([
     P("The kernel work is complete. These steps remain, in this order:", "kernel 的工作已经完成。还剩这些步骤，按顺序进行："),
-    plate("VII", ("Remaining steps", "剩下的步骤"), plate_upstream(),
-          ("State on 2026-10-26. Each step needs the step before it. Until the pin update, the cookbook command fails at server start.",
-           "状态截至 2026-10-26。每一步都依赖前一步。pin 更新之前，cookbook 里的命令会在服务器启动时失败。")),
+    plate("XIII", ("Remaining steps", "剩下的步骤"), plate_upstream(),
+          ("State on 2026-10-26. Each step needs the step before it.", "状态截至 2026-10-26。每一步都依赖前一步。")),
     OL([
-        (f"SGLang pin update. SGLang main pins sgl-amd-mono at <code>05e0bb02</code>. Its glm53 spec accepts only BF16 KV. The open PR {pr(45045, 'sgl-project/sglang')} pins <code>e952b221</code>, which is also older than #60.",
-         f"SGLang 更新 pin。SGLang main 把 sgl-amd-mono pin 在 <code>05e0bb02</code>。它的 glm53 spec 只接受 BF16 KV。现有的 PR {pr(45045, 'sgl-project/sglang')} pin 的是 <code>e952b221</code>，也比 #60 早。"),
-        ("Image. Use the first MI35x nightly image that includes the new pin. Record its digest.", "镜像。使用第一个包含新 pin 的 MI35x nightly 镜像，并记录它的 digest。"),
-        (f"Cookbook. {pr(46662, 'sgl-project/sglang')} (draft) adds the recipe as section 3.6 of the GLM-5.3 page. InferenceX requires all production-relevant flags on a merged cookbook page.",
-         f"cookbook。{pr(46662, 'sgl-project/sglang')}（draft）把配方加为 GLM-5.3 页面的第 3.6 节。InferenceX 要求所有影响生产效果的参数都写在已合并的 cookbook 页面上。"),
-        ("Confirmation run. Run the 3600-s tests again on that image, without the overlay. Add points, for example concurrency 6 and 8, to get five frontier points.",
-         "确认运行。在那个镜像上、不加 overlay，重跑 3600 秒测试。再加几个点，例如 c6 和 c8，凑够 5 个前沿点。"),
-        ("InferenceX PR. Add the config, the recipe, one perf-changelog entry, and a bilingual description. The account jhinpan has read access only. Thus the PR must come from a fork or from a collaborator.",
-         "InferenceX PR。加入配置、配方、一条 perf-changelog 和中英双语说明。jhinpan 账号只有读权限，所以 PR 要从 fork 提交，或者由有权限的同事提交。"),
-        ("Sweep, evals, CODEOWNER sign-off, and an authorized <code>/use</code> of the sweep run.", "sweep、eval、CODEOWNER 签核，以及有权限的人对 sweep run 发出 <code>/use</code>。"),
+        (f"SGLang pin update. SGLang main pins sgl-amd-mono at <code>05e0bb02</code>, which accepts only BF16 KV. The open PR {pr(45045, 'sgl-project/sglang')} pins <code>e952b221</code>, which is also older than #60.",
+         f"SGLang 更新 pin。SGLang main 把 sgl-amd-mono pin 在 <code>05e0bb02</code>，它只接受 BF16 KV。现有的 PR {pr(45045, 'sgl-project/sglang')} pin 的是 <code>e952b221</code>，也比 #60 早。"),
+        ("Image. Use the first MI35x nightly image that includes the new pin.", "镜像。使用第一个包含新 pin 的 MI35x nightly 镜像。"),
+        (f"Cookbook. {pr(46662, 'sgl-project/sglang')} (draft) adds the recipe to the GLM-5.3 page.", f"cookbook。{pr(46662, 'sgl-project/sglang')}（draft）把配方加到 GLM-5.3 页面。"),
+        ("Confirmation run on that image without the overlay, with five or more frontier points.", "在那个镜像上不加 overlay 做确认运行，至少要有 5 个前沿点。"),
+        ("InferenceX PR, sweep, evals, CODEOWNER sign-off, and an authorized <code>/use</code>.", "InferenceX PR、sweep、eval、CODEOWNER 签核，以及有权限的人发出 <code>/use</code>。"),
     ]),
 ]))
 
-s_method = section("method", "12", ("Method and limits", "方法和限制"), UL([
-    ("We used one local node, not the InferenceX cluster.", "我们用的是一台本地节点，不是 InferenceX 的集群。"),
-    ("We installed the monokernel commit over the published image. Thus these runs do not replace the confirmation run on a published image.",
-     "我们把 monokernel 的提交装在已发布的镜像上。所以这些运行不能代替在已发布镜像上的确认运行。"),
-    ("We ran each point one time for 3600 s. We measured the A/A noise only at concurrency 2. We assume the same noise at the other points.",
-     "每个点只跑一次 3600 秒。A/A 噪声只在 c2 测量。我们假设其他点的噪声相同。"),
-    ("The AgentX runs use the synthetic acceptance of InferenceX (accept length 2.99) in both groups. The GSM8K runs use real acceptance.",
-     "AgentX 运行在两组中都使用 InferenceX 的模拟接受（接受长度 2.99）。GSM8K 运行使用真实接受。"),
-    ("Before each run, we checked that all 8 GPUs were idle (30 samples) and locked them. During each run, we sampled amd-smi every 10 s and checked for other processes.",
-     "每次运行前，我们检查 8 张 GPU 都空闲（采样 30 次），然后锁定它们。运行时每 10 秒用 amd-smi 采样一次，并检查有没有其他进程。"),
-    ("Each point used a new server. No request was sent before the measured phase.", "每个点都用新的服务器。测量阶段之前不发送任何请求。"),
-    ("We wrote the decision rule of each test before the test. We changed one rule one time, before any result. We replaced a span check that does not apply to AgentX with a phase-based validity check.",
-     "每次测试的判定规则都在测试前写好。我们只改过一次规则，而且是在出结果之前。我们把不适用于 AgentX 的跨度检查，换成了按阶段的有效性检查。"),
-    ("The published results are for context only. The hardware, precision, deployment, and output lengths are different.", "已发布的结果只作背景。硬件、精度、部署方式和输出长度都不同。"),
+s_method = section("method", "15", ("Method and limits", "方法和限制"), UL([
+    ("We used one local node, not the InferenceX cluster. The monokernel commits were installed over the published image.",
+     "我们用的是一台本地节点，不是 InferenceX 的集群。monokernel 的提交装在已发布的镜像上。"),
+    ("The BF16 ladder comes from an older image and SGLang (20261019, e45cbce599). Compare the two ladders only in the same context bin (section 09).",
+     "BF16 阶梯来自更早的镜像和 SGLang（20261019，e45cbce599）。两个阶梯只能在同一个上下文长度段内比较（第 09 节）。"),
+    (f"The context bins pool concurrency 1 and 2. The FP8 bin below 64k has only {isl_n('fp8', 'F1')[0]} requests.",
+     f"上下文长度分段合并了 c1 和 c2。FP8 阶梯 64k 以下的分段只有 {isl_n('fp8', 'F1')[0]} 个请求。"),
+    ("The BF16 ladder ran one run per point, in PR order, from 2026-10-20 to 10-22. Thus day-to-day drift is not separated from the PR effects.",
+     "BF16 阶梯每个点只跑一次，按 PR 的先后顺序，在 2026-10-20 到 10-22 跑完。所以不同日子之间的漂移没有和 PR 的效果分开。"),
+    ("The FP8 ladder ran F1 and F2 one time each at 900 s. F3 and the base have two runs each. The paired A/A noise of ITL is below 0.5%.",
+     "FP8 阶梯里，F1 和 F2 各跑一次 900 秒。F3 和 base 各有两次运行。配对 ITL 的 A/A 噪声低于 0.5%。"),
+    ("The kernel timelines come from the PR descriptions (debug builds, decode steps, random prompts).", "kernel timeline 来自 PR 正文（debug 版本，decode 步，随机 prompt）。"),
+    ("The AgentX runs use the synthetic acceptance of InferenceX (accept length 2.99). The GSM8K runs use real acceptance.",
+     "AgentX 运行使用 InferenceX 的模拟接受（接受长度 2.99）。GSM8K 运行使用真实接受。"),
+    ("Before each run, we checked that all 8 GPUs were idle and locked them. Each point used a new server.",
+     "每次运行前，我们检查 8 张 GPU 都空闲，然后锁定。每个点都用新的服务器。"),
 ]))
 
 files = [
-    ("cohort3-fp8kv-3600s/analysis/compare_round1_base_cand8.json", "headline metrics, gains, and A/A noise", "头条指标、增益和 A/A 噪声"),
-    ("cohort3-fp8kv-3600s/analysis/pair_effects.json", "changes on the same requests", "同一批请求的变化"),
-    ("cohort3-fp8kv-3600s/requests", "one CSV row per request for each 3600-s run", "每个 3600 秒运行的逐请求 CSV"),
-    ("cohort3-fp8kv-3600s/gsm8k", "GSM8K result for each question", "GSM8K 每道题的结果"),
-    ("ttft-profile/summary.json", "the prefill kernel profile", "prefill 的 kernel profile"),
-    ("fp8kv-validation/e2e_checks.json", "the e2e checks of #60", "#60 的 e2e 检查"),
-    ("inferencex-config", "the local InferenceX config and recipe", "本地的 InferenceX 配置和配方"),
+    ("ablation/ablation.json", "both ladders: paired effects, accept length, coverage, effects by input length", "两个阶梯：配对效果、接受长度、覆盖率、按输入长度分段的效果"),
+    ("prs/timelines.json", "the kernel timeline tables of #24 and #42", "#24 和 #42 的 kernel timeline 表"),
+    ("ladder-bf16-3600s", "the BF16 ladder runs", "BF16 阶梯的运行"),
+    ("ladder-fp8-900s", "the FP8 ladder runs (F1, F2, base rerun)", "FP8 阶梯的运行（F1、F2、base 重跑）"),
+    ("cohort3-fp8kv-3600s/analysis/compare_round1_base_cand8.json", "the 3600-s headline metrics", "3600 秒的头条指标"),
+    ("cohort3-fp8kv-3600s/requests", "one CSV row per request of each 3600-s run", "每个 3600 秒运行的逐请求 CSV"),
+    ("fp8kv-validation/e2e_checks.json", "the e2e checks, including F1 and F2", "e2e 检查，包括 F1 和 F2"),
     ("scripts/make_page.py", "the script that builds this page", "生成本页的脚本"),
 ]
 link = lambda p: a(f"{BLOB}/{p}" if "." in p.split("/")[-1] else f"{DATA_URL}/{p}", f"<code>{p}</code>")  # noqa: E731
-s_data = section("data", "13", ("Data and files", "数据和文件"), "".join([
-    P(f"The raw data, the decision rules, and the analysis results are in {a(DATA_URL, f'<code>data/{SLUG}/</code>')}. We replaced host names and local paths. We reduced the request records, the GSM8K outputs, and the profiler traces to compact CSV and JSON files.",
-      f"原始数据、判定规则和分析结果都在 {a(DATA_URL, f'<code>data/{SLUG}/</code>')}。我们替换了主机名和本机路径。逐请求记录、GSM8K 输出和 profiler trace 都缩减成了紧凑的 CSV 和 JSON 文件。"),
+s_data = section("data", "16", ("Data and files", "数据和文件"), "".join([
+    P(f"The raw data, the decision rules, and the analysis results are in {a(DATA_URL, f'<code>data/{SLUG}/</code>')}. We replaced host names and local paths.",
+      f"原始数据、判定规则和分析结果都在 {a(DATA_URL, f'<code>data/{SLUG}/</code>')}。我们替换了主机名和本机路径。"),
     UL([(f"{link(p)}: {en}", f"{link(p)}：{z}") for p, en, z in files]),
 ]))
 
-s_lessons = section("lessons", "14", ("Lessons", "经验"), UL([
-    ("A kernel can make its own step faster and still not improve the score. Then examine the conditions that the kernel requires. Here the BF16 KV condition made prefill slower, and the P90 metric depends mostly on TTFT.",
-     "kernel 可以让自己负责的那一步变快，但分数仍然不提高。这时要检查 kernel 要求的条件。这里，BF16 KV 这个条件让 prefill 变慢，而 P90 指标主要取决于 TTFT。"),
-    ("The fix did not change the kernel. It let the kernel use the KV format that the recipe already uses.",
-     "修复没有改 kernel，而是让 kernel 使用配方本来就用的 KV 格式。"),
-    (f"Measure a P90 metric with the window that the score uses. In 900-s windows, two identical runs differed by {100 * noise2['e2e_int_p90']:.0f}%. In 3600-s windows, they differed by {100 * noise3['e2e_int_p90']:.1f}%.",
-     f"测量 P90 指标时，要用分数所用的窗口。900 秒窗口中，两次相同的运行相差 {100 * noise2['e2e_int_p90']:.0f}%。3600 秒窗口中，只相差 {100 * noise3['e2e_int_p90']:.1f}%。"),
+s_lessons = section("lessons", "17", ("Lessons", "经验"), UL([
+    ("Test a kernel PR at the context lengths of the target workload. #15 made a verify step 38.5% faster with 4096-token prompts. On AgentX, it made requests above 192k tokens slower.",
+     "要用目标负载的上下文长度测试 kernel PR。#15 在 4096 token 的 prompt 上让 verify 步快了 38.5%。在 AgentX 上，它却让 192k token 以上的请求变慢。"),
+    ("Compare ablation results in the same context bin. In the same workload, a 900-s window and a 3600-s window had different shares of long requests.",
+     "要在同一个上下文长度段内比较 ablation 结果。同一个负载，900 秒窗口和 3600 秒窗口里长请求的占比不同。"),
+    ("Find the stage that grows with the workload. At long contexts, the indexer selection and score stages set the step time. #24 and #42 gave most of the gain.",
+     "找出随负载增长的那个阶段。长上下文下，indexer 的选择和打分阶段决定了单步时间。#24 和 #42 带来了大部分收益。"),
+    ("Compare against the published recipe. The BF16 baseline of the PR campaign hid the TTFT cost of BF16 KV. #60 removed that cost.",
+     "要和已发布的配方比较。PR 开发期间的 BF16 对照组掩盖了 BF16 KV 的 TTFT 代价。#60 去掉了这个代价。"),
+    (f"Use the window of the score for P90 decisions. In 900 s, two identical runs differed by {100 * noise2['e2e_int_p90']:.0f}%. In 3600 s, they differed by {100 * noise3['e2e_int_p90']:.1f}%.",
+     f"判定 P90 时，要用分数所用的窗口。900 秒时，两次相同的运行相差 {100 * noise2['e2e_int_p90']:.0f}%。3600 秒时，只相差 {100 * noise3['e2e_int_p90']:.1f}%。"),
 ]))
 
-SECTIONS = [("result", "01", "Result", "结果"), ("steps", "02", "Test sequence", "测试过程"), ("metric", "03", "How the score works", "打分方式"),
-            ("attempt", "04", "Test 1: BF16 KV", "测试 1：BF16 KV"), ("cause", "05", "Root cause", "根因"), ("fix", "06", "Fix: FP8 KV", "修复：FP8 KV"),
-            ("score", "07", "Tests 2 and 3", "测试 2 和 3"), ("gain", "08", "Source of the gain", "收益来源"), ("accuracy", "09", "Accuracy", "精度"),
-            ("refs", "10", "Published results", "已发布结果"), ("upstream", "11", "Steps to InferenceX", "提交步骤"),
-            ("method", "12", "Method and limits", "方法和限制"), ("data", "13", "Data and files", "数据和文件"), ("lessons", "14", "Lessons", "经验")]
+SECTIONS = [("result", "01", "Result", "结果"), ("monokernel", "02", "The monokernel", "monokernel"), ("metric", "03", "How the score works", "打分方式"),
+            ("prs", "04", "The PR series", "PR 系列"), ("longctx", "05", "Long contexts", "长上下文"), ("ablation-bf16", "06", "Ablation: BF16 KV", "Ablation：BF16 KV"),
+            ("baseline", "07", "Baseline gap and #60", "对照差距与 #60"), ("ablation-fp8", "08", "Ablation: FP8 KV", "Ablation：FP8 KV"), ("context", "09", "Context length", "上下文长度"),
+            ("final", "10", "Result at 3600 s", "3600 秒结果"), ("nogain", "11", "What did not help", "没有帮助的尝试"), ("accuracy", "12", "Accuracy", "精度"),
+            ("refs", "13", "Published results", "已发布结果"), ("upstream", "14", "Steps to InferenceX", "提交步骤"),
+            ("method", "15", "Method and limits", "方法和限制"), ("data", "16", "Data and files", "数据和文件"), ("lessons", "17", "Lessons", "经验")]
 rail = ('<nav class="rail" aria-label="Contents"><a class="back" href="/sources/">' + sp("← The Library", "← 文库") + "</a><ol>"
         + "".join(f'<li><a href="#{sid}"><span class="rn">{num}</span>{sp(en, z)}</a></li>' for sid, num, en, z in SECTIONS) + "</ol></nav>")
 
+bf16_42 = [abs(ladder_eff("bf16", "#42", c, "inter_token_latency")) for c in (1, 2, 4)]
 summary = [
-    (f"The glm53 decode monokernel reduced inter-token latency (ITL) by {itl_lo}–{itl_hi}% on MI355X. But the InferenceX AgentX score did not improve.",
-     f"glm53 decode monokernel 让 MI355X 上的 inter-token latency（ITL）降低 {itl_lo}–{itl_hi}%。但 InferenceX AgentX 的分数没有提高。"),
-    (f"Cause: the monokernel accepted only a BF16 KV cache. With BF16 KV, one DSA prefill kernel took {k_ratio:.1f}× longer, and TTFT increased by {ttft_up}%.",
-     f"原因：monokernel 当时只接受 BF16 KV cache。使用 BF16 KV 时，DSA prefill 里的一个 kernel 耗时变为 {k_ratio:.1f} 倍，TTFT 增加 {ttft_up}%。"),
-    (f"Fix: {pr(60)} lets the monokernel use the FP8 KV cache of the recipe. The kernel code did not change.",
-     f"修复：{pr(60)} 让 monokernel 直接使用配方的 FP8 KV cache。kernel 代码没有改动。"),
-    (f"Result at 3600 s: throughput +{gain_lo('tput_gpu')}–{gain_hi('tput_gpu')}% and interactivity +{gain_lo('e2e_int_p90')}–{gain_hi('e2e_int_p90')}% at concurrency 1–4. GSM8K accuracy did not change.",
-     f"3600 秒窗口的结果：c1–c4 的吞吐提高 {gain_lo('tput_gpu')}–{gain_hi('tput_gpu')}%，交互性提高 {gain_lo('e2e_int_p90')}–{gain_hi('e2e_int_p90')}%。GSM8K 精度没有变化。"),
-    ("Status: the InferenceX submission waits for an SGLang pin update, a new image, and the cookbook PR.",
-     "状态：提交 InferenceX 之前，还要等 SGLang 更新 pin、发布新镜像，并合并 cookbook PR。"),
+    ("The glm53 monokernel runs most of a GLM-5.3 decode or verify step in 75 launches, one per MoE layer. Five PRs built it: #7, #15, #24, #42, and #60.",
+     "glm53 monokernel 用 75 次 launch（每个 MoE 层一次）完成 GLM-5.3 一个 decode 或 verify 步的大部分计算。它由五个 PR 构成：#7、#15、#24、#42 和 #60。"),
+    ("#15 let the monokernel serve MTP verify steps. Alone, it made requests below 192k tokens faster and longer requests slower, because the indexer was slow at long contexts.",
+     "#15 让 monokernel 能运行 MTP 的 verify 步。只有它时，192k token 以下的请求变快，更长的请求变慢，因为长上下文下 indexer 很慢。"),
+    (f"#24 and #42 made the indexer fast at long contexts. Together they reduced ITL by {round(min(bf16_42))}–{round(max(bf16_42))}% on the same requests.",
+     f"#24 和 #42 让 indexer 在长上下文下变快。两者合计让同一批请求的 ITL 降低 {round(min(bf16_42))}–{round(max(bf16_42))}%。"),
+    ("These gains used BF16 KV in both groups. Against the FP8 recipe, the score improved only after #60 let the monokernel use the FP8 cache.",
+     "这些收益是在两组都用 BF16 KV 时测的。和 FP8 配方相比，直到 #60 让 monokernel 使用 FP8 cache，分数才提高。"),
+    (f"Result at 3600 s: throughput +{gain_lo('tput_gpu')}–{gain_hi('tput_gpu')}% and interactivity +{gain_lo('e2e_int_p90')}–{gain_hi('e2e_int_p90')}% at concurrency 1–4. GSM8K did not change.",
+     f"3600 秒的结果：c1–c4 的吞吐提高 {gain_lo('tput_gpu')}–{gain_hi('tput_gpu')}%，交互性提高 {gain_lo('e2e_int_p90')}–{gain_hi('e2e_int_p90')}%。GSM8K 不变。"),
 ]
 spec = [
     (("Hardware", "硬件"), ("8 × AMD Instinct MI355X (gfx950), one node, TP8 EP1", "8 × AMD Instinct MI355X（gfx950），单节点，TP8 EP1")),
     (("Model", "模型"), (f"{a('https://huggingface.co/zai-org/GLM-5.3', 'zai-org/GLM-5.3')} at <code>ba32f8c1</code> (FP8), EAGLE MTP 3-1-4", f"{a('https://huggingface.co/zai-org/GLM-5.3', 'zai-org/GLM-5.3')}，<code>ba32f8c1</code>（FP8），EAGLE MTP 3-1-4")),
-    (("Engine", "引擎"), (f"SGLang {a(f'{GH}/sgl-project/sglang/commit/fe1bd108372c9ba2ab959fcf99cf196433d155d5', '<code>fe1bd108</code>')} in <code>lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024</code>, AITER <code>285579b6</code>",
-                          f"SGLang {a(f'{GH}/sgl-project/sglang/commit/fe1bd108372c9ba2ab959fcf99cf196433d155d5', '<code>fe1bd108</code>')}，镜像 <code>lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024</code>，AITER <code>285579b6</code>")),
-    (("Monokernel", "monokernel"), (f"sgl-amd-mono glm53 at <code>0a107f1</code> ({pr(60)}), installed over the image's <code>05e0bb02</code>", f"sgl-amd-mono glm53，<code>0a107f1</code>（{pr(60)}），装在镜像自带的 <code>05e0bb02</code> 之上")),
-    (("Client", "客户端"), ("InferenceX AgentX (AIPerf), 3600-s windows, accept length 2.99", "InferenceX AgentX（AIPerf），3600 秒窗口，接受长度 2.99")),
-    (("Measured", "测量时间"), ("2026-10-24 to 2026-10-26", "2026-10-24 到 2026-10-26")),
+    (("Monokernel", "monokernel"), (f"sgl-amd-mono glm53: {pr(7)}, {pr(15)}, {pr(24)}, {pr(42)}, {pr(60)}", f"sgl-amd-mono glm53：{pr(7)}、{pr(15)}、{pr(24)}、{pr(42)}、{pr(60)}")),
+    (("Engine", "引擎"), ("SGLang <code>fe1bd108</code> in <code>lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024</code>", "SGLang <code>fe1bd108</code>，镜像 <code>lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024</code>")),
+    (("Client", "客户端"), ("InferenceX AgentX (AIPerf), accept length 2.99", "InferenceX AgentX（AIPerf），接受长度 2.99")),
+    (("Measured", "测量时间"), ("2026-10-20 to 2026-10-27", "2026-10-20 到 2026-10-27")),
     (("Raw data", "原始数据"), (a(DATA_URL, f"<code>data/{SLUG}/</code>"), a(DATA_URL, f"<code>data/{SLUG}/</code>"))),
 ]
-TITLE = "GLM-5.3 on MI355X: the decode monokernel needs an FP8 KV cache to raise the AgentX score"
-TITLE_ZH = "GLM-5.3 在 MI355X 上的 decode monokernel 要配合 FP8 KV cache 才能提高 AgentX 分数"
-masthead = ('<header class="masthead"><div class="mast-in">'
+TITLE = "GLM-5.3 on MI355X: a retrospective of the glm53 monokernel hill-climb"
+TITLE_ZH = "GLM-5.3 在 MI355X 上的 glm53 monokernel hill-climbing 复盘"
+cover_note = P("Cover: ITL of each request in the 3600-s runs. Slate: base. Raspberry: monokernel. Left is faster.",
+               "封面：3600 秒测试中每个请求的 ITL。蓝灰色是 base 组，覆盆子红是 monokernel 组。越靠左越快。", "cover-note")
+masthead = (f'<div class="cover">{cover_svg()}</div>'
+            + '<header class="masthead"><div class="mast-in">' + cover_note
             + bi("div", "Experiment 006 · Model hill-climbing", "实验 006 · 模型 hill-climbing 记录", 'class="kicker"')
             + bi("h1", TITLE, TITLE_ZH)
             + '<ul class="summary">' + "".join(bi("li", en, z) for en, z in summary) + "</ul>"
             + '<dl class="spec">' + "".join(f"<dt>{sp(*k)}</dt><dd>{sp(*v)}</dd>" for k, v in spec) + "</dl></div></header>")
+BODY = [s_result, s_mono, s_metric, s_prs, s_long, s_bf16, s_gap, s_fp8, s_ctx, s_final, s_nogain, s_quality, s_refs, s_up, s_method, s_data, s_lessons]
 
 CSS = """
 :root{--paper:#f3f5f2;--card:#ffffff;--sunk:#e8ede9;--rule:#d3dbd5;--rule2:#a5b5aa;--ink:#13211d;--ink2:#34463f;--ink3:#56685f;
@@ -721,8 +1077,13 @@ CSS = """
 body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:var(--base);text-decoration:underline;text-decoration-color:var(--rule2);text-underline-offset:2px}a:hover{color:var(--mono)}
 code{font:0.85em var(--mono-f);background:var(--sunk);padding:1px 5px;border-radius:4px}
+.cover{position:relative;height:clamp(150px,20vw,250px);overflow:hidden;background:linear-gradient(90deg,#e3eae5,#eef2ee 55%,#e9eee9);border-bottom:1px solid var(--rule)}
+.cover svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cover .ridge{stroke-width:1.2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.cover .ridge.base{fill:#e6ecef;stroke:rgba(74,103,135,.42)}.cover .ridge.mono{fill:#f5eaee;stroke:rgba(194,54,107,.42)}
 .masthead{background:var(--card);border-bottom:1px solid var(--rule)}
-.mast-in{max-width:1000px;margin:0 auto;padding:52px 28px 34px}
+.mast-in{max-width:1000px;margin:0 auto;padding:14px 28px 34px}
+.cover-note{margin:0 0 26px;text-align:right;font-size:12.5px;line-height:1.5;color:var(--ink3)}
 .kicker{font:600 13px var(--mono-f);letter-spacing:.12em;text-transform:uppercase;color:var(--mono)}
 h1{font:400 clamp(30px,4.2vw,46px)/1.12 var(--serif);margin:12px 0 22px;max-width:880px}
 .summary{margin:0 0 26px;padding:0;list-style:none;max-width:820px;border-left:3px solid var(--mono)}
@@ -739,7 +1100,7 @@ h2 .num{font:600 14px var(--mono-f);color:var(--mono);letter-spacing:.08em}
 p{margin:0 0 14px}.small{font-size:14.5px;color:var(--ink3)}ul,ol{padding-left:22px;margin:0 0 16px}li{margin:0 0 7px}
 .tw{overflow-x:auto;margin:6px 0 18px}table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums;background:var(--card)}
 th,td{border-bottom:1px solid var(--rule);padding:8px 10px;text-align:left;vertical-align:top}th{font:600 12px var(--mono-f);text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);background:var(--sunk)}
-table.score td b{color:var(--mono)}.up{color:var(--good);font-weight:700}
+table.score td b{color:var(--mono)}.up{color:var(--good);font-weight:700}.flat{color:var(--ink3);font-weight:700}
 .callout{border-left:4px solid var(--base);background:var(--card);padding:12px 16px;margin:18px 0;border-radius:0 8px 8px 0}.callout p{margin:0}
 .plate{margin:24px 0 26px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px 12px;width:min(1040px,calc(100vw - 330px))}
 .plate-meta{display:flex;gap:12px;align-items:baseline;margin-bottom:8px;font-weight:700}.pn{font:600 12px var(--mono-f);color:var(--mono);letter-spacing:.1em;text-transform:uppercase}
@@ -758,6 +1119,10 @@ svg .chip{font:600 12px var(--mono-f);text-transform:uppercase;letter-spacing:.0
 body[data-lang="en"] .lang-toggle button[data-set="en"],body[data-lang="zh"] .lang-toggle button[data-set="zh"]{background:var(--ink);color:var(--card)}
 .colophon{max-width:1000px;margin:0 auto;padding:22px 28px 60px;border-top:1px solid var(--rule);font-size:13.5px;color:var(--ink3)}
 @media (max-width:980px){.layout{grid-template-columns:1fr}.rail{position:static}.rail ol{columns:2}.plate{width:100%}.spec{grid-template-columns:1fr}}
+svg .line{fill:none;stroke-width:2.2}svg .line.ref{stroke:var(--ref)}svg .line.base{stroke:var(--base)}svg .line.mono{stroke:var(--mono)}
+svg .pt.ref{fill:var(--ref)}svg .bar.ref{fill:var(--ref)}svg .edge.ref{stroke:var(--ref)}
+svg .pt.hollow{fill:var(--card)}svg .pt.hollow.ref{stroke:var(--ref)}svg .pt.hollow.base{stroke:var(--base)}svg .pt.hollow.mono{stroke:var(--mono)}
+table.contrib td:first-child{white-space:nowrap}table.bins th{text-transform:none;letter-spacing:0}
 body[data-lang="en"] [lang="zh"]:not(html){display:none !important}
 body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
 """
@@ -784,7 +1149,7 @@ page = f"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{TITLE} · Experiment 006</title>
-<meta name="description" content="GLM-5.3 on MI355X: the glm53 decode monokernel reduced ITL by 28-30%, but the AgentX score improved only after the monokernel used the FP8 KV cache: +15-19% throughput at concurrency 1-4 over 3600 s.">
+<meta name="description" content="A retrospective of the glm53 monokernel for GLM-5.3 on MI355X: what each sgl-amd-mono PR added on InferenceX AgentX, with an ablation on BF16 and FP8 KV. Final: +15-19% throughput at concurrency 1-4 over 3600 s.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{FONTS}">
 <style>{CSS}</style>
@@ -795,7 +1160,7 @@ page = f"""<!doctype html>
 <div class="layout">
 {rail}
 <main class="article">
-{s_result}{s_steps}{s_metric}{s_attempt}{s_cause}{s_fix}{s_score}{s_gain}{s_quality}{s_refs}{s_up}{s_method}{s_data}{s_lessons}
+{"".join(BODY)}
 </main>
 </div>
 {colophon}

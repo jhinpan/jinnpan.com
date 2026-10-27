@@ -1,0 +1,315 @@
+{
+ "run": {
+  "id": "agentx-glm53-abl-c2-f1-r1",
+  "phase": "ablate",
+  "model": "glm53",
+  "tp": 8,
+  "arm": "cand8",
+  "gpus": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ],
+  "container": "infx-glm53-abl1",
+  "args": [
+   "--model-path",
+   "zai-org/GLM-5.3",
+   "--host",
+   "127.0.0.1",
+   "--port",
+   "31000",
+   "--chunked-prefill-size",
+   "32768",
+   "--cuda-graph-max-bs-decode",
+   "4",
+   "--dsa-decode-backend",
+   "tilelang",
+   "--dsa-prefill-backend",
+   "tilelang",
+   "--enable-metrics",
+   "--expert-parallel-size",
+   "1",
+   "--kv-cache-dtype",
+   "fp8_e4m3",
+   "--max-running-requests",
+   "4",
+   "--mem-fraction-static",
+   "0.85",
+   "--monokernel-backend",
+   "amd",
+   "--reasoning-parser",
+   "glm45",
+   "--served-model-name",
+   "zai-org/GLM-5.3",
+   "--speculative-algorithm",
+   "EAGLE",
+   "--speculative-eagle-topk",
+   "1",
+   "--speculative-num-draft-tokens",
+   "4",
+   "--speculative-num-steps",
+   "3",
+   "--tensor-parallel-size",
+   "8",
+   "--tool-call-parser",
+   "glm47",
+   "--trust-remote-code",
+   "--watchdog-timeout",
+   "1800"
+  ],
+  "env": {
+   "PYTHONNOUSERSITE": "1",
+   "SGLANG_OPT_USE_TOPK_V2": "false",
+   "SGLANG_SIMULATE_ACC_LEN": "2.99",
+   "SGLANG_SIMULATE_ACC_METHOD": "match-expected",
+   "SGLANG_SIMULATE_ACC_TOKEN_MODE": "real-draft-token",
+   "SGLANG_TIMEOUT_KEEP_ALIVE": "900"
+  },
+  "expect_route": true,
+  "port": 31000,
+  "client": {
+   "kind": "agentx_rendered",
+   "arm_dir": "$WORK/infx-l1-glm53-fp8-20261025/arms/cand8-c2",
+   "conc": 2,
+   "duration": 900
+  },
+  "round": 1
+ },
+ "agentx_summary": {
+  "hw": "",
+  "conc": 2,
+  "image": "lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261024",
+  "recipe_fingerprint": "",
+  "model": "zai-org/GLM-5.3",
+  "infmax_model_prefix": "glm5.3",
+  "framework": "sglang",
+  "precision": "fp8",
+  "spec_decoding": "mtp",
+  "disagg": false,
+  "scenario_type": "agentic-coding",
+  "is_multinode": false,
+  "num_gpus": 8,
+  "tp": 8,
+  "ep": 1,
+  "dp_attention": "false",
+  "kv_offloading": "none",
+  "kv_offload_backend": null,
+  "allocated_cpu_dram_gb": 0,
+  "num_requests_total": 139,
+  "num_requests_successful": 117,
+  "request_accounting": {
+   "records_total": 139,
+   "records_profiled": 117,
+   "records_dropped_total": 22,
+   "records_warmup_dropped": 22,
+   "records_error_dropped": 6,
+   "error_categories": {
+    "InvalidInferenceResultError": 6
+   }
+  },
+  "pp": 1,
+  "dcp_size": 1,
+  "pcp_size": 1,
+  "dataset": {
+   "source_type": "public_dataset",
+   "loader": "semianalysis_cc_traces_weka_062126",
+   "hf_dataset_name": "semianalysisai/cc-traces-weka-062126",
+   "hf_split": "train",
+   "num_dataset_entries": 393
+  },
+  "request_metrics": {
+   "qps": {
+    "window_seconds": 1,
+    "samples": 908,
+    "mean": 0.12775,
+    "p50": 0.0,
+    "p75": 0.0,
+    "p90": 1,
+    "p95": 1,
+    "std": 0.35616
+   },
+   "latency": {
+    "ttft": {
+     "mean": 0.70977,
+     "p50": 0.31235,
+     "p75": 0.64279,
+     "p90": 1.85743,
+     "p95": 2.55782,
+     "std": 0.97861
+    },
+    "e2el": {
+     "mean": 6.57434,
+     "p50": 3.62832,
+     "p75": 7.27965,
+     "p90": 15.41732,
+     "p95": 20.50216,
+     "std": 9.79292
+    },
+    "itl": {
+     "mean": 0.00505,
+     "p50": 0.00495,
+     "p75": 0.00563,
+     "p90": 0.0072,
+     "p95": 0.00805,
+     "std": 0.00189
+    },
+    "tpot": {
+     "mean": 0.00505,
+     "p50": 0.00495,
+     "p75": 0.00563,
+     "p90": 0.0072,
+     "p95": 0.00805,
+     "std": 0.00189
+    },
+    "intvty": {
+     "mean": 198.02778,
+     "p50": 202.0265,
+     "p75": 177.51249,
+     "p90": 138.90795,
+     "p95": 124.25855,
+     "std": 69.08422
+    },
+    "e2e_norm_intvty": {
+     "mean": 124.98013,
+     "p50": 167.24199,
+     "p75": 129.86659,
+     "p90": 78.23516,
+     "p95": 43.04502,
+     "std": 62.90308
+    },
+    "full_response_itl": {
+     "mean": 0.00505,
+     "p50": 0.00495,
+     "p75": 0.00563,
+     "p90": 0.0072,
+     "p95": 0.00805,
+     "std": 0.00189
+    },
+    "full_response_intvty": {
+     "mean": 197.91568,
+     "p50": 202.00522,
+     "p75": 177.50288,
+     "p90": 138.8972,
+     "p95": 124.24655,
+     "std": 68.84035
+    }
+   },
+   "tokens": {
+    "input": {
+     "mean": 151971.11966,
+     "p50": 120394,
+     "p75": 163025,
+     "p90": 344096.6,
+     "p95": 361060.2,
+     "std": 100625.17552
+    },
+    "output_actual": {
+     "mean": 1205.31624,
+     "p50": 580,
+     "p75": 1217,
+     "p90": 2888.8,
+     "p95": 4218,
+     "std": 1940.55035
+    },
+    "output_expected": {
+     "mean": 1560.64103,
+     "p50": 567,
+     "p75": 1978,
+     "p90": 3834.4,
+     "p95": 6374,
+     "std": 2711.36202
+    }
+   },
+   "throughput": {
+    "input": {
+     "tokens_per_second": 19544.80829
+    },
+    "output": {
+     "tokens_per_second": 155.01416
+    },
+    "total": {
+     "tokens_per_second": 19699.82244
+    },
+    "duration_seconds": 909.73627,
+    "per_gpu": {
+     "total_tput_tps": 2462.47781,
+     "output_tput_tps": 19.37677,
+     "input_tput_tps": 2443.10104
+    }
+   },
+   "cache": {
+    "theoretical_cache_hit_rate": 0.94928
+   }
+  },
+  "server_metrics": {
+   "present": true,
+   "adapter": "sglang",
+   "metric_count": 83,
+   "cache": {
+    "gpu_cache_hit_rate": 0.94502,
+    "cpu_cache_hit_rate": null,
+    "external_cache_hit_rate": null,
+    "overall_cache_hit_rate": 0.94502,
+    "prefix_cache_hits": null,
+    "prefix_cache_queries": null,
+    "external_prefix_cache_hits": null,
+    "external_prefix_cache_queries": null,
+    "cached_tokens_by_source": {
+     "device": 16803072
+    },
+    "frontend_cache_hit_rate": null,
+    "router_kv_hit_rate": null,
+    "router_shared_cache_hit_rate": null,
+    "frontend_cached_tokens": null,
+    "frontend_input_tokens": null
+   },
+   "kv_cache": {
+    "gpu_usage_pct": 0.2,
+    "gpu_total_tokens": 25488896,
+    "cpu_usage_pct": null,
+    "cpu_used_tokens": null,
+    "cpu_total_tokens": null
+   },
+   "kv_offload": {
+    "bytes_gpu_to_cpu": null,
+    "bytes_cpu_to_gpu": null,
+    "time_gpu_to_cpu": null,
+    "time_cpu_to_gpu": null,
+    "bandwidth_gpu_to_cpu_bytes_per_second": null,
+    "bandwidth_cpu_to_gpu_bytes_per_second": null
+   },
+   "tokens": {
+    "prompt_total": 17780621,
+    "generation_total": 141022,
+    "requests_completed": 117,
+    "prompt_by_source": {
+     "gpu_cache_hit": 16803072,
+     "cpu_or_external_cache_hit": null,
+     "computed": 977549,
+     "raw": {
+      "device": 16803072
+     }
+    }
+   },
+   "sources": []
+  },
+  "kv_cache_pool_tokens": 25488896
+ },
+ "coverage": {
+  "decode_batch_lines": 949,
+  "running_le_2": 891,
+  "share_running_le_2": 0.9389,
+  "running_req_histogram": {
+   "1": 775,
+   "2": 116,
+   "3": 57,
+   "4": 1
+  },
+  "route_line": "monokernel glm53_hip on gfx950 runs target_verify steps of batch size [1, 2] x 4 tokens (2 of 4 captured decode graphs); every other step runs the standard path"
+ }
+}

@@ -441,5 +441,170 @@
   "violation_lines": 0,
   "metrics_first_test": {},
   "summary": "2 passed, 6 deselected, 4 warnings in 519.08s (0:08:39)"
+ },
+ "e2e-glm53-abl-f1-fp8-verify": {
+  "tests_passed": [
+   "test_each_covered_verify_layer_within_its_numerics_with_fp8_kv"
+  ],
+  "tests_failed": [],
+  "violation_lines": 0,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999881,
+    "max": 0.999997,
+    "checks": 324
+   },
+   "layer.index.max_abs": {
+    "min": 0.125,
+    "max": 0.25,
+    "checks": 324
+   },
+   "layer.index.rel": {
+    "min": 0.00260761,
+    "max": 0.0154148,
+    "checks": 324
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.989094,
+    "max": 1.0,
+    "checks": 324
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 324
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.154303,
+    "checks": 324
+   },
+   "layer.kv.cosine": {
+    "min": 0.999134,
+    "max": 0.999992,
+    "checks": 1350
+   },
+   "layer.kv.max_abs": {
+    "min": 0.03125,
+    "max": 1.0,
+    "checks": 1350
+   },
+   "layer.kv.rel": {
+    "min": 0.00400044,
+    "max": 0.0416051,
+    "checks": 1350
+   },
+   "layer.streams.cosine": {
+    "min": 0.993062,
+    "max": 0.999999,
+    "checks": 1350
+   },
+   "layer.streams.max_abs": {
+    "min": 0.000976562,
+    "max": 8.0,
+    "checks": 1350
+   },
+   "layer.streams.rel": {
+    "min": 0.00125123,
+    "max": 0.117705,
+    "checks": 1350
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.0175781,
+    "checks": 324
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 324
+   }
+  },
+  "summary": "1 passed, 6 deselected, 4 warnings in 235.46s (0:03:55)"
+ },
+ "e2e-glm53-abl-f2-fp8-verify": {
+  "tests_passed": [
+   "test_each_covered_verify_layer_within_its_numerics_with_fp8_kv"
+  ],
+  "tests_failed": [],
+  "violation_lines": 0,
+  "metrics_first_test": {
+   "layer.index.cosine": {
+    "min": 0.999891,
+    "max": 0.999998,
+    "checks": 270
+   },
+   "layer.index.max_abs": {
+    "min": 0.125,
+    "max": 0.25,
+    "checks": 270
+   },
+   "layer.index.rel": {
+    "min": 0.00186981,
+    "max": 0.0148035,
+    "checks": 270
+   },
+   "layer.index_scale.cosine": {
+    "min": 0.984798,
+    "max": 1.0,
+    "checks": 270
+   },
+   "layer.index_scale.max_abs": {
+    "min": 0.0,
+    "max": 0.0078125,
+    "checks": 270
+   },
+   "layer.index_scale.rel": {
+    "min": 0.0,
+    "max": 0.185695,
+    "checks": 270
+   },
+   "layer.kv.cosine": {
+    "min": 0.999219,
+    "max": 0.999993,
+    "checks": 1125
+   },
+   "layer.kv.max_abs": {
+    "min": 0.03125,
+    "max": 0.5,
+    "checks": 1125
+   },
+   "layer.kv.rel": {
+    "min": 0.00360937,
+    "max": 0.0396207,
+    "checks": 1125
+   },
+   "layer.streams.cosine": {
+    "min": 0.995784,
+    "max": 0.999981,
+    "checks": 1125
+   },
+   "layer.streams.max_abs": {
+    "min": 0.000976562,
+    "max": 8.0,
+    "checks": 1125
+   },
+   "layer.streams.rel": {
+    "min": 0.00618461,
+    "max": 0.092187,
+    "checks": 1125
+   },
+   "layer.topk.rel": {
+    "min": 0.0,
+    "max": 0.0244141,
+    "checks": 270
+   },
+   "layer.topk_exact.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 270
+   },
+   "layer.topk_own.max_abs": {
+    "min": 0.0,
+    "max": 0.0,
+    "checks": 270
+   }
+  },
+  "summary": "1 passed, 7 deselected, 4 warnings in 235.96s (0:03:55)"
  }
 }

@@ -1,6 +1,6 @@
-# Experiment 006 · GLM-5.3 AgentX hill-climb on MI355X
+# Experiment 006 · GLM-5.3 monokernel hill-climbing on MI355X (retrospective)
 
-Raw data behind `public/sources/glm53-agentx-hillclimb-mi355x.html`. Measured 2026-10-24 to 2026-10-26 (UTC).
+Raw data behind `public/sources/glm53-agentx-hillclimb-mi355x.html`. Measured 2026-10-20 to 2026-10-27 (UTC).
 Rebuild the page from this directory alone with `python3 data/glm53-agentx-hillclimb-mi355x/scripts/make_page.py`.
 
 ## Protocol
@@ -24,6 +24,23 @@ Rebuild the page from this directory alone with `python3 data/glm53-agentx-hillc
 - GSM8K: InferenceX's eval (lm-evaluation-harness) with real MTP acceptance; 500 questions in cohorts 1
   and 2, all 1319 in cohort 3, plus a rerun of each arm at concurrency 10.
 - Each cohort's decision rule is in its `contract.md`, written before its runs.
+
+## Ablation
+
+- BF16 ladder (`ladder-bf16-3600s/`): the PR campaign. Image `lmsysorg/sglang-rocm:v0.5.22-rocm720-mi35x-20261019`,
+  SGLang `e45cbce599`, 3600 s, BF16 KV in both arms (the monokernel accepted only BF16 KV before #60), simulated
+  accept length 2.99. Arms: `mtpref` (normal path with MTP), `mtpmono` (#15), `mtpptopk` (#24), `mtpscore` (#42).
+- FP8 ladder (`ladder-fp8-900s/`): the image and client of cohort 2, 900 s, the recipe's FP8 E4M3 KV. F1 is
+  `05e0bb02` (#7, #15) with #60 cherry-picked (`421c124`; the e2e test file keeps only #60's FP8 check), F2 is
+  `240d587` (#24) with #60 cherry-picked (`8671f43`), F3 is cohort 2's monokernel arm. Each build passed the FP8
+  layer check (`fp8kv-validation/e2e_checks.json`). A new base run at concurrency 2 checks for drift.
+- `ablation/ablation.json`: per run, the request-paired effects against the base runs of the same ladder, the
+  exact accept length, the coverage, and `by_isl` (the paired ITL change in four input-length bins: below 64k,
+  64k to 128k, 128k to 192k, 192k or more). Per ladder, `by_isl` also pools concurrency 1 and 2; F3 pools its two
+  runs. `ablation/compare/`: compare_agentx.py outputs per ladder step.
+- Compare the two ladders only within one input-length bin. The 900-s and 3600-s windows hold different shares of
+  long requests (at concurrency 1: 37% and 52% at 192k or more), and #15 alone is slower above 192k.
+- `prs/timelines.json`: the kernel-timeline tables of #24 and #42, parsed from the PR descriptions (`prs/pr*.md`).
 
 ## Metrics
 
@@ -52,8 +69,8 @@ Rebuild the page from this directory alone with `python3 data/glm53-agentx-hillc
   `https://inferencex.semianalysis.com/api/v1/benchmarks?model=GLM-5.2` and
   `/api/v1/derived-agentic-metrics`.
 - `inferencex-config/`: the local `amd-master.yaml` diff and the `mi355x-fp8-mtp` recipe.
-- `scripts/`: `make_page.py` (this page), `l1_check.py` and `l1_pair.py` (validity and matched-request
-  analysis; they read the uncommitted raw run directories).
+- `scripts/`: `make_page.py` (this page), `ablation_analysis.py` (both ladders), `l1_check.py` and `l1_pair.py`
+  (validity and matched-request analysis; they read the uncommitted raw run directories).
 - `index.json`: run index per cohort.
 
 ## Not committed

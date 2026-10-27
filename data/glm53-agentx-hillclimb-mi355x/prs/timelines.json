@@ -1,0 +1,408 @@
+{
+ "pr24": {
+  "source": "https://github.com/sgl-project/sgl-amd-mono/pull/24",
+  "rows": [
+   {
+    "keys": "8k",
+    "rows": 1,
+    "step_before_ms": 4.75,
+    "step_after_ms": 4.84,
+    "selection_us_before": 31.0,
+    "score_us_before": 5.0,
+    "index_launch_us_before": 95.0,
+    "selection_us_after": 31.0,
+    "score_us_after": 5.0,
+    "index_launch_us_after": 97.0
+   },
+   {
+    "keys": "8k",
+    "rows": 2,
+    "step_before_ms": 4.93,
+    "step_after_ms": 4.98,
+    "selection_us_before": 26.0,
+    "score_us_before": 11.0,
+    "index_launch_us_before": 105.0,
+    "selection_us_after": 27.0,
+    "score_us_after": 12.0,
+    "index_launch_us_after": 108.0
+   },
+   {
+    "keys": "8k",
+    "rows": 4,
+    "step_before_ms": 6.57,
+    "step_after_ms": 6.61,
+    "selection_us_before": 27.0,
+    "score_us_before": 18.0,
+    "index_launch_us_before": 135.0,
+    "selection_us_after": 27.0,
+    "score_us_after": 18.0,
+    "index_launch_us_after": 136.0
+   },
+   {
+    "keys": "8k",
+    "rows": 8,
+    "step_before_ms": 10.74,
+    "step_after_ms": 10.65,
+    "selection_us_before": 27.0,
+    "score_us_before": 29.0,
+    "index_launch_us_before": 205.0,
+    "selection_us_after": 28.0,
+    "score_us_after": 29.0,
+    "index_launch_us_after": 206.0
+   },
+   {
+    "keys": "32k",
+    "rows": 1,
+    "step_before_ms": 5.17,
+    "step_after_ms": 5.2,
+    "selection_us_before": 38.0,
+    "score_us_before": 11.0,
+    "index_launch_us_before": 118.0,
+    "selection_us_after": 37.0,
+    "score_us_after": 11.0,
+    "index_launch_us_after": 119.0
+   },
+   {
+    "keys": "32k",
+    "rows": 4,
+    "step_before_ms": 7.23,
+    "step_after_ms": 7.45,
+    "selection_us_before": 42.0,
+    "score_us_before": 44.0,
+    "index_launch_us_before": 177.0,
+    "selection_us_after": 44.0,
+    "score_us_after": 45.0,
+    "index_launch_us_after": 182.0
+   },
+   {
+    "keys": "32k",
+    "rows": 8,
+    "step_before_ms": 11.91,
+    "step_after_ms": 12.1,
+    "selection_us_before": 44.0,
+    "score_us_before": 86.0,
+    "index_launch_us_before": 277.0,
+    "selection_us_after": 49.0,
+    "score_us_after": 89.0,
+    "index_launch_us_after": 285.0
+   },
+   {
+    "keys": "64k",
+    "rows": 1,
+    "step_before_ms": 5.77,
+    "step_after_ms": 5.33,
+    "selection_us_before": 63.0,
+    "score_us_before": 15.0,
+    "index_launch_us_before": 150.0,
+    "selection_us_after": 43.0,
+    "score_us_after": 15.0,
+    "index_launch_us_after": 129.0
+   },
+   {
+    "keys": "64k",
+    "rows": 4,
+    "step_before_ms": 8.22,
+    "step_after_ms": 7.87,
+    "selection_us_before": 68.0,
+    "score_us_before": 63.0,
+    "index_launch_us_before": 223.0,
+    "selection_us_after": 50.0,
+    "score_us_after": 63.0,
+    "index_launch_us_after": 206.0
+   },
+   {
+    "keys": "64k",
+    "rows": 8,
+    "step_before_ms": 12.88,
+    "step_after_ms": 12.95,
+    "selection_us_before": 69.0,
+    "score_us_before": 124.0,
+    "index_launch_us_before": 340.0,
+    "selection_us_after": 58.0,
+    "score_us_after": 126.0,
+    "index_launch_us_after": 334.0
+   },
+   {
+    "keys": "128k",
+    "rows": 1,
+    "step_before_ms": 6.69,
+    "step_after_ms": 5.6,
+    "selection_us_before": 109.0,
+    "score_us_before": 25.0,
+    "index_launch_us_before": 204.0,
+    "selection_us_after": 48.0,
+    "score_us_after": 25.0,
+    "index_launch_us_after": 144.0
+   },
+   {
+    "keys": "128k",
+    "rows": 2,
+    "step_before_ms": 7.32,
+    "step_after_ms": 6.19,
+    "selection_us_before": 117.0,
+    "score_us_before": 48.0,
+    "index_launch_us_before": 238.0,
+    "selection_us_after": 52.0,
+    "score_us_after": 50.0,
+    "index_launch_us_after": 174.0
+   },
+   {
+    "keys": "128k",
+    "rows": 4,
+    "step_before_ms": 9.85,
+    "step_after_ms": 8.71,
+    "selection_us_before": 119.0,
+    "score_us_before": 101.0,
+    "index_launch_us_before": 314.0,
+    "selection_us_after": 56.0,
+    "score_us_after": 102.0,
+    "index_launch_us_after": 251.0
+   },
+   {
+    "keys": "128k",
+    "rows": 8,
+    "step_before_ms": 15.58,
+    "step_after_ms": 14.56,
+    "selection_us_before": 123.0,
+    "score_us_before": 200.0,
+    "index_launch_us_before": 476.0,
+    "selection_us_after": 64.0,
+    "score_us_after": 203.0,
+    "index_launch_us_after": 417.0
+   },
+   {
+    "keys": "256k",
+    "rows": 1,
+    "step_before_ms": 8.84,
+    "step_after_ms": 6.2,
+    "selection_us_before": 207.0,
+    "score_us_before": 44.0,
+    "index_launch_us_before": 320.0,
+    "selection_us_after": 60.0,
+    "score_us_after": 44.0,
+    "index_launch_us_after": 175.0
+   },
+   {
+    "keys": "256k",
+    "rows": 2,
+    "step_before_ms": 9.88,
+    "step_after_ms": 7.05,
+    "selection_us_before": 216.0,
+    "score_us_before": 86.0,
+    "index_launch_us_before": 375.0,
+    "selection_us_after": 65.0,
+    "score_us_after": 88.0,
+    "index_launch_us_after": 224.0
+   },
+   {
+    "keys": "256k",
+    "rows": 4,
+    "step_before_ms": 13.45,
+    "step_after_ms": 10.37,
+    "selection_us_before": 243.0,
+    "score_us_before": 180.0,
+    "index_launch_us_before": 514.0,
+    "selection_us_after": 71.0,
+    "score_us_after": 180.0,
+    "index_launch_us_after": 343.0
+   },
+   {
+    "keys": "256k",
+    "rows": 5,
+    "step_before_ms": 17.42,
+    "step_after_ms": 14.94,
+    "selection_us_before": 224.0,
+    "score_us_before": 224.0,
+    "index_launch_us_before": 593.0,
+    "selection_us_after": 82.0,
+    "score_us_after": 227.0,
+    "index_launch_us_after": 453.0
+   }
+  ]
+ },
+ "pr42": {
+  "source": "https://github.com/sgl-project/sgl-amd-mono/pull/42",
+  "rows": [
+   {
+    "keys": "8k",
+    "rows": 1,
+    "step_before_ms": 4.84,
+    "step_after_ms": 4.8,
+    "score_us_before": 5.0,
+    "index_launch_us_before": 97.0,
+    "score_us_after": 5.0,
+    "index_launch_us_after": 96.0
+   },
+   {
+    "keys": "8k",
+    "rows": 2,
+    "step_before_ms": 4.98,
+    "step_after_ms": 4.96,
+    "score_us_before": 12.0,
+    "index_launch_us_before": 108.0,
+    "score_us_after": 9.0,
+    "index_launch_us_after": 106.0
+   },
+   {
+    "keys": "8k",
+    "rows": 4,
+    "step_before_ms": 6.61,
+    "step_after_ms": 6.59,
+    "score_us_before": 18.0,
+    "index_launch_us_before": 136.0,
+    "score_us_after": 14.0,
+    "index_launch_us_after": 134.0
+   },
+   {
+    "keys": "8k",
+    "rows": 8,
+    "step_before_ms": 10.65,
+    "step_after_ms": 10.61,
+    "score_us_before": 29.0,
+    "index_launch_us_before": 206.0,
+    "score_us_after": 24.0,
+    "index_launch_us_after": 202.0
+   },
+   {
+    "keys": "32k",
+    "rows": 1,
+    "step_before_ms": 5.2,
+    "step_after_ms": 5.12,
+    "score_us_before": 11.0,
+    "index_launch_us_before": 119.0,
+    "score_us_after": 5.0,
+    "index_launch_us_after": 114.0
+   },
+   {
+    "keys": "32k",
+    "rows": 4,
+    "step_before_ms": 7.45,
+    "step_after_ms": 7.26,
+    "score_us_before": 45.0,
+    "index_launch_us_before": 182.0,
+    "score_us_after": 29.0,
+    "index_launch_us_after": 172.0
+   },
+   {
+    "keys": "32k",
+    "rows": 8,
+    "step_before_ms": 12.1,
+    "step_after_ms": 11.67,
+    "score_us_before": 89.0,
+    "index_launch_us_before": 285.0,
+    "score_us_after": 62.0,
+    "index_launch_us_after": 261.0
+   },
+   {
+    "keys": "64k",
+    "rows": 1,
+    "step_before_ms": 5.33,
+    "step_after_ms": 5.49,
+    "score_us_before": 15.0,
+    "index_launch_us_before": 129.0,
+    "score_us_after": 6.0,
+    "index_launch_us_after": 133.0
+   },
+   {
+    "keys": "64k",
+    "rows": 4,
+    "step_before_ms": 7.87,
+    "step_after_ms": 7.47,
+    "score_us_before": 63.0,
+    "index_launch_us_before": 206.0,
+    "score_us_after": 35.0,
+    "index_launch_us_after": 182.0
+   },
+   {
+    "keys": "64k",
+    "rows": 8,
+    "step_before_ms": 12.95,
+    "step_after_ms": 11.95,
+    "score_us_before": 126.0,
+    "index_launch_us_before": 334.0,
+    "score_us_after": 74.0,
+    "index_launch_us_after": 281.0
+   },
+   {
+    "keys": "128k",
+    "rows": 1,
+    "step_before_ms": 5.6,
+    "step_after_ms": 5.32,
+    "score_us_before": 25.0,
+    "index_launch_us_before": 144.0,
+    "score_us_after": 8.0,
+    "index_launch_us_after": 126.0
+   },
+   {
+    "keys": "128k",
+    "rows": 2,
+    "step_before_ms": 6.19,
+    "step_after_ms": 5.59,
+    "score_us_before": 50.0,
+    "index_launch_us_before": 174.0,
+    "score_us_after": 19.0,
+    "index_launch_us_after": 144.0
+   },
+   {
+    "keys": "128k",
+    "rows": 4,
+    "step_before_ms": 8.71,
+    "step_after_ms": 7.58,
+    "score_us_before": 102.0,
+    "index_launch_us_before": 251.0,
+    "score_us_after": 41.0,
+    "index_launch_us_after": 191.0
+   },
+   {
+    "keys": "128k",
+    "rows": 8,
+    "step_before_ms": 14.56,
+    "step_after_ms": 12.44,
+    "score_us_before": 203.0,
+    "index_launch_us_before": 417.0,
+    "score_us_after": 87.0,
+    "index_launch_us_after": 306.0
+   },
+   {
+    "keys": "256k",
+    "rows": 1,
+    "step_before_ms": 6.2,
+    "step_after_ms": 5.73,
+    "score_us_before": 44.0,
+    "index_launch_us_before": 175.0,
+    "score_us_after": 12.0,
+    "index_launch_us_after": 148.0
+   },
+   {
+    "keys": "256k",
+    "rows": 2,
+    "step_before_ms": 7.05,
+    "step_after_ms": 6.05,
+    "score_us_before": 88.0,
+    "index_launch_us_before": 224.0,
+    "score_us_after": 27.0,
+    "index_launch_us_after": 166.0
+   },
+   {
+    "keys": "256k",
+    "rows": 4,
+    "step_before_ms": 10.37,
+    "step_after_ms": 8.33,
+    "score_us_before": 180.0,
+    "index_launch_us_before": 343.0,
+    "score_us_after": 60.0,
+    "index_launch_us_after": 225.0
+   },
+   {
+    "keys": "256k",
+    "rows": 5,
+    "step_before_ms": 14.94,
+    "step_after_ms": 12.3,
+    "score_us_before": 227.0,
+    "index_launch_us_before": 453.0,
+    "score_us_after": 78.0,
+    "index_launch_us_after": 305.0
+   }
+  ]
+ }
+}

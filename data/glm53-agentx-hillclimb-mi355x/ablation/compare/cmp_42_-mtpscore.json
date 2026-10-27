@@ -1,0 +1,228 @@
+{
+  "cohort": {
+    "model": "zai-org/GLM-5.3",
+    "infmax_model_prefix": "glm5.3",
+    "framework": "sglang",
+    "precision": "fp8",
+    "scenario_type": "agentic-coding",
+    "dataset.loader": "semianalysis_cc_traces_weka_062126",
+    "dataset.num_dataset_entries": "393"
+  },
+  "noise_floor": {
+    "tput_gpu": 0.027,
+    "out_tput_gpu": 0.027,
+    "e2e_int_p90": 0.027,
+    "e2e_int_p50": 0.027,
+    "intvty_p90": 0.027,
+    "ttft_p50": 0.027,
+    "ttft_p90": 0.027,
+    "e2el_p90": 0.027
+  },
+  "points": [
+    {
+      "point": "TP8 EP1 mtp c1",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-tp8-c1-mtpref/agentx_out/agentx-glm53-tp8-c1-mtpref.json",
+        "candidate": "$WORK/runs/agentx-glm53-tp8-c1-mtpscore/agentx_out/agentx-glm53-tp8-c1-mtpscore.json"
+      },
+      "baseline": {
+        "tput_gpu": 1920.62585,
+        "out_tput_gpu": 14.69308,
+        "e2e_int_p90": 85.29512,
+        "e2e_int_p50": 175.86281,
+        "intvty_p90": 178.49257,
+        "ttft_p50": 0.4762,
+        "ttft_p90": 2.35391,
+        "e2el_p90": 24.17706
+      },
+      "candidate": {
+        "tput_gpu": 2385.56346,
+        "out_tput_gpu": 17.54825,
+        "e2e_int_p90": 99.18282,
+        "e2e_int_p50": 243.4976,
+        "intvty_p90": 216.05836,
+        "ttft_p50": 0.48558,
+        "ttft_p90": 1.9455,
+        "e2el_p90": 18.73307
+      },
+      "gain": {
+        "tput_gpu": 0.2420760972263285,
+        "out_tput_gpu": 0.1943207278528396,
+        "e2e_int_p90": 0.16281939693619063,
+        "e2e_int_p50": 0.3845883618031578,
+        "intvty_p90": 0.21046136542266147,
+        "ttft_p50": -0.019317105317352423,
+        "ttft_p90": 0.20992546903109743,
+        "e2el_p90": 0.29060853346515003
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "candidate ahead",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "candidate ahead",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 234,
+          "total": 246,
+          "error_dropped": 4,
+          "duration_s": 3614.15076,
+          "image": ""
+        },
+        "candidate": {
+          "successful": 261,
+          "total": 272,
+          "error_dropped": 2,
+          "duration_s": 3614.77598,
+          "image": ""
+        }
+      },
+      "checks": [
+        "baseline dropped 4 requests on errors",
+        "candidate dropped 2 requests on errors"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c2",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-tp8-c2-mtpref/agentx_out/agentx-glm53-tp8-c2-mtpref.json",
+        "candidate": "$WORK/runs/agentx-glm53-tp8-c2-mtpscore/agentx_out/agentx-glm53-tp8-c2-mtpscore.json"
+      },
+      "baseline": {
+        "tput_gpu": 2043.70383,
+        "out_tput_gpu": 17.89039,
+        "e2e_int_p90": 77.24115,
+        "e2e_int_p50": 142.65273,
+        "intvty_p90": 149.59479,
+        "ttft_p50": 0.39022,
+        "ttft_p90": 1.63482,
+        "e2el_p90": 23.31827
+      },
+      "candidate": {
+        "tput_gpu": 2418.06399,
+        "out_tput_gpu": 20.59367,
+        "e2e_int_p90": 92.82286,
+        "e2e_int_p50": 198.62537,
+        "intvty_p90": 184.90627,
+        "ttft_p50": 0.38499,
+        "ttft_p90": 1.25233,
+        "e2el_p90": 17.63389
+      },
+      "gain": {
+        "tput_gpu": 0.18317730509904662,
+        "out_tput_gpu": 0.15110235159770125,
+        "e2e_int_p90": 0.20172809441599449,
+        "e2e_int_p50": 0.3923699181922422,
+        "intvty_p90": 0.23604752545192254,
+        "ttft_p50": 0.013584768435543904,
+        "ttft_p90": 0.3054226921019221,
+        "e2el_p90": 0.322355419025524
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "candidate ahead",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "within noise",
+        "ttft_p90": "candidate ahead",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 377,
+          "total": 399,
+          "error_dropped": 6,
+          "duration_s": 3601.48729,
+          "image": ""
+        },
+        "candidate": {
+          "successful": 427,
+          "total": 450,
+          "error_dropped": 8,
+          "duration_s": 3600.6086,
+          "image": ""
+        }
+      },
+      "checks": [
+        "baseline dropped 6 requests on errors",
+        "candidate dropped 8 requests on errors"
+      ]
+    },
+    {
+      "point": "TP8 EP1 mtp c4",
+      "files": {
+        "baseline": "$WORK/runs/agentx-glm53-tp8-c4-mtpref/agentx_out/agentx-glm53-tp8-c4-mtpref.json",
+        "candidate": "$WORK/runs/agentx-glm53-tp8-c4-mtpscore/agentx_out/agentx-glm53-tp8-c4-mtpscore.json"
+      },
+      "baseline": {
+        "tput_gpu": 2960.7337,
+        "out_tput_gpu": 22.10583,
+        "e2e_int_p90": 66.97791,
+        "e2e_int_p50": 144.39914,
+        "intvty_p90": 128.60112,
+        "ttft_p50": 0.33323,
+        "ttft_p90": 1.71617,
+        "e2el_p90": 24.58619
+      },
+      "candidate": {
+        "tput_gpu": 3656.59802,
+        "out_tput_gpu": 25.63189,
+        "e2e_int_p90": 72.4978,
+        "e2e_int_p50": 173.2147,
+        "intvty_p90": 146.33403,
+        "ttft_p50": 0.34777,
+        "ttft_p90": 1.65262,
+        "e2el_p90": 21.62148
+      },
+      "gain": {
+        "tput_gpu": 0.2350310397723374,
+        "out_tput_gpu": 0.15950814785058953,
+        "e2e_int_p90": 0.08241358979400837,
+        "e2e_int_p50": 0.1995549280972173,
+        "intvty_p90": 0.13789078975361968,
+        "ttft_p50": -0.041809241740230596,
+        "ttft_p90": 0.038454091079618946,
+        "e2el_p90": 0.13711873562771837
+      },
+      "verdict": {
+        "tput_gpu": "candidate ahead",
+        "out_tput_gpu": "candidate ahead",
+        "e2e_int_p90": "candidate ahead",
+        "e2e_int_p50": "candidate ahead",
+        "intvty_p90": "candidate ahead",
+        "ttft_p50": "baseline ahead",
+        "ttft_p90": "candidate ahead",
+        "e2el_p90": "candidate ahead"
+      },
+      "accounting": {
+        "baseline": {
+          "successful": 501,
+          "total": 545,
+          "error_dropped": 6,
+          "duration_s": 3600.66176,
+          "image": ""
+        },
+        "candidate": {
+          "successful": 582,
+          "total": 627,
+          "error_dropped": 11,
+          "duration_s": 3591.79531,
+          "image": ""
+        }
+      },
+      "checks": [
+        "baseline dropped 6 requests on errors",
+        "candidate dropped 11 requests on errors"
+      ]
+    }
+  ],
+  "unpaired": {
+    "baseline": [],
+    "candidate": []
+  }
+}
