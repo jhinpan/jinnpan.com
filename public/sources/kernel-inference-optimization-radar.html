@@ -664,7 +664,7 @@
   <script id="radar-meta" type="application/json">
 {
   "schema": 1,
-  "lastSuccessfulSync": "2026-11-11T21:59:47.898Z",
+  "lastSuccessfulSync": "2026-11-12T21:51:15.674Z",
   "classificationReviewedAt": "2026-08-17T22:40:57.000Z",
   "timeZone": "America/Los_Angeles",
   "source": "GitHub REST API",
@@ -1445,8 +1445,8 @@
     "flydsl": "N/A",
     "effort": "L",
     "owner": "Unassigned",
-    "updated": "2026-09-12",
-    "comments": 5,
+    "updated": "2026-11-12",
+    "comments": 6,
     "status": "watch",
     "summary": "当前复现来自 GB300 的 PP8 disaggregated prefill， 属于 NVIDIA / framework control-plane 参考， 不是 MI355 kernel 任务。",
     "next": "移入跨平台参考泳道；只有在 AMD 上复现后再进入 MI 执行队列。",
@@ -1466,12 +1466,14 @@
     "evidence": "reference",
     "workType": "reference",
     "upstreamState": "blocked",
-    "githubState": "open",
-    "githubStateReason": null,
-    "githubUpdatedAt": "2026-09-12T04:13:00Z",
-    "githubClosedAt": null,
+    "githubState": "closed",
+    "githubStateReason": "completed",
+    "githubUpdatedAt": "2026-11-12T00:17:06Z",
+    "githubClosedAt": "2026-11-12T00:17:04Z",
     "githubAssignees": [],
-    "githubLabels": []
+    "githubLabels": [
+      "inactive"
+    ]
   },
   {
     "id": "SGLang-33846",
@@ -2090,8 +2092,8 @@
     "flydsl": "High",
     "effort": "M",
     "owner": "Unassigned",
-    "updated": "2026-08-13",
-    "comments": 5,
+    "updated": "2026-11-12",
+    "comments": 6,
     "status": "watch",
     "summary": "MI325X/gfx942 方向正确， 但上游目前无法从链接找到对应 run 与完整配置， 尚不能进入 kernel tuning。",
     "next": "先补 engine args、commit、trace、batch/MTP sweep 与可下载原始结果， 再 profile verify/draft shape。",
@@ -2113,11 +2115,12 @@
     "upstreamState": "blocked",
     "githubState": "open",
     "githubStateReason": null,
-    "githubUpdatedAt": "2026-08-13T23:52:30Z",
+    "githubUpdatedAt": "2026-11-12T01:33:11Z",
     "githubClosedAt": null,
     "githubAssignees": [],
     "githubLabels": [
-      "rocm"
+      "rocm",
+      "stale"
     ]
   }
 ]
