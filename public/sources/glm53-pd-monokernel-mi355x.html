@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experiment 007 · PD × Monokernel — GLM-5.3 on MI355X</title>
+<meta name="description" content="GLM-5.3 FP8 on MI355X: AMD monokernels on a MoRI PD decode server, measured on InferenceX AgentX against single-node and two-node serving.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Hanken+Grotesk:wght@400;500;600&family=Martian+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1316; --panel:#151b20; --grid:#1f2a31; --hair:#2b3a44;
+  --fg:#d6dee5; --dim:#8b9aa6; --phos:#7cf5b4; --amber:#ffb547; --coral:#ff6b6b; --ice:#7ec8ff; --lilac:#c3a6ff;
+  --display:"Big Shoulders Display","Noto Sans SC",sans-serif;
+  --body:"Hanken Grotesk","Noto Sans SC",sans-serif;
+  --mono:"Martian Mono","Noto Sans SC",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 var(--body);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;background-attachment:fixed}
+a{color:var(--phos)} a:hover{color:var(--amber)}
+.wrap{display:grid;grid-template-columns:240px minmax(0,1fr);gap:40px;max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+.rail{position:sticky;top:24px;align-self:start;font:12px/1.5 var(--mono);color:var(--dim)}
+.rail .back{display:inline-block;margin-bottom:20px;color:var(--amber);text-decoration:none}
+.rail ol{list-style:none;padding:0;margin:0;border-left:1px solid var(--hair)}
+.rail li a{display:block;padding:5px 0 5px 14px;color:var(--dim);text-decoration:none}
+.rail li a:hover{color:var(--phos)}
+.rail .num{color:var(--phos);margin-right:6px}
+.masthead{border:1px solid var(--hair);background:rgba(21,27,32,.92);padding:28px 30px;margin-bottom:34px}
+.kicker{font:12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{font:800 64px/1 var(--display);letter-spacing:.01em;margin:10px 0 12px;color:#f2f6f8}
+h1 .x{color:var(--phos)}
+.subtitle{font-size:18px;color:var(--fg);max-width:760px;margin:0 0 20px}
+.spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--hair);font:12px/1.5 var(--mono)}
+.spec div{padding:10px 12px 10px 0;border-bottom:1px solid var(--hair)}
+.spec b{display:block;color:var(--dim);font-weight:400;text-transform:uppercase;letter-spacing:.1em;font-size:10px}
+main.article section{max-width:760px;margin:0 0 54px}
+h2{font:700 34px/1.1 var(--display);letter-spacing:.02em;margin:0 0 14px;color:#f2f6f8}
+h2 .n{font:500 13px var(--mono);color:var(--phos);display:block;letter-spacing:.12em;margin-bottom:6px}
+h3{font:600 18px/1.3 var(--body);color:var(--amber);margin:26px 0 8px}
+p{margin:0 0 14px}
+code{font:13px var(--mono);color:var(--ice);background:rgba(126,200,255,.08);padding:1px 4px}
+.callout{border-left:3px solid var(--phos);background:rgba(124,245,180,.06);padding:12px 16px;margin:18px 0}
+.callout.warn{border-left-color:var(--coral);background:rgba(255,107,107,.07)}
+.callout b{color:var(--phos)} .callout.warn b{color:var(--coral)}
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:14px}
+th,td{border-bottom:1px solid var(--hair);padding:7px 8px;text-align:left;vertical-align:top}
+th{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+td.v{font:13px var(--mono);text-align:right;white-space:nowrap}
+tr.hl td{color:var(--phos)}
+.plate{border:1px solid var(--hair);background:var(--panel);margin:22px 0 26px;padding:16px 18px 12px}
+.plate.wide{width:min(852px,calc(100vw - 330px))}
+.plate-meta{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.caption{font-style:italic;color:var(--dim);font-size:14px;margin:8px 0 0}
+svg{display:block;width:100%;height:auto}
+.diag-text{font:12px var(--mono);fill:var(--fg)}
+.diag-dim{font:11px var(--mono);fill:var(--dim)}
+.diag-node{fill:#18222a;stroke:var(--hair)}
+.diag-edge{stroke:var(--dim);stroke-width:1.2;fill:none}
+.ok{color:var(--phos)} .bad{color:var(--coral)} .todo{color:var(--amber)}
+.colophon{border-top:1px solid var(--hair);margin-top:40px;padding-top:18px;font:12px/1.7 var(--mono);color:var(--dim);max-width:760px}
+.lang-toggle{position:fixed;top:16px;right:16px;z-index:10;display:flex;border:1px solid var(--hair);background:var(--panel)}
+.lang-toggle button{font:12px var(--mono);background:none;border:0;color:var(--dim);padding:6px 12px;cursor:pointer}
+body[data-lang="en"] .lang-toggle button[data-set="en"],body[data-lang="zh"] .lang-toggle button[data-set="zh"]{color:var(--bg);background:var(--phos)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.rail{position:static}.plate.wide{width:auto}h1{font-size:46px}.spec{grid-template-columns:1fr 1fr}}
+body[data-lang="en"] [lang="zh"]:not(html){display:none !important}
+body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
+</style>
+</head>
+<body data-lang="en">
+<div class="lang-toggle" role="group" aria-label="Language"><button type="button" data-set="en" aria-label="English">EN</button><button type="button" data-set="zh" aria-label="中文">中文</button></div>
+<div class="wrap">
+<nav class="rail" aria-label="Contents">
+  <a class="back" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回资料库</span></a>
+  <ol>
+    <li><a href="#question"><span class="num">01</span><span lang="en">Question</span><span lang="zh">问题</span></a></li>
+    <li><a href="#setup"><span class="num">02</span><span lang="en">Setup</span><span lang="zh">实验设置</span></a></li>
+    <li><a href="#quality"><span class="num">03</span><span lang="en">Quality</span><span lang="zh">质量</span></a></li>
+    <li><a href="#pd-mono"><span class="num">04</span><span lang="en">PD with and without monokernels</span><span lang="zh">PD 开关 monokernel</span></a></li>
+    <li><a href="#versus-agg"><span class="num">05</span><span lang="en">Against single-node serving</span><span lang="zh">对比单节点服务</span></a></li>
+    <li><a href="#axes"><span class="num">06</span><span lang="en">The AgentX axes</span><span lang="zh">AgentX 的两个轴</span></a></li>
+    <li><a href="#coverage"><span class="num">07</span><span lang="en">Coverage</span><span lang="zh">覆盖率</span></a></li>
+    <li><a href="#width12"><span class="num">08</span><span lang="en">Widening to 12 rows</span><span lang="zh">加宽到 12 行</span></a></li>
+    <li><a href="#reproduce"><span class="num">09</span><span lang="en">Reproduce</span><span lang="zh">复现</span></a></li>
+    <li><a href="#epilogue"><span class="num">10</span><span lang="en">Epilogue</span><span lang="zh">结语</span></a></li>
+  </ol>
+</nav>
+<div>
+<header class="masthead">
+  <div class="kicker">Experiment 007</div>
+  <h1>PD <span class="x">×</span> Monokernel</h1>
+  <p class="subtitle" lang="en">GLM-5.3 FP8 on MI355X: AMD's fused decode kernels behind prefill-decode disaggregation over MoRI, measured on InferenceX AgentX against one node and against two nodes of the same hardware.</p>
+  <p class="subtitle" lang="zh">MI355X 上的 GLM-5.3 FP8： 把 AMD 的融合 decode kernel 放到基于 MoRI 的 PD 分离后面， 在 InferenceX AgentX 上分别和单节点、同样硬件的两节点服务对比。</p>
+  <div class="spec">
+    <div><b lang="en">Hardware</b><b lang="zh">硬件</b>2 × 8 MI355X · 8 × 400G RoCE / node</div>
+    <div><b lang="en">Image</b><b lang="zh">镜像</b>sglang-rocm v0.5.23 (2026-11-05)</div>
+    <div><b lang="en">Model</b><b lang="zh">模型</b>GLM-5.3 FP8 · TP8 · MTP 3/1/4</div>
+    <div><b lang="en">Client</b><b lang="zh">客户端</b>InferenceX AgentX · 900 s</div>
+    <div><b lang="en">Change</b><b lang="zh">改动</b><a href="https://github.com/sgl-project/sgl-amd-mono/pull/136">sgl-amd-mono#136</a></div>
+    <div><b lang="en">Data</b><b lang="zh">数据</b><a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/glm53-pd-monokernel-mi355x">data/glm53-pd-monokernel-mi355x</a></div>
+  </div>
+</header>
+
+<main class="article">
+
+<section id="question">
+  <h2><span class="n">01</span><span lang="en">Question</span><span lang="zh">问题</span></h2>
+  <p lang="en">TileRT reports 469 tok/s per user for GLM-5.3 on eight MI355X by decoding one request at a time inside a single persistent kernel and handing prefill to another server (<a href="https://www.tilert.ai/blog/tilert-amd-agentx.html">TileRT blog</a>). Our own first PD runs looked twice as slow as one node. That raised two questions. Why was PD slow? And can PD together with AMD's monokernels beat the single-node monokernel curve on the AgentX chart, whose default axes are P90 E2E-normalized interactivity (x) and total tokens per second per GPU (y)?</p>
+  <p lang="zh">TileRT 公布的数据是： 在 8 张 MI355X 上， GLM-5.3 的单用户速度达到 469 tok/s。 做法是用一个常驻 kernel 一次只 decode 一个请求， prefill 交给另一台服务（<a href="https://www.tilert.ai/blog/tilert-amd-agentx.html">TileRT 博客</a>）。 我们最初的 PD 测试看起来比单节点慢一倍， 于是有了两个问题： PD 为什么慢？PD 加上 AMD 的 monokernel， 能不能在 AgentX 图上超过单节点 monokernel 的曲线？这张图默认的 x 轴是 P90 E2E 归一化交互性， y 轴是每 GPU 的总吞吐量。</p>
+  <div class="callout">
+    <p lang="en"><b>Verdict.</b> Disaggregation does not make decode faster; the decode kernel does. Our PD decode server ran SGLang's own path because the monokernel refused every PD server. Once it accepts a MoRI decode server, per-user decode speed rises from 213 to 474 tok/s at concurrency 1, with the same GSM8K score. On the same 16 GPUs, though, 1P1D does not beat two single-node replicas on this workload: about 95% of prompt tokens hit the prefix cache, so the prefill node idles while it doubles the GPU count. The lever for the chart is monokernel coverage at mid concurrency.</p>
+    <p lang="zh"><b>结论。</b> PD 分离本身不会让 decode 变快， 变快靠的是 decode kernel。 我们的 PD decode 服务走的是 SGLang 自己的路径， 因为 monokernel 拒绝所有 PD 服务。 让它接受使用 MoRI 的 decode 服务之后， c1 的单用户 decode 速度从 213 提高到 474 tok/s， GSM8K 不变。 但在同样的 16 张卡上， 对这个负载来说， 1P1D 超不过两份单节点副本： 约 95% 的 prompt token 命中 prefix cache， prefill 节点大部分时间空闲， 却让 GPU 数量翻了一倍。 对这张图来说， 真正有用的是 monokernel 在中等并发下的覆盖率。</p>
+  </div>
+</section>
+
+<section id="setup">
+  <h2><span class="n">02</span><span lang="en">Setup</span><span lang="zh">实验设置</span></h2>
+  <p lang="en">Three deployments serve the same model, image, recipe and client. Everything differs only in where prefill and decode run and how many GPUs are counted.</p>
+  <p lang="zh">三种部署使用同样的模型、镜像、recipe 和客户端， 区别只在 prefill 和 decode 在哪里运行， 以及计入多少张 GPU。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate I · <span lang="en">three ways to spend GPUs</span><span lang="zh">三种使用 GPU 的方式</span></div>
+    <svg viewBox="0 0 960 250" role="img" aria-label="Three deployments">
+      <defs><marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b9aa6"/></marker></defs>
+      <text x="20" y="22" class="diag-dim">A · agg, one node (8 GPUs)</text>
+      <rect x="20" y="34" width="270" height="150" class="diag-node"/>
+      <rect x="36" y="52" width="238" height="52" fill="rgba(255,181,71,.14)" stroke="#ffb547"/>
+      <text x="155" y="83" text-anchor="middle" class="diag-text">prefill + decode share 8 GPUs</text>
+      <rect x="36" y="116" width="238" height="52" fill="rgba(124,245,180,.12)" stroke="#7cf5b4"/>
+      <text x="155" y="140" text-anchor="middle" class="diag-text">monokernel on decode steps</text>
+      <text x="155" y="157" text-anchor="middle" class="diag-dim">≤ 8 rows = 2 × 4 tokens</text>
+      <text x="345" y="22" class="diag-dim">B · agg, two nodes + router (16)</text>
+      <rect x="345" y="34" width="270" height="150" class="diag-node"/>
+      <rect x="361" y="74" width="110" height="94" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/>
+      <rect x="489" y="74" width="110" height="94" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/>
+      <text x="416" y="117" text-anchor="middle" class="diag-text">node 1</text><text x="544" y="117" text-anchor="middle" class="diag-text">node 2</text>
+      <text x="416" y="134" text-anchor="middle" class="diag-dim">c / 2 users</text><text x="544" y="134" text-anchor="middle" class="diag-dim">c / 2 users</text>
+      <rect x="430" y="44" width="100" height="22" fill="#0f1316" stroke="#8b9aa6"/><text x="480" y="59" text-anchor="middle" class="diag-dim">cache_aware</text>
+      <path d="M465 66 L425 74" class="diag-edge" marker-end="url(#arrowhead)"/><path d="M495 66 L535 74" class="diag-edge" marker-end="url(#arrowhead)"/>
+      <text x="670" y="22" class="diag-dim">C · PD 1P1D + router (16)</text>
+      <rect x="670" y="34" width="270" height="150" class="diag-node"/>
+      <rect x="686" y="74" width="110" height="94" fill="rgba(255,181,71,.12)" stroke="#ffb547"/>
+      <rect x="814" y="74" width="110" height="94" fill="rgba(124,245,180,.12)" stroke="#7cf5b4"/>
+      <text x="741" y="112" text-anchor="middle" class="diag-text">prefill</text><text x="741" y="129" text-anchor="middle" class="diag-dim">stock path</text>
+      <text x="869" y="112" text-anchor="middle" class="diag-text">decode</text><text x="869" y="129" text-anchor="middle" class="diag-dim">monokernel</text>
+      <path d="M796 150 L814 150" class="diag-edge" marker-end="url(#arrowhead)"/>
+      <text x="805" y="196" text-anchor="middle" class="diag-dim">KV over MoRI, 8 × 400G</text>
+      <rect x="755" y="44" width="100" height="22" fill="#0f1316" stroke="#8b9aa6"/><text x="805" y="59" text-anchor="middle" class="diag-dim">pd router</text>
+      <text x="20" y="232" class="diag-dim">tok/s/GPU divides by every GPU drawn: 8 for A, 16 for B and C.</text>
+    </svg>
+    <p class="caption" lang="en">B is the honest baseline for C: same GPUs, same users, only the split of work changes.</p>
+    <p class="caption" lang="zh">B 才是 C 的公平基线： GPU 一样， 用户一样， 变的只是工作怎么分。</p>
+  </figure>
+  <p lang="en">Why not compare PD with one node at half the concurrency? Because the AgentX client replays a different set of sessions at each concurrency, so "one node at c/2" serves a different workload. B serves the identical trace set at the same total concurrency, with a cache-aware router so that a session's turns keep landing where their prefix is cached.</p>
+  <p lang="zh">为什么不直接拿 PD 和“单节点跑一半并发”比较？因为 AgentX 客户端在每个并发档位回放的会话集合不同， “单节点 c/2”跑的其实是另一份负载。 B 在同样的总并发下回放同一组 trace， router 按缓存分流， 让同一个会话的后续轮次落在已经缓存了它前缀的节点上。</p>
+  <p lang="en">Method: fresh servers for every point; 900-s window after 10 warmup requests per lane; MTP acceptance simulated at 2.94 as the InferenceX recipe does (realized 2.95 in every run); quality arms use real acceptance. A run counts only if neither server nor router restarted, no KV transfer failed, and the window holds at most one request error. Run-to-run spread, from two fresh single-node servers at concurrency 1: tok/s/GPU −0.6%, ITL −0.5%, E2EL P90 −4.0%, TTFT P50 −11.8%, P90 E2E-normalized interactivity +25%.</p>
+  <p lang="zh">方法： 每个点都新起服务；每条通道先跑 10 个 warmup 请求， 再测 900 秒；MTP acceptance 按 InferenceX recipe 模拟为 2.94（每次运行实测都是 2.95）；质量测试使用真实 acceptance。 一次运行只有在服务和 router 都没有重启、没有 KV 传输失败、测量窗口内最多 1 个请求错误时才计入。 同一配置跑两次的波动（单节点 c1， 两次新起服务）： 吞吐量 −0.6%， ITL −0.5%， E2EL P90 −4.0%， TTFT P50 −11.8%， P90 E2E 归一化交互性 +25%。</p>
+</section>
+
+<section id="quality">
+  <h2><span class="n">03</span><span lang="en">Quality</span><span lang="zh">质量</span></h2>
+  <p lang="en">GSM8K, all 1319 questions, strict match, concurrency 2, real MTP acceptance. The comparison is paired: McNemar counts the questions one arm gets right and the other gets wrong, which is what changes when a code path is wrong.</p>
+  <p lang="zh">GSM8K 全部 1319 题， strict match， 并发 2， 真实 MTP acceptance。 比较方式是配对的： McNemar 只统计“一边对、另一边错”的题目， 代码路径出错时变化的正是这部分。</p>
+  <table>
+    <tr><th><span lang="en">arm</span><span lang="zh">测试臂</span></th><th class="v">GSM8K</th><th class="v"><span lang="en">only ref right</span><span lang="zh">仅基线对</span></th><th class="v"><span lang="en">only arm right</span><span lang="zh">仅本臂对</span></th><th class="v">p</th></tr>
+    <tr><td><span lang="en">agg, no monokernel (reference)</span><span lang="zh">agg， 无 monokernel（基线）</span></td><td class="v">0.9750</td><td class="v">—</td><td class="v">—</td><td class="v">—</td></tr>
+    <tr><td><span lang="en">agg, monokernel</span><span lang="zh">agg， monokernel</span></td><td class="v">0.9750</td><td class="v">5</td><td class="v">5</td><td class="v">1.000</td></tr>
+    <tr><td><span lang="en">PD, no decode radix</span><span lang="zh">PD， 无 decode radix</span></td><td class="v">0.9773</td><td class="v">2</td><td class="v">5</td><td class="v">0.453</td></tr>
+    <tr><td><span lang="en">PD + decode radix</span><span lang="zh">PD + decode radix</span></td><td class="v">0.9742</td><td class="v">5</td><td class="v">4</td><td class="v">1.000</td></tr>
+    <tr class="hl"><td><span lang="en">PD + decode radix + decode monokernel</span><span lang="zh">PD + decode radix + decode monokernel</span></td><td class="v">0.9742</td><td class="v">5</td><td class="v">4</td><td class="v">1.000</td></tr>
+  </table>
+  <p lang="en">Why not greedy token parity? On this FP8 + MTP stack two fresh servers without monokernels already differ on near-tie tokens, so a parity gate would fail correct code. The 32 greedy prompts are kept only as a liveness check: every arm returns text for all of them.</p>
+  <p lang="zh">为什么不用 greedy 逐 token 对比？在这个 FP8 + MTP 的栈上， 两个新起的、不开 monokernel 的服务， 在概率接近的 token 上就已经会不一样， 所以逐 token 对比会把正确的代码判为错误。 32 条 greedy prompt 只用来确认服务能正常返回： 每个测试臂都全部返回了内容。</p>
+</section>
+
+<section id="pd-mono">
+  <h2><span class="n">04</span><span lang="en">PD with and without monokernels</span><span lang="zh">PD 开关 monokernel</span></h2>
+  <h3 lang="en">Why the PD decode server ran the slow path</h3>
+  <h3 lang="zh">为什么 PD 的 decode 服务走了慢路径</h3>
+  <p lang="en">A monokernel is a fused kernel for a narrow set of server configurations, so each model's spec declares the features it was validated with, and SGLang's binding refuses to start when a feature in use is missing from that list. PD disaggregation is one such feature: setting <code>--disaggregation-mode</code> marks it in use. The DeepSeek-V4.1 spec declares it (<a href="https://github.com/sgl-project/sgl-amd-mono/pull/70">sgl-amd-mono#70</a>); the GLM-5.3 spec did not, so a GLM-5.3 PD server either refused <code>--enable-amd-monokernel</code> or ran without it.</p>
+  <p lang="zh">monokernel 是为一小组服务配置专门融合的 kernel， 所以每个模型的 spec 都会声明它验证过哪些功能；只要正在使用的某个功能不在这个列表里， SGLang 就拒绝启动。 PD 分离就是这样一个功能： 设置 <code>--disaggregation-mode</code> 就算在使用。 DeepSeek-V4.1 的 spec 声明了它（<a href="https://github.com/sgl-project/sgl-amd-mono/pull/70">sgl-amd-mono#70</a>）， GLM-5.3 的没有， 所以 GLM-5.3 的 PD 服务要么拒绝 <code>--enable-amd-monokernel</code>， 要么只能不开它运行。</p>
+  <p lang="en">The change (<a href="https://github.com/sgl-project/sgl-amd-mono/pull/136">sgl-amd-mono#136</a>) declares the feature on the target and NextN draft specs and refuses every PD role except a decode server on MoRI. Decode only, because prefill steps are long chunks that the monokernel was never built for. Safe on decode, because the kernels read only the MLA KV cache and the indexer's key cache, and SGLang's DSA pool hands both to the transfer engine, so MoRI fills exactly the buffers the kernels read. MoRI only, because that is the backend this was validated on; another backend would be an untested claim.</p>
+  <p lang="zh">这次的改动（<a href="https://github.com/sgl-project/sgl-amd-mono/pull/136">sgl-amd-mono#136</a>）在 target 和 NextN draft 的 spec 里声明了这个功能， 并且只放行使用 MoRI 的 decode 服务， 其他 PD 角色一律拒绝。 只放行 decode， 是因为 prefill 跑的是长分块， monokernel 本来就不是为它设计的。 在 decode 上是安全的， 因为 kernel 只读 MLA KV cache 和 indexer 的 key cache， 而 SGLang 的 DSA 池会把这两块都交给传输引擎， MoRI 填的正好是 kernel 要读的缓冲区。 只放行 MoRI， 是因为只在这个后端上验证过， 换别的后端就是没有验证过的说法。</p>
+  <figure class="plate">
+    <div class="plate-meta">Plate II · <span lang="en">per-user decode speed, PD</span><span lang="zh">PD 的单用户 decode 速度</span></div>
+    <svg viewBox="0 0 700 260" role="img" aria-label="Interactivity P50 by concurrency">
+      <line x1="60" y1="210" x2="680" y2="210" stroke="#2b3a44"/>
+      <g class="diag-dim"><text x="52" y="214" text-anchor="end">0</text><text x="52" y="124" text-anchor="end">250</text><text x="52" y="34" text-anchor="end">500</text></g>
+      <line x1="60" y1="120" x2="680" y2="120" stroke="#1f2a31"/><line x1="60" y1="30" x2="680" y2="30" stroke="#1f2a31"/>
+      <!-- 0.36 px per tok/s; groups at 110, 260, 410, 560; bars 38 wide -->
+      <rect x="90" y="133.3" width="38" height="76.7" fill="#8b9aa6"/><rect x="132" y="39.4" width="38" height="170.6" fill="#7cf5b4"/>
+      <rect x="240" y="136.2" width="38" height="73.8" fill="#8b9aa6"/><rect x="282" y="41.9" width="38" height="168.1" fill="#7cf5b4"/>
+      <rect x="390" y="135.3" width="38" height="74.7" fill="#8b9aa6"/><rect x="432" y="42.2" width="38" height="167.8" fill="#7cf5b4"/>
+      <rect x="540" y="156.8" width="38" height="53.2" fill="#8b9aa6"/><rect x="582" y="151.7" width="38" height="58.3" fill="#7cf5b4"/>
+      <g class="diag-text" text-anchor="middle">
+        <text x="109" y="127">213</text><text x="151" y="33">474</text><text x="259" y="130">205</text><text x="301" y="36">467</text>
+        <text x="409" y="129">208</text><text x="451" y="36">466</text><text x="559" y="151">148</text><text x="601" y="146">162</text>
+      </g>
+      <g class="diag-dim" text-anchor="middle"><text x="130" y="230">c1</text><text x="280" y="230">c2</text><text x="430" y="230">c4</text><text x="580" y="230">c10</text></g>
+      <rect x="330" y="244" width="12" height="10" fill="#8b9aa6"/><text x="348" y="253" class="diag-dim">off</text>
+      <rect x="400" y="244" width="12" height="10" fill="#7cf5b4"/><text x="418" y="253" class="diag-dim">decode monokernel on</text>
+    </svg>
+    <p class="caption" lang="en">Interactivity P50 (tok/s/user) of 1P1D with the decode radix cache. Past 2 requests a step the monokernel hands the step back, which is why c10 gains only 10%.</p>
+    <p class="caption" lang="zh">1P1D（开 decode radix cache）的单用户速度 P50（tok/s/user）。 每步超过 2 个请求时， monokernel 会把这一步交回 SGLang 自己的路径， 所以 c10 只提高 10%。</p>
+  </figure>
+  <table>
+    <tr><th>conc</th><th><span lang="en">monokernel</span><span lang="zh">monokernel</span></th><th class="v">intvty P50 / P90</th><th class="v">ITL P50 / P90 ms</th><th class="v">TTFT P50 s</th><th class="v">E2EL P90 s</th><th class="v">tok/s/GPU</th></tr>
+    <tr><td>1</td><td><span lang="en">off</span><span lang="zh">关</span></td><td class="v">213 / 200</td><td class="v">4.69 / 4.99</td><td class="v">0.31</td><td class="v">14.61</td><td class="v">1308</td></tr>
+    <tr class="hl"><td>1</td><td><span lang="en">on</span><span lang="zh">开</span></td><td class="v">474 / 432</td><td class="v">2.11 / 2.32</td><td class="v">0.30</td><td class="v">8.72</td><td class="v">1448</td></tr>
+    <tr><td>2</td><td><span lang="en">off</span><span lang="zh">关</span></td><td class="v">205 / 171</td><td class="v">4.88 / 5.84</td><td class="v">0.39</td><td class="v">15.05</td><td class="v">1186</td></tr>
+    <tr class="hl"><td>2</td><td><span lang="en">on</span><span lang="zh">开</span></td><td class="v">467 / 321</td><td class="v">2.14 / 3.11</td><td class="v">0.41</td><td class="v">9.44</td><td class="v">1373</td></tr>
+    <tr><td>4</td><td><span lang="en">off</span><span lang="zh">关</span></td><td class="v">208 / 164</td><td class="v">4.82 / 6.09</td><td class="v">0.25</td><td class="v">21.13</td><td class="v">1263</td></tr>
+    <tr class="hl"><td>4</td><td><span lang="en">on</span><span lang="zh">开</span></td><td class="v">466 / 252</td><td class="v">2.15 / 3.96</td><td class="v">0.24</td><td class="v">10.14</td><td class="v">1706</td></tr>
+    <tr><td>10</td><td><span lang="en">off</span><span lang="zh">关</span></td><td class="v">148 / 121</td><td class="v">6.77 / 8.25</td><td class="v">0.36</td><td class="v">17.45</td><td class="v">4108</td></tr>
+    <tr class="hl"><td>10</td><td><span lang="en">on</span><span lang="zh">开</span></td><td class="v">162 / 128</td><td class="v">6.18 / 7.84</td><td class="v">0.34</td><td class="v">13.24</td><td class="v">4231</td></tr>
+  </table>
+  <div class="callout warn">
+    <p lang="en"><b>One trap on the way.</b> The PD router checks the prefill server's <code>/health</code> with a 5-s timeout. A prefill busy with 32K-token cold chunks of 200K-token contexts misses three checks in a row, the router marks it dead, and every request fails with “no available prefill workers”. The PD points with monokernels use a 120-s timeout; a run in which no check times out routes identically either way.</p>
+    <p lang="zh"><b>中途踩到的一个坑。</b> PD router 检查 prefill 服务的 <code>/health</code> 时， 默认超时是 5 秒。 prefill 正在处理 20 万 token 上下文的冷启动分块（每块 32K token）， 连续 3 次没能及时回应， router 就判定它挂了， 之后所有请求都报“no available prefill workers”。 开 monokernel 的 PD 点都把超时改成了 120 秒；只要运行中没有出现检查超时， 两种设置下的路由行为完全一样。</p>
+  </div>
+</section>
+
+<section id="versus-agg">
+  <h2><span class="n">05</span><span lang="en">Against single-node serving</span><span lang="zh">对比单节点服务</span></h2>
+  <p lang="en">Against one node with monokernels, PD wins the tail from concurrency 2 up: at c4 its ITL P90 is 3.96 ms against 7.14 ms, because another user's prefill no longer shares the decode GPUs. It pays about half the tokens per GPU, since it uses twice the GPUs for the same users.</p>
+  <p lang="zh">和开 monokernel 的单节点相比， 从 c2 起 PD 在尾延迟上占优： c4 时它的 ITL P90 是 3.96 ms， 单节点是 7.14 ms， 因为其他用户的 prefill 不再和 decode 共用同一批 GPU。 代价是每张 GPU 的吞吐量只有一半左右， 因为同样的用户用了两倍的 GPU。</p>
+  <p lang="en">The fair comparison is B, two single-node replicas on the same 16 GPUs:</p>
+  <p lang="zh">公平的比较对象是 B， 也就是同样 16 张卡上的两份单节点副本：</p>
+  <table>
+    <tr><th>conc</th><th><span lang="en">deployment</span><span lang="zh">部署</span></th><th class="v">GPUs</th><th class="v">intvty P50 / P90</th><th class="v">ITL P50 / P90 ms</th><th class="v">TTFT P50 s</th><th class="v">E2EL P90 s</th><th class="v">tok/s/GPU</th></tr>
+    <tr><td>4</td><td><span lang="en">one node</span><span lang="zh">单节点</span></td><td class="v">8</td><td class="v">390 / 140</td><td class="v">2.57 / 7.14</td><td class="v">0.22</td><td class="v">11.48</td><td class="v">3636</td></tr>
+    <tr><td>4</td><td><span lang="en">two nodes</span><span lang="zh">两节点</span></td><td class="v">16</td><td class="v">456 / 165</td><td class="v">2.19 / 6.06</td><td class="v">0.21</td><td class="v">9.67</td><td class="v">1876</td></tr>
+    <tr class="hl"><td>4</td><td style="white-space:nowrap">PD + mono</td><td class="v">16</td><td class="v">466 / 252</td><td class="v">2.15 / 3.96</td><td class="v">0.24</td><td class="v">10.14</td><td class="v">1706</td></tr>
+    <tr><td>10</td><td><span lang="en">one node</span><span lang="zh">单节点</span></td><td class="v">8</td><td class="v">124 / 83</td><td class="v">8.07 / 12.03</td><td class="v">0.30</td><td class="v">16.63</td><td class="v">8021</td></tr>
+    <tr><td>10</td><td><span lang="en">two nodes</span><span lang="zh">两节点</span></td><td class="v">16</td><td class="v">216 / 130</td><td class="v">4.62 / 7.68</td><td class="v">0.23</td><td class="v">9.35</td><td class="v">4492</td></tr>
+    <tr class="hl"><td>10</td><td style="white-space:nowrap">PD + mono</td><td class="v">16</td><td class="v">162 / 128</td><td class="v">6.18 / 7.84</td><td class="v">0.34</td><td class="v">13.24</td><td class="v">4231</td></tr>
+  </table>
+  <p lang="en">Why does disaggregation lose here? Its benefit is isolating decode from prefill, and its price is a node that only prefills. On these agentic traces about 95% of prompt tokens are prefix-cache hits, so each turn's new prefill is a few thousand tokens and the prefill node sits idle most of the time. Two replicas spend the same GPUs on decode for half the users each, which shrinks each node's decode batch, and smaller batches are exactly where the monokernel applies. PD keeps an edge only in the tail at c4; at c10 the two replicas lead on median interactivity (216 against 162), TTFT, E2EL and tokens per GPU, and the tails are even.</p>
+  <p lang="zh">为什么 PD 在这里会输？它的好处是把 decode 和 prefill 隔开， 代价是有一台节点只做 prefill。 在这批 agentic trace 上， 约 95% 的 prompt token 命中 prefix cache， 每一轮新的 prefill 只有几千个 token， prefill 节点大部分时间空闲。 两份副本把同样的 GPU 都用在 decode 上， 每份只服务一半用户， 每台节点的 decode 批次就变小了， 而批次小正是 monokernel 能起作用的情况。 PD 只在 c4 的尾延迟上还保有优势；到 c10， 两份副本在交互性中位数（216 对 162）、TTFT、E2EL 和每 GPU 吞吐量上都领先， 尾部持平。</p>
+</section>
+
+<section id="axes">
+  <h2><span class="n">06</span><span lang="en">The AgentX axes</span><span lang="zh">AgentX 的两个轴</span></h2>
+  <p lang="en">The dashboard's AgentX chart plots P90 E2E-normalized interactivity against total tokens per second per GPU (InferenceX's <code>published_metrics.py</code>). Published points come from InferenceX's own 3600-s runs (<a href="https://inferencex.semianalysis.com/api/v1/benchmarks?model=GLM-5.2">API</a>; TileRT's <a href="https://github.com/SemiAnalysisAI/InferenceX/actions/runs/37176931565/attempts/1">run</a>). Our points are 900-s local runs, so their x values sit lower and are compared only with each other.</p>
+  <p lang="zh">仪表盘的 AgentX 图把 P90 E2E 归一化交互性和每 GPU 总吞吐量画在一起（见 InferenceX 的 <code>published_metrics.py</code>）。 公开的点来自 InferenceX 自己的 3600 秒运行（<a href="https://inferencex.semianalysis.com/api/v1/benchmarks?model=GLM-5.2">API</a>；TileRT 的<a href="https://github.com/SemiAnalysisAI/InferenceX/actions/runs/37176931565/attempts/1">运行记录</a>）。 我们的点是本地 900 秒的运行， x 值整体偏低， 只在彼此之间比较。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate III · <span lang="en">x: P90 E2E-normalized interactivity · y: tok/s/GPU</span><span lang="zh">x： P90 E2E 归一化交互性 · y： 每 GPU 吞吐量</span></div>
+    <svg viewBox="0 0 960 330" role="img" aria-label="AgentX scatter, published and local">
+      <!-- panel geometry: width 400, height 240; x 40..140 -> 0..400 (4 px/unit); y 0..9000 -> 240..0 (0.02667 px/unit) -->
+      <g transform="translate(60,30)">
+        <rect width="400" height="240" fill="#11181d" stroke="#2b3a44"/>
+        <text x="0" y="-10" class="diag-dim">published · 3600 s</text>
+        <polyline points="353.6,164.4 331.2,124.9 74.8,57.1" fill="none" stroke="#7ec8ff" stroke-dasharray="4 3"/>
+        <circle cx="353.6" cy="164.4" r="5" fill="#7ec8ff"/><circle cx="330.4" cy="154.0" r="5" fill="#7ec8ff"/><circle cx="331.2" cy="124.9" r="5" fill="#7ec8ff"/><circle cx="74.8" cy="57.1" r="5" fill="#7ec8ff"/>
+        <circle cx="233.6" cy="199.1" r="6" fill="#ff6b6b"/>
+        <text x="241" y="214" class="diag-text" fill="#ff6b6b">TileRT c1 (16)</text>
+        <text x="150" y="142" class="diag-text">sglang FP8 mono (8)</text>
+        <g class="diag-dim" style="font-size:10px"><text x="362" y="168">c1</text><text x="322" y="166" text-anchor="end">c2</text><text x="340" y="121">c4</text><text x="84" y="52">c10</text></g>
+        <g class="diag-dim"><text x="0" y="256">40</text><text x="232" y="256">100</text><text x="390" y="256">140</text><text x="-6" y="244" text-anchor="end">0</text><text x="-6" y="8" text-anchor="end">9000</text></g>
+      </g>
+      <g transform="translate(520,30)">
+        <rect width="400" height="240" fill="#11181d" stroke="#2b3a44"/>
+        <text x="0" y="-10" class="diag-dim">local · 900 s</text>
+        <circle cx="88.4" cy="163.3" r="4.5" fill="#8b9aa6"/><circle cx="261.2" cy="171.8" r="4.5" fill="#8b9aa6"/><circle cx="160.4" cy="143.0" r="4.5" fill="#8b9aa6"/><circle cx="92.0" cy="26.1" r="4.5" fill="#8b9aa6"/>
+        <circle cx="77.6" cy="201.4" r="4.5" fill="#c3a6ff"/><circle cx="133.6" cy="203.4" r="4.5" fill="#c3a6ff"/><circle cx="238.8" cy="194.5" r="4.5" fill="#c3a6ff"/><circle cx="153.2" cy="127.2" r="4.5" fill="#c3a6ff"/>
+        <circle cx="191.2" cy="190.0" r="4.5" fill="#7cf5b4"/><circle cx="214.0" cy="120.2" r="4.5" fill="#7cf5b4"/>
+        <polyline points="261.2,171.8 214.0,120.2 92.0,26.1" fill="none" stroke="#7cf5b4" stroke-dasharray="4 3"/>
+        <text x="270" y="166" class="diag-text">mono c2</text><text x="222" y="114" class="diag-text">2 nodes c10</text><text x="102" y="22" class="diag-text">mono c10</text>
+        <text x="246" y="214" class="diag-text" fill="#c3a6ff">PD + mono c4</text>
+        <g class="diag-dim" style="font-size:10px"><text x="96" y="160">c1</text><text x="168" y="140">c4</text><text x="85" y="198">c1</text><text x="141" y="200">c2</text><text x="161" y="124">c10</text><text x="199" y="187">c4</text></g>
+        <g class="diag-dim"><text x="0" y="256">40</text><text x="232" y="256">100</text><text x="390" y="256">140</text></g>
+      </g>
+      <rect x="520" y="300" width="10" height="10" fill="#8b9aa6"/><text x="536" y="309" class="diag-dim">one node (8)</text>
+      <rect x="640" y="300" width="10" height="10" fill="#7cf5b4"/><text x="656" y="309" class="diag-dim">two nodes (16)</text>
+      <rect x="790" y="300" width="10" height="10" fill="#c3a6ff"/><text x="806" y="309" class="diag-dim">PD + mono (16)</text>
+    </svg>
+    <p class="caption" lang="en">Left: TileRT's single point is already below and left of the published single-node monokernel curve. Right: the local frontier (dashed) is one node at c2, two nodes at c10 and one node at c10; no PD point reaches it.</p>
+    <p class="caption" lang="zh">左： TileRT 唯一的点已经落在公开的单节点 monokernel 曲线左下方。 右： 本地数据的前沿（虚线）由单节点 c2、两节点 c10 和单节点 c10 组成， PD 的点一个都没有到达前沿。</p>
+  </figure>
+  <p lang="en">TileRT's interactivity comes from batch-1 decode, and so does its cost: at 16 GPUs for one user, its tokens per GPU are about half of a single node's. The published single-node monokernel point at c1 (128.4, 2834 tok/s/GPU on 8 GPUs) sits above and to the right of TileRT's (98.4, 1534 on 16). The question the chart actually poses is therefore whether we can move our own curve, and PD on this workload is not the way.</p>
+  <p lang="zh">TileRT 的交互性来自 batch 为 1 的 decode， 代价也来自这里： 一个用户占 16 张卡， 每张卡的吞吐量只有单节点的一半左右。 公开的单节点 monokernel c1 点（128.4， 8 张卡 2834 tok/s/GPU）在 TileRT（98.4， 16 张卡 1534）的右上方。 所以这张图真正的问题是： 能不能把我们自己的曲线往右上推？在这个负载上， PD 不是办法。</p>
+</section>
+
+<section id="coverage">
+  <h2><span class="n">07</span><span lang="en">Coverage</span><span lang="zh">覆盖率</span></h2>
+  <p lang="en">The published curve falls from 122.8 at c4 to 58.7 at c10. The decode logs say why: at c10 only 35% of decode steps carry at most two requests, the most the monokernel takes, and every wider step runs the stock path.</p>
+  <p lang="zh">公开曲线从 c4 的 122.8 掉到 c10 的 58.7。 decode 日志说明了原因： c10 时只有 35% 的 decode 步骤同时最多只有 2 个请求， 这是 monokernel 能处理的上限， 更宽的步骤都走了 SGLang 自己的路径。</p>
+  <figure class="plate">
+    <div class="plate-meta">Plate IV · <span lang="en">requests per decode step, one node at c10</span><span lang="zh">单节点 c10 每个 decode 步骤的请求数</span></div>
+    <svg viewBox="0 0 700 260" role="img" aria-label="Decode batch histogram">
+      <line x1="50" y1="210" x2="680" y2="210" stroke="#2b3a44"/>
+      <!-- 11 bars, 50 px pitch from x=60; 0.75 px per sample -->
+      <g fill="#7cf5b4"><rect x="62" y="39.8" width="40" height="170.2"/><rect x="112" y="92.3" width="40" height="117.7"/></g>
+      <g fill="#ffb547"><rect x="162" y="108.8" width="40" height="101.2"/></g>
+      <g fill="#8b9aa6"><rect x="212" y="95.3" width="40" height="114.7"/><rect x="262" y="88.5" width="40" height="121.5"/><rect x="312" y="96.8" width="40" height="113.2"/><rect x="362" y="165.8" width="40" height="44.2"/><rect x="412" y="188.3" width="40" height="21.7"/><rect x="462" y="200.3" width="40" height="9.7"/><rect x="512" y="204.8" width="40" height="5.2"/><rect x="562" y="208.5" width="40" height="1.5"/></g>
+      <g class="diag-dim" text-anchor="middle"><text x="82" y="228">1</text><text x="132" y="228">2</text><text x="182" y="228">3</text><text x="232" y="228">4</text><text x="282" y="228">5</text><text x="332" y="228">6</text><text x="382" y="228">7</text><text x="432" y="228">8</text><text x="482" y="228">9</text><text x="532" y="228">10</text><text x="582" y="228">11</text></g>
+      <line x1="157" y1="24" x2="157" y2="210" stroke="#7cf5b4" stroke-dasharray="3 3"/><text x="160" y="20" class="diag-text">8 rows: 35%</text>
+      <line x1="207" y1="44" x2="207" y2="210" stroke="#ffb547" stroke-dasharray="3 3"/><text x="210" y="40" class="diag-text" fill="#ffb547">12 rows: 47%</text>
+      <line x1="257" y1="64" x2="257" y2="210" stroke="#8b9aa6" stroke-dasharray="3 3"/><text x="260" y="60" class="diag-dim">16 rows: 61%</text>
+      <line x1="457" y1="84" x2="457" y2="210" stroke="#8b9aa6" stroke-dasharray="3 3"/><text x="460" y="80" class="diag-dim">32 rows: 98%</text>
+      <text x="365" y="250" text-anchor="middle" class="diag-dim">running requests in a decode step (MTP: 4 rows each)</text>
+    </svg>
+    <p class="caption" lang="en">1095 samples, one every 40 decode steps. At c4 the same count is 96%, so widening the kernel mostly matters from c6 up.</p>
+    <p class="caption" lang="zh">共 1095 个样本， 每 40 个 decode 步骤采样一次。 c4 时同样的比例是 96%， 所以加宽 kernel 主要对 c6 以上有意义。</p>
+  </figure>
+  <p lang="en">Why only 8 rows? A step of MTP verify carries 4 tokens per request, so 8 rows is 2 requests. The kernel keeps a workgroup's working set in its local data share, with a static budget of 32,768 words (128 KiB). Several stages stage every row there at once; the tail and the NextN entry hold each row's hidden state in bf16, 3,072 words a row at GLM-5.3's hidden size of 6,144, so 12 rows alone need 36,864 words. The easy way out is one launch per 8 rows, which reads every weight once per launch. That is acceptable for the tail, which runs once a step, but not for every layer, where avoiding weight re-reads is the reason a decode monokernel exists. The layers have to fit 12 rows into the same budget.</p>
+  <p lang="zh">为什么只有 8 行？MTP verify 的每一步， 每个请求带 4 个 token， 所以 8 行就是 2 个请求。 kernel 把一个 workgroup 的工作数据放在 LDS 里， 静态预算是 32768 个字（128 KiB）。 有几个阶段要一次性把所有行都放进 LDS： tail 和 NextN 入口阶段要保存每一行的 bf16 hidden state， GLM-5.3 的 hidden size 是 6144， 每行占 3072 个字， 12 行就要 36864 个字。 最省事的办法是每 8 行启动一次， 但每次启动都要把权重再读一遍。 tail 每步只跑一次， 可以接受；每一层都这样做就不行了， 因为 decode monokernel 存在的意义就是避免重复读权重。 所以每一层都必须在同样的预算里放下 12 行。</p>
+</section>
+
+<section id="width12">
+  <h2><span class="n">08</span><span lang="en">Widening to 12 rows</span><span lang="zh">加宽到 12 行</span></h2>
+  <p lang="en">Twelve rows (3 requests) would lift c10 coverage from 35% to 47%. The work is in progress; this is where it stands. Each limit below surfaced only after the previous one was gone, through the repository's own layer check (<code>test/kernels/glm53/check_layer.py</code>, random weights, eight GPUs) and a server run with per-layer comparison against SGLang.</p>
+  <p lang="zh">12 行（3 个请求）能把 c10 的覆盖率从 35% 提到 47%。 这项工作还在进行， 下面是目前的状态。 下面每一处限制， 都是在解决了前一处之后才暴露出来的， 用的是仓库自带的逐层检查工具（<code>test/kernels/glm53/check_layer.py</code>， 随机权重， 8 张卡）和一次逐层对比 SGLang 参考实现的服务运行。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate V · <span lang="en">the 12-row path through one decode step</span><span lang="zh">一个 decode 步骤里 12 行要经过的路径</span></div>
+    <svg viewBox="0 0 960 200" role="img" aria-label="Width 12 status by stage">
+      <defs><marker id="arrowhead2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b9aa6"/></marker></defs>
+      <g>
+        <rect x="13" y="50" width="118" height="70" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/><text x="72" y="80" text-anchor="middle" class="diag-text">step tables</text><text x="72" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px">pow-2 range</text>
+        <rect x="149" y="50" width="118" height="70" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/><text x="208" y="80" text-anchor="middle" class="diag-text">input proj.</text><text x="208" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px">per-group units</text>
+        <rect x="285" y="50" width="118" height="70" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/><text x="344" y="80" text-anchor="middle" class="diag-text">attention</text><text x="344" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px">new-row region</text>
+        <rect x="421" y="50" width="118" height="70" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/><text x="480" y="80" text-anchor="middle" class="diag-text">router</text><text x="480" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px">unchanged</text>
+        <rect x="557" y="50" width="118" height="70" fill="rgba(255,107,107,.12)" stroke="#ff6b6b"/><text x="616" y="80" text-anchor="middle" class="diag-text" style="font-size:11px">up/gate → down</text><text x="616" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px" fill="#ff6b6b">4-row groups</text>
+        <rect x="693" y="50" width="118" height="70" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/><text x="752" y="80" text-anchor="middle" class="diag-text">tail</text><text x="752" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px">8 + 4 launch</text>
+        <rect x="829" y="50" width="118" height="70" fill="rgba(124,245,180,.10)" stroke="#7cf5b4"/><text x="888" y="80" text-anchor="middle" class="diag-text">NextN</text><text x="888" y="99" text-anchor="middle" class="diag-dim" style="font-size:10px">cap 8</text>
+      </g>
+      <g><path d="M131 85 L147 85" class="diag-edge" marker-end="url(#arrowhead2)"/><path d="M267 85 L283 85" class="diag-edge" marker-end="url(#arrowhead2)"/><path d="M403 85 L419 85" class="diag-edge" marker-end="url(#arrowhead2)"/><path d="M539 85 L555 85" class="diag-edge" marker-end="url(#arrowhead2)"/><path d="M675 85 L691 85" class="diag-edge" marker-end="url(#arrowhead2)"/><path d="M811 85 L827 85" class="diag-edge" marker-end="url(#arrowhead2)"/></g>
+      <text x="13" y="150" class="diag-dim">green: works at 12 rows · red: verify rows time out at the down stage's wait for the FP8 mid tile</text>
+      <text x="13" y="172" class="diag-dim">check_layer at 12 rows: shared p0, dense v4, head pass · shared v4, index v4 deadline</text>
+    </svg>
+    <p class="caption" lang="en">Dense layers already match SGLang at 12 rows (streams cosine 0.99993); the first MoE layer is where verify-shaped batches stop.</p>
+    <p class="caption" lang="zh">dense 层在 12 行下已经和 SGLang 吻合（streams 的 cosine 为 0.99993）， MTP verify 形状的批次停在第一个 MoE 层。</p>
+  </figure>
+  <table>
+    <tr><th>#</th><th><span lang="en">limit</span><span lang="zh">限制</span></th><th><span lang="en">change</span><span lang="zh">改法</span></th><th><span lang="en">status</span><span lang="zh">状态</span></th></tr>
+    <tr><td>1</td><td><span lang="en">the width table stops at 8</span><span lang="zh">宽度表只到 8</span></td><td><span lang="en">add 12</span><span lang="zh">加入 12</span></td><td class="ok"><span lang="en">done</span><span lang="zh">已完成</span></td></tr>
+    <tr><td>2</td><td><span lang="en">the tail stages all rows in LDS</span><span lang="zh">tail 要把所有行放进 LDS</span></td><td><span lang="en">an 8-row and a 4-row launch that write one shared output; the step's synchronization counts both</span><span lang="zh">拆成 8 行和 4 行两次启动， 写入同一份输出；这一步的同步计数把两次启动都算进去</span></td><td class="ok"><span lang="en">done</span><span lang="zh">已完成</span></td></tr>
+    <tr><td>3</td><td><span lang="en">the NextN entry has the same LDS need</span><span lang="zh">NextN 入口有同样的 LDS 需求</span></td><td><span lang="en">draft widths capped at 8; wider draft steps take SGLang's path</span><span lang="zh">draft 宽度限制在 8， 更宽的 draft 步骤走 SGLang 路径</span></td><td class="ok"><span lang="en">done</span><span lang="zh">已完成</span></td></tr>
+    <tr><td>4</td><td><span lang="en">the indexer projection streams half its weight units, which only one group of 8 rows can consume</span><span lang="zh">indexer 投影只先发出一半权重单元， 流式发出的部分只够一组 8 行使用</span></td><td><span lang="en">each group of rows issues its own units</span><span lang="zh">每组行各自重新发出权重单元</span></td><td class="ok"><span lang="en">done</span><span lang="zh">已完成</span></td></tr>
+    <tr><td>5</td><td><span lang="en">this step's new KV rows are staged in a region that holds 8 rows at TP8</span><span lang="zh">本步新写入的 KV 行暂存的区域， 在 TP8 下只放得下 8 行</span></td><td><span lang="en">stage them past the arena when they overflow (layouts up to 8 rows unchanged)</span><span lang="zh">放不下时暂存到工作区末尾（8 行及以下布局不变）</span></td><td class="ok"><span lang="en">done</span><span lang="zh">已完成</span></td></tr>
+    <tr><td>6</td><td><span lang="en">a Triton table kernel's arange needs a power of 2</span><span lang="zh">一个 Triton 表 kernel 的 arange 需要 2 的幂</span></td><td><span lang="en">range over the next power of 2, masked to the width</span><span lang="zh">范围改用下一个 2 的幂， 按宽度加 mask</span></td><td class="ok"><span lang="en">done</span><span lang="zh">已完成</span></td></tr>
+    <tr><td>7</td><td><span lang="en">MoE up/gate → down hand-off laid out for two groups of 4 rows</span><span lang="zh">MoE 从 up 和 gate 到 down 的交接按两个 4 行组设计</span></td><td><span lang="en">regroup the down stage's tasks for three groups</span><span lang="zh">按 3 个组重新划分 down 阶段的任务</span></td><td class="todo"><span lang="en">open</span><span lang="zh">未解决</span></td></tr>
+  </table>
+  <p lang="en">How the last one was found: a wait that never completes sets a per-GPU error word to its site number plus one, and site numbers are handed out in trace order. Logging each site's call stack while the kernel is traced mapped the failing wait to the down stage's poll of the FP8 mid tile. One-request-per-row batches pass at 12 rows and verify batches do not, which points at how rows that pick the same experts are grouped, not at the buffers' sizes.</p>
+  <p lang="zh">最后这一处是这样找到的： 一个永远等不到的等待， 会把这张 GPU 的错误字设为它的等待位置编号加 1， 而等待位置编号是 kernel 追踪时按顺序分配的。 在追踪时记录每个等待位置的调用栈， 就把超时的等待对应到了 down 阶段对 FP8 中间结果的轮询上。 每个请求 1 行的批次在 12 行下能通过， verify 批次不能， 这说明问题出在“选中相同 expert 的多行怎么分组”， 而不是缓冲区大小。</p>
+</section>
+
+<section id="reproduce">
+  <h2><span class="n">09</span><span lang="en">Reproduce</span><span lang="zh">复现</span></h2>
+  <p lang="en">The exact server, router and client commands, with host names replaced by placeholders, are in <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/commands.md"><code>commands.md</code></a>. Every table above is a view of a CSV next to it: <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/agentx_l1.csv"><code>agentx_l1.csv</code></a> (23 runs), <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/gsm8k.csv"><code>gsm8k.csv</code></a>, <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/decode_batch_sizes.csv"><code>decode_batch_sizes.csv</code></a>, <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/inferencex_published.csv"><code>inferencex_published.csv</code></a> and <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/width12_kernel_checks.csv"><code>width12_kernel_checks.csv</code></a>.</p>
+  <p lang="zh">服务、router 和客户端的完整命令写在 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/commands.md"><code>commands.md</code></a> 里， 主机名换成了占位符。 上面每张表都来自同目录下的 CSV： <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/agentx_l1.csv"><code>agentx_l1.csv</code></a>（23 次运行）、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/gsm8k.csv"><code>gsm8k.csv</code></a>、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/decode_batch_sizes.csv"><code>decode_batch_sizes.csv</code></a>、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/inferencex_published.csv"><code>inferencex_published.csv</code></a> 和 <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/glm53-pd-monokernel-mi355x/width12_kernel_checks.csv"><code>width12_kernel_checks.csv</code></a>。</p>
+</section>
+
+<section id="epilogue">
+  <h2><span class="n">10</span><span lang="en">Epilogue</span><span lang="zh">结语</span></h2>
+  <p lang="en">Three things carry over to the next model. A disaggregation result needs a baseline that spends the same GPUs, or it measures "one more node" instead of "a different split". Per-GPU throughput charges PD for its prefill node, so PD pays off when prefill is expensive and contends with decode; agentic traces with high prefix-cache hit rates are the opposite case. And on the AgentX chart the decode kernel's coverage is the lever: the width that a fused kernel can take decides where the curve bends. The previous entry in this line, <a href="/sources/glm53-agentx-hillclimb-mi355x.html">Experiment 006</a>, is how the single-node monokernel curve got where it is.</p>
+  <p lang="zh">有三点可以用到下一个模型上。 第一， 评估 PD 分离时， 基线必须用同样多的 GPU， 否则测到的是“多了一台机器”， 而不是“换了一种分工”。 第二， 按每 GPU 吞吐量算， PD 要为 prefill 节点买单， 所以只有 prefill 很重、并且会和 decode 争抢资源时， PD 才划算；prefix cache 命中率很高的 agentic trace 恰恰相反。 第三， 在 AgentX 图上， 起决定作用的是 decode kernel 的覆盖范围： 一个融合 kernel 能处理多宽的步骤， 决定了曲线在哪里拐弯。 这个系列的上一篇 <a href="/sources/glm53-agentx-hillclimb-mi355x.html">Experiment 006</a> 讲的是单节点 monokernel 的曲线是怎么一步步推上来的。</p>
+</section>
+
+</main>
+
+<footer class="colophon">
+  <div lang="en">Data: local AgentX L1 runs (900 s) and InferenceX's published API · Change: sgl-amd-mono#136 · Typography: Big Shoulders Display, Hanken Grotesk, Martian Mono, Noto Sans SC · Palette: graphite, phosphor, amber, coral · Compiled for jinnpan.com, 2026-11-15.</div>
+  <div lang="zh">数据： 本地 AgentX L1 运行（900 秒）和 InferenceX 公开 API · 改动： sgl-amd-mono#136 · 字体： Big Shoulders Display、Hanken Grotesk、Martian Mono、Noto Sans SC · 配色： 石墨、荧光绿、琥珀、珊瑚红 · 为 jinnpan.com 整理， 2026-11-15。</div>
+</footer>
+</div>
+</div>
+<script>
+(function() {
+  var KEY = 'glm53-pd-monokernel-mi355x-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>

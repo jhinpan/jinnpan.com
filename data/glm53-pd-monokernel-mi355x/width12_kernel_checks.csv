@@ -1,0 +1,6 @@
+kind,rowset,rows,result,detail
+shared,p0,12,pass,"ranks equal; one request a row"
+shared,v4,12,deadline,"ERR_DEADLINE at the down stage's poll of the FP8 mid tile (glm53/gfx950/kernel.py:6824 in the work tree)"
+index,v4,12,deadline,"error words set; same failure class assumed, site not isolated"
+dense,v4,12,pass,"ranks equal; MTP verify rows"
+head,p0,12,pass,"tail in an 8-row and a 4-row launch; --check-head within bounds"

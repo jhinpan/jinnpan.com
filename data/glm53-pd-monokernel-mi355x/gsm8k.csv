@@ -1,0 +1,6 @@
+arm,questions,strict_match,ref_only,cand_only,mcnemar_p_vs_agg_no_monokernel
+"agg, no monokernel",1319,0.975,0,0,1.0
+"agg, monokernel",1319,0.975,5,5,1.0
+"PD, no decode radix",1319,0.9773,2,5,0.453
+PD + decode radix,1319,0.9742,5,4,1.0
+PD + decode radix + decode monokernel,1319,0.9742,5,4,1.0

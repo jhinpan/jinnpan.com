@@ -1,0 +1,23 @@
+{
+  "experiment": "Experiment 007 - GLM-5.3 PD disaggregation with AMD monokernels on MI355X",
+  "write_up": "/sources/glm53-pd-monokernel-mi355x.html",
+  "commands": "commands.md",
+  "files": {
+    "agentx_l1.csv": {
+      "what": "AgentX L1 (900 s) result per run; fresh servers per run",
+      "rows": "one completed run; a -r2 suffix is a rerun of a failed attempt, -aa a replicate",
+      "fields": {
+        "arm": "mono = agg + monokernel; base = agg; pd = PD without decode radix; pdr = PD + decode radix; pdk = pdr + decode monokernel; dp2mono = mono on two nodes behind one router",
+        "gpus": "every GPU of the deployment; tok_s_per_gpu divides by it",
+        "intvty_p50 / intvty_p90": "client per-request 1/TPOT (tok/s/user); p90 is the slow tail",
+        "e2e_norm_intvty_p90": "InferenceX's E2E-normalized interactivity at P90 (the dashboard's default AgentX x axis)",
+        "window_request_errors": "request errors inside the measurement window",
+        "router_health_timeout_s": "sglang_router --health-check-timeout-secs (blank: no router)"
+      }
+    },
+    "gsm8k.csv": "GSM8K strict-match, 1319 questions, concurrency 2, real MTP acceptance; exact two-sided McNemar against agg without monokernels",
+    "decode_batch_sizes.csv": "running requests per decode step, sampled every 40 steps from the TP0 decode log; the monokernel covers steps of at most 2 requests (8 rows)",
+    "inferencex_published.csv": "published GLM-5.3 MI355X AgentX rows from inferencex.semianalysis.com /api/v1/benchmarks?model=GLM-5.2 joined with /api/v1/derived-agentic-metrics (3600-s official runs)",
+    "width12_kernel_checks.csv": "test/kernels/glm53/check_layer.py at 12 rows on random weights, 8 GPUs, with the width-12 work in progress"
+  }
+}

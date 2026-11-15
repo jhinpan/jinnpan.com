@@ -356,17 +356,17 @@
           <rect x="40" y="152" width="16" height="30" fill="#315d92" /><rect x="60" y="148" width="15" height="34" fill="#315d92" /><rect x="79" y="154" width="17" height="28" fill="#315d92" /><rect x="100" y="150" width="14" height="32" fill="#315d92" /><rect x="118" y="156" width="16" height="26" fill="#315d92" /><rect x="138" y="150" width="15" height="32" fill="#315d92" /><rect x="157" y="153" width="16" height="29" fill="#315d92" /><rect x="177" y="149" width="15" height="33" fill="#315d92" />
           <!-- shelf 4 blog (green) -->
           <line x1="30" y1="226" x2="290" y2="226" stroke="#22231f" stroke-width="3" />
-          <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" /><rect x="137" y="196" width="16" height="30" fill="#4e744c" />
+          <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" /><rect x="137" y="196" width="16" height="30" fill="#4e744c" /><rect x="157" y="199" width="15" height="27" fill="#4e744c" />
           <!-- shelf 5 experiments (plum) -->
           <line x1="30" y1="274" x2="290" y2="274" stroke="#22231f" stroke-width="3" />
-          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" /><rect x="118" y="247" width="16" height="27" fill="#6d3f8c" /><rect x="138" y="243" width="15" height="31" fill="#6d3f8c" />
+          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" /><rect x="118" y="247" width="16" height="27" fill="#6d3f8c" /><rect x="138" y="243" width="15" height="31" fill="#6d3f8c" /><rect x="157" y="245" width="16" height="29" fill="#6d3f8c" />
         </g>
         <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
           <text x="214" y="74">CODE · 12</text>
           <text x="214" y="122">PAPER · 5</text>
           <text x="214" y="170">TUTORIAL · 8</text>
-          <text x="214" y="218">BLOG · 6</text>
-          <text x="214" y="266">EXPERIMENTS · 6</text>
+          <text x="214" y="218">BLOG · 7</text>
+          <text x="214" y="266">EXPERIMENTS · 7</text>
         </g>
       </svg>
     </figure>
@@ -389,8 +389,8 @@
     <div class="stat" data-c="code"><span class="num">12</span><span class="label">code readings</span></div>
     <div class="stat" data-c="paper"><span class="num">5</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">8</span><span class="label">tutorials</span></div>
-    <div class="stat" data-c="blog"><span class="num">6</span><span class="label">blog posts</span></div>
-    <div class="stat" data-c="experiments"><span class="num">6</span><span class="label">experiments</span></div>
+    <div class="stat" data-c="blog"><span class="num">7</span><span class="label">blog posts</span></div>
+    <div class="stat" data-c="experiments"><span class="num">7</span><span class="label">experiments</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -702,9 +702,18 @@
         <h2>Blog</h2>
         <div class="sub"><span class="zh">博客</span> · original writing — benchmarks, framework comparisons, and project notes</div>
       </div>
-      <div class="shelf-count">6 posts</div>
+      <div class="shelf-count">7 posts</div>
     </div>
     <div class="grid">
+      <article class="entry" data-kind="blog" data-search="pd disaggregation prefill decode 1p1d glm-5.3 glm53 amd monokernel sgl-amd-mono mori mi355x rocm sglang router iso-hardware replicas prefix cache inferencex agentx e2e normalized interactivity tilert coverage lds width analysis">
+        <div class="entry-top"><span class="entry-kind">Analysis</span><span>PD · monokernel</span></div>
+        <div class="entry-body">
+          <h3>Disaggregation Is Not a Kernel</h3>
+          <p>Why PD disaggregation alone did not speed up GLM-5.3 decode on MI355X, what it took to run AMD monokernels on a MoRI decode server, and why two plain replicas on the same GPUs still win on InferenceX AgentX.</p>
+          <div class="tags"><span class="tag">PD disaggregation</span><span class="tag">monokernel</span><span class="tag">MI355X</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="/en/blog/glm53-pd-monokernel/">EN</a><a class="link" href="/zh/blog/glm53-pd-monokernel/">中文</a></div>
+      </article>
       <article class="entry" data-kind="blog" data-search="kimi k3 dspark speculative decoding launch parameter search benchmark mi355x rocm sglang accept length verify window block size mem fraction mamba ssm state hybrid concurrency scaling knee accuracy gate aime25 gsm8k tuning">
         <div class="entry-top"><span class="entry-kind">Benchmark</span><span>launch tuning</span></div>
         <div class="entry-body">
@@ -774,9 +783,18 @@
         <h2>Experiments</h2>
         <div class="sub"><span class="zh">实验记录</span> · reproducible kernel and system measurements — raw data archived alongside the write-up</div>
       </div>
-      <div class="shelf-count">6 records</div>
+      <div class="shelf-count">7 records</div>
     </div>
     <div class="grid">
+      <article class="entry" data-kind="experiments" data-search="experiment 007 glm-5.3 glm53 pd disaggregation prefill decode 1p1d mori rdma roce mi355x gfx950 rocm sglang sgl-amd-mono monokernel decode radix cache router cache_aware health check iso-hardware two nodes replicas inferencex agentx e2e normalized interactivity p90 tilert pareto coverage width 12 rows lds moe gsm8k mcnemar">
+        <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 007</span></div>
+        <div class="entry-body">
+          <h3>PD × monokernel: GLM-5.3 on MI355X</h3>
+          <p>AMD monokernels on a MoRI PD decode server lift per-user decode from 213 to 474 tok/s at concurrency 1, with GSM8K unchanged. On the same 16 GPUs, two plain replicas still beat 1P1D on AgentX: 95% prefix-cache hits leave the prefill node idle. The lever is monokernel coverage, 35% of decode steps at concurrency 10; widening the kernel to 12 rows is blocked at the MoE down stage.</p>
+          <div class="tags"><span class="tag">GLM-5.3</span><span class="tag">PD disaggregation</span><span class="tag">monokernel</span><span class="tag">InferenceX AgentX</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./glm53-pd-monokernel-mi355x.html">Deep dive →</a><a class="link" href="/en/blog/glm53-pd-monokernel/">EN</a><a class="link" href="/zh/blog/glm53-pd-monokernel/">中文</a></div>
+      </article>
       <article class="entry" data-kind="experiments" data-search="experiment 006 retrospective ablation pr ladder context length model hill-climbing hill-climb hillclimb glm-5.3 glm53 mi355x gfx950 rocm sglang sgl-amd-mono monokernel decode kernel fp8 e4m3 kv cache bf16 dsa tilelang prefill ttft itl inferencex agentx aiperf 3600 interactivity pareto gsm8k mcnemar eagle mtp cookbook pin bump">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 006</span></div>
         <div class="entry-body">
