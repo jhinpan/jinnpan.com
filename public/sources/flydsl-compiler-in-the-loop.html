@@ -1,0 +1,1109 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Source Reading 012 · 270 Fences: The Compiler in the FlyDSL Kernel Loop</title>
+  <meta name="description" content="A source-level reading of how FlyDSL compiles MI355X and MI455X kernels, where its kernels override that compiler by hand (62 of 180 files), which layer of the compiler chain fixes each break in the optimization loop, and how a CAKE-style outer loop could turn hand overrides into compiler features." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=B612+Mono:ital,wght@0,400;0,700&family=Gelasio:ital,wght@0,400;0,600;1,400&family=Noto+Sans+SC:wght@400;600&family=Noto+Serif+SC:wght@400;600&family=Sofia+Sans+Condensed:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --enamel: #f2eee4;
+      --enamel-2: #e6e0d2;
+      --panel: #fbf9f3;
+      --ink: #141414;
+      --muted: #5d5950;
+      --line: #bdb6a6;
+      --heavy: #1b1b1b;
+      --red: #b80f2a;
+      --red-soft: rgba(184, 15, 42, .09);
+      --green: #1b7349;
+      --green-soft: rgba(27, 115, 73, .10);
+      --amber: #d99a00;
+      --blue: #1f4e79;
+      --box: #17191a;
+      --display: "Sofia Sans Condensed", "Noto Sans SC", sans-serif;
+      --serif: "Gelasio", "Noto Serif SC", Georgia, serif;
+      --mono: "B612 Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        repeating-linear-gradient(180deg, transparent 0 31px, rgba(20, 20, 20, .045) 31px 32px),
+        var(--enamel);
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    a:hover { color: var(--red); }
+    code {
+      font-family: var(--mono);
+      font-size: .8em;
+      color: #3a0710;
+      background: var(--red-soft);
+      padding: .06rem .3rem;
+      border: 1px solid rgba(184, 15, 42, .18);
+      border-radius: 2px;
+      overflow-wrap: anywhere;
+    }
+    a code { color: inherit; }
+
+    .lang-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 30;
+      display: flex;
+      gap: 2px;
+      padding: 4px;
+      border: 2px solid var(--heavy);
+      background: rgba(242, 238, 228, .95);
+    }
+    .lang-toggle button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font: 12px var(--mono);
+      padding: 7px 10px;
+    }
+    body[data-lang="en"] .lang-toggle button[data-set="en"],
+    body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 26px 20px;
+      background: var(--box);
+      color: var(--enamel);
+      border-right: 6px solid var(--red);
+      overflow: auto;
+    }
+    .rail-home {
+      display: block;
+      margin-bottom: 26px;
+      color: #c9c3b6;
+      font: 12px var(--mono);
+      text-decoration: none;
+    }
+    .rail .mark {
+      margin: 0 0 22px;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 30px;
+      line-height: .95;
+      text-transform: uppercase;
+      letter-spacing: .01em;
+    }
+    .rail .mark small {
+      display: block;
+      margin-top: 8px;
+      color: var(--amber);
+      font: 11px var(--mono);
+      letter-spacing: .08em;
+    }
+    .rail nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-top: 1px solid rgba(242, 238, 228, .14);
+      color: #d4cec2;
+      font: 12px var(--mono);
+      text-decoration: none;
+    }
+    .rail nav a b {
+      display: inline-grid;
+      flex: 0 0 24px;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #2a2d2e;
+      border: 1px solid #3c4143;
+      color: var(--amber);
+      font-size: 10px;
+    }
+    .rail nav a:hover { color: #fff; }
+    .rail nav a:hover b { background: var(--green); color: #fff; border-color: var(--green); }
+
+    .page { min-width: 0; }
+    .masthead {
+      position: relative;
+      padding: 92px clamp(24px, 6vw, 92px) 40px;
+      border-bottom: 3px solid var(--heavy);
+      background: var(--panel);
+    }
+    .masthead::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 14px;
+      background: repeating-linear-gradient(135deg, var(--red) 0 16px, #fff 16px 32px);
+      border-bottom: 2px solid var(--heavy);
+    }
+    .kicker {
+      margin: 0 0 16px;
+      color: var(--red);
+      font: 12px var(--mono);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { margin: 0; }
+    h1 {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(56px, 10vw, 132px);
+      line-height: .88;
+      text-transform: uppercase;
+      letter-spacing: -.005em;
+    }
+    h1 .lamp {
+      display: inline-block;
+      width: .32em;
+      height: .32em;
+      margin-left: .14em;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 .05em var(--heavy);
+      vertical-align: .55em;
+    }
+    .subtitle {
+      max-width: 880px;
+      margin: 24px 0 0;
+      color: #33302a;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.5;
+    }
+    .spec {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      max-width: 1040px;
+      margin-top: 34px;
+      border: 2px solid var(--heavy);
+      background: var(--heavy);
+      gap: 0;
+    }
+    .spec div {
+      min-height: 76px;
+      padding: 12px 14px;
+      background: var(--enamel);
+      border-right: 1px solid var(--heavy);
+    }
+    .spec div:last-child { border-right: 0; }
+    .lbl {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font: 11px var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .val {
+      display: block;
+      font: 13px var(--mono);
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .article {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 52px 28px 40px;
+    }
+    section { padding-top: 22px; margin-bottom: 44px; }
+    h2 {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 18px;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(32px, 4.2vw, 48px);
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    h2 .no {
+      flex: 0 0 auto;
+      color: var(--red);
+      font: 13px var(--mono);
+      letter-spacing: .1em;
+    }
+    h3 {
+      margin: 32px 0 10px;
+      color: var(--red);
+      font: 700 13px var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    p { margin: 0 0 18px; }
+    .lead { font-size: 21px; line-height: 1.6; }
+    .note { color: var(--muted); font: 13px var(--mono); line-height: 1.6; }
+    ul, ol { margin: 0 0 20px; padding-left: 24px; }
+    li { margin-bottom: 8px; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      margin: 26px 0 24px;
+      border: 2px solid var(--heavy);
+      background: var(--panel);
+    }
+    .metric { padding: 16px 16px 14px; border-right: 1px solid var(--heavy); }
+    .metric:last-child { border-right: 0; }
+    .metric .num {
+      display: block;
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 52px;
+      line-height: 1;
+      color: var(--red);
+    }
+    .metric .txt { display: block; margin-top: 8px; color: var(--muted); font: 12px var(--mono); line-height: 1.45; }
+
+    .callout {
+      position: relative;
+      margin: 26px 0;
+      padding: 18px 20px 6px 54px;
+      border: 2px solid var(--heavy);
+      background: var(--panel);
+    }
+    .callout::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: 22px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px var(--green-soft);
+    }
+    .callout.stop::before { background: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
+    .callout p { font-size: 17px; }
+
+    table {
+      width: 100%;
+      margin: 22px 0 26px;
+      border-collapse: collapse;
+      font-size: 15.5px;
+      line-height: 1.5;
+      background: var(--panel);
+    }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th {
+      background: var(--heavy);
+      color: var(--enamel);
+      font: 11px var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    td.num { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+
+    pre {
+      margin: 18px 0 22px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      background: var(--box);
+      color: #e9e4d8;
+      border-left: 6px solid var(--green);
+      font: 12.5px/1.65 var(--mono);
+    }
+    pre .c { color: #9fb8a6; }
+
+    .plate {
+      position: relative;
+      left: 50%;
+      width: min(980px, calc(100vw - 300px));
+      margin: 36px 0;
+      transform: translateX(-50%);
+      border: 2px solid var(--heavy);
+      background: var(--panel);
+    }
+    .plate-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 9px 14px;
+      background: var(--heavy);
+      color: var(--enamel);
+      font: 11px var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .plate-head span:first-child { color: var(--amber); }
+    .svg-wrap { overflow-x: auto; padding: 10px 8px 0; }
+    .plate svg { display: block; width: 100%; min-width: 640px; height: auto; }
+    .caption {
+      margin: 0;
+      padding: 10px 16px 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 15px;
+      font-style: italic;
+      line-height: 1.55;
+    }
+
+    .p-zone { fill: rgba(20, 20, 20, .04); }
+    .p-node { fill: var(--panel); stroke: var(--ink); stroke-width: 1.4; }
+    .p-red { fill: var(--red-soft); stroke: var(--red); stroke-width: 2; }
+    .p-green { fill: var(--green-soft); stroke: var(--green); stroke-width: 1.8; }
+    .p-edge { fill: none; stroke: var(--ink); stroke-width: 1.4; }
+    .p-edge-red { fill: none; stroke: var(--red); stroke-width: 1.7; }
+    .p-edge-green { fill: none; stroke: var(--green); stroke-width: 1.7; }
+    .p-title { font-family: var(--display); font-weight: 800; font-size: 18px; fill: var(--ink); }
+    .p-code { font-family: var(--mono); font-size: 13px; font-weight: 700; fill: var(--ink); }
+    .p-text { font-family: var(--serif); font-size: 15px; fill: var(--ink); }
+    .p-sub { font-family: var(--mono); font-size: 11.5px; fill: var(--muted); }
+    .p-label { font-family: var(--mono); font-size: 11px; fill: var(--muted); letter-spacing: .08em; }
+    .p-hot { font-family: var(--mono); font-size: 12px; font-weight: 700; fill: var(--red); }
+    .p-go { font-family: var(--mono); font-size: 12px; font-weight: 700; fill: var(--green); }
+    .p-note { font-family: var(--serif); font-size: 14px; font-style: italic; fill: var(--muted); }
+
+    .refs { columns: 2; column-gap: 28px; padding-left: 18px; font: 12.5px/1.6 var(--mono); }
+    .refs li { break-inside: avoid; }
+    .colophon {
+      max-width: 860px;
+      margin: 30px auto 0;
+      padding: 22px 28px 40px;
+      border-top: 3px solid var(--heavy);
+      color: var(--muted);
+      font: 12px/1.7 var(--mono);
+    }
+
+    body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+    body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      .rail {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 6px solid var(--red);
+      }
+      .rail nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+      .spec { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .spec div:nth-child(2) { border-right: 0; }
+      .spec div:nth-child(n+3) { border-top: 1px solid var(--heavy); }
+      .plate { left: 0; width: 100%; transform: none; }
+    }
+    @media (max-width: 700px) {
+      body { font-size: 17px; }
+      .masthead { padding-top: 76px; }
+      .article { padding-inline: 18px; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { border-right: 0; border-bottom: 1px solid var(--heavy); }
+      .metric:last-child { border-bottom: 0; }
+      .spec { grid-template-columns: 1fr; }
+      .spec div { border-right: 0; border-top: 1px solid var(--heavy); }
+      .spec div:first-child { border-top: 0; }
+      .refs { columns: 1; }
+      table { display: block; overflow-x: auto; }
+      .lang-toggle { top: 10px; right: 10px; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-set="en" aria-label="English">EN</button>
+    <button type="button" data-set="zh" aria-label="中文">中文</button>
+  </div>
+
+  <div class="shell">
+    <aside class="rail">
+      <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+      <p class="mark">270<br />Fences<small>SOURCE READING 012</small></p>
+      <nav aria-label="Table of contents">
+        <a href="#brief"><b>01</b><span lang="en">The short version</span><span lang="zh">先给结论</span></a>
+        <a href="#toolchain"><b>02</b><span lang="en">One toolchain</span><span lang="zh">一套工具链</span></a>
+        <a href="#overrides"><b>03</b><span lang="en">What the kernels say</span><span lang="zh">kernel 在说什么</span></a>
+        <a href="#breaks"><b>04</b><span lang="en">Four breaks</span><span lang="zh">循环的四种断法</span></a>
+        <a href="#outer-loop"><b>05</b><span lang="en">The outer loop</span><span lang="zh">外层循环</span></a>
+        <a href="#census"><b>06</b><span lang="en">A first experiment</span><span lang="zh">第一个实验</span></a>
+        <a href="#closing"><b>07</b><span lang="en">Closing</span><span lang="zh">结语</span></a>
+        <a href="#method"><b>08</b><span lang="en">Method and sources</span><span lang="zh">方法与来源</span></a>
+      </nav>
+    </aside>
+
+    <main class="page">
+      <header class="masthead">
+        <p class="kicker">Source Reading 012 · ROCm/FlyDSL</p>
+        <h1>270 Fences<span class="lamp" aria-hidden="true"></span></h1>
+        <p class="subtitle" lang="en">Putting the compiler back in the FlyDSL kernel loop: how one in-process LLVM compiles MI355X and MI455X kernels, why 62 of 180 kernel files override it by hand, which layer of the compiler chain fixes each break in the optimization loop, and how a CAKE-style outer loop could turn every override into a compiler feature.</p>
+        <p class="subtitle" lang="zh">让编译器回到 FlyDSL 的 kernel 优化循环： 一套进程内 LLVM 怎样编译 MI355X 和 MI455X 的 kernel， 为什么 180 个 kernel 文件里有 62 个在手工覆盖它， compiler chain 的哪一层能修好优化循环里的每一处断点， 以及 CAKE 式的外层循环怎样把每一处手工覆盖变成编译器能力。</p>
+        <div class="spec" aria-label="Reading metadata">
+          <div><span class="lbl">Repo</span><span class="val">ROCm/FlyDSL</span></div>
+          <div><span class="lbl">Snapshot</span><span class="val">main @ aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e</span></div>
+          <div><span class="lbl">LLVM</span><span class="val">llvm-project 941a04e + 9 patches</span></div>
+          <div><span class="lbl">Date</span><span class="val">2026-11-16</span></div>
+        </div>
+      </header>
+
+      <article class="article">
+        <section id="brief">
+          <h2><span class="no">01</span><span lang="en">The short version</span><span lang="zh">先给结论</span></h2>
+          <p class="lead" lang="en">"Think about the compiler chain" is good advice that comes without a next step. A kernel engineer knows how to change a kernel. What would it mean to change the compiler: which part, how, and how would anyone know it helped?</p>
+          <p class="lead" lang="zh">「多想想 compiler chain」 是一句好建议， 但它没有告诉你下一步做什么。 kernel 工程师知道怎么改 kernel。 那么改编译器是什么意思： 改哪一块、 怎么改， 又怎么知道改了有用？</p>
+          <p lang="en">Start from what sets a kernel's speed. Once the algorithm and the tiling are fixed, performance comes down to a few decisions: which instructions run, in what order, in which registers, and where each wave stops to wait for memory. Each of these decisions is made by someone, either the kernel author or the compiler. The compiler chain matters exactly where it makes a decision badly, or makes it in a way nobody can see. This reading finds those places in <a href="https://github.com/ROCm/FlyDSL">FlyDSL</a>, the Python kernel DSL that AMD uses for MI355X and MI455X kernels, and asks how the compiler could improve together with the kernels instead of being worked around.</p>
+          <p lang="zh">先从决定 kernel 速度的因素说起。 算法和分块确定之后， 性能取决于少数几个决定： 执行哪些指令、 按什么顺序、 放在哪些寄存器里， 以及每个 wave 在哪里停下来等内存。 每个决定都有人负责， 要么是 kernel 作者， 要么是编译器。 compiler chain 真正重要的地方， 正是它做错决定、 或者做了决定却没人看得见的地方。 本文在 <a href="https://github.com/ROCm/FlyDSL">FlyDSL</a>（AMD 用来写 MI355X 和 MI455X kernel 的 Python DSL） 里找出这些地方， 并讨论怎样让编译器跟着 kernel 一起进步， 而不是被绕开。</p>
+          <div class="metrics" aria-label="Key counts">
+            <div class="metric"><span class="num">62</span><span class="txt" lang="en">of 180 kernel files override the compiler by hand</span><span class="txt" lang="zh">180 个 kernel 文件中手工覆盖编译器的文件数</span></div>
+            <div class="metric"><span class="num">270</span><span class="txt" lang="en">full scheduling fences, <code>sched_barrier(0)</code></span><span class="txt" lang="zh">完整的调度屏障 <code>sched_barrier(0)</code></span></div>
+            <div class="metric"><span class="num">9</span><span class="txt" lang="en">LLVM patches FlyDSL already carries</span><span class="txt" lang="zh">FlyDSL 已经在维护的 LLVM 补丁数</span></div>
+          </div>
+          <div class="callout">
+            <p lang="en"><strong>The short version.</strong> FlyDSL owns every layer of its compiler, and its kernels override the backend's scheduling, register and wait decisions in about a third of all kernel files. The most useful compiler work removes the need for those overrides, one recurring pattern at a time, and accepts a change only if every kernel agrees.</p>
+            <p lang="zh"><strong>简短的结论。</strong> FlyDSL 掌握自己编译器的每一层， 而它的 kernel 在大约三分之一的文件里手工覆盖了后端的调度、 寄存器和等待决定。 最有价值的编译器工作， 是一次消除一种反复出现的手工覆盖， 并且只在所有 kernel 都认可时才接受改动。</p>
+          </div>
+          <p class="note" lang="en">All FlyDSL references are pinned to commit <a href="https://github.com/ROCm/FlyDSL/tree/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e">aae1553</a> (16 November 2026). For the DSL and its layout algebra, see <a href="./flydsl.html">Source Reading 006</a>.</p>
+          <p class="note" lang="zh">文中所有 FlyDSL 引用都固定在 commit <a href="https://github.com/ROCm/FlyDSL/tree/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e">aae1553</a>（2026 年 11 月 16 日）。 DSL 本身和它的 layout algebra 见 <a href="./flydsl.html">Source Reading 006</a>。</p>
+        </section>
+
+        <section id="toolchain">
+          <h2><span class="no">02</span><span lang="en">One toolchain, and FlyDSL owns it</span><span lang="zh">一套工具链， 归 FlyDSL 自己所有</span></h2>
+          <p lang="en">FlyDSL does not call hipcc, amdclang, comgr or hipRTC. It compiles inside the Python process with its own MLIR and LLVM: upstream <code>llvm-project</code> pinned at <code>941a04e</code> (LLVM 24 development), plus nine FlyDSL patches (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/thirdparty/llvm-build-info.json"><code>thirdparty/llvm-build-info.json</code></a>). The pipeline lowers the Fly dialect through FlyDSL's own passes, converts the GPU module to ROCDL, and then lets LLVM optimize at <code>-O2</code>, generate AMDGPU code and assemble it (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/backends/rocm.py#L323-L378"><code>backends/rocm.py:323</code></a>). The object becomes an HSA code object through an LLD linked into the same library since <a href="https://github.com/ROCm/FlyDSL/pull/987">#987</a>, or through ROCm's <code>ld.lld</code> when that LLD is not built in. ROCm contributes only the device bitcode libraries, the fallback linker and the HIP runtime that loads the result.</p>
+          <p lang="zh">FlyDSL 不调用 hipcc、 amdclang、 comgr 或 hipRTC。 它在 Python 进程里用自带的 MLIR 和 LLVM 编译： upstream <code>llvm-project</code> 固定在 <code>941a04e</code>（LLVM 24 开发版）， 外加 9 个 FlyDSL 补丁（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/thirdparty/llvm-build-info.json"><code>thirdparty/llvm-build-info.json</code></a>）。 pipeline 先用 FlyDSL 自己的 pass 降低 Fly dialect， 再把 GPU module 转成 ROCDL， 然后由 LLVM 做 <code>-O2</code> 优化、 生成 AMDGPU 代码并汇编（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/backends/rocm.py#L323-L378"><code>backends/rocm.py:323</code></a>）。 从 <a href="https://github.com/ROCm/FlyDSL/pull/987">#987</a> 起， object 由链接进同一个库的 LLD 变成 HSA code object； 构建时没有带 LLD 的话， 就退回 ROCm 的 <code>ld.lld</code>。 ROCm 只提供 device bitcode 库、 备用链接器， 以及加载结果的 HIP runtime。</p>
+          <p lang="en">MI355X (gfx950) and MI455X (gfx1250, the MI450 series) take the same path. The target attribute changes the chip name and, for gfx1250, marks the target as wave32 (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/backends/rocm.py#L425-L438"><code>backends/rocm.py:425</code></a>). The kernels themselves use different instruction families: MFMA on gfx950, WMMA and the tensor data mover on gfx1250 (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/references/arch-gfx1250.md"><code>arch-gfx1250.md</code></a>). gfx1250 also leans harder on the patches: six of the nine carry gfx1250-specific changes, including a backport of the <code>gfx1250-strict</code> target that upstream LLVM added after FlyDSL's pin (<a href="https://github.com/llvm/llvm-project/pull/218543">llvm-project #218543</a>).</p>
+          <p lang="zh">MI355X（gfx950） 和 MI455X（gfx1250， 即 MI450 系列） 走同一条路径。 target 属性只改变 chip 名称， 并把 gfx1250 标记为 wave32（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/backends/rocm.py#L425-L438"><code>backends/rocm.py:425</code></a>）。 kernel 本身用的指令族不同： gfx950 上是 MFMA， gfx1250 上是 WMMA 和 tensor data mover（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/references/arch-gfx1250.md"><code>arch-gfx1250.md</code></a>）。 gfx1250 也更依赖这些补丁： 9 个里有 6 个包含 gfx1250 专用的改动， 其中包括把 upstream LLVM 在 FlyDSL pin 之后才加入的 <code>gfx1250-strict</code> target 移植回来（<a href="https://github.com/llvm/llvm-project/pull/218543">llvm-project #218543</a>）。</p>
+
+          <figure class="plate" aria-label="Plate I: the compile chain and who decides what">
+            <div class="plate-head"><span>Plate I</span><span lang="en">Who decides what</span><span lang="zh">谁做哪个决定</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 525" role="img" aria-labelledby="p1-title">
+                <title id="p1-title">The FlyDSL compile chain and the decision each stage owns</title>
+                <defs>
+                  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#141414" /></marker>
+                  <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b80f2a" /></marker>
+                  <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1b7349" /></marker>
+                </defs>
+                <rect class="p-node" x="40" y="30" width="300" height="58" />
+                <rect class="p-node" x="40" y="108" width="300" height="58" />
+                <rect class="p-node" x="40" y="186" width="300" height="58" />
+                <rect class="p-red" x="40" y="264" width="300" height="58" />
+                <rect class="p-node" x="40" y="342" width="300" height="58" />
+                <rect class="p-node" x="40" y="420" width="300" height="58" />
+                <path class="p-edge" d="M190,88 V106" marker-end="url(#ar)" />
+                <path class="p-edge" d="M190,166 V184" marker-end="url(#ar)" />
+                <path class="p-edge" d="M190,244 V262" marker-end="url(#ar)" />
+                <path class="p-edge" d="M190,322 V340" marker-end="url(#ar)" />
+                <path class="p-edge" d="M190,400 V418" marker-end="url(#ar)" />
+                <text class="p-title" x="56" y="56">Python kernel</text>
+                <text class="p-title" x="56" y="134">Fly MLIR passes</text>
+                <text class="p-title" x="56" y="212">LLVM IR, -O2</text>
+                <text class="p-title" x="56" y="290" lang="en">AMDGPU backend</text>
+                <text class="p-title" x="56" y="290" lang="zh">AMDGPU 后端</text>
+                <text class="p-title" x="56" y="368" lang="en">MC assembler + LLD</text>
+                <text class="p-title" x="56" y="368" lang="zh">MC 汇编器 + LLD</text>
+                <text class="p-title" x="56" y="446">HIP runtime</text>
+                <text class="p-sub" x="56" y="76" lang="en">@flyc.kernel source</text>
+                <text class="p-sub" x="56" y="76" lang="zh">@flyc.kernel 源码</text>
+                <text class="p-sub" x="56" y="154" lang="en">FlyDSL's own C++ passes</text>
+                <text class="p-sub" x="56" y="154" lang="zh">FlyDSL 自己的 C++ pass</text>
+                <text class="p-sub" x="56" y="232" lang="en">upstream LLVM middle end</text>
+                <text class="p-sub" x="56" y="232" lang="zh">upstream LLVM 中端</text>
+                <text class="p-sub" x="56" y="310" lang="en">upstream + 9 FlyDSL patches</text>
+                <text class="p-sub" x="56" y="310" lang="zh">upstream + 9 个 FlyDSL 补丁</text>
+                <text class="p-sub" x="56" y="388" lang="en">in process since #987</text>
+                <text class="p-sub" x="56" y="388" lang="zh">#987 起在进程内</text>
+                <text class="p-sub" x="56" y="466">hipModuleLoadData</text>
+                <text class="p-text" x="372" y="56" lang="en">decides: algorithm, tiling, instruction family</text>
+                <text class="p-text" x="372" y="56" lang="zh">决定： 算法、 分块、 指令族</text>
+                <text class="p-text" x="372" y="134" lang="en">decides: layout to address math, swizzles</text>
+                <text class="p-text" x="372" y="134" lang="zh">决定： 把 layout 变成地址计算、 swizzle</text>
+                <text class="p-text" x="372" y="212" lang="en">decides: unrolling, LICM, CSE, inlining</text>
+                <text class="p-text" x="372" y="212" lang="zh">决定： 循环展开、 LICM、 CSE、 内联</text>
+                <text class="p-text" x="372" y="284" lang="en">decides: instruction order, registers, waits</text>
+                <text class="p-text" x="372" y="284" lang="zh">决定： 指令顺序、 寄存器、 等待点</text>
+                <text class="p-text" x="372" y="368" lang="en">decides: encoding and ELF only; ISA unchanged</text>
+                <text class="p-text" x="372" y="368" lang="zh">决定： 只有编码和 ELF， 不改 ISA</text>
+                <text class="p-text" x="372" y="446" lang="en">loads the code object and launches it</text>
+                <text class="p-text" x="372" y="446" lang="zh">加载 code object 并启动</text>
+                <text class="p-sub" x="372" y="76" lang="en">owner: kernel author</text>
+                <text class="p-sub" x="372" y="76" lang="zh">负责方： kernel 作者</text>
+                <text class="p-sub" x="372" y="154" lang="en">owner: FlyDSL, no LLVM rebuild needed</text>
+                <text class="p-sub" x="372" y="154" lang="zh">负责方： FlyDSL， 不用重编 LLVM</text>
+                <text class="p-sub" x="372" y="232" lang="en">owner: upstream LLVM, steered by flags</text>
+                <text class="p-sub" x="372" y="232" lang="zh">负责方： upstream LLVM， 只能用开关引导</text>
+                <text class="p-sub" x="372" y="302" lang="en">owner: LLVM plus FlyDSL patches</text>
+                <text class="p-sub" x="372" y="302" lang="zh">负责方： LLVM 加 FlyDSL 补丁</text>
+                <text class="p-hot" x="372" y="319" lang="en">overridden by hand in 62 of 180 kernel files</text>
+                <text class="p-hot" x="372" y="319" lang="zh">180 个 kernel 文件中有 62 个在手工覆盖</text>
+                <text class="p-sub" x="372" y="388" lang="en">owner: same LLVM, or ROCm ld.lld</text>
+                <text class="p-sub" x="372" y="388" lang="zh">负责方： 同一个 LLVM， 或 ROCm ld.lld</text>
+                <text class="p-sub" x="372" y="466" lang="en">owner: ROCm</text>
+                <text class="p-sub" x="372" y="466" lang="zh">负责方： ROCm</text>
+                <path class="p-edge-green" d="M886,108 H904 V400 H886" />
+                <text class="p-go" x="930" y="254" text-anchor="middle" transform="rotate(90 930 254)" lang="en">IN ONE PROCESS · FLYDSL MLIR + LLVM</text>
+                <text class="p-go" x="930" y="254" text-anchor="middle" transform="rotate(90 930 254)" lang="zh">同一进程 · FlyDSL 自带 MLIR + LLVM</text>
+                <text class="p-note" x="40" y="510" lang="en">MI355X (gfx950) and MI455X (gfx1250) run the same stages; only the chip, wave size and instruction families differ.</text>
+                <text class="p-note" x="40" y="510" lang="zh">MI355X（gfx950） 和 MI455X（gfx1250） 走同样的阶段， 只有 chip、 wave 大小和指令族不同。</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">The three decisions that kernel authors override by hand (order, registers, waits) all live in one stage: the AMDGPU backend. The linker after it changes no instruction.</p>
+            <p class="caption" lang="zh">kernel 作者手工覆盖的三个决定（顺序、 寄存器、 等待） 都在同一个阶段： AMDGPU 后端。 它之后的链接器不改任何指令。</p>
+          </figure>
+
+          <div class="callout">
+            <p lang="en"><strong>Why the design matters more than the details.</strong> A compiler that ships as a binary can only be steered with flags. A compiler built from source, with your own passes in front of it and your own patches inside it, can be changed at every stage, and FlyDSL already does this routinely. That is the precondition for putting the compiler in the optimization loop at all.</p>
+            <p lang="zh"><strong>为什么设计比细节更重要。</strong> 以二进制形式发布的编译器只能用开关来引导。 从源码构建、 前面有自己的 pass、 内部有自己补丁的编译器， 每一层都可以改， 而 FlyDSL 已经在经常这样做。 这是把编译器放进优化循环的前提。</p>
+          </div>
+        </section>
+
+        <section id="overrides">
+          <h2><span class="no">03</span><span lang="en">What the kernels are telling us</span><span lang="zh">kernel 在告诉我们什么</span></h2>
+          <p lang="en">When a kernel author overrides the compiler, either the compiler decided badly or it could not be told what the author wanted. Both leave a trace in the source. These are the explicit overrides in the 180 Python files under <code>kernels/</code> (method in section 08):</p>
+          <p lang="zh">kernel 作者手工覆盖编译器， 要么是因为编译器决定错了， 要么是因为没法把作者的意图告诉编译器。 两种情况都会在源码里留下痕迹。 下面是 <code>kernels/</code> 下 180 个 Python 文件里的显式覆盖（统计方法见第 08 节）：</p>
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Override</span><span lang="zh">覆盖方式</span></th>
+                <th><span lang="en">Occurrences</span><span lang="zh">出现次数</span></th>
+                <th><span lang="en">What the author is doing</span><span lang="zh">作者在做什么</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>sched_barrier(0)</code></td>
+                <td class="num"><span lang="en">270 of 279 calls, 35 files</span><span lang="zh">279 次调用中的 270 次， 35 个文件</span></td>
+                <td><span lang="en">forbid the scheduler to move any instruction across this point</span><span lang="zh">禁止调度器把任何指令移过这个点</span></td>
+              </tr>
+              <tr>
+                <td><code>sched_mfma</code> / <code>sched_dsrd</code> / <code>sched_dswr</code> / <code>sched_vmem</code></td>
+                <td class="num"><span lang="en">66 lines, 12 files</span><span lang="zh">66 行， 12 个文件</span></td>
+                <td><span lang="en">hand-write the interleave of matrix and memory instructions</span><span lang="zh">手写矩阵指令和访存指令的交错</span></td>
+              </tr>
+              <tr>
+                <td><code>s_waitcnt</code>, <code>s_wait_*cnt</code></td>
+                <td class="num"><span lang="en">187 lines, 45 files</span><span lang="zh">187 行， 45 个文件</span></td>
+                <td><span lang="en">choose by hand where a wave waits for memory</span><span lang="zh">手工决定 wave 在哪里等内存</span></td>
+              </tr>
+              <tr>
+                <td><code>s_setprio</code></td>
+                <td class="num"><span lang="en">49 lines, 14 files</span><span lang="zh">49 行， 14 个文件</span></td>
+                <td><span lang="en">raise and lower wave priority by hand</span><span lang="zh">手工调高或调低 wave 优先级</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">inline assembly</span><span lang="zh">inline assembly</span></td>
+                <td class="num"><span lang="en">29 lines, 12 files</span><span lang="zh">29 行， 12 个文件</span></td>
+                <td><span lang="en">write instructions the compiler cannot analyze</span><span lang="zh">直接写编译器无法分析的指令</span></td>
+              </tr>
+              <tr>
+                <td><code>"enable-post-misched": False</code></td>
+                <td class="num"><span lang="en">4 files</span><span lang="zh">4 个文件</span></td>
+                <td><span lang="en">switch off scheduling after register allocation</span><span lang="zh">关掉寄存器分配之后的调度</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p lang="en">62 of the 180 files contain at least one of them.</p>
+          <p lang="zh">180 个文件中， 有 62 个至少包含其中一种。</p>
+          <p lang="en">Why would an author forbid the scheduler to move anything? Because the scheduler optimizes a generic objective, trading register pressure against latency and occupancy, without knowing the pipeline the author designed: that a global load must issue several matrix instructions before its data is needed, and that the LDS writes for the next tile belong at the tail of the loop (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/kernel_tuning_guide.md?plain=1#L311-L335"><code>kernel_tuning_guide.md:311</code></a>). The hand-written order encodes that pipeline, and the fence protects it from an optimizer that cannot see it. The same reasoning switches off post-RA scheduling in several attention kernels, "to protect a hand-tuned schedule" (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/references/mllvm-flags.md"><code>mllvm-flags.md</code></a>).</p>
+          <p lang="zh">作者为什么要禁止调度器移动任何东西？ 因为调度器优化的是一个通用目标， 在寄存器压力、 延迟和 occupancy 之间做取舍， 却不知道作者设计的 pipeline： 一条 global load 要在数据被用到之前， 提前若干条矩阵指令发出； 下一个 tile 的 LDS 写要放在循环末尾（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/kernel_tuning_guide.md?plain=1#L311-L335"><code>kernel_tuning_guide.md:311</code></a>）。 手写的顺序编码了这条 pipeline， 屏障则保护它不被一个看不见它的优化器打乱。 同样的原因也让几个 attention kernel 关掉了 post-RA 调度， 用仓库文档的话说， 是为了保护手工调好的调度（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/references/mllvm-flags.md"><code>mllvm-flags.md</code></a>）。</p>
+
+          <figure class="plate" aria-label="Plate II: each override replaces one backend decision">
+            <div class="plate-head"><span>Plate II</span><span lang="en">Each override replaces one backend decision</span><span lang="zh">每种覆盖替代一个后端决定</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 420" role="img" aria-labelledby="p2-title">
+                <title id="p2-title">Six kinds of hand override in FlyDSL kernels, each mapped to the backend decision it replaces</title>
+                <rect class="p-node" x="40" y="24" width="330" height="50" />
+                <rect class="p-node" x="40" y="86" width="330" height="50" />
+                <rect class="p-node" x="40" y="148" width="330" height="50" />
+                <rect class="p-node" x="40" y="210" width="330" height="50" />
+                <rect class="p-node" x="40" y="272" width="330" height="50" />
+                <rect class="p-node" x="40" y="334" width="330" height="50" />
+                <text class="p-code" x="56" y="45">sched_barrier(0)</text>
+                <text class="p-code" x="56" y="107">sched_mfma / dsrd / dswr / vmem</text>
+                <text class="p-code" x="56" y="169">s_setprio</text>
+                <text class="p-code" x="56" y="231">"enable-post-misched": False</text>
+                <text class="p-code" x="56" y="293" lang="en">inline assembly</text>
+                <text class="p-code" x="56" y="293" lang="zh">inline assembly</text>
+                <text class="p-code" x="56" y="355">s_waitcnt, s_wait_*cnt</text>
+                <text class="p-sub" x="56" y="64" lang="en">270 calls · 35 files</text>
+                <text class="p-sub" x="56" y="64" lang="zh">270 次调用 · 35 个文件</text>
+                <text class="p-sub" x="56" y="126" lang="en">66 lines · 12 files</text>
+                <text class="p-sub" x="56" y="126" lang="zh">66 行 · 12 个文件</text>
+                <text class="p-sub" x="56" y="188" lang="en">49 lines · 14 files</text>
+                <text class="p-sub" x="56" y="188" lang="zh">49 行 · 14 个文件</text>
+                <text class="p-sub" x="56" y="250" lang="en">4 files</text>
+                <text class="p-sub" x="56" y="250" lang="zh">4 个文件</text>
+                <text class="p-sub" x="56" y="312" lang="en">29 lines · 12 files</text>
+                <text class="p-sub" x="56" y="312" lang="zh">29 行 · 12 个文件</text>
+                <text class="p-sub" x="56" y="374" lang="en">187 lines · 45 files</text>
+                <text class="p-sub" x="56" y="374" lang="zh">187 行 · 45 个文件</text>
+                <rect class="p-red" x="600" y="56" width="320" height="78" />
+                <rect class="p-red" x="600" y="186" width="320" height="78" />
+                <rect class="p-red" x="600" y="316" width="320" height="78" />
+                <text class="p-title" x="620" y="88" lang="en">Instruction order</text>
+                <text class="p-title" x="620" y="88" lang="zh">指令顺序</text>
+                <text class="p-sub" x="620" y="112" lang="en">scheduler, before and after RA</text>
+                <text class="p-sub" x="620" y="112" lang="zh">机器调度器， 寄存器分配前后</text>
+                <text class="p-title" x="620" y="218" lang="en">Instruction choice, registers</text>
+                <text class="p-title" x="620" y="218" lang="zh">指令选择和寄存器</text>
+                <text class="p-sub" x="620" y="242" lang="en">ISel, register allocator</text>
+                <text class="p-sub" x="620" y="242" lang="zh">ISel、 寄存器分配器</text>
+                <text class="p-title" x="620" y="348" lang="en">Where waves wait</text>
+                <text class="p-title" x="620" y="348" lang="zh">wave 在哪里等待</text>
+                <text class="p-sub" x="620" y="372">SIInsertWaitcnts</text>
+                <path class="p-edge" d="M370,49 C485,49 485,80 598,80" marker-end="url(#ar)" />
+                <path class="p-edge" d="M370,111 C485,111 485,92 598,92" marker-end="url(#ar)" />
+                <path class="p-edge" d="M370,173 C485,173 485,104 598,104" marker-end="url(#ar)" />
+                <path class="p-edge" d="M370,235 C485,235 485,116 598,116" marker-end="url(#ar)" />
+                <path class="p-edge" d="M370,297 C485,297 485,225 598,225" marker-end="url(#ar)" />
+                <path class="p-edge" d="M370,359 C485,359 485,355 598,355" marker-end="url(#ar)" />
+              </svg>
+            </div>
+            <p class="caption" lang="en">Four of the six override kinds fight the scheduler. The fix for them is not a better fence but a way to state the pipeline the fence protects.</p>
+            <p class="caption" lang="zh">六种覆盖里有四种是在对抗调度器。 对它们来说， 修法不是更好的屏障， 而是一种能说清楚屏障所保护的 pipeline 的方式。</p>
+          </figure>
+
+          <p lang="en">Leaving it this way has three costs. An override is paid again for every kernel, every tile shape and every architecture. A full fence also stops the compiler from improving the code around it. And the right override is not even fixed: FlyDSL's tuning guide reports that the hand interleave wins 8–10% on async "fat" tiles and loses on some f16/bf16 tiles with few N accumulators (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/kernel_tuning_guide.md?plain=1#L336-L340"><code>kernel_tuning_guide.md:336</code></a>). A decision that changes with the tile should not be written by hand in each file.</p>
+          <p lang="zh">维持现状有三个代价。 每个 kernel、 每种 tile 形状、 每个架构都要重新付一次覆盖的成本。 一个完整的屏障还会阻止编译器优化它周围的代码。 而且正确的覆盖本身并不固定： FlyDSL 的调优文档记录， 手写交错在 async 「fat」 tile 上快 8–10%， 在部分 N 方向累加器很少的 f16 / bf16 tile 上反而更慢（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/kernel_tuning_guide.md?plain=1#L336-L340"><code>kernel_tuning_guide.md:336</code></a>）。 一个随 tile 变化的决定， 不应该在每个文件里手写。</p>
+
+          <h3><span lang="en">Case: the AGPR accumulator in #1368</span><span lang="zh">案例： #1368 里的 AGPR 累加器</span></h3>
+          <p lang="en">The clearest case merged on 16 November. The gfx950 FP4 and FP8 GEMMs kept their matrix accumulators in AGPRs with inline assembly, because the compiler's own pinning primitive, <code>sched_agpr</code>, did not hold: the accumulator could land in the wrong register file, and instruction selection picked the VGPR form of the MFMA. On an FP4 8192³ GEMM, the primitive took 674.8 µs against 221.4 µs for the assembly (<a href="https://github.com/ROCm/FlyDSL/pull/1368">#1368</a>). The fix was two changes in the LLVM backend, after which the primitive matches or beats the assembly.</p>
+          <p lang="zh">最清楚的例子在 11 月 16 日合入。 gfx950 的 FP4 和 FP8 GEMM 用 inline assembly 把矩阵累加器放在 AGPR 里， 因为编译器自己的固定原语 <code>sched_agpr</code> 不起作用： 累加器可能落进错误的寄存器文件， 指令选择也选了 VGPR 形式的 MFMA。 在 FP4 8192³ GEMM 上， 用这个原语要 674.8 µs， 用 assembly 只要 221.4 µs（<a href="https://github.com/ROCm/FlyDSL/pull/1368">#1368</a>）。 修复是 LLVM 后端里的两处改动， 之后这个原语追平或超过了 assembly。</p>
+          <div class="callout stop">
+            <p lang="en">The gap was never in the kernel. It was two compiler decisions, and once they are fixed in the compiler, the next kernel gets in-place AGPR accumulation without writing assembly.</p>
+            <p lang="zh">差距从来不在 kernel 里， 而在两个编译器决定里。 在编译器里修好之后， 下一个 kernel 不写 assembly 也能在 AGPR 里原地累加。</p>
+          </div>
+        </section>
+
+        <section id="breaks">
+          <h2><span class="no">04</span><span lang="en">Four ways the loop breaks</span><span lang="zh">循环断开的四种方式</span></h2>
+          <p lang="en">Kernel optimization, by hand or by an agent, is a loop: change the kernel, compile, measure, keep the better version. The loop breaks in four distinct ways, and each points at a different layer of the chain. They are ordered here from the cheapest fix to the most expensive, and Plate III shows why the order matters: every later fix needs the cheap signal that the first one provides.</p>
+          <p lang="zh">kernel 优化不管是人做还是 agent 做， 都是一个循环： 改 kernel、 编译、 测量、 保留更好的版本。 这个循环有四种不同的断法， 每一种都指向 compiler chain 的不同一层。 下面按修复成本从低到高排列。 图版 III 说明了这个顺序为什么重要： 后面每一种修法， 都需要第一种修法提供的便宜信号。</p>
+
+          <figure class="plate" aria-label="Plate III: the four breaks and what each fix needs">
+            <div class="plate-head"><span>Plate III</span><span lang="en">Four breaks, five fixes, one signal</span><span lang="zh">四种断法、 五种修法、 一个信号</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 475" role="img" aria-labelledby="p3-title">
+                <title id="p3-title">The structured compile report feeds search, new abstractions and backend changes; ISA-level search feeds backend changes</title>
+                <rect class="p-green" x="330" y="24" width="300" height="72" />
+                <text class="p-label" x="346" y="45" lang="en">1 · CANNOT SEE</text>
+                <text class="p-label" x="346" y="45" lang="zh">1 · 看不见</text>
+                <text class="p-title" x="346" y="69" lang="en">Structured compile report</text>
+                <text class="p-title" x="346" y="69" lang="zh">结构化编译报告</text>
+                <text class="p-sub" x="346" y="87" lang="en">registers · spills · waits · hints</text>
+                <text class="p-sub" x="346" y="87" lang="zh">寄存器 · spill · wait · hint</text>
+                <path class="p-edge-green" d="M480,96 V130 H165 V166" marker-end="url(#ar-green)" />
+                <path class="p-edge-green" d="M480,130 V166" marker-end="url(#ar-green)" />
+                <path class="p-edge-green" d="M480,130 H795 V166" marker-end="url(#ar-green)" />
+                <text class="p-go" x="173" y="153" lang="en">prune candidates</text>
+                <text class="p-go" x="173" y="153" lang="zh">筛掉候选</text>
+                <text class="p-go" x="488" y="153" lang="en">verify the ISA</text>
+                <text class="p-go" x="488" y="153" lang="zh">核对 ISA</text>
+                <text class="p-go" x="803" y="153" lang="en">size the gap</text>
+                <text class="p-go" x="803" y="153" lang="zh">量出差距</text>
+                <rect class="p-node" x="30" y="168" width="270" height="92" />
+                <rect class="p-red" x="345" y="168" width="270" height="92" />
+                <rect class="p-node" x="660" y="168" width="270" height="92" />
+                <text class="p-label" x="46" y="189" lang="en">2 · CANNOT CHOOSE</text>
+                <text class="p-label" x="46" y="189" lang="zh">2 · 选不了</text>
+                <text class="p-title" x="46" y="213" lang="en">Search existing options</text>
+                <text class="p-title" x="46" y="213" lang="zh">搜索已有选项</text>
+                <text class="p-sub" x="46" y="233" lang="en">autotune: options, templates</text>
+                <text class="p-sub" x="46" y="233" lang="zh">autotune： 选项、 模板</text>
+                <text class="p-sub" x="46" y="251" lang="en">no rebuild · per kernel</text>
+                <text class="p-sub" x="46" y="251" lang="zh">不用重编 · 逐个 kernel</text>
+                <text class="p-label" x="361" y="189" lang="en">3 · CANNOT EXPRESS</text>
+                <text class="p-label" x="361" y="189" lang="zh">3 · 表达不了</text>
+                <text class="p-title" x="361" y="213" lang="en">DSL primitives, Fly passes</text>
+                <text class="p-title" x="361" y="213" lang="zh">DSL 原语、 Fly pass</text>
+                <text class="p-sub" x="361" y="233" lang="en">declared pipelines, waits</text>
+                <text class="p-sub" x="361" y="233" lang="zh">声明式 pipeline、 wait</text>
+                <text class="p-sub" x="361" y="251" lang="en">no LLVM rebuild · per pattern</text>
+                <text class="p-sub" x="361" y="251" lang="zh">不用重编 LLVM · 按模式生效</text>
+                <text class="p-label" x="676" y="189" lang="en">4 · DECIDES WRONG</text>
+                <text class="p-label" x="676" y="189" lang="zh">4 · 决定错了</text>
+                <text class="p-title" x="676" y="213" lang="en">LLVM backend heuristics</text>
+                <text class="p-title" x="676" y="213" lang="zh">LLVM 后端启发式</text>
+                <text class="p-sub" x="676" y="233" lang="en">schedule, registers, waits</text>
+                <text class="p-sub" x="676" y="233" lang="zh">调度、 寄存器、 wait</text>
+                <text class="p-sub" x="676" y="251" lang="en">LLVM rebuild · every kernel</text>
+                <text class="p-sub" x="676" y="251" lang="zh">要重编 LLVM · 所有 kernel</text>
+                <rect class="p-node" x="660" y="330" width="270" height="72" />
+                <text class="p-label" x="676" y="351" lang="en">5 · MEASURE THE CEILING</text>
+                <text class="p-label" x="676" y="351" lang="zh">5 · 量出上限</text>
+                <text class="p-title" x="676" y="375" lang="en">ISA-level search</text>
+                <text class="p-title" x="676" y="375" lang="zh">ISA 级搜索</text>
+                <text class="p-sub" x="676" y="393" lang="en">inject_asm + agent or RL</text>
+                <text class="p-sub" x="676" y="393" lang="zh">inject_asm 加 agent 或 RL</text>
+                <path class="p-edge-red" d="M795,330 V262" marker-end="url(#ar-red)" />
+                <text class="p-hot" x="785" y="300" text-anchor="end" lang="en">the diff names the heuristic</text>
+                <text class="p-hot" x="785" y="300" text-anchor="end" lang="zh">diff 指出该改哪条启发式</text>
+                <path class="p-edge" d="M30,440 H926" marker-end="url(#ar)" />
+                <text class="p-label" x="30" y="462" lang="en">CHEAPER</text>
+                <text class="p-label" x="30" y="462" lang="zh">更便宜</text>
+                <text class="p-label" x="930" y="462" text-anchor="end" lang="en">MORE EXPENSIVE</text>
+                <text class="p-label" x="930" y="462" text-anchor="end" lang="zh">更昂贵</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">Fix 3 is outlined in red because it is the best main direction: it targets the most common overrides, needs no LLVM rebuild, and can be checked kernel by kernel.</p>
+            <p class="caption" lang="zh">修法 3 用红框标出， 因为它最适合作为主方向： 它针对最常见的覆盖， 不用重编 LLVM， 并且能逐个 kernel 验证。</p>
+          </figure>
+
+          <h3><span lang="en">1 · It cannot see</span><span lang="zh">1 · 看不见</span></h3>
+          <p lang="en">A compile returns a binary or an error. To learn the register count, the spills, the occupancy, or whether a hint took effect, someone dumps about twenty intermediate files and runs a script over the assembly. Some knobs also fail silently. The repository's own LLVM notes record four knobs that never reached code generation, and an unknown <code>compile_hints</code> key is accepted without complaint while still changing the cache key, so the recompile looks real (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/SKILL.md"><code>.claude/skills/llvm/SKILL.md</code></a>).</p>
+          <p lang="zh">一次编译只返回二进制或者报错。 想知道寄存器数、 spill、 occupancy， 或者某个 hint 有没有生效， 就得 dump 大约二十个中间文件， 再用脚本解析 assembly。 有些开关还会静默失效。 仓库自己的 LLVM 笔记记录了 4 个从未到达代码生成的开关； 一个未知的 <code>compile_hints</code> key 也会被默默接受， 同时还改变 cache key， 所以重新编译看起来像是真的生效了（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/SKILL.md"><code>.claude/skills/llvm/SKILL.md</code></a>）。</p>
+          <p lang="en">The fix is a structured report from every compile: registers, spills, occupancy, LDS, instruction and wait counts, and which hints reached the IR. LLVM can already emit the resource half as YAML through the <code>kernel-resource-usage</code> remark; the rest comes from the ISA that FlyDSL already dumps. Unknown hints should be errors.</p>
+          <p lang="zh">修法是每次编译都输出一份结构化报告： 寄存器、 spill、 occupancy、 LDS、 指令数和 wait 数， 以及哪些 hint 真的到达了 IR。 LLVM 已经能通过 <code>kernel-resource-usage</code> remark 用 YAML 输出资源这一半， 其余部分可以从 FlyDSL 已经 dump 出来的 ISA 里取。 未知的 hint 应该直接报错。</p>
+          <p lang="en">This comes first because every other fix needs a cheap signal. GPU timing is expensive and noisy (the same notes measure ±14% clock noise on gfx950), while a static report rejects a spilling candidate in milliseconds. FlyDSL already maps compile errors back to the Python file and line that caused them (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/diagnostics.py#L30-L56"><code>compiler/diagnostics.py:30</code></a>); performance facts get no such treatment yet.</p>
+          <p lang="zh">这一项排在最前面， 因为其他所有修复都需要一个便宜的信号。 GPU 计时又贵又吵（同一份笔记测到 gfx950 上有 ±14% 的时钟噪声）， 而静态报告几毫秒就能筛掉一个会 spill 的候选。 FlyDSL 已经能把编译错误映射回出错的 Python 文件和行号（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/diagnostics.py#L30-L56"><code>compiler/diagnostics.py:30</code></a>）， 但性能信息还没有这种待遇。</p>
+
+          <h3><span lang="en">2 · It cannot choose</span><span lang="zh">2 · 选不了</span></h3>
+          <p lang="en">When the best schedule template depends on the tile, the choice is a search problem, not a rule. FlyDSL's autotuner searches kernel parameters, the warp count and <code>waves_per_eu</code> (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/autotune.py#L130-L149"><code>autotune.py:130</code></a>). LLVM options and template switches are written into kernels by hand. Adding them to the search space, and pruning it with the report above, turns a per-tile guess into a measurement.</p>
+          <p lang="zh">当最好的调度模板取决于 tile 时， 这个选择是搜索问题， 不是规则。 FlyDSL 的 autotuner 搜索 kernel 参数、 warp 数和 <code>waves_per_eu</code>（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/autotune.py#L130-L149"><code>autotune.py:130</code></a>）。 LLVM 选项和模板开关都是手工写进 kernel 的。 把它们加入搜索空间， 再用上面的报告剪枝， 就能把按 tile 的猜测变成测量。</p>
+          <p lang="en">Search has a ceiling: it only picks among options that exist. It cannot create the one that is missing.</p>
+          <p lang="zh">搜索有上限： 它只能在已有的选项里挑， 造不出缺少的那个选项。</p>
+
+          <h3><span lang="en">3 · It cannot express</span><span lang="zh">3 · 表达不了</span></h3>
+          <p lang="en">270 fences and 187 hand-placed waits are not 457 different ideas. They are a few ideas written again in every kernel, and an idea written hundreds of times is a missing abstraction. Three are visible in the counts:</p>
+          <p lang="zh">270 个屏障和 187 处手工 wait 并不是 457 个不同的想法。 它们是少数几个想法， 在每个 kernel 里重新写一遍； 一个被写了几百遍的想法， 就是一个缺失的抽象。 统计里能看到三个：</p>
+          <ul>
+            <li lang="en"><strong>A declared pipeline instead of fences.</strong> The author states the intended schedule once (which loads run how many matrix instructions ahead, where the LDS writes go), and the compiler emits the scheduling hints and checks that the final ISA respects them. A constraint lets the compiler keep optimizing everything else; a full fence does not.</li>
+            <li lang="zh"><strong>声明 pipeline， 而不是加屏障。</strong> 作者只描述一次想要的调度（哪些 load 要提前多少条矩阵指令、 LDS 写放在哪里）， 由编译器生成调度提示， 并检查最终 ISA 是否遵守。 约束让编译器还能继续优化其余部分， 完整的屏障做不到。</li>
+            <li lang="en"><strong>Waits derived from data flow.</strong> The Fly level sees every asynchronous copy and the operation that consumes it, so it can compute where the waits must go and check that none is missing. Missing and misplaced waits were a recurring source of silent wrong answers during the gfx1250 bring-up (<a href="./unit-pass-model-fail.html">Gap 5 in "Green Test, Red Model"</a>).</li>
+            <li lang="zh"><strong>从数据流推出 wait。</strong> Fly 层能看到每个异步拷贝和消费它的操作， 所以能算出 wait 必须放在哪里， 并检查有没有漏掉。 在 gfx1250 上线期间， 漏掉或放错的 wait 反复造成静默的错误结果（<a href="./unit-pass-model-fail.html">「单测通过， 模型出错」 里的缺口 5</a>）。</li>
+            <li lang="en"><strong>Register files as an API, not assembly.</strong> <a href="https://github.com/ROCm/FlyDSL/pull/1349">#1349</a> added <code>sched_bank</code> and <code>sched_agpr</code>, and #1368 made <code>sched_agpr</code> hold.</li>
+            <li lang="zh"><strong>用 API 而不是 assembly 控制寄存器文件。</strong> <a href="https://github.com/ROCm/FlyDSL/pull/1349">#1349</a> 加入了 <code>sched_bank</code> 和 <code>sched_agpr</code>， #1368 让 <code>sched_agpr</code> 真正生效。</li>
+          </ul>
+          <p lang="en">Why not ask LLVM to do all of this? Because LLVM sees instructions, not pipelines. Stages, producers and consumers exist at the Fly level and are gone by the time the backend schedules. That is also why this layer is cheap to change: the passes live in the FlyDSL repository, a change needs no LLVM rebuild, and each change can be checked kernel by kernel, with the same or better speed and fewer overrides.</p>
+          <p lang="zh">为什么不让 LLVM 来做这些？ 因为 LLVM 看到的是指令， 不是 pipeline。 stage、 生产者和消费者只存在于 Fly 层， 到后端调度时已经消失了。 这也是这一层改起来便宜的原因： pass 就在 FlyDSL 仓库里， 改动不用重编 LLVM， 每次改动都能逐个 kernel 验证， 标准是速度相同或更快， 手工覆盖更少。</p>
+
+          <h3><span lang="en">4 · It decides wrong</span><span lang="zh">4 · 决定错了</span></h3>
+          <p lang="en">Some decisions only the backend makes: the final instruction order, register allocation, the MFMA form, wait insertion. #1368 was fixed there. This layer has the highest ceiling, because one fix reaches every kernel, and the highest cost. Each change means rebuilding LLVM, and LLVM changes move kernel performance in ways that are hard to predict: #1349 kept the LLVM pin on purpose instead of pulling in 1,807 upstream commits, "to avoid ... shifting kernel performance". Backend work should therefore go where measurement shows a large gap, and every change must pass a performance gate across the whole kernel set.</p>
+          <p lang="zh">有些决定只有后端能做： 最终指令顺序、 寄存器分配、 MFMA 形式、 wait 插入。 #1368 就是在这一层修好的。 这一层的上限最高， 因为一次修复能惠及所有 kernel； 成本也最高。 每次改动都要重编 LLVM， 而 LLVM 的变化会以难以预测的方式挪动 kernel 性能： #1349 刻意没有升级 LLVM pin， 不引入 1,807 个 upstream 提交， 理由就是避免改变 kernel 性能。 所以后端工作应该投到测量显示差距大的地方， 而且每次改动都要通过覆盖全部 kernel 的性能门禁。</p>
+
+          <h3><span lang="en">5 · Measuring the ceiling</span><span lang="zh">5 · 量出上限</span></h3>
+          <p lang="en">One more tool turns guesses into numbers. FlyDSL's <a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/testing_benchmarking_guide.md?plain=1#L406-L431"><code>tools/inject_asm</code></a> reassembles a hand-edited <code>.s</code>, swaps it into the cache and reruns the unchanged test, with a baseline run under the same conditions. Today it is a debugging aid. Driven by an agent or a reinforcement-learning policy that reorders instructions and moves waits, it becomes a search for the best schedule a given binary admits. <a href="https://arxiv.org/abs/2501.08071">CuAsmRL</a> did this on NVIDIA SASS and improved expert kernels by 9% on average and up to 26%. The result is tied to one binary and one shape, so it is not what you ship. What it gives you is the size of the gap the compiler left, and a concrete diff that says which heuristic to change.</p>
+          <p lang="zh">还有一个工具能把猜测变成数字。 FlyDSL 的 <a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/testing_benchmarking_guide.md?plain=1#L406-L431"><code>tools/inject_asm</code></a> 能把手工改过的 <code>.s</code> 重新汇编、 换进 cache， 再跑原来的测试， 并在相同条件下跑一次基线。 它现在只是调试工具。 如果由 agent 或强化学习策略来重排指令、 移动 wait， 它就变成了对某个二进制的最优调度的搜索。 <a href="https://arxiv.org/abs/2501.08071">CuAsmRL</a> 在 NVIDIA SASS 上这样做， 让专家写的 kernel 平均快 9%， 最高快 26%。 结果绑定单个二进制和单个形状， 所以不是用来上线的。 它给出的是编译器留下了多大差距， 以及一个具体的 diff， 告诉你该改哪条启发式。</p>
+        </section>
+
+        <section id="outer-loop">
+          <h2><span class="no">05</span><span lang="en">Letting the compiler improve itself</span><span lang="zh">让编译器自己进步</span></h2>
+          <p lang="en"><a href="https://arxiv.org/abs/2608.12629">CAKE</a>, from researchers at NVIDIA and CMU, turns this into a system. Three commitments carry it. Agents edit a typed IR in which hardware decisions are explicit, not raw CUDA. The compiler answers with localized diagnostics rather than a pass/fail bit: pre-compile gates for synchronization safety, hardware conformance, data consistency and schedule semantics, plus a calibrated cost model that ranks candidates before any GPU run (§3.1). And the harness itself evolves: "an opaque runtime crash becomes a verifier rule, a repeated illegal lowering pattern becomes a static check, a systematic misprediction becomes a calibration target" (§3.2). On a clean-start Flash-KMeans task on B200, the best Cake IR candidate reached a median 1.144× of a tuned baseline, against 0.928× when agents wrote CUDA/PTX directly with the same budget.</p>
+          <p lang="zh">来自 NVIDIA 和 CMU 的研究者提出的 <a href="https://arxiv.org/abs/2608.12629">CAKE</a>， 把这件事做成了一个系统。 它靠三条原则支撑。 agent 修改的是类型化、 硬件决定显式的 IR， 而不是裸 CUDA。 编译器返回的是定位到具体位置的诊断， 而不是 pass / fail： 编译前的门禁检查同步安全、 硬件契约、 数据一致性和调度语义， 再加一个校准过的 cost model， 在任何 GPU 运行之前给候选排序（§3.1）。 harness 本身也在演化： 不透明的运行时崩溃变成 verifier 规则， 反复出现的非法 lowering 模式变成静态检查， 系统性的预测偏差变成校准目标（§3.2）。 在 B200 上从零开始的 Flash-KMeans 任务里， 同样预算下， Cake IR 的最好候选中位数达到调优基线的 1.144×， agent 直接写 CUDA / PTX 只有 0.928×。</p>
+
+          <figure class="plate" aria-label="Plate IV: the inner and outer loops">
+            <div class="plate-head"><span>Plate IV</span><span lang="en">Two loops</span><span lang="zh">两个循环</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 420" role="img" aria-labelledby="p4-title">
+                <title id="p4-title">The inner kernel-optimization loop and the outer compiler-improvement loop</title>
+                <rect class="p-zone" x="10" y="10" width="940" height="160" />
+                <rect class="p-zone" x="10" y="220" width="940" height="185" />
+                <text class="p-label" x="30" y="36" lang="en">INNER LOOP · OPTIMIZE ONE KERNEL</text>
+                <text class="p-label" x="30" y="36" lang="zh">内层循环 · 优化一个 kernel</text>
+                <text class="p-label" x="930" y="246" text-anchor="end" lang="en">OUTER LOOP · IMPROVE THE COMPILER</text>
+                <text class="p-label" x="930" y="246" text-anchor="end" lang="zh">外层循环 · 改进编译器</text>
+                <rect class="p-node" x="40" y="80" width="200" height="60" />
+                <rect class="p-node" x="270" y="80" width="200" height="60" />
+                <rect class="p-node" x="500" y="80" width="200" height="60" />
+                <rect class="p-node" x="730" y="80" width="200" height="60" />
+                <rect class="p-red" x="500" y="288" width="200" height="60" />
+                <rect class="p-red" x="270" y="288" width="200" height="60" />
+                <rect class="p-red" x="40" y="288" width="200" height="60" />
+                <path class="p-edge" d="M240,110 H268" marker-end="url(#ar)" />
+                <path class="p-edge" d="M470,110 H498" marker-end="url(#ar)" />
+                <path class="p-edge" d="M700,110 H728" marker-end="url(#ar)" />
+                <path class="p-edge" d="M830,80 V58 H140 V78" marker-end="url(#ar)" />
+                <path class="p-edge" d="M600,140 V286" marker-end="url(#ar)" />
+                <path class="p-edge-red" d="M500,318 H472" marker-end="url(#ar-red)" />
+                <path class="p-edge-red" d="M270,318 H242" marker-end="url(#ar-red)" />
+                <path class="p-edge-red" d="M140,288 V142" marker-end="url(#ar-red)" />
+                <text class="p-title" x="56" y="106" lang="en">Compile</text>
+                <text class="p-title" x="56" y="106" lang="zh">编译</text>
+                <text class="p-title" x="286" y="106" lang="en">Report</text>
+                <text class="p-title" x="286" y="106" lang="zh">报告</text>
+                <text class="p-title" x="516" y="106" lang="en">Measure</text>
+                <text class="p-title" x="516" y="106" lang="zh">测量</text>
+                <text class="p-title" x="746" y="106" lang="en">Edit kernel</text>
+                <text class="p-title" x="746" y="106" lang="zh">改 kernel</text>
+                <text class="p-sub" x="56" y="127">MLIR + LLVM</text>
+                <text class="p-sub" x="286" y="127" lang="en">spills, waits, hints</text>
+                <text class="p-sub" x="286" y="127" lang="zh">spill、 wait、 hint</text>
+                <text class="p-sub" x="516" y="127" lang="en">idle GPU, repeats</text>
+                <text class="p-sub" x="516" y="127" lang="zh">空闲 GPU， 多次重复</text>
+                <text class="p-sub" x="746" y="127" lang="en">agent or engineer</text>
+                <text class="p-sub" x="746" y="127" lang="zh">agent 或工程师</text>
+                <text class="p-title" x="516" y="314" lang="en">Record, group</text>
+                <text class="p-title" x="516" y="314" lang="zh">记录、 归类</text>
+                <text class="p-title" x="286" y="314" lang="en">Fix</text>
+                <text class="p-title" x="286" y="314" lang="zh">修复</text>
+                <text class="p-title" x="56" y="314" lang="en">Corpus gate</text>
+                <text class="p-title" x="56" y="314" lang="zh">语料门禁</text>
+                <text class="p-sub" x="516" y="335" lang="en">failures, overrides</text>
+                <text class="p-sub" x="516" y="335" lang="zh">失败和手工覆盖</text>
+                <text class="p-sub" x="286" y="335" lang="en">cheapest layer first</text>
+                <text class="p-sub" x="286" y="335" lang="zh">先用最便宜的一层</text>
+                <text class="p-sub" x="56" y="335" lang="en">every kernel passes</text>
+                <text class="p-sub" x="56" y="335" lang="zh">所有 kernel 都通过</text>
+                <text class="p-note" x="485" y="50" text-anchor="middle" lang="en">repeat, keep the best version</text>
+                <text class="p-note" x="485" y="50" text-anchor="middle" lang="zh">重复， 保留最好的版本</text>
+                <text class="p-note" x="612" y="200" lang="en">failures, overrides, gaps</text>
+                <text class="p-note" x="612" y="200" lang="zh">失败、 手工覆盖、 差距</text>
+                <text class="p-hot" x="152" y="200" lang="en">merged: every later kernel benefits</text>
+                <text class="p-hot" x="152" y="200" lang="zh">合并后， 之后的 kernel 都受益</text>
+                <text class="p-sub" x="370" y="378" text-anchor="middle" lang="en">option → Fly pass → LLVM patch</text>
+                <text class="p-sub" x="370" y="378" text-anchor="middle" lang="zh">开关 → Fly pass → LLVM 补丁</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">The inner loop optimizes one kernel. The outer loop turns what the inner loop runs into (failures, hand overrides, measured gaps) into compiler changes, and merges only the changes that every kernel passes.</p>
+            <p class="caption" lang="zh">内层循环优化一个 kernel。 外层循环把内层循环遇到的问题（失败、 手工覆盖、 测出的差距） 变成编译器改动， 并且只合并所有 kernel 都通过的改动。</p>
+          </figure>
+
+          <p lang="en">FlyDSL already has most of the pieces:</p>
+          <p lang="zh">FlyDSL 已经有了大部分组件：</p>
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">CAKE commitment</span><span lang="zh">CAKE 原则</span></th>
+                <th><span lang="en">FlyDSL today</span><span lang="zh">FlyDSL 现状</span></th>
+                <th><span lang="en">Missing</span><span lang="zh">还缺什么</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">hardware-explicit IR</span><span lang="zh">硬件显式的 IR</span></td>
+                <td><span lang="en">atoms, layouts and scheduling primitives are explicit</span><span lang="zh">atom、 layout 和调度原语都是显式的</span></td>
+                <td><span lang="en">errors in layout code are hard to localize</span><span lang="zh">layout 代码出错时难以定位</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">localized diagnostics</span><span lang="zh">定位到具体位置的诊断</span></td>
+                <td><span lang="en">compile errors map to Python lines</span><span lang="zh">编译错误能映射到 Python 行号</span></td>
+                <td><span lang="en">structured performance diagnostics</span><span lang="zh">结构化的性能诊断</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">evolving harness</span><span lang="zh">自我演化的 harness</span></td>
+                <td><span lang="en">repository skills, an LLVM patch pipeline, CI that benchmarks against <code>main</code> and the latest tag (<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.github/workflows/flydsl.yaml"><code>flydsl.yaml</code></a>)</span><span lang="zh">仓库 skill、 LLVM 补丁流程、 对比 <code>main</code> 和最新 tag 的 benchmark CI（<a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.github/workflows/flydsl.yaml"><code>flydsl.yaml</code></a>）</span></td>
+                <td><span lang="en">a log of failures and overrides; a compiler-change gate across the kernel set</span><span lang="zh">失败和手工覆盖的记录； 覆盖全部 kernel 的编译器改动门禁</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout stop">
+            <p lang="en"><strong>One design difference deserves attention.</strong> CAKE deliberately does not make layout a first-class abstraction (§2.2), because a layout calculus makes agent errors likely and hard to localize. FlyDSL is built on a layout algebra. For FlyDSL, then, the most valuable diagnostic is one that turns a layout error into a repair an agent can make.</p>
+            <p lang="zh"><strong>有一个设计差异值得注意。</strong> CAKE 刻意不把 layout 作为一等抽象（§2.2）， 理由是 layout 演算让 agent 容易出错， 而且错误难以定位。 FlyDSL 恰好建立在 layout algebra 之上。 所以对 FlyDSL 来说， 最有价值的诊断， 是把 layout 错误翻译成 agent 能动手修的问题。</p>
+          </div>
+          <p lang="en">The corpus gate is not bureaucracy. CAKE notes that a new verifier rule without corpus validation can reject valid kernels, and that a new primitive without legality rules makes the IR harder to analyze (§3.2). A compiler change touches every kernel, so it has to be judged on every kernel.</p>
+          <p lang="zh">语料门禁不是官僚流程。 CAKE 指出， 没有经过语料验证的新 verifier 规则可能拒绝合法的 kernel， 没有合法性规则的新原语会让 IR 更难分析（§3.2）。 编译器改动会影响每个 kernel， 所以必须用每个 kernel 来评判。</p>
+          <p lang="en">What gets automated, and how, depends on what is being changed:</p>
+          <p lang="zh">自动化什么、 怎么自动化， 取决于要改的是什么：</p>
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Automation</span><span lang="zh">自动化方式</span></th>
+                <th><span lang="en">What it changes</span><span lang="zh">改什么</span></th>
+                <th><span lang="en">Example</span><span lang="zh">例子</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">search</span><span lang="zh">搜索</span></td>
+                <td><span lang="en">options and kernel parameters</span><span lang="zh">选项和 kernel 参数</span></td>
+                <td><span lang="en">FlyDSL's autotuner</span><span lang="zh">FlyDSL 的 autotuner</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">learned heuristic</span><span lang="zh">学习型启发式</span></td>
+                <td><span lang="en">one decision inside the compiler</span><span lang="zh">编译器里的单个决定</span></td>
+                <td><span lang="en"><a href="https://arxiv.org/abs/2101.04808">MLGO</a> replaced LLVM's inlining-for-size heuristic with a trained policy: up to 7% smaller code</span><span lang="zh"><a href="https://arxiv.org/abs/2101.04808">MLGO</a> 用训练出的策略替换了 LLVM 的 inlining-for-size 启发式， 代码最多小 7%</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">LLM-evolved code with an automatic evaluator</span><span lang="zh">LLM 演化代码 + 自动评估</span></td>
+                <td><span lang="en">the source of a kernel or a compiler heuristic</span><span lang="zh">kernel 或编译器启发式的源码</span></td>
+                <td><span lang="en"><a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve</a> sped up a Gemini kernel by 23%, and FlashAttention by up to 32.5% at the GPU-instruction level</span><span lang="zh"><a href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/">AlphaEvolve</a> 让 Gemini 的一个 kernel 快 23%， 在 GPU 指令层面让 FlashAttention 最多快 32.5%</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">reinforcement learning on the ISA</span><span lang="zh">ISA 上的强化学习</span></td>
+                <td><span lang="en">the final instruction order</span><span lang="zh">最终指令顺序</span></td>
+                <td><span lang="en">CuAsmRL: 9% on average, up to 26%</span><span lang="zh">CuAsmRL： 平均快 9%， 最高快 26%</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p lang="en">All four need the same thing first: an evaluator you can trust, meaning correctness tests plus timing on an isolated GPU with enough repeats to beat the noise. Without it, automation optimizes noise.</p>
+          <p lang="zh">四种方式都先需要同一样东西： 一个可信的评估器， 也就是正确性测试， 加上在隔离 GPU 上重复足够多次、 能压过噪声的计时。 没有它， 自动化只会去优化噪声。</p>
+        </section>
+
+        <section id="census">
+          <h2><span class="no">06</span><span lang="en">A first experiment: a compiler-gap census</span><span lang="zh">第一个实验： 编译器差距普查</span></h2>
+          <p lang="en">"Which part should we change?" stays vague until the gaps are measured. A census answers it:</p>
+          <p lang="zh">在测出差距之前， 「该改哪一块」 始终是模糊的。 一次普查可以回答它：</p>
+          <ol>
+            <li lang="en">Pick three to five important kernels on MI355X, where CI runners exist: a GEMM, an attention kernel and a MoE kernel.</li>
+            <li lang="zh">在 MI355X 上选 3 到 5 个重要的 kernel， 因为那里有 CI runner： 一个 GEMM、 一个 attention kernel 和一个 MoE kernel。</li>
+            <li lang="en">Build each one three ways: as written; with the hand overrides removed and a sweep of LLVM scheduler strategies; and, optionally, with the best schedule that an <code>inject_asm</code> search finds.</li>
+            <li lang="zh">每个 kernel 构建三个版本： 原样； 去掉手工覆盖并扫几种 LLVM 调度策略； 以及可选的、 用 <code>inject_asm</code> 搜索找到的最好调度。</li>
+            <li lang="en">Attribute each performance gap to one stage: scheduling, register allocation, waits, instruction selection or address arithmetic.</li>
+            <li lang="zh">把每一段性能差距归到一个阶段： 调度、 寄存器分配、 wait、 指令选择或地址计算。</li>
+            <li lang="en">Tabulate each gap class: how much performance it costs, in how many kernels, and which layer would fix it.</li>
+            <li lang="zh">把每类差距列成表： 它损失多少性能、 出现在几个 kernel 里、 由哪一层来修。</li>
+          </ol>
+
+          <figure class="plate" aria-label="Plate V: the census design">
+            <div class="plate-head"><span>Plate V</span><span lang="en">Census design</span><span lang="zh">普查设计</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 360" role="img" aria-labelledby="p5-title">
+                <title id="p5-title">Three to five kernels, three builds each, every gap attributed to one stage, one decision table</title>
+                <text class="p-label" x="30" y="30" lang="en">KERNELS · MI355X</text>
+                <text class="p-label" x="30" y="30" lang="zh">KERNEL · MI355X</text>
+                <rect class="p-node" x="30" y="48" width="190" height="46" />
+                <rect class="p-node" x="30" y="108" width="190" height="46" />
+                <rect class="p-node" x="30" y="168" width="190" height="46" />
+                <text class="p-title" x="46" y="77">GEMM</text>
+                <text class="p-title" x="46" y="137">attention</text>
+                <text class="p-title" x="46" y="197">MoE</text>
+                <text class="p-label" x="280" y="30" lang="en">THREE BUILDS EACH</text>
+                <text class="p-label" x="280" y="30" lang="zh">每个构建三个版本</text>
+                <rect class="p-node" x="280" y="48" width="250" height="56" />
+                <rect class="p-node" x="280" y="124" width="250" height="56" />
+                <rect class="p-node" x="280" y="200" width="250" height="56" />
+                <text class="p-title" x="296" y="72" lang="en">As written</text>
+                <text class="p-title" x="296" y="72" lang="zh">原样</text>
+                <text class="p-sub" x="296" y="92" lang="en">all hand overrides kept</text>
+                <text class="p-sub" x="296" y="92" lang="zh">保留全部手工覆盖</text>
+                <text class="p-title" x="296" y="148" lang="en">Overrides removed</text>
+                <text class="p-title" x="296" y="148" lang="zh">去掉手工覆盖</text>
+                <text class="p-sub" x="296" y="168" lang="en">sweep scheduler strategies</text>
+                <text class="p-sub" x="296" y="168" lang="zh">扫几种 LLVM 调度策略</text>
+                <text class="p-title" x="296" y="224" lang="en">ISA search (optional)</text>
+                <text class="p-title" x="296" y="224" lang="zh">ISA 搜索（可选）</text>
+                <text class="p-sub" x="296" y="244" lang="en">best inject_asm schedule</text>
+                <text class="p-sub" x="296" y="244" lang="zh">inject_asm 找到的最好调度</text>
+                <path class="p-edge" d="M220,131 C250,131 250,76 278,76" marker-end="url(#ar)" />
+                <path class="p-edge" d="M220,131 C250,131 250,152 278,152" marker-end="url(#ar)" />
+                <path class="p-edge" d="M220,131 C250,131 250,228 278,228" marker-end="url(#ar)" />
+                <rect class="p-red" x="590" y="86" width="170" height="132" />
+                <text class="p-title" x="606" y="112" lang="en">Attribute gaps</text>
+                <text class="p-title" x="606" y="112" lang="zh">归因差距</text>
+                <text class="p-sub" x="606" y="136" lang="en">scheduling</text>
+                <text class="p-sub" x="606" y="136" lang="zh">调度</text>
+                <text class="p-sub" x="606" y="152" lang="en">registers</text>
+                <text class="p-sub" x="606" y="152" lang="zh">寄存器</text>
+                <text class="p-sub" x="606" y="168" lang="en">waits</text>
+                <text class="p-sub" x="606" y="168" lang="zh">wait</text>
+                <text class="p-sub" x="606" y="184" lang="en">selection</text>
+                <text class="p-sub" x="606" y="184" lang="zh">指令选择</text>
+                <text class="p-sub" x="606" y="200" lang="en">addresses</text>
+                <text class="p-sub" x="606" y="200" lang="zh">地址计算</text>
+                <path class="p-edge" d="M530,76 C560,76 560,140 588,140" marker-end="url(#ar)" />
+                <path class="p-edge" d="M530,152 H588" marker-end="url(#ar)" />
+                <path class="p-edge" d="M530,228 C560,228 560,164 588,164" marker-end="url(#ar)" />
+                <rect class="p-green" x="790" y="86" width="140" height="132" />
+                <text class="p-title" x="806" y="112" lang="en">Decision table</text>
+                <text class="p-title" x="806" y="112" lang="zh">决策表</text>
+                <text class="p-sub" x="806" y="136" lang="en">cost per gap</text>
+                <text class="p-sub" x="806" y="136" lang="zh">每类差距的损失</text>
+                <text class="p-sub" x="806" y="152" lang="en">kernel count</text>
+                <text class="p-sub" x="806" y="152" lang="zh">kernel 数量</text>
+                <text class="p-sub" x="806" y="168" lang="en">layer to fix</text>
+                <text class="p-sub" x="806" y="168" lang="zh">由哪一层来修</text>
+                <path class="p-edge-green" d="M760,152 H788" marker-end="url(#ar-green)" />
+                <text class="p-note" x="30" y="300" lang="en">Done when the table answers "which layer first, and for how much".</text>
+                <text class="p-note" x="30" y="300" lang="zh">当这张表能回答 「先改哪一层、 能拿到多少」 时， 普查就完成了。</text>
+                <text class="p-go" x="30" y="326" lang="en">instrument: the structured compile report from fix 1</text>
+                <text class="p-go" x="30" y="326" lang="zh">工具： 修法 1 里的结构化编译报告</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">The census measures before it chooses. Its output is a ranking of layers by measured gain, which is the concrete answer to "which part of the compiler chain should we change".</p>
+            <p class="caption" lang="zh">普查先测量， 再选择。 它的产出是按实测收益给各层排序， 这就是 「该改 compiler chain 的哪一块」 的具体答案。</p>
+          </figure>
+
+          <p lang="en">The census is done when that table answers "which layer first, and for how much". The structured compile report from the first fix is the instrument that makes the census cheap, so the two can start together.</p>
+          <p lang="zh">当这张表能回答 「先改哪一层、 能拿到多少」 时， 普查就完成了。 第一项修复里的结构化编译报告正是让普查变便宜的工具， 所以两者可以同时开始。</p>
+        </section>
+
+        <section id="closing">
+          <h2><span class="no">07</span><span lang="en">Closing</span><span lang="zh">结语</span></h2>
+          <p lang="en">"Think about the compiler chain" becomes concrete once you ask, for each decision that sets a kernel's speed, who made it and whether anyone can see it. In FlyDSL the kernels answer for themselves: scheduling, registers and waits are decided by hand in 62 of 180 files. Each override is a bug report against the compiler that nobody filed. The outer loop is a way to file them: record them, group them, fix each one at the cheapest layer that can express it, and merge only what the whole kernel set agrees with.</p>
+          <p lang="zh">只要对每个决定 kernel 速度的因素问一句 「是谁做的决定、 有没有人看得见」， 「多想想 compiler chain」 就不再模糊。 在 FlyDSL 里， kernel 自己给出了答案： 180 个文件里有 62 个在手工决定调度、 寄存器和等待。 每一处手工覆盖， 都是一份没人提交的编译器 bug 报告。 外层循环就是提交它们的方式： 记录、 归类， 在能表达它的最便宜的一层修好， 并且只合并整套 kernel 都认可的改动。</p>
+          <h3><span lang="en">Open questions</span><span lang="zh">开放问题</span></h3>
+          <ul>
+            <li lang="en">Does a declared pipeline keep the 8–10% that hand interleaves win on fat tiles, or does giving the scheduler freedom give some of it back?</li>
+            <li lang="zh">声明式 pipeline 能不能保住手写交错在 fat tile 上的 8–10%？ 还是把自由交还给调度器之后， 会吐回一部分？</li>
+            <li lang="en">Can a layout error in FlyDSL be reported as a repair (which mode, which stride) instead of an MLIR verifier message?</li>
+            <li lang="zh">FlyDSL 里的 layout 错误， 能不能报告成一个修法（哪个 mode、 哪个 stride）， 而不是一条 MLIR verifier 报错？</li>
+            <li lang="en">With ±14% clock noise on gfx950, how many repeats does a corpus gate need before it can accept a 2–3% compiler win?</li>
+            <li lang="zh">gfx950 上有 ±14% 的时钟噪声， 语料门禁要重复多少次， 才能可靠地接受一个 2–3% 的编译器收益？</li>
+          </ul>
+        </section>
+
+        <section id="method">
+          <h2><span class="no">08</span><span lang="en">Method and sources</span><span lang="zh">方法与来源</span></h2>
+          <p lang="en">The counts are static matches in <code>kernels/</code> at <a href="https://github.com/ROCm/FlyDSL/tree/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e">aae1553</a>. They include a few comments, so read them as an indicator, not an exact call count:</p>
+          <p lang="zh">数字是 <a href="https://github.com/ROCm/FlyDSL/tree/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e">aae1553</a> 上 <code>kernels/</code> 目录的静态匹配结果。 其中包含少量注释， 所以应该把它看作指标， 而不是精确的调用次数：</p>
+<pre>git clone https://github.com/ROCm/FlyDSL.git &amp;&amp; cd FlyDSL
+git checkout aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e
+rg --files -g '*.py' kernels | wc -l               <span class="c"># 180 kernel files</span>
+rg -o 'sched_barrier\(\s*0\s*\)' kernels | wc -l   <span class="c"># 270 full fences</span>
+rg -o 'sched_barrier\(' kernels | wc -l            <span class="c"># 279 sched_barrier calls</span>
+rg -c 's_waitcnt|s_wait_[a-z]+cnt' kernels         <span class="c"># hand-placed waits, per file</span>
+rg -l 'sched_barrier|sched_group_barrier|sched_(mfma|dsrd|dswr|vmem)\(|s_setprio|s_waitcnt|s_wait_[a-z]+cnt|inline_asm|InlineAsm' kernels | wc -l   <span class="c"># 62 files</span></pre>
+          <p lang="en">The 8–10% and ±14% figures come from FlyDSL's own documentation and were not re-measured for this reading. None of the directions above has been tried yet; the census is the first step that would produce numbers.</p>
+          <p lang="zh">文中 8–10% 和 ±14% 两个数字来自 FlyDSL 自己的文档， 本文没有复测。 上面的方向都还没有实验数据； 普查是第一个能产生数字的步骤。</p>
+          <ul class="refs">
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/backends/rocm.py#L323-L378">backends/rocm.py:323-378</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/backends/rocm.py#L425-L438">backends/rocm.py:425-438</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/lib/Conversion/FlyToROCDL/FlyEmitGPUBinary.cpp">FlyEmitGPUBinary.cpp</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/thirdparty/llvm-build-info.json">thirdparty/llvm-build-info.json</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/autotune.py#L130-L149">autotune.py:130-149</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/python/flydsl/compiler/diagnostics.py#L30-L56">compiler/diagnostics.py:30-56</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/kernel_tuning_guide.md?plain=1#L311-L340">kernel_tuning_guide.md:311-340</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/docs/testing_benchmarking_guide.md?plain=1#L406-L431">testing_benchmarking_guide.md:406-431</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e/.claude/skills/llvm/SKILL.md">.claude/skills/llvm/SKILL.md</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/pull/987">ROCm/FlyDSL #987</a> · <a href="https://github.com/ROCm/FlyDSL/pull/1349">#1349</a> · <a href="https://github.com/ROCm/FlyDSL/pull/1368">#1368</a></li>
+            <li><a href="https://github.com/llvm/llvm-project/pull/218543">llvm-project #218543</a></li>
+            <li><a href="https://arxiv.org/abs/2608.12629">CAKE, arXiv 2608.12629</a></li>
+            <li><a href="https://arxiv.org/abs/2501.08071">CuAsmRL, arXiv 2501.08071</a></li>
+            <li><a href="https://arxiv.org/abs/2101.04808">MLGO, arXiv 2101.04808</a></li>
+          </ul>
+        </section>
+      </article>
+
+      <footer class="colophon">
+        <p lang="en">Compiled for jinnpan.com as a categorized code reading. Source snapshot: ROCm/FlyDSL main @ aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e. Typography: Sofia Sans Condensed, Gelasio, B612 Mono, Noto Serif SC and Noto Sans SC. Palette: enamel, signal red, signal green, caution amber.</p>
+        <p lang="zh">作为 jinnpan.com 的 code reading 发布。 源码快照： ROCm/FlyDSL main @ aae155359ddc9b2bb1064ec8d391bc25aa4c0d3e。 字体： Sofia Sans Condensed、 Gelasio、 B612 Mono、 Noto Serif SC 和 Noto Sans SC。 配色： 搪瓷白、 信号红、 信号绿、 警示黄。</p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+  (function() {
+    var KEY = 'flydsl-compiler-in-the-loop-source-lang';
+    var body = document.body;
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) {}
+    if (stored === 'en' || stored === 'zh') {
+      body.setAttribute('data-lang', stored);
+    } else {
+      var nav = (navigator.language || 'en').toLowerCase();
+      body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+    }
+    document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var v = btn.getAttribute('data-set');
+        body.setAttribute('data-lang', v);
+        try { localStorage.setItem(KEY, v); } catch (e) {}
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
