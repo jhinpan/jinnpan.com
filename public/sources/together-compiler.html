@@ -1,0 +1,1159 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paper Reading No.006 · Together Compiler: Continual Compilation for AI Inference</title>
+  <meta name="description" content="A close reading of Together AI's Together Compiler (TKCC) and its companion blogs: why traffic drift makes inference compilation continual, how megakernel gains decompose into CUDA Graphs and PDL, how a tiered persistent engine makes agent experiments fast and trustworthy, what the agents found on MI355X, and how to apply it to MI355X, MI455X and FlyDSL." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,800;1,400&family=Doto:wght@700;900&family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0f13;
+      --bg-2: #10151b;
+      --panel: #151b22;
+      --panel-2: #1b232c;
+      --line: #2b3643;
+      --line-2: #3d4a5a;
+      --text: #dfe5ec;
+      --muted: #97a3b1;
+      --amber: #ffb547;
+      --amber-soft: rgba(255, 181, 71, .12);
+      --green: #3ddc97;
+      --green-soft: rgba(61, 220, 151, .12);
+      --red: #ff6b6b;
+      --red-soft: rgba(255, 107, 107, .12);
+      --cyan: #5cc8ff;
+      --cyan-soft: rgba(92, 200, 255, .12);
+      --display: "Doto", "Atkinson Hyperlegible Mono", monospace;
+      --sans: "Atkinson Hyperlegible Next", "Noto Sans SC", sans-serif;
+      --mono: "Atkinson Hyperlegible Mono", "Noto Sans SC", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(rgba(255, 255, 255, .04) 1px, transparent 1.3px) 0 0 / 18px 18px,
+        var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 18px;
+      line-height: 1.72;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    a:hover { color: var(--amber); }
+    strong { color: #fff; }
+    code {
+      font-family: var(--mono);
+      font-size: .84em;
+      color: #ffd28f;
+      background: var(--amber-soft);
+      padding: .05rem .32rem;
+      border: 1px solid rgba(255, 181, 71, .22);
+      border-radius: 3px;
+      overflow-wrap: anywhere;
+    }
+    a code { color: inherit; }
+
+    .lang-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 30;
+      display: flex;
+      gap: 2px;
+      padding: 4px;
+      border: 1px solid var(--line-2);
+      background: rgba(16, 21, 27, .94);
+      border-radius: 4px;
+    }
+    .lang-toggle button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font: 12px var(--mono);
+      padding: 7px 10px;
+      border-radius: 3px;
+    }
+    body[data-lang="en"] .lang-toggle button[data-set="en"],
+    body[data-lang="zh"] .lang-toggle button[data-set="zh"] {
+      background: var(--amber);
+      color: #111;
+    }
+
+    .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+    .rail {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 26px 20px;
+      background: var(--bg-2);
+      border-right: 1px solid var(--line);
+      overflow: auto;
+    }
+    .rail-home { display: block; margin-bottom: 24px; color: var(--muted); font: 12px var(--mono); text-decoration: none; }
+    .rail-home:hover { color: var(--amber); }
+    .rail .mark {
+      margin: 0 0 22px;
+      color: var(--amber);
+      font-family: var(--display);
+      font-weight: 900;
+      font-size: 34px;
+      line-height: .9;
+      text-transform: uppercase;
+    }
+    .rail .mark small { display: block; margin-top: 10px; color: var(--muted); font: 11px var(--mono); letter-spacing: .1em; }
+    .rail nav a {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+      color: #c9d1da;
+      font: 12.5px var(--mono);
+      text-decoration: none;
+    }
+    .rail nav a b { flex: 0 0 26px; color: var(--amber); font-family: var(--display); font-weight: 900; font-size: 15px; }
+    .rail nav a:hover { color: #fff; }
+
+    .page { min-width: 0; }
+    .ticker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 22px;
+      padding: 10px clamp(24px, 6vw, 92px);
+      background: #080a0d;
+      border-bottom: 1px solid var(--line);
+      font: 12px var(--mono);
+      color: var(--muted);
+    }
+    .ticker span b { color: var(--green); font-weight: 600; }
+    .ticker span i { color: var(--amber); font-style: normal; }
+    .masthead {
+      padding: 64px clamp(24px, 6vw, 92px) 40px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 181, 71, .06), transparent 70%);
+    }
+    .kicker { margin: 0 0 18px; color: var(--cyan); font: 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+    h1, h2, h3 { margin: 0; }
+    h1 {
+      color: var(--amber);
+      font-family: var(--display);
+      font-weight: 900;
+      font-size: clamp(54px, 9.4vw, 128px);
+      line-height: .9;
+      text-transform: uppercase;
+      letter-spacing: .01em;
+    }
+    .subtitle { max-width: 900px; margin: 26px 0 0; color: #c9d1da; font-size: clamp(19px, 2vw, 23px); line-height: 1.55; }
+    .spec {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      max-width: 1060px;
+      margin-top: 34px;
+      border: 1px solid var(--line-2);
+      background: var(--line-2);
+      gap: 1px;
+    }
+    .spec div { min-height: 74px; padding: 12px 14px; background: var(--panel); }
+    .lbl { display: block; margin-bottom: 6px; color: var(--muted); font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .val { display: block; font: 13px var(--mono); line-height: 1.4; overflow-wrap: anywhere; }
+
+    .article { max-width: 800px; margin: 0 auto; padding: 50px 28px 40px; }
+    section { padding-top: 24px; margin-bottom: 46px; }
+    h2 {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 18px;
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: clamp(30px, 3.8vw, 42px);
+      line-height: 1.08;
+      letter-spacing: -.01em;
+    }
+    h2 .no { flex: 0 0 auto; color: var(--amber); font-family: var(--display); font-weight: 900; font-size: .9em; }
+    h3 { margin: 32px 0 10px; color: var(--cyan); font: 600 13px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    p { margin: 0 0 18px; }
+    .lead { font-size: 21px; line-height: 1.62; color: #eef2f6; }
+    .note { color: var(--muted); font: 13px/1.65 var(--mono); }
+    ul, ol { margin: 0 0 20px; padding-left: 24px; }
+    li { margin-bottom: 9px; }
+    li::marker { color: var(--amber); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin: 26px 0 26px;
+      border: 1px solid var(--line-2);
+      background: var(--line-2);
+    }
+    .metric { padding: 16px 14px 14px; background: var(--panel); }
+    .metric .num { display: block; color: var(--green); font-family: var(--display); font-weight: 900; font-size: 44px; line-height: 1; }
+    .metric.warn .num { color: var(--amber); }
+    .metric .txt { display: block; margin-top: 10px; color: var(--muted); font: 12px/1.45 var(--mono); }
+
+    .callout {
+      margin: 26px 0;
+      padding: 18px 20px 4px;
+      border: 1px solid var(--line-2);
+      border-left: 4px solid var(--amber);
+      background: var(--panel);
+      border-radius: 0 4px 4px 0;
+    }
+    .callout.go { border-left-color: var(--green); }
+    .callout.stop { border-left-color: var(--red); }
+    .callout.measure { border-left-color: var(--cyan); }
+    .callout .tag { margin: 0 0 8px; color: var(--muted); font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .callout p { font-size: 17px; }
+
+    table { width: 100%; margin: 22px 0 26px; border-collapse: collapse; font-size: 15.5px; line-height: 1.5; background: var(--panel); }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--panel-2); color: var(--amber); font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    td.num { font-family: var(--mono); font-size: 13.5px; white-space: nowrap; color: #fff; }
+
+    pre {
+      margin: 18px 0 22px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      background: #080a0d;
+      color: #d7dee6;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--cyan);
+      font: 13px/1.7 var(--mono);
+    }
+    pre .c { color: #7f8c99; }
+
+    .plate {
+      position: relative;
+      left: 50%;
+      width: min(1000px, calc(100vw - 310px));
+      margin: 38px 0;
+      transform: translateX(-50%);
+      border: 1px solid var(--line-2);
+      background: var(--panel);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .plate-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 9px 14px;
+      background: #0a0d11;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font: 11px var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .plate-head span:first-child { color: var(--amber); }
+    .svg-wrap { overflow-x: auto; padding: 12px 10px 4px; }
+    .plate svg { display: block; width: 100%; min-width: 660px; height: auto; }
+    .caption { margin: 0; padding: 10px 16px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; font-style: italic; line-height: 1.55; }
+
+    .k-node { fill: var(--panel-2); stroke: var(--line-2); stroke-width: 1.3; }
+    .k-amber { fill: var(--amber-soft); stroke: var(--amber); stroke-width: 1.7; }
+    .k-green { fill: var(--green-soft); stroke: var(--green); stroke-width: 1.7; }
+    .k-red { fill: var(--red-soft); stroke: var(--red); stroke-width: 1.7; }
+    .k-cyan { fill: var(--cyan-soft); stroke: var(--cyan); stroke-width: 1.7; }
+    .k-zone { fill: rgba(255, 255, 255, .025); stroke: var(--line); stroke-dasharray: 4 4; }
+    .k-edge { fill: none; stroke: var(--muted); stroke-width: 1.4; }
+    .k-edge-amber { fill: none; stroke: var(--amber); stroke-width: 1.6; }
+    .k-edge-green { fill: none; stroke: var(--green); stroke-width: 1.6; }
+    .k-edge-cyan { fill: none; stroke: var(--cyan); stroke-width: 1.6; }
+    .k-edge-dash { fill: none; stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 5 5; }
+    .k-axis { stroke: var(--line-2); stroke-width: 1; }
+    .k-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+    .k-t { font-family: var(--sans); font-weight: 800; font-size: 16px; fill: var(--text); }
+    .k-s { font-family: var(--mono); font-size: 11.5px; fill: var(--muted); }
+    .k-v { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--text); }
+    .k-l { font-family: var(--mono); font-size: 11px; fill: var(--muted); letter-spacing: .08em; }
+    .k-a { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--amber); }
+    .k-g { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--green); }
+    .k-r { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--red); }
+    .k-c { font-family: var(--mono); font-size: 12px; font-weight: 600; fill: var(--cyan); }
+    .b-cyan { fill: var(--cyan); fill-opacity: .78; }
+    .b-amber { fill: var(--amber); fill-opacity: .85; }
+    .b-green { fill: var(--green); fill-opacity: .85; }
+    .b-muted { fill: var(--muted); fill-opacity: .55; }
+
+    .refs { columns: 2; column-gap: 28px; padding-left: 18px; font: 12.5px/1.65 var(--mono); }
+    .refs li { break-inside: avoid; }
+    .colophon { max-width: 880px; margin: 30px auto 0; padding: 22px 28px 40px; border-top: 1px solid var(--line); color: var(--muted); font: 12px/1.7 var(--mono); }
+
+    body[data-lang="en"] [lang="zh"]:not(html) { display: none !important; }
+    body[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      .rail { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .rail nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+      .spec { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .plate { left: 0; width: 100%; transform: none; }
+    }
+    @media (max-width: 700px) {
+      body { font-size: 17px; }
+      .masthead { padding-top: 48px; }
+      .article { padding-inline: 18px; }
+      .metrics { grid-template-columns: 1fr; }
+      .spec { grid-template-columns: 1fr; }
+      .refs { columns: 1; }
+      table { display: block; overflow-x: auto; }
+      .lang-toggle { top: 10px; right: 10px; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" data-set="en" aria-label="English">EN</button>
+    <button type="button" data-set="zh" aria-label="中文">中文</button>
+  </div>
+
+  <div class="shell">
+    <aside class="rail">
+      <a class="rail-home" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 文库</span></a>
+      <p class="mark">Together<br />Compiler<small>PAPER READING NO.006</small></p>
+      <nav aria-label="Table of contents">
+        <a href="#brief"><b>01</b><span lang="en">The short version</span><span lang="zh">先给结论</span></a>
+        <a href="#problem"><b>02</b><span lang="en">Traffic drifts</span><span lang="zh">流量在变</span></a>
+        <a href="#inductor"><b>03</b><span lang="en">What Inductor misses</span><span lang="zh">Inductor 漏掉什么</span></a>
+        <a href="#megakernels"><b>04</b><span lang="en">Deleting megakernels</span><span lang="zh">删掉 megakernel</span></a>
+        <a href="#engine"><b>05</b><span lang="en">The persistent engine</span><span lang="zh">常驻引擎</span></a>
+        <a href="#cost-model"><b>06</b><span lang="en">The cost model</span><span lang="zh">成本模型</span></a>
+        <a href="#lessons"><b>07</b><span lang="en">Bitter lessons</span><span lang="zh">苦涩的教训</span></a>
+        <a href="#amd"><b>08</b><span lang="en">On MI355X</span><span lang="zh">在 MI355X 上</span></a>
+        <a href="#apply"><b>09</b><span lang="en">Applying it</span><span lang="zh">怎样用到我们这边</span></a>
+        <a href="#critique"><b>10</b><span lang="en">Critical reading</span><span lang="zh">批判性阅读</span></a>
+        <a href="#sources"><b>11</b><span lang="en">Sources</span><span lang="zh">来源</span></a>
+      </nav>
+    </aside>
+
+    <main class="page">
+      <div class="ticker" aria-label="Key numbers">
+        <span>TKCC <b>▲ 252×</b> agent experiments</span>
+        <span>CUDA Graphs + PDL <b>▲ 98%</b> of megakernel</span>
+        <span>InferenceX <b>▲ up to 2.6×</b></span>
+        <span>AMD megakernel <i>▲ 0.22%</i> in 24 h</span>
+      </div>
+      <header class="masthead">
+        <p class="kicker">Paper Reading No.006 · Together AI · arXiv 2611.14681</p>
+        <h1>Together Compiler</h1>
+        <p class="subtitle" lang="en">A close reading of TKCC, Together AI's continual compilation loop for inference, and of the road that led its authors from hand-written megakernels to agents. What the paper actually measured, which ideas transfer, and how we would apply them to MI355X, MI455X and FlyDSL.</p>
+        <p class="subtitle" lang="zh">精读 Together AI 的推理持续编译系统 TKCC， 以及作者从手写 megakernel 走到 agent 的过程： 论文实际测了什么、 哪些思想可以迁移， 以及我们打算怎样把它们用到 MI355X、 MI455X 和 FlyDSL 上。</p>
+        <div class="spec" aria-label="Reading metadata">
+          <div><span class="lbl">Paper</span><span class="val">arXiv 2611.14681v1</span></div>
+          <div><span class="lbl">Blogs</span><span class="val">2026-11-04 · 2026-11-16</span></div>
+          <div><span class="lbl">Authors</span><span class="val">Abhyankar, Lim, … Fu, Arora · Together AI</span></div>
+          <div><span class="lbl">Read</span><span class="val">2026-11-17</span></div>
+        </div>
+      </header>
+
+      <article class="article">
+        <section id="brief">
+          <h2><span class="no">01</span><span lang="en">The short version</span><span lang="zh">先给结论</span></h2>
+          <p class="lead" lang="en">Together Compiler (TKCC) recasts inference optimization from a compiler translation problem into an agentic search problem, and then spends most of its engineering on one thing: making every agent experiment both fast and trustworthy.</p>
+          <p class="lead" lang="zh">Together Compiler（TKCC） 把推理优化从一个编译器翻译问题， 改写成一个由 agent 驱动的搜索问题； 然后把大部分工程投入到一件事上： 让每一次 agent 实验既快又可信。</p>
+          <p lang="en">The argument runs in four steps:</p>
+          <p lang="zh">论文的论证分四步：</p>
+          <ol>
+            <li lang="en"><strong>The target moves.</strong> Inference traffic drifts on a timescale of days, so the best forward pass is a moving target (§3).</li>
+            <li lang="zh"><strong>目标在动。</strong> 推理流量以天为单位漂移， 所以最快的 forward pass 是一个移动的目标（§3）。</li>
+            <li lang="en"><strong>Agents are only as good as their measurements.</strong> Offline kernel benchmarks on random data are fast and misleading; relaunching a full engine per experiment is faithful and slow (§3).</li>
+            <li lang="zh"><strong>agent 的上限取决于测量。</strong> 用随机数据跑离线 kernel 基准又快又误导； 每次实验都重启整个引擎则可信但太慢（§3）。</li>
+            <li lang="en"><strong>Keep the engine, swap the forward pass.</strong> TKCC keeps one engine resident and hot-reloads candidate forward passes, with a fast tier to filter and a slow tier to confirm; a cost model picks the parallelism to start from (§4.2, §4.3).</li>
+            <li lang="zh"><strong>引擎常驻， 只换 forward pass。</strong> TKCC 让一个引擎常驻， 热加载候选 forward pass： 快档负责筛选， 慢档负责确认； 再用成本模型选出起步的并行配置（§4.2、 §4.3）。</li>
+            <li lang="en"><strong>Then delete the scaffolding.</strong> A custom IR, a knowledge base, expert strategies and research logs all lowered the ceiling once agents got good enough (§4.4).</li>
+            <li lang="zh"><strong>然后拆掉脚手架。</strong> 自定义 IR、 知识库、 专家策略和研究日志， 在 agent 足够强之后都压低了上限（§4.4）。</li>
+          </ol>
+          <div class="metrics" aria-label="Key numbers">
+            <div class="metric"><span class="num">252×</span><span class="txt" lang="en">more agent experiments than relaunching the engine per measurement</span><span class="txt" lang="zh">比每次测量都重启引擎多出的 agent 实验次数</span></div>
+            <div class="metric"><span class="num">98%</span><span class="txt" lang="en">of megakernel speed from CUDA Graphs + PDL on stock Inductor kernels</span><span class="txt" lang="zh">只用 CUDA Graphs + PDL 和默认 Inductor kernel 就追回的 megakernel 性能</span></div>
+            <div class="metric"><span class="num">2.6×</span><span class="txt" lang="en">best gain over the leading InferenceX configuration, within 24 h on ≤ 2 nodes</span><span class="txt" lang="zh">在 24 小时、 不超过 2 个节点内， 相对 InferenceX 最好配置的最大提升</span></div>
+            <div class="metric warn"><span class="num">0.22%</span><span class="txt" lang="en">what a 24-hour megakernel agent gained on AMD GLM-5.3</span><span class="txt" lang="zh">在 AMD GLM-5.3 上， megakernel 方向的 agent 跑满 24 小时的收益</span></div>
+          </div>
+          <div class="callout go">
+            <p class="tag" lang="en">What it means for us</p>
+            <p class="tag" lang="zh">对我们意味着什么</p>
+            <p lang="en">Three things transfer directly to AMD. <strong>Build the persistent engine before the agents:</strong> without it, every idea costs minutes of cold start. <strong>Measure on real inputs:</strong> the paper's cautionary top-k kernel was a HIP kernel for GLM-5.3's indexer on MI350-class GPUs. <strong>On MI355X, look for wins in fusing communication into compute and in tuning-table gaps,</strong> where the paper's agents found them, before betting on persistent kernels. And treat any IR as a verifier, not as the optimization surface.</p>
+            <p lang="zh">有三点可以直接迁移到 AMD。 <strong>先建常驻引擎， 再上 agent：</strong> 没有它， 每个想法都要付出几分钟的冷启动。 <strong>用真实输入测量：</strong> 论文里那个反面教材 top-k kernel， 正是 GLM-5.3 indexer 在 MI350 系列 GPU 上的 HIP kernel。 <strong>在 MI355X 上， 先到 「通信融进计算」 和 「调优表缺口」 里找收益，</strong> 那是论文的 agent 实际找到收益的地方， 然后才考虑押注常驻 kernel。 此外， 把 IR 当作验证器， 而不是优化的操作面。</p>
+          </div>
+        </section>
+
+        <section id="problem">
+          <h2><span class="no">02</span><span lang="en">Why a compiled forward pass goes stale</span><span lang="zh">编译好的 forward pass 为什么会过时</span></h2>
+          <p lang="en">Start from first principles. The fastest forward pass is a function of three inputs: the model, the hardware and the traffic. A classic compiler treats the first two as fixed and the third as absent. Together's production data says the third moves fast (§3):</p>
+          <p lang="zh">从第一性原理出发。 最快的 forward pass 是三个输入的函数： 模型、 硬件和流量。 传统编译器把前两个当作固定值， 而把第三个当作不存在。 Together 的生产数据说明， 第三个变化得很快（§3）：</p>
+          <ul>
+            <li lang="en"><strong>Behavior:</strong> the same model sees an input length of about 97k tokens during one country's working hours and about 70k off-hours.</li>
+            <li lang="zh"><strong>行为：</strong> 同一个模型， 在某国工作时间的输入长度约 97k token， 非工作时间约 70k。</li>
+            <li lang="en"><strong>Bursts:</strong> one customer's P90 input length grew from 18k to 33k tokens in three days, output length from 1k to 1.9k, and the cache hit rate fell 4 points.</li>
+            <li lang="zh"><strong>突发：</strong> 某客户的 P90 输入长度在三天内从 18k 涨到 33k， 输出长度从 1k 涨到 1.9k， cache 命中率下降 4 个百分点。</li>
+            <li lang="en"><strong>Gradual shift:</strong> a lab's new checkpoint doubled output length; another model's context drifted from 10K to 18K while its cache hit rate rose 8% in two weeks.</li>
+            <li lang="zh"><strong>渐变：</strong> 某实验室的新 checkpoint 让输出长度翻倍； 另一个模型的上下文在两周内从 10K 漂到 18K， cache 命中率上升 8%。</li>
+          </ul>
+          <p lang="en">If traffic shifts in days and a hand-tuned kernel takes weeks, the kernel is always tuned for last month's traffic. The only way out is a loop whose iteration time is much shorter than the drift time. That single requirement drives every design decision that follows. The paper's own example shows why it matters: on Kimi K3, a persistent MoE down-projection is 2.8–5% faster at concurrency 22–78 but 6.6% slower at concurrency 8, so TKCC applies it by active batch size (§5.2).</p>
+          <p lang="zh">如果流量以天为单位变化， 而一个手调 kernel 要花几周， 那么 kernel 永远是为上个月的流量调的。 唯一的出路， 是一个迭代周期远短于漂移周期的循环。 后面所有设计决定， 都由这一个要求推出来。 论文自己的例子说明了它的重要性： 在 Kimi K3 上， 常驻式 MoE down-projection 在并发 22–78 时快 2.8–5%， 在并发 8 时却慢 6.6%， 所以 TKCC 按当前 batch 大小决定是否启用它（§5.2）。</p>
+          <p lang="en">Why not autotune once per model? Because the optimum depends on the traffic regime (batch size, input length, cache hit rate), and the regime moves after deployment. Why not let agents loop on offline kernel benchmarks? Because that trades the drift problem for a fidelity problem, which Plate I lays out.</p>
+          <p lang="zh">为什么不每个模型调一次就够了？ 因为最优解取决于流量状态（batch 大小、 输入长度、 cache 命中率）， 而部署之后流量状态会变。 为什么不让 agent 在离线 kernel 基准上循环？ 因为那只是把漂移问题换成了保真度问题， 图版 I 说明了这一点。</p>
+
+          <figure class="plate" aria-label="Plate I: the throughput–fidelity tradeoff">
+            <div class="plate-head"><span>Plate I</span><span lang="en">Throughput versus fidelity (schematic)</span><span lang="zh">吞吐与保真（示意）</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 440" role="img" aria-labelledby="p1-title">
+                <title id="p1-title">Agent measurement options placed by experiment throughput and measurement fidelity</title>
+                <defs>
+                  <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#97a3b1" /></marker>
+                  <marker id="ar-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ffb547" /></marker>
+                  <marker id="ar-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3ddc97" /></marker>
+                  <marker id="ar-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5cc8ff" /></marker>
+                </defs>
+                <path class="k-axis" d="M80,380 H910" marker-end="url(#ar)" />
+                <path class="k-axis" d="M80,380 V30" marker-end="url(#ar)" />
+                <text class="k-l" x="910" y="404" text-anchor="end" lang="en">AGENT EXPERIMENTS PER HOUR →</text>
+                <text class="k-l" x="910" y="404" text-anchor="end" lang="zh">每小时 agent 实验次数 →</text>
+                <text class="k-l" x="60" y="380" transform="rotate(-90 60 380)" lang="en">MEASUREMENT FIDELITY →</text>
+                <text class="k-l" x="60" y="380" transform="rotate(-90 60 380)" lang="zh">测量保真度 →</text>
+                <circle cx="150" cy="70" r="9" fill="#ff6b6b" />
+                <text class="k-t" x="168" y="66" lang="en">Relaunch the engine per experiment</text>
+                <text class="k-t" x="168" y="66" lang="zh">每次实验都重启引擎</text>
+                <text class="k-s" x="168" y="86" lang="en">faithful but slow: 761 s cold start each time</text>
+                <text class="k-s" x="168" y="86" lang="zh">可信但慢： 每次 761 秒冷启动</text>
+                <circle cx="760" cy="316" r="9" fill="#ff6b6b" />
+                <text class="k-t" x="742" y="312" text-anchor="end" lang="en">Offline kernel benchmark, random inputs</text>
+                <text class="k-t" x="742" y="312" text-anchor="end" lang="zh">离线 kernel 基准， 随机输入</text>
+                <text class="k-s" x="742" y="332" text-anchor="end" lang="en">fast but misleading: MoE timings 4–21% off; top-k 20 µs → 62 ms</text>
+                <text class="k-s" x="742" y="332" text-anchor="end" lang="zh">快但误导： MoE 计时偏 4–21%； top-k 从 20 µs 变成 62 ms</text>
+                <circle cx="760" cy="190" r="10" fill="#ffb547" />
+                <text class="k-t" x="778" y="186" lang="en">Fast tier</text>
+                <text class="k-t" x="778" y="186" lang="zh">快档</text>
+                <text class="k-s" x="778" y="206" lang="en">12 layers · reload 17 s</text>
+                <text class="k-s" x="778" y="206" lang="zh">12 层 · 热加载 17 秒</text>
+                <circle cx="560" cy="70" r="10" fill="#3ddc97" />
+                <text class="k-t" x="578" y="66" lang="en">Slow tier</text>
+                <text class="k-t" x="578" y="66" lang="zh">慢档</text>
+                <text class="k-s" x="578" y="86" lang="en">60 layers · reload 45 s</text>
+                <text class="k-s" x="578" y="86" lang="zh">60 层 · 热加载 45 秒</text>
+                <path class="k-edge-amber" d="M748,192 C690,178 590,150 562,84" marker-end="url(#ar-amber)" />
+                <text class="k-a" x="664" y="146" lang="en">filter, then confirm</text>
+                <text class="k-a" x="664" y="146" lang="zh">先筛选， 再确认</text>
+                <rect class="k-green" x="300" y="208" width="330" height="70" rx="4" />
+                <text class="k-g" x="316" y="232" lang="en">TKCC: one resident engine, two tiers</text>
+                <text class="k-g" x="316" y="232" lang="zh">TKCC： 一个常驻引擎， 两档测量</text>
+                <text class="k-s" x="316" y="252" lang="en">252× experiments vs relaunching</text>
+                <text class="k-s" x="316" y="252" lang="zh">实验次数是重启方案的 252 倍</text>
+                <text class="k-s" x="316" y="269" lang="en">1,354 vs 168 candidates · 7.2% faster</text>
+                <text class="k-s" x="316" y="269" lang="zh">1,354 对 168 个候选 · 结果快 7.2%</text>
+                <text class="k-l" x="96" y="364" lang="en">POSITIONS ARE QUALITATIVE</text>
+                <text class="k-l" x="96" y="364" lang="zh">位置只表示定性关系</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">The two existing options sit at opposite corners. TKCC's move is to keep fidelity by keeping the real engine, and to win back throughput by never restarting it. Candidate counts are from GLM 5.3 on B200 (Figure 2).</p>
+            <p class="caption" lang="zh">现有的两种做法处在相反的两个角上。 TKCC 的做法是： 保留真实引擎来保住保真度， 再通过永不重启来夺回吞吐。 候选数量来自 B200 上的 GLM 5.3（图 2）。</p>
+          </figure>
+        </section>
+
+        <section id="inductor">
+          <h2><span class="no">03</span><span lang="en">What Inductor misses, and the rules behind it</span><span lang="zh">Inductor 漏掉了什么， 背后是什么规律</span></h2>
+          <p lang="en">Part 1 of the road blog examines Torch Inductor on Llama 1B (669 tokens per second at batch 1) and finds three failures. Each generalizes into a rule that any compiler, including ours, has to answer.</p>
+          <p lang="zh">road 博客的第一部分在 Llama 1B 上检查了 Torch Inductor（batch 1 时 669 tokens/s）， 发现了三个问题。 每个问题都可以推广成一条规律， 任何编译器（包括我们的） 都要面对。</p>
+          <h3><span lang="en">Rule 1 · Search, don't guess</span><span lang="zh">规律 1 · 搜索， 而不是猜</span></h3>
+          <p lang="en">Inductor's <code>freezing</code> flag gives +10–26% at large batch sizes but −49% at batch size 1, because a weight conversion to FP32 is not undone for matrix-vector work, so decode streams 32-bit weights. Inductor exposes 607 flags, 198 of them added in the past year, and they interact: <code>aggressive_fusion</code> alone costs 6 TPS, but together with three other flags it gains 3. A space this large and this non-separable is a search problem.</p>
+          <p lang="zh">Inductor 的 <code>freezing</code> 开关在大 batch 时带来 +10–26%， 在 batch 1 时却是 −49%： 权重被转成 FP32 后， 矩阵-向量运算没有把它转回来， 于是 decode 读的是 32 位权重。 Inductor 有 607 个开关， 其中 198 个是过去一年新增的， 而且它们相互影响： 单开 <code>aggressive_fusion</code> 损失 6 TPS， 和另外三个开关一起开却提升 3 TPS。 这么大、 又不可分解的空间， 是一个搜索问题。</p>
+          <h3><span lang="en">Rule 2 · Measure inside the real forward pass, on real data</span><span lang="zh">规律 2 · 在真实 forward pass 里、 用真实数据测量</span></h3>
+          <p lang="en">Inductor flushes L2 before benchmarking, so isolated timings run 39–58% slower than in the live forward pass, where kernels reuse cached data. Zero-filled token IDs make an embedding 2.1× faster than random ones. The harness reports 2.5 µs for an operation that does no GPU work. These errors produce wrong choices: a Triton GEMM at 7.4 µs picked over cuBLAS at 6.4 µs (15% slower), and MoE grouped-GEMM timings that are 4–21% off on GLM 5.3 with synthetic inputs.</p>
+          <p lang="zh">Inductor 在基准测试前会清空 L2， 所以单独测出的时间比真实 forward pass 慢 39–58%， 因为真实运行中 kernel 会复用缓存数据。 token ID 全填 0 时， embedding 比随机 ID 快 2.1 倍。 测试框架对一个不做任何 GPU 工作的操作报出 2.5 µs。 这些误差会导致错误的选择： 选了 7.4 µs 的 Triton GEMM， 而不是 6.4 µs 的 cuBLAS（慢 15%）； 在 GLM 5.3 上用合成输入测 MoE grouped GEMM， 误差达 4–21%。</p>
+          <h3><span lang="en">Rule 3 · Fuse for utilization, not only for memory</span><span lang="zh">规律 3 · 为利用率融合， 而不只为访存融合</span></h3>
+          <p lang="en">Inductor's greedy pairwise fusion scores memory savings, so it keeps apart an elementwise kernel that launches 6 CTAs on a 132-SM GPU and the indexing kernel after it, because they share no memory. Merging them would put idle SMs to work. The criterion was wrong, not the legality check.</p>
+          <p lang="zh">Inductor 的贪心两两融合按节省的访存打分， 所以它没有融合两个 kernel： 一个是在 132 个 SM 的 GPU 上只启动 6 个 CTA 的逐元素 kernel， 另一个是紧跟其后的索引 kernel， 理由是它们没有共享内存访问。 把它们合并， 就能让空闲的 SM 干活。 错的是判断标准， 而不是合法性检查。</p>
+          <div class="callout measure">
+            <p class="tag" lang="en">Why this matters beyond Inductor</p>
+            <p class="tag" lang="zh">为什么不只是 Inductor 的问题</p>
+            <p lang="en">These are the limits of any heuristic compiler: local rules, synthetic measurements, one objective. They apply to our stack too. In FlyDSL, 43 of the 60 kernel test files build their inputs with <code>torch.randn</code>, <code>torch.rand</code> or <code>torch.randint</code> (at <a href="https://github.com/ROCm/FlyDSL/tree/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/tests/kernels">e2a2b1f</a>). That is fine for correctness smoke tests and risky for any kernel whose work depends on the data.</p>
+            <p lang="zh">这些是所有启发式编译器的局限： 局部规则、 合成测量、 单一目标。 它们同样适用于我们的工具链。 在 FlyDSL 里， 60 个 kernel 测试文件中有 43 个用 <code>torch.randn</code>、 <code>torch.rand</code> 或 <code>torch.randint</code> 生成输入（<a href="https://github.com/ROCm/FlyDSL/tree/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/tests/kernels">e2a2b1f</a>）。 这对正确性冒烟测试没问题， 但对工作量依赖数据的 kernel 有风险。</p>
+          </div>
+        </section>
+
+        <section id="megakernels">
+          <h2><span class="no">04</span><span lang="en">Deleting megakernels: where the speed came from</span><span lang="zh">删掉 megakernel： 速度到底从哪来</span></h2>
+          <p lang="en">Megakernels attacked three inefficiencies of kernel-by-kernel execution: launch overhead, limited overlap between operations, and load imbalance across SMs. The hand-written Llama 1B megakernel ran the whole forward pass in one persistent kernel with specialized warps and paged shared memory, and reached 990 TPS, 48% over Inductor. In production, after months of work, it supported one model, one batch size (1), one precision (BF16) and one customer.</p>
+          <p lang="zh">megakernel 针对的是逐个 kernel 执行的三种低效： 启动开销、 操作之间缺少重叠、 以及 SM 之间负载不均。 手写的 Llama 1B megakernel 用一个常驻 kernel 跑完整个 forward pass， 配合专用 warp 和分页的 shared memory， 达到 990 TPS， 比 Inductor 高 48%。 而在生产环境里， 花了几个月之后， 它只支持一个模型、 一个 batch 大小（1）、 一种精度（BF16） 和一个客户。</p>
+          <p lang="en">The authors then asked the decisive question: was it fast because everything ran in one kernel, or because one kernel enabled a few specific optimizations? They answered it with an ablation ladder, starting from Inductor and adding one primitive at a time.</p>
+          <p lang="zh">作者接着问了一个关键问题： 它快， 是因为所有东西都在一个 kernel 里， 还是因为这一个 kernel 顺带实现了几项具体优化？ 他们用一组逐级消融来回答： 从 Inductor 出发， 每次只加一种原语。</p>
+
+          <figure class="plate" aria-label="Plate II: the megakernel ablation ladder">
+            <div class="plate-head"><span>Plate II</span><span lang="en">The ablation ladder · Llama 1B · batch 1 · H100</span><span lang="zh">逐级消融 · Llama 1B · batch 1 · H100</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 420" role="img" aria-labelledby="p2-title">
+                <title id="p2-title">Tokens per second as primitives are added to Inductor, compared with the hand-written megakernel and with TKCC</title>
+                <path class="k-grid" d="M420,40 V370 M580,40 V370 M740,40 V370 M900,40 V370" />
+                <path class="k-axis" d="M260,370 H900" />
+                <text class="k-s" x="260" y="390" text-anchor="middle">0</text>
+                <text class="k-s" x="420" y="390" text-anchor="middle">300</text>
+                <text class="k-s" x="580" y="390" text-anchor="middle">600</text>
+                <text class="k-s" x="740" y="390" text-anchor="middle">900</text>
+                <text class="k-s" x="900" y="390" text-anchor="middle">1,200</text>
+                <text class="k-l" x="900" y="410" text-anchor="end">TOKENS / S</text>
+                <rect class="b-cyan" x="260" y="44" width="357" height="30" rx="2" />
+                <rect class="b-cyan" x="260" y="90" width="461" height="30" rx="2" />
+                <rect class="b-cyan" x="260" y="136" width="508" height="30" rx="2" />
+                <rect class="b-cyan" x="260" y="182" width="520" height="30" rx="2" />
+                <rect class="b-amber" x="260" y="228" width="528" height="30" rx="2" />
+                <rect x="260" y="274" width="513" height="30" rx="2" fill="none" stroke="#ffb547" stroke-width="1.5" stroke-dasharray="4 3" />
+                <rect class="b-green" x="260" y="320" width="587" height="30" rx="2" />
+                <path d="M847,320 V350" stroke="#0c0f13" stroke-width="3" stroke-dasharray="3 3" />
+                <path d="M788,36 V360" stroke="#ffb547" stroke-width="1" stroke-dasharray="3 3" />
+                <text class="k-v" x="250" y="64" text-anchor="end" lang="en">Torch Compile (Inductor)</text>
+                <text class="k-v" x="250" y="64" text-anchor="end" lang="zh">Torch Compile（Inductor）</text>
+                <text class="k-v" x="250" y="110" text-anchor="end">+ CUDA Graphs</text>
+                <text class="k-v" x="250" y="156" text-anchor="end">+ PDL</text>
+                <text class="k-v" x="250" y="202" text-anchor="end" lang="en">+ fine-grained PDL</text>
+                <text class="k-v" x="250" y="202" text-anchor="end" lang="zh">+ 细粒度 PDL</text>
+                <text class="k-v" x="250" y="248" text-anchor="end" lang="en">Hand-written megakernel</text>
+                <text class="k-v" x="250" y="248" text-anchor="end" lang="zh">手写 megakernel</text>
+                <text class="k-v" x="250" y="294" text-anchor="end" lang="en">Megakernel, no preloading</text>
+                <text class="k-v" x="250" y="294" text-anchor="end" lang="zh">megakernel 去掉预取</text>
+                <text class="k-v" x="250" y="340" text-anchor="end" lang="en">TKCC agents</text>
+                <text class="k-v" x="250" y="340" text-anchor="end" lang="zh">TKCC agent</text>
+                <text class="k-v" x="625" y="64">669</text>
+                <text class="k-v" x="729" y="110" lang="en">864 · 87%</text>
+                <text class="k-v" x="729" y="110" lang="zh">864 · 87%</text>
+                <text class="k-v" x="776" y="156">953 · 96%</text>
+                <text class="k-a" x="796" y="202">975 · 98%</text>
+                <text class="k-a" x="796" y="248">990</text>
+                <text class="k-s" x="796" y="294" lang="en">961 · paging worth ~3%</text>
+                <text class="k-s" x="796" y="294" lang="zh">961 · 分页只值约 3%</text>
+                <text class="k-g" x="855" y="340" lang="en">&gt; 1,100</text>
+                <text class="k-g" x="855" y="340" lang="zh">&gt; 1,100</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">Two driver-level primitives on stock Inductor kernels recover 98% of the hand-written megakernel; removing its memory paging costs only 990 → 961. The TKCC bar is drawn open-ended because the blog reports "over 1,100". On B200, TKCC reaches 2,118 TPS against the megakernel's 1,649.</p>
+            <p class="caption" lang="zh">在默认 Inductor kernel 上只加两个驱动层原语， 就追回了手写 megakernel 98% 的性能； 去掉它的内存分页， 只从 990 降到 961。 TKCC 的柱子画成开口， 因为博客只写了 「超过 1,100」。 在 B200 上， TKCC 达到 2,118 TPS， megakernel 是 1,649。</p>
+          </figure>
+
+          <p lang="en"><strong>Launch overhead.</strong> PyTorch's ATen dispatch costs 37 µs for a down-projection whose GPU work takes 15 µs; a bare C++ launch still costs about 2 µs. CUDA Graphs bring it to about 1 µs: 864 TPS. Programmatic Dependent Launch (PDL) lets the next kernel's blocks start as SMs free up; the authors inserted <code>griddepcontrol.launch_dependents</code> and <code>griddepcontrol.wait</code> into Inductor's PTX: 953 TPS. Moving the wait to just before the first read of the predecessor's output lets the consumer preload its weights while the producer finishes: 975 TPS, with no new kernel written.</p>
+          <p lang="zh"><strong>启动开销。</strong> PyTorch 的 ATen 分发， 对一个 GPU 工作只需 15 µs 的 down-projection 要花 37 µs； 裸 C++ 启动仍要约 2 µs。 CUDA Graphs 把它降到约 1 µs： 864 TPS。 PDL（Programmatic Dependent Launch） 让下一个 kernel 的 block 在 SM 空出来时就开始执行； 作者在 Inductor 生成的 PTX 里插入了 <code>griddepcontrol.launch_dependents</code> 和 <code>griddepcontrol.wait</code>： 953 TPS。 再把 wait 挪到第一次读取上游输出之前， 下游就能在上游收尾时预取自己的权重： 975 TPS， 一行新 kernel 都没写。</p>
+
+          <figure class="plate" aria-label="Plate III: what a kernel boundary costs">
+            <div class="plate-head"><span>Plate III</span><span lang="en">What a kernel boundary costs (ns)</span><span lang="zh">一次 kernel 边界的代价（ns）</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 430" role="img" aria-labelledby="p3-title">
+                <title id="p3-title">Synchronization cost across launch mechanisms on H100 and B200, with an unmeasured MI355X row</title>
+                <path class="k-grid" d="M415,30 V378 M531,30 V378 M646,30 V378 M762,30 V378 M877,30 V378" />
+                <path class="k-axis" d="M300,378 H900" />
+                <text class="k-s" x="300" y="396" text-anchor="middle">0</text>
+                <text class="k-s" x="415" y="396" text-anchor="middle">500</text>
+                <text class="k-s" x="531" y="396" text-anchor="middle">1,000</text>
+                <text class="k-s" x="646" y="396" text-anchor="middle">1,500</text>
+                <text class="k-s" x="762" y="396" text-anchor="middle">2,000</text>
+                <text class="k-s" x="877" y="396" text-anchor="middle">2,500</text>
+                <rect x="760" y="10" width="12" height="12" class="b-amber" />
+                <text class="k-s" x="778" y="21">H100</text>
+                <rect x="830" y="10" width="12" height="12" class="b-cyan" />
+                <text class="k-s" x="848" y="21">B200</text>
+                <text class="k-v" x="290" y="54" text-anchor="end" lang="en">Normal launch</text>
+                <text class="k-v" x="290" y="54" text-anchor="end" lang="zh">普通启动</text>
+                <rect class="b-amber" x="300" y="38" width="479" height="12" />
+                <rect class="b-cyan" x="300" y="54" width="576" height="12" />
+                <text class="k-s" x="785" y="49">2,077</text>
+                <text class="k-s" x="882" y="65">2,496</text>
+                <text class="k-v" x="290" y="104" text-anchor="end">CUDA Graph</text>
+                <rect class="b-amber" x="300" y="88" width="243" height="12" />
+                <rect class="b-cyan" x="300" y="104" width="211" height="12" />
+                <text class="k-s" x="549" y="99">1,051</text>
+                <text class="k-s" x="517" y="115">915</text>
+                <text class="k-v" x="290" y="154" text-anchor="end">PDL</text>
+                <rect class="b-amber" x="300" y="138" width="169" height="12" />
+                <rect class="b-cyan" x="300" y="154" width="188" height="12" />
+                <text class="k-s" x="475" y="149">731</text>
+                <text class="k-s" x="494" y="165">814</text>
+                <text class="k-v" x="290" y="204" text-anchor="end">CUDA Graph + PDL</text>
+                <rect class="b-amber" x="300" y="188" width="149" height="12" />
+                <rect class="b-cyan" x="300" y="204" width="148" height="12" />
+                <text class="k-s" x="455" y="199">645</text>
+                <text class="k-s" x="454" y="215">642</text>
+                <text class="k-v" x="290" y="254" text-anchor="end" lang="en">Cooperative grid.sync()</text>
+                <text class="k-v" x="290" y="254" text-anchor="end" lang="zh">协作式 grid.sync()</text>
+                <rect class="b-amber" x="300" y="238" width="241" height="12" />
+                <rect class="b-cyan" x="300" y="254" width="296" height="12" />
+                <text class="k-s" x="547" y="249">1,043</text>
+                <text class="k-s" x="602" y="265">1,281</text>
+                <text class="k-v" x="290" y="304" text-anchor="end" lang="en">Megakernel grid sync</text>
+                <text class="k-v" x="290" y="304" text-anchor="end" lang="zh">megakernel 内 grid 同步</text>
+                <rect class="b-amber" x="300" y="288" width="149" height="12" />
+                <rect class="b-cyan" x="300" y="304" width="183" height="12" />
+                <text class="k-s" x="455" y="299">646</text>
+                <text class="k-s" x="489" y="315">795</text>
+                <text class="k-a" x="290" y="354" text-anchor="end" lang="en">MI355X · HIP</text>
+                <text class="k-a" x="290" y="354" text-anchor="end" lang="zh">MI355X · HIP</text>
+                <rect x="300" y="338" width="420" height="28" fill="none" stroke="#ffb547" stroke-width="1.3" stroke-dasharray="5 4" />
+                <text class="k-a" x="314" y="357" lang="en">not in the paper: our first experiment</text>
+                <text class="k-a" x="314" y="357" lang="zh">论文没有测： 我们的第一个实验</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">A grid barrier inside a persistent kernel costs about as much as a fresh launch with CUDA Graphs and PDL, so a megakernel trades launch overhead for synchronization rather than removing it. Cost is measured from the end of kernel one to after the synchronization in kernel two. No AMD row exists yet.</p>
+            <p class="caption" lang="zh">常驻 kernel 内部的一次 grid 屏障， 代价和用 CUDA Graphs + PDL 重新启动一个 kernel 差不多。 所以 megakernel 是用同步换掉了启动开销， 而不是把它消除了。 计时范围从第一个 kernel 结束， 到第二个 kernel 里同步完成之后。 目前还没有 AMD 的数据。</p>
+          </figure>
+
+          <p lang="en"><strong>Overlap is smaller than advertised.</strong> In the H100 megakernel, three of the five producer–consumer edges in a layer need a full barrier and a fourth is effectively full (one CTA waits on 128). Only attention benefits from compute overlap. Memory preloading through paged shared memory is worth about 3.3%: without it, the megakernel drops from 990 to 961 TPS. Waiting loader warps even cost time: at attention → o_proj, spinning adds 1.3 µs over plain PDL; at down_proj → QKV, bandwidth is already saturated, so early loads slow one kernel by 2.2 µs and speed the next by the same amount.</p>
+          <p lang="zh"><strong>重叠没有宣传的那么大。</strong> 在 H100 megakernel 里， 一层中五条生产者-消费者边有三条需要完整屏障， 第四条实际上也是完整的（一个 CTA 要等 128 个）。 只有 attention 能真正受益于计算重叠。 通过分页 shared memory 做的内存预取只值约 3.3%： 去掉它， megakernel 只从 990 降到 961 TPS。 等待中的 loader warp 甚至会耗时： 在 attention → o_proj 处， 自旋比普通 PDL 多花 1.3 µs； 在 down_proj → QKV 处， 带宽已经饱和， 提前加载会让前一个 kernel 慢 2.2 µs， 后一个快同样多。</p>
+          <p lang="en"><strong>One launch envelope for every operation.</strong> All work inside a persistent kernel shares one warp count, register budget and cluster shape. Short decode operations wanted 20 warps, but Hopper's <code>wgmma</code> accumulates in registers, so heavy GEMMs run best at 12; forcing 20 makes them 1.2–1.5× slower. The paper adds that "alternative hardwares like AMD run into the same constraints". A whole-model binary also overflows the instruction cache. Modern models make it worse: Kimi K3's KDA and MLA layers want different <code>cta_group</code> modes that PTX forbids mixing in one kernel; tensor-parallel MoE GEMMs and data-parallel projections want different cluster sizes (5–19% slower when forced together).</p>
+          <p lang="zh"><strong>所有操作共用一个启动形状。</strong> 常驻 kernel 里的所有工作， 共用同一个 warp 数、 寄存器预算和 cluster 形状。 短小的 decode 操作想要 20 个 warp， 但 Hopper 的 <code>wgmma</code> 把累加器放在寄存器里， 所以重的 GEMM 在 12 个 warp 时最快； 强行用 20 个会慢 1.2–1.5 倍。 论文还指出， 「AMD 等其他硬件也会遇到同样的限制」。 把整个模型塞进一个二进制， 还会撑爆指令缓存。 新模型让问题更严重： Kimi K3 的 KDA 层和 MLA 层需要不同的 <code>cta_group</code> 模式， 而 PTX 不允许在一个 kernel 里混用； 张量并行的 MoE GEMM 和数据并行的投影需要不同的 cluster 大小（强行合在一起会慢 5–19%）。</p>
+          <p lang="en"><strong>Sometimes splitting is faster.</strong> Under imbalanced routing, moving Kimi K3's expert dispatch onto the copy engine beat a MoE megakernel by 6.9%, and FlashInfer's MegaMoE ran 17% faster with dispatch factored into its own small kernel.</p>
+          <p lang="zh"><strong>有时拆开反而更快。</strong> 在路由不均衡时， 把 Kimi K3 的专家分发交给 copy engine， 比一个 MoE megakernel 快 6.9%； FlashInfer 的 MegaMoE 把分发拆成一个单独的小 kernel 后， 快了 17%。</p>
+          <div class="callout">
+            <p class="tag" lang="en">The transferable idea</p>
+            <p class="tag" lang="zh">可以迁移的思想</p>
+            <p lang="en">A fused kernel is a bundle of optimizations plus a set of constraints. Unbundle the optimizations, keep each one that survives on its own, and pay for the constraints only where they buy something. In the authors' words, the task is to "identify the right group of operations to couple and individually tune". TKCC's agents later reached up to 1.7× the megakernel on Llama 1B.</p>
+            <p lang="zh">一个融合 kernel， 是一组优化加上一组约束。 把这些优化拆开， 保留每一个能单独成立的， 只在约束能换来收益的地方才付出它。 用作者的话说， 要做的是 「找出该耦合在一起的那组操作， 并分别调优」。 TKCC 的 agent 后来在 Llama 1B 上做到了 megakernel 的最高 1.7 倍。</p>
+          </div>
+        </section>
+
+        <section id="engine">
+          <h2><span class="no">05</span><span lang="en">The Tiered Persistent Engine</span><span lang="zh">分层常驻引擎</span></h2>
+          <p lang="en">Problem first. Starting MiniMax-M3.1-Flash on TensorRT-LLM takes 761 seconds before the first request is served: 265 s of model loading, 73 s of KV-cache sizing, 192 s of autotuning, and 34 s plus 192 s of CUDA-graph capture for decode and prefill (Table 1a). If every experiment pays that, an agent gets a few measurements per hour. Offline benchmarks avoid the cost but measure the wrong thing (Section 03).</p>
+          <p lang="zh">先看问题。 在 TensorRT-LLM 上启动 MiniMax-M3.1-Flash， 要 761 秒才能服务第一个请求： 加载模型 265 秒、 估算 KV cache 73 秒、 autotuning 192 秒， 再加上 decode 和 prefill 的 CUDA graph 捕获 34 秒和 192 秒（表 1a）。 如果每次实验都付这个代价， 一个 agent 每小时只能拿到几次测量。 离线基准能避开这个代价， 但测的不是真实情况（第 03 节）。</p>
+
+          <figure class="plate" aria-label="Plate IV: the Together Compiler loop">
+            <div class="plate-head"><span>Plate IV</span><span lang="en">The Together Compiler loop</span><span lang="zh">Together Compiler 的循环</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 400" role="img" aria-labelledby="p4-title">
+                <title id="p4-title">Inputs feed a cost model that seeds a persistent engine with two tiers; parallel agents submit candidates and receive measurements; verified results go to the serving engine; traffic drift restarts the loop</title>
+                <rect class="k-node" x="30" y="40" width="210" height="44" rx="4" />
+                <rect class="k-node" x="30" y="96" width="210" height="44" rx="4" />
+                <rect class="k-node" x="30" y="152" width="210" height="44" rx="4" />
+                <text class="k-v" x="46" y="67" lang="en">Server launch command</text>
+                <text class="k-v" x="46" y="67" lang="zh">服务启动命令</text>
+                <text class="k-v" x="46" y="123" lang="en">Traffic profile</text>
+                <text class="k-v" x="46" y="123" lang="zh">流量画像</text>
+                <text class="k-v" x="46" y="179" lang="en">Hardware</text>
+                <text class="k-v" x="46" y="179" lang="zh">硬件</text>
+                <rect class="k-cyan" x="290" y="80" width="200" height="76" rx="4" />
+                <text class="k-t" x="306" y="110" lang="en">Cost model</text>
+                <text class="k-t" x="306" y="110" lang="zh">成本模型</text>
+                <text class="k-s" x="306" y="132" lang="en">top-k parallelism layouts</text>
+                <text class="k-s" x="306" y="132" lang="zh">前 k 个并行布局</text>
+                <path class="k-edge" d="M240,62 C266,62 266,106 288,106" marker-end="url(#ar)" />
+                <path class="k-edge" d="M240,118 H288" marker-end="url(#ar)" />
+                <path class="k-edge" d="M240,174 C266,174 266,130 288,130" marker-end="url(#ar)" />
+                <rect class="k-zone" x="540" y="20" width="392" height="206" rx="4" />
+                <text class="k-l" x="556" y="42" lang="en">PERSISTENT ENGINE · LOADED ONCE</text>
+                <text class="k-l" x="556" y="42" lang="zh">常驻引擎 · 只加载一次</text>
+                <rect class="k-amber" x="560" y="56" width="352" height="66" rx="4" />
+                <text class="k-t" x="576" y="84" lang="en">Fast tier · 12 layers</text>
+                <text class="k-t" x="576" y="84" lang="zh">快档 · 12 层</text>
+                <text class="k-s" x="576" y="106" lang="en">reload 17 s · traces kernels · absorbs crashes</text>
+                <text class="k-s" x="576" y="106" lang="zh">热加载 17 秒 · 追踪 kernel · 吸收崩溃</text>
+                <rect class="k-green" x="560" y="140" width="352" height="66" rx="4" />
+                <text class="k-t" x="576" y="168" lang="en">Slow tier · 60 layers</text>
+                <text class="k-t" x="576" y="168" lang="zh">慢档 · 60 层</text>
+                <text class="k-s" x="576" y="190" lang="en">reload 45 s · real data · confirms wins</text>
+                <text class="k-s" x="576" y="190" lang="zh">热加载 45 秒 · 真实数据 · 确认收益</text>
+                <path class="k-edge-cyan" d="M490,118 H538" marker-end="url(#ar-cyan)" />
+                <text class="k-c" x="496" y="108" lang="en">seed</text>
+                <text class="k-c" x="496" y="108" lang="zh">起点</text>
+                <rect class="k-node" x="560" y="290" width="352" height="76" rx="4" />
+                <text class="k-t" x="576" y="320" lang="en">Parallel agents</text>
+                <text class="k-t" x="576" y="320" lang="zh">并行 agent</text>
+                <text class="k-s" x="576" y="342" lang="en">edit forward-pass source · shared message board</text>
+                <text class="k-s" x="576" y="342" lang="zh">改 forward pass 源码 · 共享消息板</text>
+                <path class="k-edge-amber" d="M680,288 V228" marker-end="url(#ar-amber)" />
+                <text class="k-a" x="672" y="262" text-anchor="end" lang="en">submit candidate · RPC hot reload</text>
+                <text class="k-a" x="672" y="262" text-anchor="end" lang="zh">提交候选 · RPC 热加载</text>
+                <path class="k-edge-green" d="M800,228 V288" marker-end="url(#ar-green)" />
+                <text class="k-g" x="808" y="262" lang="en">measurements</text>
+                <text class="k-g" x="808" y="262" lang="zh">测量结果</text>
+                <rect class="k-node" x="290" y="298" width="200" height="60" rx="4" />
+                <text class="k-t" x="306" y="324" lang="en">Verify</text>
+                <text class="k-t" x="306" y="324" lang="zh">验证</text>
+                <text class="k-s" x="306" y="345" lang="en">KV contamination, quality</text>
+                <text class="k-s" x="306" y="345" lang="zh">KV 污染、 质量</text>
+                <path class="k-edge" d="M558,328 H492" marker-end="url(#ar)" />
+                <text class="k-s" x="500" y="318" lang="en">done</text>
+                <text class="k-s" x="500" y="318" lang="zh">结束</text>
+                <rect class="k-green" x="30" y="298" width="210" height="60" rx="4" />
+                <text class="k-t" x="46" y="324" lang="en">Serving engine</text>
+                <text class="k-t" x="46" y="324" lang="zh">线上服务引擎</text>
+                <text class="k-s" x="46" y="345" lang="en">source merged directly</text>
+                <text class="k-s" x="46" y="345" lang="zh">直接合入源码</text>
+                <path class="k-edge" d="M288,328 H242" marker-end="url(#ar)" />
+                <path class="k-edge-dash" d="M30,340 H14 V118 H28" marker-end="url(#ar)" />
+                <text class="k-l" x="10" y="250" text-anchor="middle" transform="rotate(-90 10 250)" lang="en">TRAFFIC DRIFTS · RECOMPILE</text>
+                <text class="k-l" x="10" y="250" text-anchor="middle" transform="rotate(-90 10 250)" lang="zh">流量漂移 · 重新编译</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">The engine loads the model once; agents only swap the forward pass. The fast tier filters and absorbs crashes, the slow tier confirms on more layers, and a verification suite gates what reaches production. When traffic drifts, the loop runs again.</p>
+            <p class="caption" lang="zh">引擎只加载一次模型， agent 只替换 forward pass。 快档负责筛选并吸收崩溃， 慢档在更多层上确认， 验证套件决定什么能进入生产。 流量漂移时， 循环再跑一遍。</p>
+          </figure>
+
+          <p lang="en">The key observation is that engine startup and forward-pass computation are separable. TKCC starts the production engine once and adds one RPC endpoint. An agent writes its candidate forward pass to a file and submits it; each rank writes the file, executes it, replaces <code>model.forward</code> with the candidate and re-captures CUDA or HIP graphs; teardown restores the baseline and unloads the candidate's modules (Figure 3). Two smaller changes add throughput: requests are reused so their prompts stay in the prefix cache (2.6× lower measurement latency on Kimi K3), and kernel binaries are cached across submissions.</p>
+          <p lang="zh">关键观察是： 引擎启动和 forward pass 计算可以分开。 TKCC 只启动一次生产引擎， 并加一个 RPC 接口。 agent 把候选 forward pass 写进一个文件并提交； 每个 rank 写下文件、 执行它、 用候选替换 <code>model.forward</code>， 然后重新捕获 CUDA 或 HIP graph； 结束时恢复基线， 并卸载候选的模块（图 3）。 另有两处小改动进一步提高吞吐： 复用同一批请求， 让 prompt 一直留在 prefix cache 里（Kimi K3 上测量延迟降低 2.6 倍）； 以及在多次提交之间缓存 kernel 二进制。</p>
+
+          <figure class="plate" aria-label="Plate V: cold start versus hot reload">
+            <div class="plate-head"><span>Plate V</span><span lang="en">Cold start versus hot reload (s)</span><span lang="zh">冷启动与热加载（秒）</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 310" role="img" aria-labelledby="p5-title">
+                <title id="p5-title">Cold-start time of MiniMax-M3.1-Flash on TensorRT-LLM split by phase, compared with hot-reload time in the fast and slow tiers</title>
+                <path class="k-grid" d="M400,40 V262 M570,40 V262 M740,40 V262 M910,40 V262" />
+                <path class="k-axis" d="M230,262 H910" />
+                <text class="k-s" x="230" y="280" text-anchor="middle">0</text>
+                <text class="k-s" x="400" y="280" text-anchor="middle">200</text>
+                <text class="k-s" x="570" y="280" text-anchor="middle">400</text>
+                <text class="k-s" x="740" y="280" text-anchor="middle">600</text>
+                <text class="k-s" x="910" y="280" text-anchor="middle">800</text>
+                <text class="k-l" x="910" y="300" text-anchor="end" lang="en">SECONDS</text>
+                <text class="k-l" x="910" y="300" text-anchor="end" lang="zh">秒</text>
+                <text class="k-v" x="220" y="83" text-anchor="end" lang="en">Cold start · 761 s</text>
+                <text class="k-v" x="220" y="83" text-anchor="end" lang="zh">冷启动 · 761 秒</text>
+                <rect class="b-muted" x="230" y="60" width="225" height="36" />
+                <rect class="b-cyan" x="455" y="60" width="62" height="36" />
+                <rect class="b-amber" x="517" y="60" width="164" height="36" />
+                <rect class="b-green" x="681" y="60" width="29" height="36" />
+                <rect class="b-green" x="710" y="60" width="163" height="36" fill-opacity=".55" />
+                <text class="k-v" x="240" y="83" lang="en">model loading 265</text>
+                <text class="k-v" x="240" y="83" lang="zh">加载模型 265</text>
+                <text class="k-v" x="462" y="83" fill="#0c0f13" lang="en">KV 73</text>
+                <text class="k-v" x="462" y="83" fill="#0c0f13" lang="zh">KV 73</text>
+                <text class="k-v" x="525" y="83" fill="#0c0f13" lang="en">autotuning 192</text>
+                <text class="k-v" x="525" y="83" fill="#0c0f13" lang="zh">autotuning 192</text>
+                <text class="k-v" x="718" y="83" fill="#0c0f13" lang="en">prefill graphs 192</text>
+                <text class="k-v" x="718" y="83" fill="#0c0f13" lang="zh">prefill graph 192</text>
+                <path d="M695,96 V108" stroke="#3ddc97" stroke-width="1.2" />
+                <text class="k-g" x="695" y="122" text-anchor="middle" lang="en">decode graphs 34</text>
+                <text class="k-g" x="695" y="122" text-anchor="middle" lang="zh">decode graph 34</text>
+                <text class="k-v" x="220" y="167" text-anchor="end" lang="en">Hot reload · slow tier</text>
+                <text class="k-v" x="220" y="167" text-anchor="end" lang="zh">热加载 · 慢档</text>
+                <rect class="b-green" x="230" y="152" width="38" height="24" />
+                <text class="k-g" x="276" y="169">45</text>
+                <text class="k-v" x="220" y="211" text-anchor="end" lang="en">Hot reload · fast tier</text>
+                <text class="k-v" x="220" y="211" text-anchor="end" lang="zh">热加载 · 快档</text>
+                <rect class="b-amber" x="230" y="196" width="15" height="24" />
+                <text class="k-a" x="253" y="213">17</text>
+                <text class="k-s" x="330" y="190" lang="en">only the forward pass changes; weights, caches and the server stay up</text>
+                <text class="k-s" x="330" y="190" lang="zh">只换 forward pass， 权重、 cache 和服务进程都保持运行</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">Almost all of the cold start is work unrelated to the forward pass under test. Hot reload keeps it out of the loop; what remains is mostly graph re-capture.</p>
+            <p class="caption" lang="zh">冷启动的几乎全部时间， 都花在与被测 forward pass 无关的工作上。 热加载把这些工作挡在循环之外， 剩下的主要是重新捕获 graph。</p>
+          </figure>
+
+          <p lang="en">Two tiers split the job of measurement:</p>
+          <p lang="zh">两档测量各司其职：</p>
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Metric</span><span lang="zh">指标</span></th>
+                <th><span lang="en">Fast tier</span><span lang="zh">快档</span></th>
+                <th><span lang="en">Slow tier</span><span lang="zh">慢档</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en">Layers served</span><span lang="zh">加载的层数</span></td><td class="num">12</td><td class="num">60</td></tr>
+              <tr><td><span lang="en">Startup to first job</span><span lang="zh">启动到第一个任务</span></td><td class="num"><span lang="en">3 min</span><span lang="zh">3 分钟</span></td><td class="num"><span lang="en">11 min</span><span lang="zh">11 分钟</span></td></tr>
+              <tr><td><span lang="en">Hot reload</span><span lang="zh">热加载</span></td><td class="num"><span lang="en">17 s</span><span lang="zh">17 秒</span></td><td class="num"><span lang="en">45 s</span><span lang="zh">45 秒</span></td></tr>
+              <tr><td><span lang="en">Median job</span><span lang="zh">任务耗时中位数</span></td><td class="num"><span lang="en">28 s</span><span lang="zh">28 秒</span></td><td class="num"><span lang="en">64 s</span><span lang="zh">64 秒</span></td></tr>
+              <tr><td><span lang="en">Measurement variance</span><span lang="zh">测量方差</span></td><td class="num">0.05%</td><td class="num">0.14%</td></tr>
+              <tr><td><span lang="en">Crashes per 1,000 jobs</span><span lang="zh">每 1,000 个任务的崩溃数</span></td><td class="num">3.9</td><td class="num">0</td></tr>
+            </tbody>
+          </table>
+          <p lang="en">The fast tier is both a sieve and a crash shield: it absorbs illegal memory accesses and hangs that would otherwise force expensive restarts, and it traces kernels for per-kernel reports. The slow tier serves more layers, so it shows whether a win survives data-dependent behavior. On GLM 5.3 on B200, two tiers evaluated 1,354 candidates against 168 for a slow tier alone, and found a solution 7.2% faster (Figure 2).</p>
+          <p lang="zh">快档既是筛子， 也是防崩溃的挡板： 它吸收那些原本会逼着引擎重启的非法内存访问和挂起， 并追踪 kernel， 生成逐 kernel 的报告。 慢档加载的层更多， 能看出一个收益在依赖数据的行为下是否还成立。 在 B200 的 GLM 5.3 上， 两档方案评估了 1,354 个候选， 只用慢档时是 168 个， 最终方案快 7.2%（图 2）。</p>
+          <p lang="en">Fidelity also means low noise. Back-to-back runs of the same forward pass vary by 4–6%, while a real optimization can be worth 1%. Splitting prefill and decode measurements cuts back-to-back variance from 6.6% to 2.7%, and the number of measured layers is tuned per workload before the search starts.</p>
+          <p lang="zh">保真也意味着噪声低。 同一个 forward pass 连续跑两次， 结果会差 4–6%， 而一个真实的优化可能只值 1%。 把 prefill 和 decode 分开测量， 连续两次的方差从 6.6% 降到 2.7%； 搜索开始前， 还会按工作负载调好需要测量的层数。</p>
+          <p lang="en">The result is 252× more agent experiments and 11× less idle time per agent than relaunching the engine for each measurement. Throughput is still the binding constraint: agents spend more than half their time waiting for measurement gates (Table 6).</p>
+          <p lang="zh">结果是： 和每次测量都重启引擎相比， agent 实验次数多 252 倍， 每个 agent 的空等时间少 11 倍。 但吞吐仍然是瓶颈： agent 有一半以上的时间在等测量结果（表 6）。</p>
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Model (platform)</span><span lang="zh">模型（平台）</span></th>
+                <th><span lang="en">Waiting for gate</span><span lang="zh">等待测量</span></th>
+                <th><span lang="en">Thinking and coding</span><span lang="zh">思考和写代码</span></th>
+                <th><span lang="en">Other</span><span lang="zh">其他</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>GLM-5.3 (AMD MI350X)</td><td class="num">57.0%</td><td class="num">36.9%</td><td class="num">6.1%</td></tr>
+              <tr><td>GLM-5.3 (NVIDIA B200)</td><td class="num">55.0%</td><td class="num">35.7%</td><td class="num">9.3%</td></tr>
+              <tr><td>MiniMax M3.1 Flash (NVIDIA B200)</td><td class="num">52.7%</td><td class="num">40.4%</td><td class="num">6.9%</td></tr>
+            </tbody>
+          </table>
+          <div class="callout measure">
+            <p class="tag" lang="en">Why not just make startup faster?</p>
+            <p class="tag" lang="zh">为什么不直接把启动变快？</p>
+            <p lang="en">Most of the 761 seconds is work that has nothing to do with the forward pass under test: loading weights, sizing caches, autotuning, capturing graphs. Shaving it helps every experiment a little; removing it from the loop helps every experiment completely. The companion blog shows the same split for another engine: 467 s of cold start against 9.0 s per hot reload, 7.3 s of which is graph capture.</p>
+            <p lang="zh">761 秒里的大部分工作， 和被测的 forward pass 无关： 加载权重、 估算 cache、 autotuning、 捕获 graph。 把它压缩一点， 每次实验都快一点； 把它移出循环， 每次实验就彻底省掉它。 配套博客给出了另一个引擎的同类拆分： 冷启动 467 秒， 而每次热加载只要 9.0 秒， 其中 7.3 秒是捕获 graph。</p>
+          </div>
+        </section>
+
+        <section id="cost-model">
+          <h2><span class="no">06</span><span lang="en">Where to start: a cost model that separates hardware from software</span><span lang="zh">从哪里起步： 区分硬件与软件的成本模型</span></h2>
+          <p lang="en">Parallelism is the first decision and the most expensive one to search by measurement: every TP, EP, DP or CP layout needs its own engine, and today's software may underperform the hardware for some layouts. TKCC therefore ranks the top-k layouts with a model before any agent runs.</p>
+          <p lang="zh">并行配置是第一个决定， 也是最难靠实测去搜索的： 每一种 TP、 EP、 DP 或 CP 布局都需要单独起一个引擎， 而且现有软件在某些布局上可能发挥不出硬件的能力。 所以 TKCC 在任何 agent 开始之前， 先用模型排出前 k 个布局。</p>
+          <p lang="en">It enumerates admissible layouts (the weights fit, every sharded dimension divides evenly) and prunes those that miss a 1.5 s TTFT or a 40 tokens-per-second decode SLA. For each surviving layout, each layer costs the larger of its compute and memory time plus its communication; concurrency is limited by both HBM capacity and the latency target; prefill and decode are costed separately and combined into tokens per minute per chip (§4.3, Appendix D):</p>
+          <p lang="zh">它先列出可行的布局（权重放得下、 每个被切分的维度都能整除）， 再去掉达不到 1.5 秒 TTFT 或 decode 40 tokens/s SLA 的布局。 对剩下的每个布局， 每层的耗时取计算时间和访存时间中较大的那个， 再加上通信时间； 并发同时受显存容量和延迟目标限制； prefill 和 decode 分开计算， 最后合成每张卡每分钟的 token 数（§4.3、 附录 D）：</p>
+<pre>T_pass(decode)  = Σ_L [ max(T_c^L, D^L / BW_HBM) + Σ_i T_comm^(L,i) ]
+T_pass(prefill) = Σ_L [ T_c^L + Σ_i T_comm^(L,i) ]
+C               = min(C_memory, C_speed)
+chip_s(decode)  = N · T_pass(decode) · OSL / C
+chip_s(prefill) = N · T_pass(prefill) / C
+TPM             = 60 · (ISL + OSL) / (chip_s(decode) + chip_s(prefill))</pre>
+          <p lang="en">The interesting part is where the inputs come from. Each chip is described at four levels: the vendor spec sheet, the team's own micro-benchmarks, vendor tools (BabelStream, perftest) and vendor libraries (cuBLASLt, hipBLASLt, nccl-tests). Comparing the levels tells whether a layout is slow because of the hardware or because of immature software, so a layout is not discarded just because its current implementation is poor. Data-dependent effects come from production: MTP acceptance, uneven prompt lengths and expert routing. Expert imbalance enters as the expected maximum load over ranks, because a layer waits for its slowest rank.</p>
+          <p lang="zh">真正有意思的是输入从哪来。 每种芯片都有四个层级的描述： 厂商规格表、 团队自己的 micro-benchmark、 厂商工具（BabelStream、 perftest） 和厂商库（cuBLASLt、 hipBLASLt、 nccl-tests）。 对比这几层， 就能分清一个布局慢是因为硬件， 还是因为软件不成熟， 从而不会只因为当前实现差就丢掉一个布局。 依赖数据的效应来自生产环境： MTP 接受长度、 不均匀的 prompt 长度和专家路由。 专家不均衡用 「各 rank 负载的期望最大值」 来表示， 因为一层要等最慢的 rank。</p>
+          <p lang="en">Two results show the payoff. For MiniMax M3.1 Flash at batch 1, decode is memory-bound, so TP8 halves each GPU's weight traffic compared with the leading TP4 image; with it TKCC reached 1,111 TPS, 1.8× the best published 633 (§5.2). In production, the model found a Kimi K3 layout that raised TPS by up to 24% and tokens per minute per chip by up to 18% (§4.3).</p>
+          <p lang="zh">两个结果说明了它的价值。 MiniMax M3.1 Flash 在 batch 1 时 decode 受访存限制， 所以 TP8 比领先镜像用的 TP4 少一半的单卡权重流量； 用 TP8， TKCC 达到 1,111 TPS， 是已发表最好成绩 633 的 1.8 倍（§5.2）。 在生产环境里， 这个模型为 Kimi K3 找到的布局让 TPS 最多提高 24%， 每卡每分钟 token 数最多提高 18%（§4.3）。</p>
+          <div class="callout measure">
+            <p class="tag" lang="en">The AMD detail</p>
+            <p class="tag" lang="zh">与 AMD 相关的细节</p>
+            <p lang="en">For collectives the model has two shapes. With a switch, a collective is one hop at full bandwidth and the switch does the reduction. With direct links, it costs per-hop latency times hops plus the bytes on the busiest link. The paper notes that MI350-class GPUs "connect to each other directly, without such a switch" (§C.3), so an MI355X node needs the direct-link model and a fitted latency per collective for RCCL and AITER, not switch-style assumptions.</p>
+            <p lang="zh">对于集合通信， 模型有两种形态。 有交换机时， 一次集合通信是满带宽的一跳， 由交换机完成归约。 直连时， 代价是每跳延迟乘以跳数， 再加上最忙那条链路上的字节数。 论文指出 MI350 系列 GPU 「彼此直接相连， 没有这样的交换机」（§C.3）， 所以 MI355X 节点要用直连模型， 并为 RCCL 和 AITER 的每种集合通信单独拟合延迟， 而不能套用交换机式的假设。</p>
+          </div>
+        </section>
+
+        <section id="lessons">
+          <h2><span class="no">07</span><span lang="en">The bitter lessons, and where to be careful</span><span lang="zh">苦涩的教训， 以及要小心的地方</span></h2>
+          <p lang="en">TKCC went through three production designs before the current one: megakernels; an augmented Inductor that lowered every kernel to PTX, inserted PDL and swapped in faster kernels, recovering kernels launched from C++ with CUPTI tracing on NVIDIA and rocProf on AMD; and agents steered by expert-curated context. As coding agents improved, the team ablated each piece and deleted most of it (§4.4, Appendix C.2):</p>
+          <p lang="zh">TKCC 在现在的设计之前， 有过三个上线的版本： megakernel； 增强版 Inductor（把每个 kernel 降到 PTX， 插入 PDL， 换上更快的 kernel； 对于从 C++ 启动的 kernel， 在 NVIDIA 上用 CUPTI、 在 AMD 上用 rocProf 追踪补回来）； 以及由专家整理的上下文来引导 agent。 随着 coding agent 变强， 团队对每一部分做了消融， 然后删掉了大部分（§4.4、 附录 C.2）：</p>
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Scaffold</span><span lang="zh">脚手架</span></th>
+                <th><span lang="en">What the ablation showed</span><span lang="zh">消融的结果</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">Custom IR (BlockIR from driver-level capture)</span><span lang="zh">自定义 IR（来自驱动层捕获的 BlockIR）</span></td>
+                <td><span lang="en">It could not express host-side changes: rewriting Kimi K3's MLA metadata planning to split long sequences across blocks gave 1.7–2.5× on the MLA kernel. Pointer tracking was brittle: on GLM 5.3 on AMD, tracer and allocator clocks drifted by up to 325 µs and mislabeled buffers.</span><span lang="zh">它无法表达 host 端的改动： 改写 Kimi K3 的 MLA 元数据规划， 把长序列切到多个 block 上， 让 MLA kernel 快 1.7–2.5 倍。 指针追踪很脆弱： 在 AMD 的 GLM 5.3 上， 追踪器和分配器的时钟漂移最多 325 µs， 把缓冲区标错了。</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Knowledge hub</span><span lang="zh">知识库</span></td>
+                <td><span lang="en">25–31% lower speedup after 12 hours; agents anchored on known patterns. The blog's 10-trial example: 5.85× fell to 4.75×.</span><span lang="zh">12 小时后加速比低 25–31%； agent 被已知模式框住了。 博客里 10 次试验的例子： 从 5.85 倍降到 4.75 倍。</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Expert strategies</span><span lang="zh">专家策略</span></td>
+                <td><span lang="en">A naive ensemble ("make this forward pass as fast as possible") reached 6.2× against 4.9× for six expert strategies; the megakernel strategy on AMD GLM 5.3 spent 24 hours for 0.22%.</span><span lang="zh">朴素的 agent 组合（只说 「让这个 forward pass 尽可能快」） 达到 6.2 倍， 六种专家策略组合只有 4.9 倍； 在 AMD 的 GLM 5.3 上， megakernel 策略花了 24 小时只换来 0.22%。</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Research graph and CLI</span><span lang="zh">研究图谱和 CLI</span></td>
+                <td><span lang="en">Up to 43% of tool calls went to bookkeeping; on GLM 5.3 runs, 8% of time against under 0.5% with a plain Markdown file.</span><span lang="zh">最多 43% 的工具调用花在记账上； 在 GLM 5.3 的运行中占 8% 的时间， 换成普通 Markdown 文件后不到 0.5%。</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Infrequent communication</span><span lang="zh">低频通信</span></td>
+                <td><span lang="en">Final speedup 4.82× with none, 6.20× infrequent, 7.72× with a frequently used message board.</span><span lang="zh">最终加速比： 不通信 4.82 倍， 低频通信 6.20 倍， 频繁使用消息板 7.72 倍。</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p lang="en">Their conclusion: give agents the engine's source code, real measurements and fast feedback, and keep structured representations for verifying correctness rather than for steering optimization.</p>
+          <p lang="zh">他们的结论是： 给 agent 引擎源码、 真实测量和快速反馈； 结构化表示留给正确性验证， 而不是用来引导优化。</p>
+          <div class="callout stop">
+            <p class="tag" lang="en">Where to be careful</p>
+            <p class="tag" lang="zh">要小心的地方</p>
+            <p lang="en"><strong>Scope.</strong> The context ablations come from one layer (MiniMax-M3 layer 3, B200, TP4, batch 1) with 10 trials, and the paper and blog quote different sizes for the same effects: 19%, 26% and 25–31% for the knowledge hub; 2.3× and 4.7× faster optimization for communication. The direction is plausible; the magnitude is not established for AMD.</p>
+            <p lang="zh"><strong>范围。</strong> 上下文消融只来自一层（MiniMax-M3 第 3 层、 B200、 TP4、 batch 1）、 10 次试验， 而且论文和博客对同一效应给出了不同的数值： 知识库是 19%、 26% 和 25–31%； 通信是优化速度快 2.3 倍和 4.7 倍。 方向可信， 但幅度在 AMD 上没有被证实。</p>
+            <p lang="en"><strong>CAKE disagrees, and both can be right.</strong> CAKE argues for a typed, hardware-explicit IR with verifiers. Its evidence supports an IR as a verifier and diagnostic layer; TKCC's evidence is against an IR as the optimization surface. Both need structure for correctness. Our FlyDSL reading (<a href="./flydsl-compiler-in-the-loop.html">Source Reading 012</a>) reached the same split from the compiler side.</p>
+            <p lang="zh"><strong>CAKE 持相反立场， 而两者可以同时成立。</strong> CAKE 主张带验证器的、 类型化、 硬件显式的 IR。 它的证据支持把 IR 当作验证和诊断层； TKCC 的证据反对把 IR 当作优化的操作面。 两者都需要结构来保证正确性。 我们对 FlyDSL 的阅读（<a href="./flydsl-compiler-in-the-loop.html">Source Reading 012</a>） 从编译器一侧得出了同样的划分。</p>
+            <p lang="en"><strong>"No scaffolding" is still a lot of infrastructure.</strong> The persistent engine, the tiers, the cost model and the verification suite are exactly the parts they kept.</p>
+            <p lang="zh"><strong>「不要脚手架」 仍然意味着大量基础设施。</strong> 常驻引擎、 测量分档、 成本模型和验证套件， 恰恰是他们保留下来的部分。</p>
+          </div>
+        </section>
+
+        <section id="amd">
+          <h2><span class="no">08</span><span lang="en">What the agents found on MI355X</span><span lang="zh">agent 在 MI355X 上找到了什么</span></h2>
+          <p lang="en">The AMD run optimized GLM-5.3 at TP8 with FP8 weights, starting from a vLLM ROCm nightly image (<code>vllm/vllm-openai-rocm:nightly-rocm100-29468dd…</code>), at concurrencies 1–16 on the AgentX workload (Table 4, §C.3). The paper says TKCC beat the best InferenceX configuration on all six model–chip pairs, this one included; the per-pair numbers appear only in Figure 7, so we do not quote one here.</p>
+          <p lang="zh">AMD 上的实验优化的是 TP8、 FP8 权重的 GLM-5.3， 起点是 vLLM 的 ROCm nightly 镜像（<code>vllm/vllm-openai-rocm:nightly-rocm100-29468dd…</code>）， 在 AgentX 工作负载上跑并发 1–16（表 4、 §C.3）。 论文说 TKCC 在全部 6 组 「模型 × 芯片」 上都超过了 InferenceX 的最好配置， 这一组也在其中； 但每组的具体数字只画在图 7 里， 所以这里不引用具体倍数。</p>
+
+          <figure class="plate" aria-label="Plate VI: fusing communication into compute on AMD">
+            <div class="plate-head"><span>Plate VI</span><span lang="en">Fusing communication into compute · GLM-5.3 · MI355X</span><span lang="zh">把通信融进计算 · GLM-5.3 · MI355X</span></div>
+            <div class="svg-wrap">
+              <svg viewBox="0 0 960 316" role="img" aria-labelledby="p6-title">
+                <title id="p6-title">A simplified decode-layer segment before and after the agents fused the all-reduce, residual add, RMSNorm and FP8 quantization into one kernel fed directly by the GEMM</title>
+                <text class="k-l" x="20" y="30" lang="en">STOCK SEGMENT (SIMPLIFIED)</text>
+                <text class="k-l" x="20" y="30" lang="zh">原始片段（简化）</text>
+                <rect class="k-node" x="20" y="44" width="112" height="46" rx="4" />
+                <rect class="k-red" x="150" y="44" width="112" height="46" rx="4" />
+                <rect class="k-node" x="280" y="44" width="112" height="46" rx="4" />
+                <rect class="k-node" x="410" y="44" width="112" height="46" rx="4" />
+                <rect class="k-node" x="540" y="44" width="112" height="46" rx="4" />
+                <rect class="k-node" x="670" y="44" width="112" height="46" rx="4" />
+                <rect class="k-node" x="800" y="44" width="112" height="46" rx="4" />
+                <text class="k-v" x="76" y="72" text-anchor="middle">GEMM</text>
+                <text class="k-r" x="206" y="72" text-anchor="middle" lang="en">copy</text>
+                <text class="k-r" x="206" y="72" text-anchor="middle" lang="zh">拷贝</text>
+                <text class="k-v" x="336" y="72" text-anchor="middle">all-reduce</text>
+                <text class="k-v" x="466" y="72" text-anchor="middle" lang="en">residual add</text>
+                <text class="k-v" x="466" y="72" text-anchor="middle" lang="zh">残差相加</text>
+                <text class="k-v" x="596" y="72" text-anchor="middle">RMSNorm</text>
+                <text class="k-v" x="726" y="72" text-anchor="middle" lang="en">FP8 quant</text>
+                <text class="k-v" x="726" y="72" text-anchor="middle" lang="zh">FP8 量化</text>
+                <text class="k-v" x="856" y="72" text-anchor="middle" lang="en">next GEMM</text>
+                <text class="k-v" x="856" y="72" text-anchor="middle" lang="zh">下一个 GEMM</text>
+                <path class="k-edge" d="M132,67 H148" marker-end="url(#ar)" />
+                <path class="k-edge" d="M262,67 H278" marker-end="url(#ar)" />
+                <path class="k-edge" d="M392,67 H408" marker-end="url(#ar)" />
+                <path class="k-edge" d="M522,67 H538" marker-end="url(#ar)" />
+                <path class="k-edge" d="M652,67 H668" marker-end="url(#ar)" />
+                <path class="k-edge" d="M782,67 H798" marker-end="url(#ar)" />
+                <text class="k-l" x="20" y="138" lang="en">AFTER TKCC AGENTS · TP8 · FP8</text>
+                <text class="k-l" x="20" y="138" lang="zh">TKCC agent 优化后 · TP8 · FP8</text>
+                <rect class="k-cyan" x="20" y="152" width="250" height="58" rx="4" />
+                <text class="k-t" x="36" y="177">GEMM</text>
+                <text class="k-s" x="36" y="198" lang="en">writes into AITER's AR buffer</text>
+                <text class="k-s" x="36" y="198" lang="zh">直接写进 AITER 的 AR 缓冲区</text>
+                <rect class="k-green" x="300" y="152" width="420" height="58" rx="4" />
+                <text class="k-t" x="316" y="177" lang="en">One kernel</text>
+                <text class="k-t" x="316" y="177" lang="zh">一个 kernel</text>
+                <text class="k-s" x="316" y="198" lang="en">all-reduce + residual + RMSNorm + FP8 quant</text>
+                <text class="k-s" x="316" y="198" lang="zh">all-reduce + 残差 + RMSNorm + FP8 量化</text>
+                <rect class="k-node" x="750" y="152" width="162" height="58" rx="4" />
+                <text class="k-v" x="831" y="186" text-anchor="middle" lang="en">next GEMM</text>
+                <text class="k-v" x="831" y="186" text-anchor="middle" lang="zh">下一个 GEMM</text>
+                <path class="k-edge-green" d="M270,181 H298" marker-end="url(#ar-green)" />
+                <path class="k-edge-green" d="M720,181 H748" marker-end="url(#ar-green)" />
+                <text class="k-g" x="20" y="232" lang="en">one copy and one launch removed</text>
+                <text class="k-g" x="20" y="232" lang="zh">少一次拷贝、 少一次启动</text>
+                <text class="k-l" x="20" y="262" lang="en">ALSO FUSED OR FIXED</text>
+                <text class="k-l" x="20" y="262" lang="zh">其他融合或修正</text>
+                <rect class="k-green" x="20" y="272" width="290" height="34" rx="4" />
+                <text class="k-v" x="36" y="294">MoE down-proj + all-reduce</text>
+                <rect class="k-green" x="330" y="272" width="330" height="34" rx="4" />
+                <text class="k-v" x="346" y="294" lang="en">o_proj + all-reduce + part of router</text>
+                <text class="k-v" x="346" y="294" lang="zh">o_proj + all-reduce + 部分 router</text>
+                <rect class="k-cyan" x="680" y="272" width="232" height="34" rx="4" />
+                <text class="k-v" x="696" y="294" lang="en">HIP graph: main path first</text>
+                <text class="k-v" x="696" y="294" lang="zh">HIP graph： 先录主路径</text>
+              </svg>
+            </div>
+            <p class="caption" lang="en">The agents' AMD wins came from treating the all-reduce as part of the computation around it, not as a separate step to overlap. The segment is simplified from the paper's description; exact kernel boundaries in the vLLM image may differ.</p>
+            <p class="caption" lang="zh">agent 在 AMD 上的收益， 来自把 all-reduce 当作前后计算的一部分， 而不是当作一个要去重叠的独立步骤。 这个片段是根据论文描述简化的， vLLM 镜像里实际的 kernel 边界可能不同。</p>
+          </figure>
+
+          <h3><span lang="en">What worked</span><span lang="zh">有效的做法</span></h3>
+          <ul>
+            <li lang="en"><strong>Fusing communication into compute.</strong> One kernel performs the all-reduce, residual add, RMSNorm and FP8 quantization; the GEMM before it writes straight into the all-reduce's shared buffer. The MoE down-projection is fused with the next all-reduce, and the attention output projection with its all-reduce and part of the expert router.</li>
+            <li lang="zh"><strong>把通信融进计算。</strong> 一个 kernel 完成 all-reduce、 残差相加、 RMSNorm 和 FP8 量化； 它前面的 GEMM 直接把结果写进 all-reduce 的共享缓冲区。 MoE down-projection 和下一个 all-reduce 融合， attention 输出投影和它的 all-reduce 以及部分专家 router 融合。</li>
+            <li lang="en"><strong>Reusing AITER's all-reduce buffers.</strong> AITER performs multi-GPU sums through shared GPU-to-GPU buffers that bypass the cache; writing the GEMM output there removes a copy and a launch.</li>
+            <li lang="zh"><strong>复用 AITER 的 all-reduce 缓冲区。</strong> AITER 通过绕过 cache 的 GPU 间共享缓冲区做多卡求和； 让 GEMM 直接把输出写进去， 省掉一次拷贝和一次启动。</li>
+            <li lang="en"><strong>Filling tuning-table gaps.</strong> Several GLM-5.3 GEMM shapes had no tuned Composable Kernel settings and fell back to slow defaults; the agents added split-K variants for them.</li>
+            <li lang="zh"><strong>填补调优表缺口。</strong> GLM-5.3 的几个 GEMM 形状在 Composable Kernel 里没有调好的参数， 于是退回到很慢的默认值； agent 为这些形状补上了 split-K 变体。</li>
+            <li lang="en"><strong>ROCm graph scheduling.</strong> When a captured HIP graph splits into parallel streams, ROCm decides which branch stays on the main stream; recording the main computation first keeps the critical path there.</li>
+            <li lang="zh"><strong>ROCm graph 调度。</strong> 捕获的 HIP graph 分成并行 stream 时， 由 ROCm 决定哪个分支留在主 stream 上； 先录主计算， 关键路径就会留在主 stream 上。</li>
+            <li lang="en"><strong>Deleting dead work.</strong> Three copy or memset operations in the captured graph did nothing.</li>
+            <li lang="zh"><strong>删掉无用的工作。</strong> 捕获的 graph 里有三个拷贝或 memset 操作， 实际什么也没做。</li>
+          </ul>
+          <h3><span lang="en">What did not</span><span lang="zh">无效的做法</span></h3>
+          <ul>
+            <li lang="en"><strong>Megakernel formation:</strong> 0.22% over the best version after 24 hours. Dependent steps still need grid-wide barriers; the paper puts those at 1.5–3.5 µs inside a kernel against 0.5–1 µs at a kernel boundary with PDL.</li>
+            <li lang="zh"><strong>做成 megakernel：</strong> 24 小时后只比最好版本快 0.22%。 有依赖的步骤仍然需要 grid 级屏障； 论文给出的数字是 kernel 内部 1.5–3.5 µs， 而用 PDL 的 kernel 边界是 0.5–1 µs。</li>
+            <li lang="en"><strong>Overlapping RCCL all-reduces with GEMMs:</strong> lost at every concurrency.</li>
+            <li lang="zh"><strong>让 RCCL all-reduce 和 GEMM 重叠：</strong> 在所有并发下都更慢。</li>
+            <li lang="en"><strong>Reserving compute units for communication with CU masks:</strong> ignored on AMD.</li>
+            <li lang="zh"><strong>用 CU mask 为通信预留计算单元：</strong> 在 AMD 上被忽略。</li>
+            <li lang="en"><strong>Die-aware scheduling:</strong> MI350X and MI355X are built from eight compute dies (XCDs), each with its own clock, so in-kernel timer readings are meaningless per operation; "XCD remapping" came out as ties.</li>
+            <li lang="zh"><strong>按 die 调度：</strong> MI350X 和 MI355X 由 8 个计算 die（XCD） 组成， 每个都有自己的时钟， 所以 kernel 内读到的计时对单个操作没有意义； 「XCD 重映射」 的结果都是平手。</li>
+            <li lang="en"><strong>Rewriting attention:</strong> agents on both vendors spent much effort fusing neighbors into attention or changing split-KV, with little to show.</li>
+            <li lang="zh"><strong>改写 attention：</strong> 两家硬件上的 agent 都花了大量精力把相邻操作融进 attention 或修改 split-KV， 收效甚微。</li>
+          </ul>
+          <h3><span lang="en">The cautionary kernel</span><span lang="zh">反面教材</span></h3>
+          <p lang="en">An agent wrote an exact top-k (k = 2,048) for GLM-5.3's sparse-attention indexer as a HIP kernel (<code>topk5.hip</code>, layers 1–2, MI350X). It buckets scores into 2,048 histogram bins, keeps every bin above the threshold bin, and ranks candidates inside the threshold bin pairwise, which is quadratic in that bin's size. On random scores the bins are even: 20 µs. Real scores contain many exact zeros from ReLU, which all land in one bin: up to 62 ms at 70K context, and a 1.3× end-to-end slowdown in the engine (§3, Figure 12).</p>
+          <p lang="zh">一个 agent 为 GLM-5.3 稀疏注意力的 indexer 写了一个精确 top-k（k = 2,048） 的 HIP kernel（<code>topk5.hip</code>， 第 1–2 层， MI350X）。 它把分数分进 2,048 个直方图桶， 保留阈值桶以上的所有桶， 在阈值桶内部两两比较排名， 耗时和这个桶的大小成平方关系。 随机分数在各桶里分布均匀： 20 µs。 真实分数里有大量来自 ReLU 的精确 0， 全部落进同一个桶： 在 70K 上下文时最多要 62 ms， 在引擎里端到端慢 1.3 倍（§3、 图 12）。</p>
+          <div class="callout">
+            <p class="tag" lang="en">The AMD lesson in one line</p>
+            <p class="tag" lang="zh">AMD 上的教训， 一句话</p>
+            <p lang="en">On MI355X, the agents found their gains in fusing communication into compute and in filling tuning gaps, not in persistent kernels or overlap, and per-die timers could not be trusted.</p>
+            <p lang="zh">在 MI355X 上， agent 的收益来自 「通信融进计算」 和 「填补调优缺口」， 而不是常驻 kernel 或重叠； 而且单个 die 的计时器不可信。</p>
+          </div>
+        </section>
+
+        <section id="apply">
+          <h2><span class="no">09</span><span lang="en">Applying it to MI355X, MI455X and FlyDSL</span><span lang="zh">怎样用到 MI355X、 MI455X 和 FlyDSL</span></h2>
+          <p lang="en">Our setting differs from Together's. We tune for InferenceX AgentX and ship FlyDSL kernels into SGLang and vLLM on shared GPU nodes, and gfx1250 kernels are newer than gfx950 ones (FlyDSL has no gfx1250 CI runner). So the order of work matters more than the destination. Each item names what to do, which evidence in the paper supports it, and how we would know it worked.</p>
+          <p lang="zh">我们的处境和 Together 不同。 我们面向 InferenceX AgentX 调优， 在共享 GPU 节点上把 FlyDSL kernel 交付进 SGLang 和 vLLM； gfx1250 的 kernel 也比 gfx950 的新（FlyDSL 没有 gfx1250 的 CI runner）。 所以做事的顺序比终点更重要。 下面每一项都写明： 做什么、 论文里哪条证据支持它、 以及怎样判断它成功了。</p>
+
+          <h3><span lang="en">MI355X · build the loop before the agents</span><span lang="zh">MI355X · 先建循环， 再上 agent</span></h3>
+          <ol>
+            <li lang="en"><strong>Measure what a kernel boundary costs on MI355X.</strong> Plate III has no AMD row. Measure a normal HIP launch, HIP-graph replay, a cooperative grid sync and a persistent-kernel barrier, with the paper's protocol (end of kernel one to after the sync in kernel two). This one table bounds what any monokernel can gain from "one launch" alone. It matters to us directly: in our GLM-5.3 PD study, AMD's monokernel lifted concurrency-1 decode from 213 to 474 tok/s per user, but it only covers steps with two requests or fewer, 35% of steps at concurrency 10 (<a href="/en/blog/glm53-pd-monokernel/">post</a>). That is the paper's "fast but rigid" pattern. Before investing further, split that 2.2× into launch savings and better fused kernels, the way the authors split theirs. <em>Done when</em> Plate III has a measured AMD row and the monokernel's gain is attributed.</li>
+            <li lang="zh"><strong>测出 MI355X 上一次 kernel 边界的代价。</strong> 图版 III 里没有 AMD 的数据。 按论文的方法（从第一个 kernel 结束， 到第二个 kernel 里同步完成之后）， 测普通 HIP 启动、 HIP graph 重放、 协作式 grid 同步和常驻 kernel 内屏障。 这一张表决定了任何 monokernel 单靠 「一次启动」 最多能赚多少。 它和我们直接相关： 在我们的 GLM-5.3 PD 实验里， AMD 的 monokernel 把并发 1 的 decode 从每用户 213 提到 474 tok/s， 但它只覆盖每步不超过两个请求的情况， 到并发 10 时只占 35% 的步（<a href="/zh/blog/glm53-pd-monokernel/">文章</a>）。 这正是论文说的 「快但僵硬」。 继续投入之前， 先像作者那样， 把这 2.2 倍拆成启动开销的节省和更好的融合 kernel 两部分。 <em>完成标准：</em> 图版 III 有了 AMD 的实测行， 并且 monokernel 的收益完成了归因。</li>
+            <li lang="en"><strong>Build a persistent engine for SGLang and vLLM on ROCm.</strong> Hot-swap <code>model.forward</code>, re-capture HIP graphs, reuse prefix-cached requests and cache kernel binaries; add a fast tier with a few layers and a slow tier with more. <em>Done when</em> a reload takes seconds instead of minutes of cold start and back-to-back variance is near the paper's 2.7% after splitting prefill and decode. GLM-5.3 at TP8 fills an 8-GPU node, so two tiers need two nodes, which is also the paper's budget.</li>
+            <li lang="zh"><strong>为 ROCm 上的 SGLang 和 vLLM 建常驻引擎。</strong> 热替换 <code>model.forward</code>， 重新捕获 HIP graph， 复用已在 prefix cache 里的请求， 并缓存 kernel 二进制； 加一个只加载少数几层的快档和一个加载更多层的慢档。 <em>完成标准：</em> 一次热加载只要几秒， 而不是几分钟的冷启动； 把 prefill 和 decode 分开测之后， 连续两次的方差接近论文的 2.7%。 TP8 的 GLM-5.3 会占满一个 8 卡节点， 所以两档需要两个节点， 这也正是论文的预算。</li>
+            <li lang="en"><strong>Port the wins the agents already found on AMD:</strong> all-reduce + residual + RMSNorm + FP8-quant fusion, GEMM epilogues writing into AITER's all-reduce buffer, MoE down-projection + all-reduce, o_proj + all-reduce + router, split-K variants where CK has no tuned entry, main path first at HIP-graph stream splits, and dead copies removed. <em>Done when</em> each shows up as a measured decode-step win on AgentX.</li>
+            <li lang="zh"><strong>把 agent 已经在 AMD 上找到的收益移植过来：</strong> all-reduce + 残差 + RMSNorm + FP8 量化融合、 GEMM epilogue 直接写进 AITER 的 all-reduce 缓冲区、 MoE down-projection + all-reduce、 o_proj + all-reduce + router、 在 CK 没有调优条目的地方补 split-K 变体、 HIP graph 分流时先录主路径， 以及删掉无用的拷贝。 <em>完成标准：</em> 每一项都在 AgentX 上表现为实测的 decode 单步收益。</li>
+            <li lang="en"><strong>Deprioritize what failed on AMD until our own measurements say otherwise:</strong> megakernels for GLM-5.3 TP8, RCCL–GEMM overlap, CU masks, and die-aware scheduling driven by in-kernel timers.</li>
+            <li lang="zh"><strong>在我们自己的测量推翻之前， 把在 AMD 上失败的方向往后放：</strong> GLM-5.3 TP8 的 megakernel、 RCCL 与 GEMM 的重叠、 CU mask， 以及依赖 kernel 内计时的按 die 调度。</li>
+            <li lang="en"><strong>Feed the cost model AMD numbers:</strong> hipBLASLt and RCCL or AITER collectives as the vendor-library tier, the direct-link model for the xGMI mesh, and routing imbalance and MTP acceptance measured on AgentX traces.</li>
+            <li lang="zh"><strong>给成本模型喂 AMD 的数据：</strong> 把 hipBLASLt 和 RCCL 或 AITER 的集合通信作为厂商库这一层， xGMI 互连用直连模型， 再从 AgentX 流量中实测路由不均衡和 MTP 接受长度。</li>
+          </ol>
+
+          <h3><span lang="en">MI455X · the same loop, different constraints</span><span lang="zh">MI455X · 同样的循环， 不同的约束</span></h3>
+          <ul>
+            <li lang="en"><strong>The argument against one launch envelope gets stronger.</strong> gfx1250 is wave32, has no AGPRs, 1,024 addressable VGPRs and 320 KB of LDS (<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/.claude/skills/llvm/references/arch-gfx1250.md?plain=1#L53-L61"><code>arch-gfx1250.md:53</code></a>). WMMA accumulates in VGPRs, so the paper's point that GEMMs want fewer warps when accumulators live in registers applies to any persistent kernel on gfx1250: one launch envelope forces one register budget on every operation.</li>
+            <li lang="zh"><strong>反对 「统一启动形状」 的理由更强了。</strong> gfx1250 是 wave32， 没有 AGPR， 有 1,024 个可寻址 VGPR 和 320 KB LDS（<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/.claude/skills/llvm/references/arch-gfx1250.md?plain=1#L53-L61"><code>arch-gfx1250.md:53</code></a>）。 WMMA 的累加器在 VGPR 里， 所以论文的论点（累加器放在寄存器时， GEMM 想要更少的 warp） 适用于 gfx1250 上的任何常驻 kernel： 统一的启动形状， 会把同一个寄存器预算强加给每个操作。</li>
+            <li lang="en"><strong>Clusters are a candidate set.</strong> On NVIDIA, switching to an existing cluster-based attention kernel was the largest single gain in one GLM 5.3 run. gfx1250 has thread-block clusters, and FlyDSL already lowers cluster attributes in its pipeline (<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/python/flydsl/compiler/backends/rocm.py#L355"><code>backends/rocm.py:355</code></a>), so cluster-capable kernels are a natural first target.</li>
+            <li lang="zh"><strong>cluster 是一组候选。</strong> 在 NVIDIA 上， 换用现成的基于 cluster 的 attention kernel， 是某次 GLM 5.3 优化中最大的单项收益。 gfx1250 有 thread-block cluster， FlyDSL 的 pipeline 也已经会降低 cluster 属性（<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/python/flydsl/compiler/backends/rocm.py#L355"><code>backends/rocm.py:355</code></a>）， 所以能用 cluster 的 kernel 是自然的第一批目标。</li>
+            <li lang="en"><strong>On newer hardware, fidelity is a correctness problem first.</strong> Random-input tests passed while models failed during the gfx1250 bring-up (<a href="./unit-pass-model-fail.html">Green Test, Red Model</a>). A persistent engine running real traffic is also the right correctness harness.</li>
+            <li lang="zh"><strong>在较新的硬件上， 保真首先是正确性问题。</strong> 在 gfx1250 上线期间， 随机输入的测试都通过了， 模型却出错了（<a href="./unit-pass-model-fail.html">单测通过， 模型出错</a>）。 用真实流量运行的常驻引擎， 也是合适的正确性测试框架。</li>
+            <li lang="en"><strong>No anchor numbers.</strong> The paper did not evaluate gfx1250, so every gain estimate there stays unknown until we measure it.</li>
+            <li lang="zh"><strong>没有可参照的数字。</strong> 论文没有评测 gfx1250， 所以在我们实测之前， 任何收益估计都是未知的。</li>
+          </ul>
+
+          <h3><span lang="en">FlyDSL · a language agents edit, verifiers they don't</span><span lang="zh">FlyDSL · agent 改的是语言， 不改的是验证器</span></h3>
+          <ul>
+            <li lang="en"><strong>Source is the surface.</strong> FlyDSL kernels are Python source, which is the representation TKCC found to have the highest ceiling. What FlyDSL should add is verification and diagnostics, such as the structured compile report and errors for dead knobs from <a href="./flydsl-compiler-in-the-loop.html">Source Reading 012</a>, not strategy guides.</li>
+            <li lang="zh"><strong>源码就是操作面。</strong> FlyDSL 的 kernel 就是 Python 源码， 正是 TKCC 发现上限最高的那种表示。 FlyDSL 应该补的是验证和诊断， 比如 <a href="./flydsl-compiler-in-the-loop.html">Source Reading 012</a> 里提到的结构化编译报告和无效开关报错， 而不是策略指南。</li>
+            <li lang="en"><strong>Replay real inputs.</strong> 43 of 60 kernel test files use random inputs. FlyDSL's GLM monokernel indexer also bins scores into a radix histogram (<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/glm/layout.py#L74"><code>INDEX_RADIX_BINS = 256</code></a>; the reference top-k is 2,048, <a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/glm/reference.py#L159"><code>reference.py:159</code></a>). The TKCC failure was a histogram whose threshold bin filled with ties, so this kernel should also be timed on captured, ReLU-heavy indexer scores, not only on <code>torch.randn</code>.</li>
+            <li lang="zh"><strong>回放真实输入。</strong> 60 个 kernel 测试文件中有 43 个用随机输入。 FlyDSL 的 GLM monokernel indexer 也把分数分进基数直方图（<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/glm/layout.py#L74"><code>INDEX_RADIX_BINS = 256</code></a>； 参考实现的 top-k 是 2,048， <a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/glm/reference.py#L159"><code>reference.py:159</code></a>）。 TKCC 的失败案例， 正是阈值桶被大量并列值填满的直方图， 所以这个 kernel 也应该用抓取的、 含大量 ReLU 零值的真实 indexer 分数来计时， 而不只是用 <code>torch.randn</code>。</li>
+            <li lang="en"><strong>Key variants by load.</strong> TKCC's persistent MoE down-projection wins at concurrency 22–78 and loses at 8. FlyDSL's monokernels are resident decoder-layer kernels by design (<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/README.md"><code>monokernel/README.md</code></a>); expose them as one variant among several, selected by the active batch size, rather than as the only path.</li>
+            <li lang="zh"><strong>按负载选择变体。</strong> TKCC 的常驻式 MoE down-projection 在并发 22–78 时更快， 在并发 8 时更慢。 FlyDSL 的 monokernel 按设计就是常驻的 decoder 层 kernel（<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/README.md"><code>monokernel/README.md</code></a>）； 应该把它作为多个变体之一， 按当前 batch 大小来选择， 而不是作为唯一的路径。</li>
+            <li lang="en"><strong>Compile time is loop time.</strong> Every hot reload that touches a kernel pays its JIT compile unless the binary is reused. FlyDSL's disk cache is on by default (<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/python/flydsl/utils/env.py#L302"><code>utils/env.py:302</code></a>) and it links in process since <a href="https://github.com/ROCm/FlyDSL/pull/987">#987</a>; measure FlyDSL compile time per kernel as part of the loop budget.</li>
+            <li lang="zh"><strong>编译时间就是循环时间。</strong> 每次碰到 kernel 的热加载， 除非复用二进制， 都要付一次 JIT 编译的代价。 FlyDSL 的磁盘缓存默认开启（<a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/python/flydsl/utils/env.py#L302"><code>utils/env.py:302</code></a>）， 并且从 <a href="https://github.com/ROCm/FlyDSL/pull/987">#987</a> 起在进程内链接； 应该把每个 kernel 的 FlyDSL 编译时间当作循环预算的一部分来测量。</li>
+          </ul>
+
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">TKCC idea</span><span lang="zh">TKCC 的思想</span></th>
+                <th>MI355X</th>
+                <th>MI455X</th>
+                <th>FlyDSL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">Persistent engine, hot reload</span><span lang="zh">常驻引擎、 热加载</span></td>
+                <td><span lang="en">SGLang / vLLM on ROCm, HIP-graph recapture, two nodes for GLM-5.3 TP8</span><span lang="zh">ROCm 上的 SGLang / vLLM， 重新捕获 HIP graph， GLM-5.3 TP8 需要两个节点</span></td>
+                <td><span lang="en">same harness, correctness first</span><span lang="zh">同一套框架， 正确性优先</span></td>
+                <td><span lang="en">kernels swapped as source; JIT cache for reuse</span><span lang="zh">以源码形式替换 kernel； 用 JIT 缓存复用</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Real-data measurement</span><span lang="zh">用真实数据测量</span></td>
+                <td><span lang="en">AgentX traces; no per-XCD timers</span><span lang="zh">AgentX 流量； 不用单个 XCD 的计时器</span></td>
+                <td><span lang="en">real traffic as the correctness harness</span><span lang="zh">真实流量作为正确性测试框架</span></td>
+                <td><span lang="en">replay captured routing and indexer scores</span><span lang="zh">回放抓取的路由和 indexer 分数</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Unbundle fused kernels</span><span lang="zh">拆开融合 kernel</span></td>
+                <td><span lang="en">HIP launch vs grid-barrier cost; attribute the monokernel's gain</span><span lang="zh">对比 HIP 启动与 grid 屏障的代价； 归因 monokernel 的收益</span></td>
+                <td><span lang="en">register budget limits persistent kernels</span><span lang="zh">寄存器预算限制常驻 kernel</span></td>
+                <td><span lang="en">monokernel as a load-selected variant</span><span lang="zh">monokernel 作为按负载选择的变体</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Fuse for utilization</span><span lang="zh">为利用率融合</span></td>
+                <td><span lang="en">AR + norm + quant; GEMM into AITER buffer; CK split-K</span><span lang="zh">AR + norm + 量化； GEMM 写进 AITER 缓冲区； CK split-K</span></td>
+                <td><span lang="en">cluster-capable kernels</span><span lang="zh">能用 cluster 的 kernel</span></td>
+                <td><span lang="en">fusion choices as variants keyed by batch regime</span><span lang="zh">把融合选择做成按 batch 状态选择的变体</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Tiered cost model</span><span lang="zh">分层成本模型</span></td>
+                <td><span lang="en">hipBLASLt, fitted RCCL / AITER latencies, direct-link model</span><span lang="zh">hipBLASLt、 拟合的 RCCL / AITER 延迟、 直连模型</span></td>
+                <td><span lang="en">spec sheet only, until measured</span><span lang="zh">实测之前只有规格表</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><span lang="en">IR as verifier</span><span lang="zh">IR 作为验证器</span></td>
+                <td>—</td>
+                <td>—</td>
+                <td><span lang="en">compile report; errors for dead knobs</span><span lang="zh">编译报告； 无效开关报错</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="critique">
+          <h2><span class="no">10</span><span lang="en">Critical reading</span><span lang="zh">批判性阅读</span></h2>
+          <h3><span lang="en">What is strong</span><span lang="zh">强的地方</span></h3>
+          <ul>
+            <li lang="en">The megakernel ablation ladder is the most reusable result in the paper: it prices each claimed source of speed separately, with numbers, on the authors' own system.</li>
+            <li lang="zh">megakernel 的逐级消融是论文里最可复用的结果： 它在作者自己的系统上， 用数字分别给每一个声称的提速来源定了价。</li>
+            <li lang="en">The engine design is simple and general: hot reload plus graph re-capture works for any engine that exposes its forward function, including HIP graphs on ROCm.</li>
+            <li lang="zh">引擎设计简单而通用： 热加载加上重新捕获 graph， 适用于任何暴露 forward 函数的引擎， 包括 ROCm 上的 HIP graph。</li>
+            <li lang="en">The appendix is candid about failures, with numbers, on AMD as well as NVIDIA.</li>
+            <li lang="zh">附录坦率地列出了失败， 并给出数字， AMD 和 NVIDIA 都有。</li>
+          </ul>
+          <h3><span lang="en">What is not established</span><span lang="zh">尚未证实的地方</span></h3>
+          <ul>
+            <li lang="en">The headline per-platform gains are plotted, not tabulated; the text gives no MI355X number.</li>
+            <li lang="zh">各平台的主要收益只画在图里， 没有列成表； 正文没有给出 MI355X 的数字。</li>
+            <li lang="en">The context ablations rest on one layer, one GPU and 10 trials, and the quoted magnitudes differ between paper and blog.</li>
+            <li lang="zh">上下文消融只基于一层、 一种 GPU 和 10 次试验， 而且论文和博客引用的幅度不一致。</li>
+            <li lang="en">Cost is under-reported: each result used 24 hours on two replicas' worth of GPUs, and the agent comparisons in Appendix A.1 used Claude Code with Opus 5.5 at high reasoning; token cost is not given.</li>
+            <li lang="zh">成本披露不足： 每个结果都用了两份副本规模的 GPU 跑 24 小时， 附录 A.1 的 agent 对比使用的是 Claude Code 加 Opus 5.5（高推理强度）； 但没有给出 token 成本。</li>
+            <li lang="en">For LLM serving, correctness is checked at the end by KV-contamination and quality tests, not by bit-exactness, which is required only for the non-LLM models in §5.3. How quality is protected across traffic regimes is not quantified.</li>
+            <li lang="zh">对 LLM 服务来说， 正确性是在最后用 KV 污染和质量测试来检查的， 而不是要求逐位一致； 逐位一致只要求于 §5.3 里的非 LLM 模型。 不同流量状态下质量如何得到保障， 没有量化。</li>
+            <li lang="en">Agent code is an operational risk: on NVIDIA, illegal memory accesses forced 9 full GPU resets (Xid 154) during GLM 5.3, and two machines left the cluster. On shared clusters, the fast tier's crash shielding is a requirement, not a convenience.</li>
+            <li lang="zh">agent 写的代码是运维风险： 在 NVIDIA 上， 非法内存访问在 GLM 5.3 优化期间导致了 9 次 GPU 完全重置（Xid 154）， 两台机器被移出集群。 在共享集群上， 快档的防崩溃作用是必需品， 不是锦上添花。</li>
+            <li lang="en">The case against megakernels on GPUs leans on a PDL boundary as the comparison point, and PDL is NVIDIA-only. The paper gives no AMD equivalent, which is why it is our first experiment.</li>
+            <li lang="zh">反对在 GPU 上做 megakernel 的论证， 用 PDL 边界作为对比点， 而 PDL 只在 NVIDIA 上有。 论文没有给出 AMD 上的对应数据， 这也是它成为我们第一个实验的原因。</li>
+          </ul>
+          <h3><span lang="en">Open questions for us</span><span lang="zh">留给我们的问题</span></h3>
+          <ol>
+            <li lang="en">How much of the AMD monokernel's concurrency-1 gain survives as a few fused kernels under HIP graphs?</li>
+            <li lang="zh">AMD monokernel 在并发 1 时的收益， 改成 HIP graph 下的几个融合 kernel 之后还能剩多少？</li>
+            <li lang="en">How few layers can a fast tier serve for GLM-5.3 TP8 and still predict the slow tier's ranking of candidates?</li>
+            <li lang="zh">对于 GLM-5.3 TP8， 快档最少加载几层， 还能预测出慢档对候选的排序？</li>
+            <li lang="en">Can a persistent engine coexist with shared-node rules: one serving engine per node, locked GPUs, and cleanup by recorded PID after a crash?</li>
+            <li lang="zh">常驻引擎能否和共享节点的规则共存： 每个节点只跑一个服务引擎、 锁定 GPU、 崩溃后按记录的 PID 清理？</li>
+          </ol>
+        </section>
+
+        <section id="sources">
+          <h2><span class="no">11</span><span lang="en">Sources</span><span lang="zh">来源</span></h2>
+          <p lang="en">Section numbers (§) refer to the arXiv paper. FlyDSL links are pinned to commit <a href="https://github.com/ROCm/FlyDSL/tree/e2a2b1fcd8e1889ba8f31c31cb497869d0591994">e2a2b1f</a> (17 November 2026).</p>
+          <p lang="zh">文中的章节号（§） 指 arXiv 论文。 FlyDSL 的链接都固定在 commit <a href="https://github.com/ROCm/FlyDSL/tree/e2a2b1fcd8e1889ba8f31c31cb497869d0591994">e2a2b1f</a>（2026 年 11 月 17 日）。</p>
+          <ul class="refs">
+            <li><a href="https://arxiv.org/abs/2611.14681">Together Compiler, arXiv 2611.14681</a></li>
+            <li><a href="https://www.together.ai/blog/road-to-together-compiler">The road to Together Compiler (blog, 11-16)</a></li>
+            <li><a href="https://www.together.ai/blog/together-compiler-continual-compilation-for-ai-inference">Together Compiler (blog, 11-04)</a></li>
+            <li><a href="https://www.together.ai/blog/polymorphic-inference">From Static to Polymorphic Inference</a></li>
+            <li><a href="https://inferencex.semianalysis.com/inference">SemiAnalysis InferenceX</a></li>
+            <li><a href="https://github.com/apple-aiml-research/ml-rsi-inference-bench">RSI-Inference Bench</a></li>
+            <li><a href="https://github.com/HazyResearch/Megakernels">HazyResearch Megakernels</a></li>
+            <li><a href="https://github.com/mirage-project/mirage">Mirage Persistent Kernel</a></li>
+            <li><a href="https://github.com/cursor/mixture-of-kittens">Mixture-of-Kittens</a></li>
+            <li><a href="https://arxiv.org/abs/2608.12629">CAKE, arXiv 2608.12629</a></li>
+            <li><a href="https://arxiv.org/abs/2605.03208">Kerncap, arXiv 2605.03208</a></li>
+            <li><a href="https://arxiv.org/abs/2507.23194">GEAK, arXiv 2507.23194</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/tree/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/tests/kernels">FlyDSL tests/kernels</a></li>
+            <li><a href="https://github.com/ROCm/FlyDSL/blob/e2a2b1fcd8e1889ba8f31c31cb497869d0591994/kernels/monokernel/README.md">FlyDSL monokernel/README.md</a></li>
+            <li><a href="./flydsl-compiler-in-the-loop.html">Source Reading 012 · 270 Fences</a></li>
+            <li><a href="./unit-pass-model-fail.html">Green Test, Red Model</a></li>
+            <li><a href="/en/blog/glm53-pd-monokernel/">Disaggregation Is Not a Kernel</a></li>
+          </ul>
+        </section>
+      </article>
+
+      <footer class="colophon">
+        <p lang="en">Compiled for jinnpan.com as a paper reading. Sources: arXiv 2611.14681v1 and Together AI's blogs of 4 and 16 November 2026, read on 17 November 2026. Typography: Doto, Atkinson Hyperlegible Next, Atkinson Hyperlegible Mono and Noto Sans SC. Palette: terminal black, ticker amber, up green, down red, measurement cyan.</p>
+        <p lang="zh">作为 jinnpan.com 的论文精读发布。 来源： arXiv 2611.14681v1， 以及 Together AI 在 2026 年 11 月 4 日和 16 日发布的博客， 阅读日期 2026 年 11 月 17 日。 字体： Doto、 Atkinson Hyperlegible Next、 Atkinson Hyperlegible Mono 和 Noto Sans SC。 配色： 终端黑、 行情黄、 上涨绿、 下跌红、 测量青。</p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+  (function() {
+    var KEY = 'together-compiler-source-lang';
+    var body = document.body;
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) {}
+    if (stored === 'en' || stored === 'zh') {
+      body.setAttribute('data-lang', stored);
+    } else {
+      var nav = (navigator.language || 'en').toLowerCase();
+      body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en');
+    }
+    document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var v = btn.getAttribute('data-set');
+        body.setAttribute('data-lang', v);
+        try { localStorage.setItem(KEY, v); } catch (e) {}
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
