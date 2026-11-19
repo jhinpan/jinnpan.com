@@ -664,7 +664,7 @@
   <script id="radar-meta" type="application/json">
 {
   "schema": 1,
-  "lastSuccessfulSync": "2026-11-18T22:37:06.152Z",
+  "lastSuccessfulSync": "2026-11-19T22:40:33.516Z",
   "classificationReviewedAt": "2026-08-17T22:40:57.000Z",
   "timeZone": "America/Los_Angeles",
   "source": "GitHub REST API",
@@ -697,9 +697,9 @@
     "priority": "P1",
     "flydsl": "Medium",
     "effort": "XL",
-    "owner": "Unassigned",
-    "updated": "2026-08-04",
-    "comments": 0,
+    "owner": "kaiyang-1, zejunchen-zejun",
+    "updated": "2026-11-19",
+    "comments": 1,
     "status": "backlog",
     "summary": "生产 shape 与数据流记录完整， 但还没有 latency baseline、目标值或单一实现边界；当前更像性能调查父项。",
     "next": "拆成 page-size addressing、12→16 head padding、shared-prefix KV 重读三个 profiling 子项。",
@@ -719,11 +719,14 @@
     "evidence": "reproduced",
     "workType": "triage",
     "upstreamState": "unassigned",
-    "githubState": "open",
-    "githubStateReason": null,
-    "githubUpdatedAt": "2026-08-04T05:01:34Z",
-    "githubClosedAt": null,
-    "githubAssignees": [],
+    "githubState": "closed",
+    "githubStateReason": "completed",
+    "githubUpdatedAt": "2026-11-19T05:27:32Z",
+    "githubClosedAt": "2026-11-19T05:27:32Z",
+    "githubAssignees": [
+      "kaiyang-1",
+      "zejunchen-zejun"
+    ],
     "githubLabels": []
   },
   {
@@ -740,8 +743,8 @@
     "priority": "P0",
     "flydsl": "Direct",
     "effort": "M",
-    "owner": "Unassigned",
-    "updated": "2026-08-03",
+    "owner": "fsx950223, yifehuan",
+    "updated": "2026-11-19",
     "comments": 0,
     "status": "ready",
     "summary": "直接命中 production FlyDSL SiTUv2 路径， 正确性必须先于大 M 调优。",
@@ -764,9 +767,12 @@
     "upstreamState": "unassigned",
     "githubState": "open",
     "githubStateReason": null,
-    "githubUpdatedAt": "2026-08-03T07:57:44Z",
+    "githubUpdatedAt": "2026-11-19T05:22:59Z",
     "githubClosedAt": null,
-    "githubAssignees": [],
+    "githubAssignees": [
+      "fsx950223",
+      "yifehuan"
+    ],
     "githubLabels": []
   },
   {
@@ -783,8 +789,8 @@
     "priority": "P0",
     "flydsl": "Medium",
     "effort": "L",
-    "owner": "Unassigned",
-    "updated": "2026-06-12",
+    "owner": "andyluo7, fangche123",
+    "updated": "2026-11-19",
     "comments": 2,
     "status": "ready",
     "summary": "gfx950 与 gfx942 都有复现；现有 workaround 会把 8 heads 扩到 16， 且 gfx950 仍缺 persistent FP8 qh8 路径。",
@@ -809,9 +815,12 @@
     "upstreamState": "unassigned",
     "githubState": "open",
     "githubStateReason": null,
-    "githubUpdatedAt": "2026-06-12T15:27:56Z",
+    "githubUpdatedAt": "2026-11-19T05:23:40Z",
     "githubClosedAt": null,
-    "githubAssignees": [],
+    "githubAssignees": [
+      "andyluo7",
+      "fangche123"
+    ],
     "githubLabels": []
   },
   {
@@ -829,8 +838,8 @@
     "priority": "P2",
     "flydsl": "High",
     "effort": "M",
-    "owner": "Unassigned",
-    "updated": "2026-03-27",
+    "owner": "sunway513, kaiyang-1",
+    "updated": "2026-11-19",
     "comments": 0,
     "status": "watch",
     "summary": "MI355X 的 23 µs 与 B300 的 12 µs 是跨硬件比较， 不能直接证明 AITER 有 2× regression；绝对差值仍值得在同卡拆解。",
@@ -853,9 +862,12 @@
     "upstreamState": "pr-active",
     "githubState": "open",
     "githubStateReason": null,
-    "githubUpdatedAt": "2026-03-27T01:47:07Z",
+    "githubUpdatedAt": "2026-11-19T05:24:21Z",
     "githubClosedAt": null,
-    "githubAssignees": [],
+    "githubAssignees": [
+      "sunway513",
+      "kaiyang-1"
+    ],
     "githubLabels": []
   },
   {
@@ -872,8 +884,8 @@
     "priority": "P0",
     "flydsl": "High",
     "effort": "M",
-    "owner": "Unassigned",
-    "updated": "2026-07-27",
+    "owner": "kaiyang-1, MohitAMD",
+    "updated": "2026-11-19",
     "comments": 1,
     "status": "backlog",
     "summary": "长上下文 NIAH 结果有 run-to-run 波动， 但现有证据尚不能定位到 split-K reduce；上游也要求更细的复现。",
@@ -896,9 +908,12 @@
     "upstreamState": "blocked",
     "githubState": "open",
     "githubStateReason": null,
-    "githubUpdatedAt": "2026-07-27T01:10:01Z",
+    "githubUpdatedAt": "2026-11-19T05:23:07Z",
     "githubClosedAt": null,
-    "githubAssignees": [],
+    "githubAssignees": [
+      "kaiyang-1",
+      "MohitAMD"
+    ],
     "githubLabels": []
   },
   {
@@ -960,8 +975,8 @@
     "priority": "P1",
     "flydsl": "Medium",
     "effort": "M",
-    "owner": "Unassigned",
-    "updated": "2026-03-22",
+    "owner": "sunway513, Dewei-Wang-sh",
+    "updated": "2026-11-19",
     "comments": 0,
     "status": "progress",
     "summary": "缺失 gfx950 tuning config 的根因已有直接修复 PR；当前最有价值的是在 MI355X 上完成性能与 regression gate。",
@@ -984,9 +999,12 @@
     "upstreamState": "pr-active",
     "githubState": "open",
     "githubStateReason": null,
-    "githubUpdatedAt": "2026-03-22T04:05:02Z",
+    "githubUpdatedAt": "2026-11-19T05:24:37Z",
     "githubClosedAt": null,
-    "githubAssignees": [],
+    "githubAssignees": [
+      "sunway513",
+      "Dewei-Wang-sh"
+    ],
     "githubLabels": []
   },
   {
@@ -2200,13 +2218,13 @@
     "repo": "AITER",
     "number": 4676,
     "title": "[FlyDSL] [CI] fp8 unified attention for gfx950",
-    "updated": "2026-11-13",
+    "updated": "2026-11-19",
     "url": "https://github.com/ROCm/aiter/pull/4676",
     "state": "open",
     "isDraft": false,
     "hardware": "gfx950",
     "merged": false,
-    "githubUpdatedAt": "2026-11-13T01:52:17Z",
+    "githubUpdatedAt": "2026-11-19T15:33:50Z",
     "closedAt": null,
     "mergedAt": null,
     "author": "johannes-graner",
