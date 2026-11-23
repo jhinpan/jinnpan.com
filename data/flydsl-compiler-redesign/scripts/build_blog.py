@@ -207,7 +207,7 @@ def compile_chart(width=860, title_id="cc"):
     for t in [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]:
         out.append(f'<line class="ax-grid" x1="{X(t):.1f}" y1="{top - 6}" x2="{X(t):.1f}" y2="{h - 30}"/>')
         out.append(f'<text class="ax-lab" x="{X(t):.1f}" y="{h - 14}" text-anchor="middle">{t:.1f} s</text>')
-    legend = [("seg-trace", "trace + print", "追踪 + 打印"), ("seg-mlir", "MLIR passes", "MLIR pass"),
+    legend = [("seg-trace", "trace + print", "trace + 打印"), ("seg-mlir", "MLIR steps", "MLIR 步骤"),
               ("seg-llvm", "LLVM backend", "LLVM 后端"), ("seg-warm", "a cached call", "命中缓存的一次调用")]
     lx = x0
     for cls, en, zh in legend:

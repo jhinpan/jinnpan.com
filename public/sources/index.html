@@ -805,11 +805,11 @@
       <div class="shelf-count">8 records</div>
     </div>
     <div class="grid">
-      <article class="entry" data-kind="experiments" data-search="experiment 008 flydsl compiler redesign first principles mlir llvm amdgpu scheduler machine scheduler post-ra register allocation agpr accumulator pinning s_setprio sched_barrier sched_group_barrier waitcnt race correctness fence ablation headroom amdgpu-sched-strategy max-ilp flybench overlay amd pilot mi355x gfx950 agent kernel dsl kir isa compile time trace jit cache">
+      <article class="entry" data-kind="experiments" data-search="experiment 008 flydsl compiler redesign plain language glossary first principles mlir llvm amdgpu scheduler machine scheduler post-ra register allocation agpr accumulator pinning s_setprio sched_barrier sched_group_barrier waitcnt race correctness fence ablation headroom amdgpu-sched-strategy max-ilp flybench overlay amd pilot mi355x gfx950 agent kernel dsl kir isa compile time trace jit cache">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 008</span></div>
         <div class="entry-body">
           <h3>One decision, one decider: redesigning the FlyDSL compiler for agents</h3>
-          <p>In FlyDSL the kernel author and LLVM's heuristics both decide register placement and instruction order. In 29 overlay runs on MI355X, handing one explicit decision back to LLVM cost 5–16% on six kernels, and removing "scheduling" fences made two kernels compute wrong results. Agents' wins came from tiling and memory decisions. The redesign: one owner per decision, waits as data dependencies, and a compiler that reports what it chose.</p>
+          <p>In FlyDSL, two parties decide register use and instruction order: the kernel author and LLVM. We tested what this costs with 29 experiments on MI355X GPUs. When LLVM made one of these decisions instead of the author, six kernels became 5–16% slower, and two kernels gave wrong results. The post explains each term for readers without a compiler background, and proposes one decider for each decision.</p>
           <div class="tags"><span class="tag">FlyDSL</span><span class="tag">compiler design</span><span class="tag">MI355X</span><span class="tag">FlyBench</span></div>
         </div>
         <div class="links"><a class="link primary" href="./flydsl-compiler-redesign.html">Deep dive →</a></div>

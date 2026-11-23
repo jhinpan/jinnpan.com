@@ -46,6 +46,7 @@ table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:14.5px}
 th,td{border-bottom:1px solid var(--hair);padding:7px 8px;text-align:left;vertical-align:top}
 th{font:600 10.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim);border-bottom:1.5px solid var(--ink)}
 td.v{font:13px var(--mono);text-align:right;white-space:nowrap}
+table.terms td:first-child{width:32%;color:var(--ink);font-weight:600}
 td.bad{color:var(--red);font:600 13px var(--mono);white-space:nowrap}
 td.good{color:var(--teal);font:600 13px var(--mono);white-space:nowrap}
 .plate{border:1.5px solid var(--ink);background:var(--panel);margin:24px 0 28px;padding:14px 18px 12px}
