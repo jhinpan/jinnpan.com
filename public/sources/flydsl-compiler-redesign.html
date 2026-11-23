@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experiment 008 · One Decision, One Decider: redesigning the FlyDSL compiler for agent-written kernels</title>
+<meta name="description" content="Where FlyDSL's compiler repeats itself, a redesign in which every kernel decision has exactly one owner, and 29 overlay experiments on MI355X that test its premises: taking explicit decisions away, untuned LLVM knobs, and what 827 agent runs actually did.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@500;700;800&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Victor+Mono:ital,wght@0,400;0,600;1,400&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee3; --panel:#fbf9f2; --ink:#14315c; --ink2:#2d4b78; --text:#1d2533; --dim:#5e6a7c; --hair:#c9cfd9;
+  --grid:rgba(20,49,92,.055); --red:#c2513a; --red-soft:rgba(194,81,58,.12); --teal:#1d7d6b; --teal-soft:rgba(29,125,107,.12);
+  --amber:#a67112; --amber-soft:rgba(166,113,18,.13); --violet:#6b4fa0; --violet-soft:rgba(107,79,160,.12);
+  --display:"Epilogue","Noto Serif SC",sans-serif;
+  --body:"IBM Plex Serif","Noto Serif SC",serif;
+  --mono:"Victor Mono","Noto Serif SC",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--text);font:17px/1.72 var(--body);background:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;background-attachment:fixed;-webkit-font-smoothing:antialiased}
+a{color:var(--ink2);text-decoration-thickness:1px;text-underline-offset:3px} a:hover{color:var(--red)}
+.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:44px;max-width:1220px;margin:0 auto;padding:34px 24px 80px}
+.rail{position:sticky;top:24px;align-self:start;font:12px/1.55 var(--mono);color:var(--dim)}
+.rail .back{display:inline-block;margin-bottom:18px;color:var(--red);text-decoration:none}
+.rail ol{list-style:none;padding:0;margin:0;border-left:1px solid var(--ink)}
+.rail li a{display:block;padding:4px 0 4px 13px;color:var(--dim);text-decoration:none}
+.rail li a:hover{color:var(--ink)}
+.rail .num{color:var(--ink);margin-right:6px}
+.masthead{border:1.5px solid var(--ink);background:var(--panel);padding:26px 30px 22px;margin-bottom:38px;position:relative}
+.masthead:after{content:"";position:absolute;inset:6px;border:1px solid var(--hair);pointer-events:none}
+.kicker{font:600 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--red)}
+h1{font:800 60px/1.02 var(--display);letter-spacing:-.01em;margin:10px 0 12px;color:var(--ink)}
+h1 .slash{color:var(--red)}
+.subtitle{font-size:18px;max-width:780px;margin:0 0 18px;color:var(--text)}
+.spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ink);font:12px/1.5 var(--mono);position:relative;z-index:1}
+.spec div{padding:9px 12px 9px 0;border-bottom:1px solid var(--hair)}
+.spec b{display:block;color:var(--dim);font-weight:400;text-transform:uppercase;letter-spacing:.1em;font-size:10px}
+main.article section{max-width:740px;margin:0 0 58px}
+h2{font:800 32px/1.12 var(--display);margin:0 0 14px;color:var(--ink)}
+h2 .n{font:600 12px var(--mono);color:var(--red);display:block;letter-spacing:.14em;margin-bottom:6px}
+h3{font:700 18px/1.3 var(--display);color:var(--ink2);margin:26px 0 8px}
+p{margin:0 0 14px}
+ul,ol.list{margin:0 0 14px;padding-left:22px} li{margin:4px 0}
+code{font:14px var(--mono);color:var(--ink);background:rgba(20,49,92,.07);padding:1px 4px;border-radius:2px;overflow-wrap:anywhere}
+a code{color:inherit}
+.callout{border-left:3px solid var(--teal);background:var(--teal-soft);padding:12px 16px;margin:18px 0}
+.callout.warn{border-left-color:var(--red);background:var(--red-soft)}
+.callout.note{border-left-color:var(--amber);background:var(--amber-soft)}
+.callout b{color:var(--teal)} .callout.warn b{color:var(--red)} .callout.note b{color:var(--amber)}
+.callout p:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:14.5px}
+th,td{border-bottom:1px solid var(--hair);padding:7px 8px;text-align:left;vertical-align:top}
+th{font:600 10.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim);border-bottom:1.5px solid var(--ink)}
+td.v{font:13px var(--mono);text-align:right;white-space:nowrap}
+td.bad{color:var(--red);font:600 13px var(--mono);white-space:nowrap}
+td.good{color:var(--teal);font:600 13px var(--mono);white-space:nowrap}
+.plate{border:1.5px solid var(--ink);background:var(--panel);margin:24px 0 28px;padding:14px 18px 12px}
+.plate.wide{width:min(900px,calc(100vw - 330px))}
+.plate-meta{font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+.caption{font-style:italic;color:var(--dim);font-size:14.5px;margin:8px 0 0}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--mono)}
+.nd{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+.nd.teal{fill:var(--teal-soft);stroke:var(--teal)}
+.nd.red{fill:var(--red-soft);stroke:var(--red)}
+.nd.amber{fill:var(--amber-soft);stroke:var(--amber)}
+.nd.violet{fill:var(--violet-soft);stroke:var(--violet)}
+.tx{font-size:12.5px;fill:var(--text)}
+.tx.b{font-weight:600;fill:var(--ink)}
+.tx.dim{fill:var(--dim);font-size:11.5px}
+.tx.red{fill:var(--red)} .tx.teal{fill:var(--teal)} .tx.amber{fill:var(--amber)}
+.edge{stroke:var(--ink);stroke-width:1.3;fill:none}
+.edge.teal{stroke:var(--teal)} .edge.red{stroke:var(--red);stroke-dasharray:5 4} .edge.dash{stroke-dasharray:4 4}
+.lane{font:600 11px var(--mono);letter-spacing:.12em;fill:var(--red)}
+.ax-grid{stroke:var(--hair);stroke-width:1}
+.ax-one{stroke:var(--ink);stroke-width:1.4}
+.ax-lab{font-size:11px;fill:var(--dim)}
+.row-lab{font-size:12px;fill:var(--text)}
+.row-bad{font-size:12px;fill:var(--red);font-weight:600}
+.val{font-size:12px;fill:var(--ink)} .val.small{font-size:10.5px;fill:var(--dim)}
+.bar{stroke:none} .bar.d5{fill:var(--ink2)} .bar.prio{fill:var(--violet)} .bar.d4{fill:var(--amber)} .bar.pass{fill:var(--teal)}
+.bar.ctrl{fill:var(--hair)} .bar.head{fill:var(--teal)} .bar.off{fill:var(--red)}
+.whisk{stroke:var(--text);stroke-width:1.6}
+.dot{stroke:none;opacity:.85} .dot.s1{fill:var(--ink2)} .dot.s2{fill:var(--red)} .dot.s3{fill:var(--teal)} .dot.s4{fill:var(--amber)}
+.seg-trace{fill:var(--amber)} .seg-mlir{fill:var(--violet)} .seg-llvm{fill:var(--ink2)} .seg-warm{fill:var(--red)}
+.legend{font:12px var(--mono);color:var(--dim);margin:6px 0 0}
+.legend span{display:inline-block;margin-right:14px}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+.colophon{border-top:1.5px solid var(--ink);margin-top:44px;padding-top:16px;font:12px/1.7 var(--mono);color:var(--dim);max-width:760px}
+.lang-toggle{position:fixed;top:16px;right:16px;z-index:10;display:flex;border:1.5px solid var(--ink);background:var(--panel)}
+.lang-toggle button{font:600 12px var(--mono);background:none;border:0;color:var(--dim);padding:6px 12px;cursor:pointer}
+body[data-lang="en"] .lang-toggle button[data-set="en"],body[data-lang="zh"] .lang-toggle button[data-set="zh"]{color:var(--panel);background:var(--ink)}
+@media (max-width:980px){.wrap{grid-template-columns:minmax(0,1fr)}.rail{position:static}.plate.wide{width:auto}h1{font-size:44px}.spec{grid-template-columns:1fr 1fr}table{display:block;overflow-x:auto}}
+@media (max-width:560px){.wrap{padding:20px 14px 60px;gap:24px}h1{font-size:34px}.spec{grid-template-columns:minmax(0,1fr)}}
+body[data-lang="en"] [lang="zh"]:not(html){display:none !important}
+body[data-lang="zh"] [lang="en"]:not(html){display:none !important}
+</style>
+</head>
+<body data-lang="en">
+<div class="lang-toggle" role="group" aria-label="Language"><button type="button" data-set="en" aria-label="English">EN</button><button type="button" data-set="zh" aria-label="中文">中文</button></div>
+<div class="wrap">
+<nav class="rail" aria-label="Contents">
+  <a class="back" href="/sources/"><span lang="en">← The Library</span><span lang="zh">← 返回资料库</span></a>
+  <ol>
+    <li><a href="#question"><span class="num">01</span><span lang="en">Question</span><span lang="zh">问题</span></a></li>
+    <li><a href="#decisions"><span class="num">02</span><span lang="en">Five decisions</span><span lang="zh">五类决策</span></a></li>
+    <li><a href="#redundancy"><span class="num">03</span><span lang="en">Where it repeats itself</span><span lang="zh">冗余在哪里</span></a></li>
+    <li><a href="#redesign"><span class="num">04</span><span lang="en">One decider each</span><span lang="zh">一个决策一个决策者</span></a></li>
+    <li><a href="#method"><span class="num">05</span><span lang="en">Testing on the overlay</span><span lang="zh">在 overlay 上检验</span></a></li>
+    <li><a href="#ablation"><span class="num">06</span><span lang="en">A · Take the decision away</span><span lang="zh">A · 拿走作者的决策</span></a></li>
+    <li><a href="#headroom"><span class="num">07</span><span lang="en">B · Knobs nobody tuned</span><span lang="zh">B · 没人调过的旋钮</span></a></li>
+    <li><a href="#agents"><span class="num">08</span><span lang="en">C · What agents did</span><span lang="zh">C · agent 做了什么</span></a></li>
+    <li><a href="#overhead"><span class="num">09</span><span lang="en">D · The front-end tax</span><span lang="zh">D · 前端开销</span></a></li>
+    <li><a href="#verdict"><span class="num">10</span><span lang="en">What it adds up to</span><span lang="zh">结论</span></a></li>
+    <li><a href="#next"><span class="num">11</span><span lang="en">What would change our mind</span><span lang="zh">什么会推翻它</span></a></li>
+    <li><a href="#reproduce"><span class="num">12</span><span lang="en">Reproduce</span><span lang="zh">复现</span></a></li>
+    <li><a href="#epilogue"><span class="num">13</span><span lang="en">Epilogue</span><span lang="zh">结语</span></a></li>
+  </ol>
+</nav>
+<div>
+<header class="masthead">
+  <div class="kicker">Experiment 008</div>
+  <h1>One Decision <span class="slash">/</span> One Decider</h1>
+  <p class="subtitle" lang="en">Rethinking the FlyDSL compiler for kernels that agents write: what to keep, what to throw away, and 29 experiments on the overlay's MI355X fleet that could have proved the argument wrong.</p>
+  <p class="subtitle" lang="zh">为 agent 写的 kernel 重新思考 FlyDSL 编译器： 该留下什么、 该扔掉什么， 以及在 overlay 的 MI355X 集群上做的 29 组实验， 它们本来有机会推翻这个论证。</p>
+  <div class="spec">
+    <div><b lang="en">Hardware</b><b lang="zh">硬件</b>MI355X · gfx950 · overlay fleet</div>
+    <div><b lang="en">FlyDSL under test</b><b lang="zh">被测 FlyDSL</b><a href="https://github.com/ROCm/FlyDSL/tree/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7">cb770e9a</a> (FlyBench v1 pin)</div>
+    <div><b lang="en">Code reading</b><b lang="zh">读代码</b><a href="https://github.com/ROCm/FlyDSL/tree/fe81c40773431335c9f77ccd196a7adc0e3126d7">fe81c407</a> (v0.5.2)</div>
+    <div><b lang="en">Timing</b><b lang="zh">计时</b>FlyBench v1 · ABBA · 6 pairs</div>
+    <div><b lang="en">Agent corpus</b><b lang="zh">agent 语料</b>98 runs · 676 receipts · 827 traces</div>
+    <div><b lang="en">Data</b><b lang="zh">数据</b><a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/flydsl-compiler-redesign">data/flydsl-compiler-redesign</a></div>
+  </div>
+</header>
+
+<main class="article">
+
+<section id="question">
+  <h2><span class="n">01</span><span lang="en">The question</span><span lang="zh">问题</span></h2>
+  <p lang="en">My mentor keeps asking me to think about the compiler chain. <a href="/sources/flydsl-compiler-in-the-loop.html">The last reading</a> asked where the compiler could join the kernel-optimization loop. This one asks the more basic question: if we were free to drop MLIR, and even LLVM, what should a kernel DSL whose main users are agents keep, and what should it throw away? A design argument costs nothing to write, so this post also runs the experiments that could have shown it to be wrong, on the same overlay fleet and with the same evaluator that score the agents.</p>
+  <p lang="zh">mentor 一直让我想清楚 compiler chain。 <a href="/sources/flydsl-compiler-in-the-loop.html">上一篇</a>问的是编译器能从哪里进入 kernel 优化循环。 这一篇问一个更基础的问题： 如果可以扔掉 MLIR， 甚至扔掉 LLVM， 一个主要给 agent 用的 kernel DSL 应该留下什么、 扔掉什么？ 设计论证写起来不花成本， 所以这一篇同时做了有机会推翻它的实验： 用的是给 agent 打分的同一个 overlay 集群和同一个评测器。</p>
+  <div class="callout">
+    <p lang="en"><b>Short answer.</b> The largest redundancy in FlyDSL's compiler is not code size. It is that two parties decide the same things: the author decides tiles, data movement and instruction interleaving in Python, then LLVM's heuristics decide register placement and instruction order again, then the author takes them back with fences, inline asm and LLVM patches. On MI355X, removing one explicit decision and letting LLVM decide cost 5–16% speed on 6 kernels and about 1% or less on one more, and on two kernels it made the output wrong, because their "scheduling" fences were holding correctness. Agents, meanwhile, found their speedups almost entirely in decisions the author already owns, and 69% of their runs went digging in IR or ISA. So the redesign gives every decision exactly one owner, expresses synchronization as data dependencies so that every performance knob is safe to search, and makes the compiler report what it did. MLIR can go entirely; LLVM goes in two steps.</p>
+    <p lang="zh"><b>简短回答。</b> FlyDSL 编译器最大的冗余不在代码量， 而在于同一件事有两方在决定： 作者在 Python 里决定 tile、 数据搬运和指令交错， LLVM 的启发式再把寄存器放置和指令顺序决定一遍， 作者再用 fence、 inline asm 和 LLVM 补丁把它们抢回来。 在 MI355X 上， 拿走作者的一个显式决策、 交给 LLVM 去决定， 让 6 个 kernel 的速度下降了 5–16%， 另一个 kernel 下降约 1% 或更少， 还让两个 kernel 算错了结果， 因为它们的"调度" fence 其实在撑着正确性。 与此同时， agent 的提速几乎全部来自作者本来就掌握的决策， 而 69% 的 agent 运行都去翻过 IR 或 ISA。 所以重新设计要做三件事： 每个决策只有一个决策者； 把同步表达成数据依赖， 让每个性能旋钮都可以放心搜索； 让编译器报告它做了什么。 MLIR 可以完全去掉， LLVM 分两步去掉。</p>
+  </div>
+</section>
+
+<section id="decisions">
+  <h2><span class="n">02</span><span lang="en">Five decisions, two deciders</span><span lang="zh">五类决策， 两个决策者</span></h2>
+  <p lang="en">Start from what is true of any AMD GPU kernel, whatever language wrote it. Its speed is set by five kinds of decisions. Three of them shape the work: how the problem is cut into a grid of tiles (D1), which lane moves which bytes through which memory (D2), and which matrix instruction does the arithmetic (D3). Two of them shape the instruction stream: which register file each value lives in, which caps how many waves fit (D4), and in what order instructions issue, where the waits go and which wave gets priority (D5).</p>
+  <p lang="zh">先从任何 AMD GPU kernel 都成立的事实出发， 不管它是用什么语言写的。 它的速度由五类决策决定。 其中三类决定"工作怎么分"： 问题怎样切成 tile 组成的 grid（D1）、 哪个 lane 通过哪一级存储搬哪些字节（D2）、 用哪条矩阵指令做运算（D3）。 另外两类决定"指令流长什么样"： 每个值放在哪个寄存器堆， 这又决定能驻留几个 wave（D4）； 指令按什么顺序发射、 wait 插在哪里、 哪个 wave 优先（D5）。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate I · <span lang="en">five decisions and who makes them in FlyDSL today</span><span lang="zh">五类决策， 以及今天在 FlyDSL 里由谁来做</span></div>
+    
+<svg viewBox="0 0 880 310" role="img" aria-labelledby="p1-t"><title id="p1-t">five decisions and who makes them</title>
+<defs>
+  <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#14315c"/></marker>
+  <marker id="ahr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c2513a"/></marker>
+  <marker id="aht" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#1d7d6b"/></marker>
+</defs>
+<rect class="nd" x="16" y="22" width="300" height="40"/><text class="tx b" x="30" y="47">D1 · grid · tiles · split-K</text>
+<rect class="nd" x="16" y="76" width="300" height="40"/><text class="tx b" x="30" y="101">D2 · data movement · layouts</text>
+<rect class="nd" x="16" y="130" width="300" height="40"/><text class="tx b" x="30" y="155">D3 · instruction choice</text>
+<rect class="nd" x="16" y="184" width="300" height="40"/><text class="tx b" x="30" y="209">D4 · registers · occupancy</text>
+<rect class="nd" x="16" y="238" width="300" height="40"/><text class="tx b" x="30" y="263">D5 · order · waits · priority</text>
+<rect class="nd teal" x="400" y="26" width="210" height="104"/>
+<text class="tx b" x="505" y="58" text-anchor="middle" lang="en">kernel author</text>
+<text class="tx b" x="505" y="58" text-anchor="middle" lang="zh">kernel 作者</text>
+<text class="tx" x="505" y="82" text-anchor="middle">Python · layout algebra</text>
+<text class="tx" x="505" y="104" text-anchor="middle">atoms · explicit hints</text>
+<rect class="nd red" x="400" y="186" width="210" height="104"/>
+<text class="tx b" x="505" y="218" text-anchor="middle" lang="en">LLVM heuristics</text>
+<text class="tx b" x="505" y="218" text-anchor="middle" lang="zh">LLVM 启发式</text>
+<text class="tx" x="505" y="242" text-anchor="middle">scheduler · RA</text>
+<text class="tx" x="505" y="264" text-anchor="middle">waitcnt insertion</text>
+<rect class="nd" x="700" y="108" width="164" height="100"/>
+<text class="tx b" x="782" y="150" text-anchor="middle" lang="en">final ISA</text>
+<text class="tx b" x="782" y="150" text-anchor="middle" lang="zh">最终 ISA</text>
+<text class="tx dim" x="782" y="174" text-anchor="middle" lang="en">what the GPU runs</text>
+<text class="tx dim" x="782" y="174" text-anchor="middle" lang="zh">GPU 真正执行的</text>
+<path class="edge teal" d="M316,42 L398,58" marker-end="url(#aht)"/>
+<path class="edge teal" d="M316,96 L398,80" marker-end="url(#aht)"/>
+<path class="edge teal" d="M316,150 L398,104" marker-end="url(#aht)"/>
+<path class="edge" d="M316,204 L398,224" marker-end="url(#ah)"/>
+<path class="edge" d="M316,258 L398,252" marker-end="url(#ah)"/>
+<path class="edge" d="M610,78 L698,136" marker-end="url(#ah)"/>
+<path class="edge" d="M610,238 L698,182" marker-end="url(#ah)"/>
+<path class="edge red" d="M560,130 L560,184" marker-end="url(#ahr)"/>
+<text class="tx red" x="550" y="152" text-anchor="end" lang="en">fences · inline asm</text>
+<text class="tx red" x="550" y="168" text-anchor="end" lang="en">pins · LLVM patches</text>
+<text class="tx red" x="550" y="152" text-anchor="end" lang="zh">fence · inline asm</text>
+<text class="tx red" x="550" y="168" text-anchor="end" lang="zh">pin · LLVM 补丁</text>
+</svg>
+
+    <p class="caption" lang="en">D1–D3 are the author's outright; the compiler only translates them. D4–D5 go to LLVM's heuristics, and authors who need a particular answer take it back through the red channel.</p>
+    <p class="caption" lang="zh">D1–D3 完全由作者决定， 编译器只负责翻译。 D4–D5 交给 LLVM 的启发式， 需要特定结果的作者再通过红色通道把它们抢回来。</p>
+  </figure>
+  <p lang="en">The red channel is not rare. In the kernel corpus at <a href="https://github.com/ROCm/FlyDSL/tree/fe81c40773431335c9f77ccd196a7adc0e3126d7">fe81c407</a>, 34 of 180 kernel files call <code>sched_barrier</code> (257 times), 44 place waits by hand (186), 13 use inline asm and 12 set wave priority. Kernel comments say why in plain words: inline asm "so LLVM sees no memory op" and inserts no wait (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/kernels/gemm/fp4_gemm_4wave.py#L82-L87"><code>fp4_gemm_4wave.py</code></a>), a fence because "the scheduler may hoist them above s_barrier: a race" (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/kernels/mega_moe_tp/gemm.py#L948-L951"><code>mega_moe_tp/gemm.py</code></a>). Pinning one accumulator to AGPRs through LLVM took patches to its register allocator and instruction selector (<a href="https://github.com/ROCm/FlyDSL/pull/1368">#1368</a>), and the patch was reverted because it made another team's kernel spill (<a href="https://github.com/ROCm/FlyDSL/pull/1477">#1477</a>).</p>
+  <p lang="zh">红色通道并不少见。 在 <a href="https://github.com/ROCm/FlyDSL/tree/fe81c40773431335c9f77ccd196a7adc0e3126d7">fe81c407</a> 的 kernel 语料里， 180 个文件中有 34 个调用 <code>sched_barrier</code>（共 257 次）， 44 个手工放 wait（186 次）， 13 个用 inline asm， 12 个设置 wave 优先级。 kernel 注释把原因写得很直白： 用 inline asm 是为了"让 LLVM 看不到访存"从而不插 wait（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/kernels/gemm/fp4_gemm_4wave.py#L82-L87"><code>fp4_gemm_4wave.py</code></a>）； 加 fence 是因为"调度器可能把它们提到 s_barrier 之前： 这是竞争"（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/kernels/mega_moe_tp/gemm.py#L948-L951"><code>mega_moe_tp/gemm.py</code></a>）。 想通过 LLVM 把一个累加器固定在 AGPR 上， 需要修改它的寄存器分配器和指令选择（<a href="https://github.com/ROCm/FlyDSL/pull/1368">#1368</a>）， 而这个补丁又因为让另一个团队的 kernel 出现 spill 被回滚（<a href="https://github.com/ROCm/FlyDSL/pull/1477">#1477</a>）。</p>
+  <p lang="en">Why this matters more for an agent than for a person: an agent improves a kernel by local edits and measurement, which only works if a local edit has a local effect. A heuristic that re-decides globally breaks that premise. One example from our runs: removing the four <code>s_setprio</code> calls from the FP8 8-wave GEMM, an instruction whose only documented job is wave priority, changed the register allocation and created 6 VGPR spills. The reason is one line in LLVM's AMDGPU backend: <code>s_setprio</code> is a hard scheduling boundary (<a href="https://github.com/llvm/llvm-project/blob/941a04e69ee8fe4c7a162b2f1e215aa8df867534/llvm/lib/Target/AMDGPU/SIInstrInfo.cpp#L4554-L4559"><code>SIInstrInfo.cpp</code></a>). One knob, two meanings, and nothing in the source says so.</p>
+  <p lang="zh">这件事对 agent 比对人更要紧。 agent 靠局部修改加测量来改进 kernel， 这只有在"局部修改只产生局部影响"时才成立。 一个会全局重新决定的启发式打破了这个前提。 我们实验里的一个例子： 从 FP8 8-wave GEMM 里去掉 4 处 <code>s_setprio</code>（文档上它只负责 wave 优先级）， 寄存器分配随之改变， 多出 6 个 VGPR spill。 原因是 LLVM AMDGPU 后端里的一行代码： <code>s_setprio</code> 是一个硬调度边界（<a href="https://github.com/llvm/llvm-project/blob/941a04e69ee8fe4c7a162b2f1e215aa8df867534/llvm/lib/Target/AMDGPU/SIInstrInfo.cpp#L4554-L4559"><code>SIInstrInfo.cpp</code></a>）。 一个旋钮有两种含义， 而源码里看不出来。</p>
+</section>
+
+<section id="redundancy">
+  <h2><span class="n">03</span><span lang="en">Where the current compiler repeats itself</span><span lang="zh">现在的编译器在哪里重复自己</span></h2>
+  <p lang="en">With the decision table in hand, the rest of the compiler's redundancy is easier to see. Each item below is a place where the same information is represented, or the same decision is made, more than once.</p>
+  <p lang="zh">有了这张决策表， 编译器其余的冗余就容易看清了。 下面每一项， 都是同一份信息被表示了不止一次， 或者同一个决定被做了不止一次。</p>
+  <h3 lang="en">Two languages, switched by an implicit rule</h3>
+  <h3 lang="zh">两种语言， 靠隐式规则切换</h3>
+  <p lang="en">A FlyDSL kernel is Python that runs at trace time mixed with Python that becomes runtime control flow, and a 1,928-line AST rewriter decides which is which from the type of a value (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/python/flydsl/compiler/ast_rewriter.py"><code>ast_rewriter.py</code></a>). The rule leaks: <a href="https://github.com/ROCm/FlyDSL/pull/1436">#1436</a> fixed a case where <code>if flag: return a</code> followed by <code>return b</code> returned <code>b</code> for every flag, without an error, and one production kernel had silently ignored an input since it was written. The repository's agent guide lists four restrictions that exist only because of this rewriting (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/CLAUDE.md?plain=1#L192-L197"><code>CLAUDE.md</code></a>).</p>
+  <p lang="zh">一个 FlyDSL kernel 里混着两种 Python： 一种在 trace 时执行， 一种会变成运行时控制流。 由一个 1928 行的 AST 改写器根据值的类型来判断哪段是哪种（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/python/flydsl/compiler/ast_rewriter.py"><code>ast_rewriter.py</code></a>）。 这个规则会漏： <a href="https://github.com/ROCm/FlyDSL/pull/1436">#1436</a> 修了一个问题， <code>if flag: return a</code> 后面接 <code>return b</code> 时， 不管 flag 是什么都返回 <code>b</code>， 而且不报错； 一个生产 kernel 从写成那天起就悄悄忽略了一个输入。 仓库给 agent 的指南里列了四条限制， 它们只因为这种改写才存在（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/CLAUDE.md?plain=1#L192-L197"><code>CLAUDE.md</code></a>）。</p>
+  <h3 lang="en">Layout algebra, built as IR and then deleted</h3>
+  <h3 lang="zh">layout algebra： 先建成 IR， 再删掉</h3>
+  <p lang="en">Most layouts are fully static, so their algebra is compile-time arithmetic on integer tuples. FlyDSL nevertheless emits every step as an MLIR op whose type carries the layout, then folds it away. For <code>fp8_gemm_4wave</code> the traced module holds 61,989 ops; after canonicalization and layout lowering 9,907 remain. Building and deleting the other 84% is most of the 0.80 s trace. The pure-Python reference implementation of the same algebra, <a href="https://github.com/NVIDIA/cutlass/tree/main/python/pycute">pycute</a>, is about 760 lines.</p>
+  <p lang="zh">大多数 layout 完全是静态的， 所以它们的代数就是整数元组上的编译期算术。 但 FlyDSL 仍然把每一步都生成为一个 MLIR op， layout 记在 op 的类型里， 然后再折叠掉。 对 <code>fp8_gemm_4wave</code>， trace 出来的模块有 61,989 个 op， 经过 canonicalize 和 layout lowering 后只剩 9,907 个。 建出来又删掉的这 84% 占了 0.80 s trace 时间的大部分。 同一套代数的纯 Python 参考实现 <a href="https://github.com/NVIDIA/cutlass/tree/main/python/pycute">pycute</a> 大约 760 行。</p>
+  <h3 lang="en">Registers modeled as memory, then promoted back</h3>
+  <h3 lang="zh">寄存器先当内存建模， 再提升回来</h3>
+  <p lang="en">Register fragments are created as memrefs in a register address space, and two passes (about 900 lines) turn them back into vector values before LLVM sees them (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/include/flydsl/Dialect/Fly/Transforms/Passes.td#L29-L40"><code>Passes.td</code></a>). The round trip copies C++ CuTe's habit of declaring register arrays; a compiler can represent a register tile as a value from the start.</p>
+  <p lang="zh">寄存器 fragment 一开始被建成寄存器地址空间里的 memref， 再由两个 pass（约 900 行）在交给 LLVM 之前变回 vector 值（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/include/flydsl/Dialect/Fly/Transforms/Passes.td#L29-L40"><code>Passes.td</code></a>）。 这个往返照搬了 C++ CuTe 声明寄存器数组的习惯； 编译器完全可以一开始就把寄存器 tile 表示成一个值。</p>
+  <h3 lang="en">Every call re-traces; every process re-JITs the launcher</h3>
+  <h3 lang="zh">每次调用都重新 trace， 每个进程都重新 JIT launcher</h3>
+  <p lang="en">A <code>@flyc.jit</code> call traces the whole launcher and kernel, prints the module and hashes the text before it can look up the cache (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/python/flydsl/compiler/jit_function.py#L1203-L1213"><code>jit_function.py</code></a>). That keeps the cache key honest, but a cache hit on <code>fp8_gemm_4wave</code> still costs 0.96 s. The host launcher itself is lowered through MLIR and JIT-compiled by an LLVM ExecutionEngine at O3 in every process, 22–33 ms per artifact, to do what a kernarg buffer and <code>hipModuleLaunchKernel</code> already do.</p>
+  <p lang="zh"><code>@flyc.jit</code> 每次调用都要先 trace 整个 launcher 和 kernel、 打印模块、 对文本做哈希， 然后才能查缓存（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/python/flydsl/compiler/jit_function.py#L1203-L1213"><code>jit_function.py</code></a>）。 这样缓存 key 很可靠， 但 <code>fp8_gemm_4wave</code> 命中缓存的一次调用仍要 0.96 s。 host 端的 launcher 本身也要经过 MLIR 降级， 再由 LLVM ExecutionEngine 在每个进程里以 O3 JIT 一次， 每个 artifact 22–33 ms， 而它要做的事情， 一个 kernarg 缓冲区加 <code>hipModuleLaunchKernel</code> 就能做到。</p>
+  <h3 lang="en">Knobs that reach LLVM through four lanes, some of them dead</h3>
+  <h3 lang="zh">旋钮通过四条通道到达 LLVM， 有的通道是死的</h3>
+  <p lang="en">The repository's own LLVM skill documents four lanes from Python to LLVM, one of which is silently discarded on AMD; a compile-hint dictionary that accepts misspelled keys and still changes the cache key; and an optimization-level variable that is validated and never read (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/.claude/skills/llvm/SKILL.md?plain=1#L114-L131">llvm skill §3</a>, <a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/.claude/skills/llvm/SKILL.md?plain=1#L250-L263">§8</a>). Our own experiment found another: in <code>fp8_gemm_4wave</code> the explicit occupancy hints produce byte-identical ISA to no hints at all.</p>
+  <p lang="zh">仓库自己的 llvm skill 记录了从 Python 到 LLVM 的四条通道， 其中一条在 AMD 上会被悄悄丢弃； 一个接受拼错 key、 却仍会改变缓存 key 的 compile-hint 字典； 一个会被校验、 却从没被读取的优化级别变量（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/.claude/skills/llvm/SKILL.md?plain=1#L114-L131">llvm skill §3</a>、<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/.claude/skills/llvm/SKILL.md?plain=1#L250-L263">§8</a>）。 我们自己的实验又发现一个： 在 <code>fp8_gemm_4wave</code> 里， 显式的 occupancy 提示和完全不写提示生成的 ISA 逐字节相同。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate II · <span lang="en">the same intent, four representations today; one owner per decision after the redesign</span><span lang="zh">今天同一个意图要经过四种表示； 重新设计后每个决策只有一个主人</span></div>
+    
+<svg viewBox="0 0 900 380" role="img" aria-labelledby="p2-t"><title id="p2-t">today's pipeline and the redesigned one</title>
+<defs>
+  <marker id="ah2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#14315c"/></marker>
+  <marker id="ah2r" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c2513a"/></marker>
+</defs>
+<text class="lane" x="16" y="20" lang="en">TODAY · FLYDSL 0.4 / 0.5</text>
+<text class="lane" x="16" y="20" lang="zh">现在 · FLYDSL 0.4 / 0.5</text>
+<rect class="nd" x="16" y="32" width="118" height="56"/><text class="tx b" x="75" y="56" text-anchor="middle">Python</text><text class="tx dim" x="75" y="74" text-anchor="middle">AST rewrite</text>
+<rect class="nd amber" x="148" y="32" width="118" height="56"/><text class="tx b" x="207" y="56" text-anchor="middle">trace</text><text class="tx dim" x="207" y="74" text-anchor="middle">op by op</text>
+<rect class="nd" x="280" y="32" width="118" height="56"/><text class="tx b" x="339" y="56" text-anchor="middle">Fly MLIR</text><text class="tx dim" x="339" y="74" text-anchor="middle">layouts in types</text>
+<rect class="nd" x="412" y="32" width="118" height="56"/><text class="tx b" x="471" y="56" text-anchor="middle">14 passes</text><text class="tx dim" x="471" y="74" text-anchor="middle">lower · promote</text>
+<rect class="nd" x="544" y="32" width="80" height="56"/><text class="tx b" x="584" y="65" text-anchor="middle">LLVM IR</text>
+<rect class="nd red" x="638" y="32" width="152" height="56"/><text class="tx b" x="714" y="56" text-anchor="middle">LLVM AMDGPU</text><text class="tx dim" x="714" y="74" text-anchor="middle">sched · RA · waitcnt</text>
+<rect class="nd" x="804" y="32" width="80" height="56"/><text class="tx b" x="844" y="65" text-anchor="middle">hsaco</text>
+<path class="edge" d="M134,60 L146,60" marker-end="url(#ah2)"/><path class="edge" d="M266,60 L278,60" marker-end="url(#ah2)"/>
+<path class="edge" d="M398,60 L410,60" marker-end="url(#ah2)"/><path class="edge" d="M530,60 L542,60" marker-end="url(#ah2)"/>
+<path class="edge" d="M624,60 L636,60" marker-end="url(#ah2)"/><path class="edge" d="M790,60 L802,60" marker-end="url(#ah2)"/>
+<text class="tx amber" x="148" y="108" lang="en">re-run on every call</text>
+<text class="tx amber" x="148" y="108" lang="zh">每次调用都重跑</text>
+<text class="tx red" x="280" y="124" lang="en">62K ops built, 9.9K kept</text>
+<text class="tx red" x="280" y="124" lang="zh">建 62K 个 op， 只留 9.9K</text>
+<text class="tx amber" x="638" y="108" lang="en">41–60% of cold compile</text>
+<text class="tx amber" x="638" y="108" lang="zh">冷编译的 41–60%</text>
+<path class="edge red" d="M75,88 C75,175 714,175 714,90" marker-end="url(#ah2r)"/>
+<text class="tx red" x="220" y="176" lang="en">the author takes D4/D5 back: fences, inline asm, pins, LLVM patches</text>
+<text class="tx red" x="220" y="176" lang="zh">作者把 D4 / D5 抢回来： fence、 inline asm、 pin、 LLVM 补丁</text>
+<text class="lane" x="16" y="206" lang="en">REDESIGN · ONE DECIDER PER DECISION</text>
+<text class="lane" x="16" y="206" lang="zh">重新设计 · 一个决策一个决策者</text>
+<text class="tx dim" x="382" y="214" lang="en">machine tables: AMD ISA XML · latencies · hazards · atoms</text>
+<text class="tx dim" x="382" y="214" lang="zh">机器描述表： AMD ISA XML · 延迟 · hazard · atom</text>
+<rect class="nd teal" x="16" y="222" width="128" height="56"/><text class="tx b" x="80" y="246" text-anchor="middle">Python</text><text class="tx dim" x="80" y="264" text-anchor="middle">meta only</text>
+<rect class="nd teal" x="158" y="222" width="110" height="56"/><text class="tx b" x="213" y="246" text-anchor="middle">KIR</text><text class="tx dim" x="213" y="264" text-anchor="middle">typed · tokens</text>
+<rect class="nd" x="282" y="222" width="86" height="56"/><text class="tx b" x="325" y="255" text-anchor="middle">verify</text>
+<rect class="nd" x="382" y="222" width="86" height="56"/><text class="tx b" x="425" y="246" text-anchor="middle">select</text><text class="tx dim" x="425" y="264" text-anchor="middle">by table</text>
+<rect class="nd" x="482" y="222" width="96" height="56"/><text class="tx b" x="530" y="246" text-anchor="middle">order</text><text class="tx dim" x="530" y="264" text-anchor="middle">explicit|auto</text>
+<rect class="nd" x="592" y="222" width="96" height="56"/><text class="tx b" x="640" y="246" text-anchor="middle">registers</text><text class="tx dim" x="640" y="264" text-anchor="middle">pins honored</text>
+<rect class="nd" x="702" y="222" width="86" height="56"/><text class="tx b" x="745" y="246" text-anchor="middle">waits</text><text class="tx dim" x="745" y="264" text-anchor="middle">from tokens</text>
+<rect class="nd" x="802" y="222" width="82" height="56"/><text class="tx b" x="843" y="246" text-anchor="middle">encode</text><text class="tx dim" x="843" y="264" text-anchor="middle">→ hsaco</text>
+<path class="edge" d="M144,250 L156,250" marker-end="url(#ah2)"/><path class="edge" d="M268,250 L280,250" marker-end="url(#ah2)"/>
+<path class="edge" d="M368,250 L380,250" marker-end="url(#ah2)"/><path class="edge" d="M468,250 L480,250" marker-end="url(#ah2)"/>
+<path class="edge" d="M578,250 L590,250" marker-end="url(#ah2)"/><path class="edge" d="M688,250 L700,250" marker-end="url(#ah2)"/>
+<path class="edge" d="M788,250 L800,250" marker-end="url(#ah2)"/>
+<rect class="nd amber" x="282" y="318" width="506" height="46"/>
+<text class="tx b" x="535" y="338" text-anchor="middle" lang="en">report: resources · pressure · waits · checks · knobs</text>
+<text class="tx b" x="535" y="338" text-anchor="middle" lang="zh">报告： 资源 · 压力 · wait 来源 · 检查 · 旋钮</text>
+<text class="tx dim" x="535" y="355" text-anchor="middle" lang="en">every pass writes one section; nothing is decided silently</text>
+<text class="tx dim" x="535" y="355" text-anchor="middle" lang="zh">每个 pass 写一节； 没有任何决定是悄悄做的</text>
+<path class="edge dash" d="M325,278 L325,316"/><path class="edge dash" d="M530,278 L530,316"/>
+<path class="edge dash" d="M640,278 L640,316"/><path class="edge dash" d="M745,278 L745,316"/>
+<rect class="nd teal" x="16" y="318" width="252" height="46"/>
+<text class="tx b" x="142" y="338" text-anchor="middle" lang="en">interpret(): KIR on the CPU</text>
+<text class="tx b" x="142" y="338" text-anchor="middle" lang="zh">interpret()： 在 CPU 上跑 KIR</text>
+<text class="tx dim" x="142" y="355" text-anchor="middle" lang="en">per-lane semantics, race checks</text>
+<text class="tx dim" x="142" y="355" text-anchor="middle" lang="zh">按 lane 语义执行， 检查竞争</text>
+<path class="edge dash" d="M213,278 L213,316"/>
+</svg>
+
+    <p class="caption" lang="en">Top: today's path, with the measured costs of section 09 and the channel by which authors take D4/D5 back. Bottom: Python only generates; a small hardware-explicit IR goes through passes that each make one decision deterministically and write it into a report.</p>
+    <p class="caption" lang="zh">上： 今天的路径， 标出第 09 节测到的开销， 以及作者把 D4 / D5 抢回来的通道。 下： Python 只负责生成； 一个小而显式的硬件 IR 经过若干 pass， 每个 pass 确定性地做一个决定， 并写进报告。</p>
+  </figure>
+</section>
+
+<section id="redesign">
+  <h2><span class="n">04</span><span lang="en">One decider per decision</span><span lang="zh">一个决策， 一个决策者</span></h2>
+  <p lang="en">The redesign follows from the table. For every decision, either the author makes it explicitly and the compiler honors and checks it, or the author delegates it and the compiler makes it deterministically and says what it chose. Never both. Five consequences:</p>
+  <p lang="zh">重新设计直接从这张表推出来。 对每个决策， 要么作者显式做出、 编译器照做并检查， 要么作者把它交出去、 编译器确定性地做出并说明选了什么。 不允许两者同时存在。 由此有五个推论：</p>
+  <ol class="list">
+    <li lang="en"><b>Python becomes the meta-language only.</b> Python control flow always runs at compile time; runtime loops and branches are explicit constructs (<code>fx.loop</code>, <code>fx.cond</code>), and using a runtime value in a Python <code>if</code> is an error. This is <a href="https://docs.jax.dev/en/latest/control-flow.html">JAX's model</a>, and it deletes the AST rewriter and its four rules.</li>
+    <li lang="zh"><b>Python 只做元语言。</b> Python 控制流永远在编译期执行； 运行时的循环和分支用显式构造（<code>fx.loop</code>、<code>fx.cond</code>）， 在 Python <code>if</code> 里用运行时值就报错。 这就是 <a href="https://docs.jax.dev/en/latest/control-flow.html">JAX 的模型</a>， 它让 AST 改写器和那四条规则一起消失。</li>
+    <li lang="en"><b>Layout algebra is evaluated where it is static: in Python.</b> Every intermediate layout is a value one can print and test; only dynamic leaves become IR.</li>
+    <li lang="zh"><b>layout algebra 在它静态的地方求值： 在 Python 里。</b> 每个中间 layout 都是可以打印、 可以测试的值； 只有动态的部分才生成 IR。</li>
+    <li lang="en"><b>A small hardware-explicit IR (call it KIR).</b> Values are typed as uniform (SGPR) or per-lane (VGPR); register tiles carry their thread-value layout and register class; asynchronous copies return tokens, and a wait names the token it waits for. Synchronization becomes a data dependency the compiler can see, so reordering can never break it.</li>
+    <li lang="zh"><b>一个小而显式的硬件 IR（这里叫 KIR）。</b> 值的类型区分 uniform（SGPR）和 per-lane（VGPR）； 寄存器 tile 带着它的 thread-value layout 和寄存器类； 异步拷贝返回 token， wait 写明它等的是哪个 token。 同步变成编译器看得见的数据依赖， 于是重排永远不会破坏它。</li>
+    <li lang="en"><b>A deterministic backend that reports.</b> Instruction selection by table (generated from AMD's <a href="https://gpuopen.com/machine-readable-isa/">machine-readable ISA XML</a>, which already covers CDNA3, CDNA4 and CDNA5); program order in explicit regions and a list scheduler with a published machine model in automatic ones; linear-scan allocation that honors pins; waits derived from tokens; hazards from tables. Each pass writes what it decided into a report the agent reads.</li>
+    <li lang="zh"><b>一个确定性的、 会报告的后端。</b> 指令选择查表（由 AMD 的<a href="https://gpuopen.com/machine-readable-isa/">机器可读 ISA XML</a> 生成， 它已经覆盖 CDNA3、 CDNA4 和 CDNA5）； 显式区域按程序顺序， 自动区域用带公开机器模型的列表调度； 线性扫描分配， 遵守 pin； 由 token 推出 wait； 由表插入 hazard。 每个 pass 都把它的决定写进 agent 读的报告。</li>
+    <li lang="en"><b>Only semantics-preserving knobs.</b> Because correctness depends only on data flow and tokens, schedule, pins, stage count and unroll can only change speed. Agents and autotuners can search them without a correctness review per point.</li>
+    <li lang="zh"><b>只保留不改变语义的旋钮。</b> 正确性只依赖数据流和 token， 所以调度、 pin、 stage 数和 unroll 只会改变速度。 agent 和 autotuner 可以放心搜索， 不需要每个点都做一次正确性审查。</li>
+  </ol>
+  <p lang="en">What this means for the two big dependencies. MLIR can go entirely: its passes take only 11–12% of a large kernel's cold compile (section 09), and the costs it does carry are the op-by-op trace, the build-then-delete IR, and C++ rebuilds for every pass change. LLVM goes in two steps. First drop its heuristic code generation for explicit kernels and keep it only as an assembler, which is exactly how AMD's own hipBLASLt TensileLite builds its GEMMs: Python writes assembly and <code>amdclang++ -x assembler</code> encodes it (<a href="https://github.com/ROCm/rocm-libraries/blob/develop/projects/hipblaslt/tensilelite/tensilelite/Toolchain/Component.py"><code>Toolchain/Component.py</code></a>). Then, once the new backend has passed the kernel corpus, generate an encoder from the ISA XML and drop LLVM for those kernels.</p>
+  <p lang="zh">对两个大依赖意味着什么。 MLIR 可以完全去掉： 它的 pass 只占大 kernel 冷编译的 11–12%（第 09 节）， 它真正带来的成本是逐个 op 的 trace、 先建后删的 IR， 以及每改一个 pass 都要重编 C++。 LLVM 分两步去掉。 第一步， 在显式 kernel 上不再用它的启发式代码生成， 只把它当汇编器用。 AMD 自己的 hipBLASLt TensileLite 正是这样做 GEMM 的： Python 写汇编， <code>amdclang++ -x assembler</code> 负责编码（<a href="https://github.com/ROCm/rocm-libraries/blob/develop/projects/hipblaslt/tensilelite/tensilelite/Toolchain/Component.py"><code>Toolchain/Component.py</code></a>）。 第二步， 等新后端通过 kernel 语料之后， 从 ISA XML 生成编码器， 在这些 kernel 上去掉 LLVM。</p>
+</section>
+
+<section id="method">
+  <h2><span class="n">05</span><span lang="en">How we tested it on the overlay</span><span lang="zh">怎样在 overlay 上检验</span></h2>
+  <p lang="en">The new backend does not exist yet, so the experiments test the premises it rests on, each with an outcome that would have counted against it:</p>
+  <p lang="zh">新后端还不存在， 所以实验检验的是它所依赖的前提。 每个前提都有一个会对它不利的可能结果：</p>
+  <ul>
+    <li lang="en"><b>A.</b> The D4/D5 decisions authors make explicitly carry real speed, and LLVM's heuristics do not recover it when left alone. <i>Against it:</i> removing them changes nothing.</li>
+    <li lang="zh"><b>A.</b> 作者显式做出的 D4 / D5 决策带着实打实的速度， LLVM 的启发式在没人管时拿不回来。 <i>不利结果：</i> 去掉它们什么都没变。</li>
+    <li lang="en"><b>B.</b> Where authors made no such decision, untuned but safe knobs leave headroom. <i>Against it:</i> no knob moves the time.</li>
+    <li lang="zh"><b>B.</b> 作者没有做这类决策的地方， 那些没人调过、 但安全的旋钮还留有空间。 <i>不利结果：</i> 没有哪个旋钮能改变时间。</li>
+    <li lang="en"><b>C.</b> Agents' cost is dominated by what a compiler could show or check. <i>Against it:</i> agents rarely look at compiler output, and their wins come from compiler knobs.</li>
+    <li lang="zh"><b>C.</b> agent 的成本主要花在编译器本可以展示或检查的事情上。 <i>不利结果：</i> agent 很少看编译器输出， 而且它们的提速来自编译器旋钮。</li>
+    <li lang="en"><b>D.</b> The front end's cost is paid on every iteration. <i>Against it:</i> a cache hit is free.</li>
+    <li lang="zh"><b>D.</b> 前端的开销在每次迭代都要付。 <i>不利结果：</i> 命中缓存不花时间。</li>
+  </ul>
+  <p lang="en"><b>Protocol.</b> Every arm in A and B is a patch to FlyDSL <code>cb770e9a</code>, scored by the FlyBench v1 evaluator, the same one that scores agent submissions: candidate against stock in fresh worker processes for each of six ABBA pairs, each cold call after a 512 MB cache-flushing read, plus warm blocks, over the public timed shapes and freshly drawn ones, with FlyDSL's own tests and a fresh-shape correctness oracle as a gate. A speed ratio below 1 means the arm is slower than the stock kernel. Hint arms install a few lines in <a href="https://github.com/ROCm/FlyDSL/blob/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7/kernels/__init__.py"><code>kernels/__init__.py</code></a> that turn one family of hints into no-ops or edit the LLVM options; the AGPR and occupancy arms edit one line of the kernel. Each arm ran as one model-free job on one MI355X through the overlay queue, exactly as FlyBench evaluators do.</p>
+  <p lang="zh"><b>协议。</b> A 和 B 的每个 arm 都是一个针对 FlyDSL <code>cb770e9a</code> 的补丁， 由 FlyBench v1 评测器打分， 也就是给 agent 提交打分的那一个： 候选和 stock 在新的 worker 进程里成对比较， 做 6 组 ABBA， 每次冷调用前先读一遍 512 MB 来清缓存， 另外还有热调用， 覆盖公开的计时 shape 和每次新抽取的 shape； FlyDSL 自己的测试和新 shape 上的正确性 oracle 是门禁。 速度比低于 1 表示这个 arm 比 stock 慢。 提示类 arm 在 <a href="https://github.com/ROCm/FlyDSL/blob/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7/kernels/__init__.py"><code>kernels/__init__.py</code></a> 里加几行代码， 把某一类提示变成空操作， 或者修改 LLVM 选项； AGPR 和 occupancy 两个 arm 改 kernel 里的一行。 每个 arm 作为一个不调用模型的作业， 通过 overlay 队列在一张 MI355X 上运行， 和 FlyBench 评测作业完全一样。</p>
+  <p lang="en"><b>Controls.</b> Each job also compiled the stock kernel and the arm at two shapes, the first timed shape and the largest, and compared the final ISA. Every arm changed the ISA except three: the occupancy arm (section 06) and two null controls, RMSNorm, which has no hints to remove, and the A16W16 GEMM with the shim installed and nothing removed. The null controls measured 1.004× and 0.998×; that is the noise of this setup, so effects under about half a percent are not resolved. The AGPR arm changes code only for the 256×256 tiles that two of its 19 timed shapes use, so we report it at those shapes.</p>
+  <p lang="zh"><b>对照。</b> 每个作业还在两个 shape 上（第一个计时 shape 和最大的 shape）分别编译 stock kernel 和这个 arm， 并比较最终 ISA。 除了三个 arm， 其他 arm 都改变了 ISA。 这三个是 occupancy arm（见第 06 节）和两个空白对照： 一个是没有提示可去的 RMSNorm， 另一个是装了 shim、 什么都没去掉的 A16W16 GEMM。 两个空白对照测得 1.004× 和 0.998×， 这就是这套测量的噪声， 所以小于约 0.5% 的效果分辨不出来。 AGPR 这个 arm 只会改变 256×256 tile 的代码， 而 19 个计时 shape 里只有 2 个用这种 tile， 所以我们在这两个 shape 上报告它。</p>
+  <div class="callout note">
+    <p lang="en"><b>Caveat.</b> The overlay places single-GPU jobs beside other jobs on the same node. Pairing inside one job on one GPU removes drift between the two sides, but not noise from neighbours; the intervals below include it. The agent corpus in C comes from earlier FlyBench runs on the same fleet, not from new agent jobs.</p>
+    <p lang="zh"><b>注意。</b> overlay 会把单卡作业和别的作业放在同一个节点上。 在同一个作业、 同一张卡上做配对， 能消除两侧之间的漂移， 但消除不了邻居带来的噪声； 下面的区间已经包含了它。 C 里的 agent 语料来自同一集群上之前的 FlyBench 运行， 不是新跑的 agent 作业。</p>
+  </div>
+</section>
+
+<section id="ablation">
+  <h2><span class="n">06</span><span lang="en">Experiment A · take the author's decision away</span><span lang="zh">实验 A · 拿走作者的决策</span></h2>
+  <p lang="en">Each arm removes one explicit decision and hands it back to LLVM's default heuristics. If those heuristics were as good as the author, every bar below would sit on 1.0.</p>
+  <p lang="zh">每个 arm 去掉一个显式决策， 把它交还给 LLVM 的默认启发式。 如果这些启发式和作者一样好， 下面每根条都应该落在 1.0 上。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate III · <span lang="en">speed relative to the stock kernel when one explicit decision is removed</span><span lang="zh">去掉一个显式决策后， 相对 stock kernel 的速度</span></div>
+    <svg viewBox="0 0 860 578" role="img" aria-labelledby="p3-t"><title id="p3-t">speed relative to the stock kernel</title>
+<line class="ax-grid" x1="340.0" y1="26" x2="340.0" y2="552"/>
+<text class="ax-lab" x="340.0" y="568" text-anchor="middle">0.80×</text>
+<line class="ax-grid" x1="411.7" y1="26" x2="411.7" y2="552"/>
+<text class="ax-lab" x="411.7" y="568" text-anchor="middle">0.85×</text>
+<line class="ax-grid" x1="483.3" y1="26" x2="483.3" y2="552"/>
+<text class="ax-lab" x="483.3" y="568" text-anchor="middle">0.90×</text>
+<line class="ax-grid" x1="555.0" y1="26" x2="555.0" y2="552"/>
+<text class="ax-lab" x="555.0" y="568" text-anchor="middle">0.95×</text>
+<line class="ax-one" x1="626.7" y1="26" x2="626.7" y2="552"/>
+<text class="ax-lab" x="626.7" y="568" text-anchor="middle">1.00×</text>
+<line class="ax-grid" x1="698.3" y1="26" x2="698.3" y2="552"/>
+<text class="ax-lab" x="698.3" y="568" text-anchor="middle">1.05×</text>
+<line class="ax-grid" x1="770.0" y1="26" x2="770.0" y2="552"/>
+<text class="ax-lab" x="770.0" y="568" text-anchor="middle">1.10×</text>
+<text class="ax-lab" x="340" y="16" lang="en">← slower than stock</text>
+<text class="ax-lab" x="340" y="16" lang="zh">← 比 stock 慢</text>
+<text class="ax-lab" x="770" y="16" text-anchor="end" lang="en">faster than stock →</text>
+<text class="ax-lab" x="770" y="16" text-anchor="end" lang="zh">比 stock 快 →</text>
+<text class="row-lab" x="330" y="53.0" text-anchor="end" lang="en">preshuffle-a8 · fences + groups</text>
+<text class="row-lab" x="330" y="53.0" text-anchor="end" lang="zh">preshuffle-a8 · fence + group</text>
+<rect class="bar d5" x="457.6" y="42" width="169.1" height="14"/>
+<line class="whisk" x1="453.2" y1="49.0" x2="461.9" y2="49.0"/>
+<text class="val" x="778" y="53.0">0.882×</text>
+<text class="row-lab" x="330" y="83.0" text-anchor="end" lang="en">preshuffle-a8 · groups only</text>
+<text class="row-lab" x="330" y="83.0" text-anchor="end" lang="zh">preshuffle-a8 · 只去 group</text>
+<rect class="bar d5" x="459.1" y="72" width="167.6" height="14"/>
+<line class="whisk" x1="455.3" y1="79.0" x2="462.9" y2="79.0"/>
+<text class="val" x="778" y="83.0">0.883×</text>
+<text class="row-lab" x="330" y="113.0" text-anchor="end" lang="en">mx-preshuffle-a8w8 · fences + groups</text>
+<text class="row-lab" x="330" y="113.0" text-anchor="end" lang="zh">mx-preshuffle-a8w8 · fence + group</text>
+<rect class="bar d5" x="551.4" y="102" width="75.3" height="14"/>
+<line class="whisk" x1="548.9" y1="109.0" x2="553.9" y2="109.0"/>
+<text class="val" x="778" y="113.0">0.947×</text>
+<text class="row-lab" x="330" y="143.0" text-anchor="end" lang="en">swa-gqa · fences + groups</text>
+<text class="row-lab" x="330" y="143.0" text-anchor="end" lang="zh">swa-gqa · fence + group</text>
+<rect class="bar d5" x="397.6" y="132" width="229.0" height="14"/>
+<line class="whisk" x1="395.6" y1="139.0" x2="399.7" y2="139.0"/>
+<text class="val" x="778" y="143.0">0.840×</text>
+<text class="row-lab" x="330" y="173.0" text-anchor="end" lang="en">a16w16 · fences</text>
+<text class="row-lab" x="330" y="173.0" text-anchor="end" lang="zh">a16w16 · fence</text>
+<text class="row-bad" x="620.7" y="173.0" text-anchor="end" lang="en">✕ wrong results: 1 of 880 tests fail</text>
+<text class="row-bad" x="620.7" y="173.0" text-anchor="end" lang="zh">✕ 结果错误： 880 个测试里 1 个失败</text>
+<text class="row-lab" x="330" y="203.0" text-anchor="end" lang="en">a16w16 · fences (repeat)</text>
+<text class="row-lab" x="330" y="203.0" text-anchor="end" lang="zh">a16w16 · fence（重复）</text>
+<text class="row-bad" x="620.7" y="203.0" text-anchor="end" lang="en">✕ wrong results: 1 of 880 tests fail</text>
+<text class="row-bad" x="620.7" y="203.0" text-anchor="end" lang="zh">✕ 结果错误： 880 个测试里 1 个失败</text>
+<text class="row-lab" x="330" y="233.0" text-anchor="end" lang="en">flash-fwd-dense · fences + groups</text>
+<text class="row-lab" x="330" y="233.0" text-anchor="end" lang="zh">flash-fwd-dense · fence + group</text>
+<text class="row-bad" x="620.7" y="233.0" text-anchor="end" lang="en">✕ wrong results: 28 of 1039 tests fail</text>
+<text class="row-bad" x="620.7" y="233.0" text-anchor="end" lang="zh">✕ 结果错误： 1039 个测试里 28 个失败</text>
+<text class="row-lab" x="330" y="263.0" text-anchor="end" lang="en">flash-fwd-dense · groups only</text>
+<text class="row-lab" x="330" y="263.0" text-anchor="end" lang="zh">flash-fwd-dense · 只去 group</text>
+<rect class="bar d5" x="612.0" y="252" width="14.6" height="14"/>
+<line class="whisk" x1="610.4" y1="259.0" x2="613.6" y2="259.0"/>
+<text class="val" x="778" y="263.0">0.990×</text>
+<text class="row-lab" x="330" y="293.0" text-anchor="end" lang="en">fp8-rowscale-8wave · s_setprio</text>
+<text class="row-lab" x="330" y="293.0" text-anchor="end" lang="zh">fp8-rowscale-8wave · s_setprio</text>
+<rect class="bar prio" x="428.6" y="282" width="198.1" height="14"/>
+<line class="whisk" x1="425.8" y1="289.0" x2="431.4" y2="289.0"/>
+<text class="val" x="778" y="293.0">0.862×</text>
+<text class="row-lab" x="330" y="323.0" text-anchor="end" lang="en">mxfp8-8wave · s_setprio</text>
+<text class="row-lab" x="330" y="323.0" text-anchor="end" lang="zh">mxfp8-8wave · s_setprio</text>
+<rect class="bar prio" x="486.1" y="312" width="140.6" height="14"/>
+<line class="whisk" x1="483.9" y1="319.0" x2="488.4" y2="319.0"/>
+<text class="val" x="778" y="323.0">0.902×</text>
+<text class="row-lab" x="330" y="353.0" text-anchor="end" lang="en">flash-fwd-dense · s_setprio</text>
+<text class="row-lab" x="330" y="353.0" text-anchor="end" lang="zh">flash-fwd-dense · s_setprio</text>
+<rect class="bar prio" x="623.2" y="342" width="3.5" height="14"/>
+<line class="whisk" x1="621.7" y1="349.0" x2="624.7" y2="349.0"/>
+<text class="val" x="778" y="353.0">0.998×</text>
+<text class="row-lab" x="330" y="383.0" text-anchor="end" lang="en">flash-fwd-dense · post-RA sched back on</text>
+<text class="row-lab" x="330" y="383.0" text-anchor="end" lang="zh">flash-fwd-dense · 打开 post-RA 调度</text>
+<rect class="bar d5" x="626.7" y="372" width="8.4" height="14"/>
+<line class="whisk" x1="632.6" y1="379.0" x2="637.5" y2="379.0"/>
+<text class="val" x="778" y="383.0">1.006×</text>
+<text class="row-lab" x="330" y="413.0" text-anchor="end" lang="en">fp8-rowscale-4wave · AGPR pin (16384³)</text>
+<text class="row-lab" x="330" y="413.0" text-anchor="end" lang="zh">fp8-rowscale-4wave · AGPR pin（16384³）</text>
+<rect class="bar d4" x="431.8" y="402" width="194.8" height="14"/>
+<line class="whisk" x1="416.0" y1="409.0" x2="447.8" y2="409.0"/>
+<text class="val" x="778" y="413.0">0.864×</text>
+<text class="row-lab" x="330" y="443.0" text-anchor="end" lang="en">fp8-rowscale-4wave · AGPR pin (8192³)</text>
+<text class="row-lab" x="330" y="443.0" text-anchor="end" lang="zh">fp8-rowscale-4wave · AGPR pin（8192³）</text>
+<rect class="bar d4" x="499.0" y="432" width="127.6" height="14"/>
+<line class="whisk" x1="490.3" y1="439.0" x2="507.8" y2="439.0"/>
+<text class="val" x="778" y="443.0">0.911×</text>
+<text class="row-lab" x="330" y="473.0" text-anchor="end" lang="en">fp8-rowscale-4wave · occupancy hints</text>
+<text class="row-lab" x="330" y="473.0" text-anchor="end" lang="zh">fp8-rowscale-4wave · occupancy 提示</text>
+<rect class="bar d4" x="626.7" y="462" width="1.5" height="14"/>
+<line class="whisk" x1="622.8" y1="469.0" x2="631.0" y2="469.0"/>
+<text class="val" x="778" y="473.0">1.000×</text>
+<text class="row-lab" x="330" y="503.0" text-anchor="end" lang="en">rmsnorm-fwd · null control</text>
+<text class="row-lab" x="330" y="503.0" text-anchor="end" lang="zh">rmsnorm-fwd · 空白对照</text>
+<rect class="bar ctrl" x="626.7" y="492" width="6.0" height="14"/>
+<line class="whisk" x1="628.1" y1="499.0" x2="637.2" y2="499.0"/>
+<text class="val" x="778" y="503.0">1.004×</text>
+<text class="row-lab" x="330" y="533.0" text-anchor="end" lang="en">a16w16 · null control</text>
+<text class="row-lab" x="330" y="533.0" text-anchor="end" lang="zh">a16w16 · 空白对照</text>
+<rect class="bar ctrl" x="623.4" y="522" width="3.3" height="14"/>
+<line class="whisk" x1="616.9" y1="529.0" x2="629.9" y2="529.0"/>
+<text class="val" x="778" y="533.0">0.998×</text>
+</svg>
+    <p class="legend"><span><i style="background:var(--ink2)"></i><span lang="en">D5 order</span><span lang="zh">D5 顺序</span></span><span><i style="background:var(--violet)"></i><span lang="en">D5 wave priority</span><span lang="zh">D5 wave 优先级</span></span><span><i style="background:var(--amber)"></i><span lang="en">D4 registers / occupancy</span><span lang="zh">D4 寄存器 / occupancy</span></span><span><i style="background:var(--hair)"></i><span lang="en">null control</span><span lang="zh">空白对照</span></span></p>
+    <p class="caption" lang="en">Bars are the evaluator's geometric-mean speed over all timed and drawn shapes, whiskers its 95% interval over six ABBA pairs. The two AGPR rows are the only shapes that arm can affect. A cross means FlyDSL's own tests or the oracle rejected the output.</p>
+    <p class="caption" lang="zh">条形是评测器在所有计时 shape 和抽取 shape 上的几何平均速度， 须线是 6 组 ABBA 上的 95% 区间。 两行 AGPR 是这个 arm 唯一能影响的 shape。 叉号表示 FlyDSL 自己的测试或 oracle 拒绝了输出。</p>
+  </figure>
+  <table>
+    <tr><th lang="en">Kernel</th><th lang="zh">Kernel</th><th lang="en">Removed</th><th lang="zh">去掉的</th><th lang="en">Speed vs stock [95% CI]</th><th lang="zh">相对 stock 的速度 [95% CI]</th><th lang="en">ISA, largest dumped shape</th><th lang="zh">ISA（dump 的最大 shape）</th></tr>
+    <tr><td><code>gemm.preshuffle-a8</code></td><td><span lang="en">schedule fences + interleave groups</span><span lang="zh">调度 fence + 交错 group</span></td><td class="bad">0.882× [0.879, 0.885]</td><td class="v"><span lang="en">VGPR 190→220, spills 0→0</span><span lang="zh">VGPR 190→220， spill 0→0</span></td></tr>
+<tr><td><code>gemm.preshuffle-a8</code></td><td><span lang="en">interleave groups only</span><span lang="zh">只去交错 group</span></td><td class="bad">0.883× [0.880, 0.886]</td><td class="v"><span lang="en">VGPR 190→156, spills 0→0</span><span lang="zh">VGPR 190→156， spill 0→0</span></td></tr>
+<tr><td><code>gemm.mx-preshuffle-a8w8</code></td><td><span lang="en">schedule fences + interleave groups</span><span lang="zh">调度 fence + 交错 group</span></td><td class="bad">0.947× [0.946, 0.949]</td><td class="v"><span lang="en">VGPR 216→216, spills 0→0</span><span lang="zh">VGPR 216→216， spill 0→0</span></td></tr>
+<tr><td><code>attention.swa-gqa</code></td><td><span lang="en">schedule fences + interleave groups</span><span lang="zh">调度 fence + 交错 group</span></td><td class="bad">0.840× [0.839, 0.842]</td><td class="v"><span lang="en">VGPR 246→256, spills 0→4</span><span lang="zh">VGPR 246→256， spill 0→4</span></td></tr>
+<tr><td><code>gemm.a16w16</code></td><td><span lang="en">schedule fences</span><span lang="zh">调度 fence</span></td><td class="bad">wrong · 1/880 tests</td><td class="v"><span lang="en">VGPR 232→254, spills 0→12</span><span lang="zh">VGPR 232→254， spill 0→12</span></td></tr>
+<tr><td><code>gemm.a16w16</code></td><td><span lang="en">schedule fences (repeat)</span><span lang="zh">调度 fence（重复）</span></td><td class="bad">wrong · 1/880 tests</td><td class="v"><span lang="en">VGPR 232→254, spills 0→12</span><span lang="zh">VGPR 232→254， spill 0→12</span></td></tr>
+<tr><td><code>attention.flash-fwd-dense</code></td><td><span lang="en">schedule fences + interleave groups</span><span lang="zh">调度 fence + 交错 group</span></td><td class="bad">wrong · 28/1039 tests</td><td class="v"><span lang="en">VGPR 246→250, spills 0→0</span><span lang="zh">VGPR 246→250， spill 0→0</span></td></tr>
+<tr><td><code>attention.flash-fwd-dense</code></td><td><span lang="en">interleave groups only</span><span lang="zh">只去交错 group</span></td><td class="bad">0.990× [0.989, 0.991]</td><td class="v"><span lang="en">VGPR 246→242, spills 0→0</span><span lang="zh">VGPR 246→242， spill 0→0</span></td></tr>
+<tr><td><code>gemm.fp8-rowscale-8wave</code></td><td><span lang="en"><code>s_setprio</code></span><span lang="zh"><code>s_setprio</code></span></td><td class="bad">0.862× [0.860, 0.864]</td><td class="v"><span lang="en">VGPR 255→256, spills 0→6</span><span lang="zh">VGPR 255→256， spill 0→6</span></td></tr>
+<tr><td><code>gemm.mxfp8-8wave</code></td><td><span lang="en"><code>s_setprio</code></span><span lang="zh"><code>s_setprio</code></span></td><td class="bad">0.902× [0.900, 0.904]</td><td class="v"><span lang="en">VGPR 256→256, spills 3→7</span><span lang="zh">VGPR 256→256， spill 3→7</span></td></tr>
+<tr><td><code>attention.flash-fwd-dense</code></td><td><span lang="en"><code>s_setprio</code></span><span lang="zh"><code>s_setprio</code></span></td><td class="v">0.998× [0.997, 0.999]</td><td class="v"><span lang="en">VGPR 246→246, spills 0→0</span><span lang="zh">VGPR 246→246， spill 0→0</span></td></tr>
+<tr><td><code>attention.flash-fwd-dense</code></td><td><span lang="en">the disabled post-RA scheduler</span><span lang="zh">被关掉的 post-RA 调度器</span></td><td class="v">1.006× [1.004, 1.008]</td><td class="v"><span lang="en">VGPR 246→246, spills 0→0</span><span lang="zh">VGPR 246→246， spill 0→0</span></td></tr>
+<tr><td><code>gemm.fp8-rowscale-4wave</code></td><td><span lang="en">AGPR accumulator pin (inline asm)</span><span lang="zh">AGPR 累加器 pin（inline asm）</span></td><td class="bad">0.983× [0.978, 0.989]</td><td class="v"><span lang="en">VGPR 512→512, spills 10→92</span><span lang="zh">VGPR 512→512， spill 10→92</span></td></tr>
+<tr><td><code>gemm.fp8-rowscale-4wave</code></td><td><span lang="en">occupancy hints</span><span lang="zh">occupancy 提示</span></td><td class="v">1.000× [0.997, 1.003]</td><td class="v"><span lang="en">ISA identical</span><span lang="zh">ISA 完全相同</span></td></tr>
+<tr><td><code>norm.rmsnorm-fwd</code></td><td><span lang="en">nothing to remove (null control)</span><span lang="zh">没有可去的（空白对照）</span></td><td class="v">1.004× [1.001, 1.007]</td><td class="v"><span lang="en">ISA identical</span><span lang="zh">ISA 完全相同</span></td></tr>
+  </table>
+  <h3 lang="en">The decisions are worth 5–16%, and LLVM does not find them</h3>
+  <h3 lang="zh">这些决策值 5–16%， 而 LLVM 找不到它们</h3>
+  <p lang="en">Removing the schedule hints cost the preshuffle GEMM 12% of its speed (0.882×), the MX preshuffle GEMM 5% and the sliding-window attention 16%. For the preshuffle GEMM the interleave groups carry all of it: dropping only them gives 0.883×, the same as dropping everything. Removing <code>s_setprio</code> cost the two 8-wave GEMMs 14% and 10%; the ISA shows why the first one is more than a priority change, with VGPR spills appearing where there were none. Letting LLVM allocate the FP8 4-wave GEMM's accumulators instead of pinning them cost 14% at 16384³ and 9% at 8192³: spills went from 10 to 92 and accumulator moves from 796 to 6,437. Interesting in the other direction: even the pinned version spills 10 VGPRs at that size, which nobody had been told. Removing the same kernel's occupancy hints (<code>waves_per_eu</code>, <code>flat_work_group_size</code>) changed nothing: the ISA is byte-identical at both dumped shapes, so LLVM's default already matched them. A hint that does nothing does no harm, but no tool tells the author or the agent that it does nothing.</p>
+  <p lang="zh">去掉调度提示后， preshuffle GEMM 的速度下降 12%（0.882×）， MX preshuffle GEMM 下降 5%， 滑窗 attention 下降 16%。 对 preshuffle GEMM， 全部收益都来自交错 group： 只去掉 group 得到 0.883×， 和全部去掉一样。 去掉 <code>s_setprio</code> 让两个 8-wave GEMM 分别下降 14% 和 10%； ISA 说明了为什么前者不只是优先级变化： 原来没有 spill 的地方出现了 VGPR spill。 让 LLVM 分配 FP8 4-wave GEMM 的累加器、 而不是固定它们， 在 16384³ 上慢了 14%， 在 8192³ 上慢了 9%： spill 从 10 个增加到 92 个， 累加器搬运从 796 条增加到 6,437 条。 反过来也值得一提： 即使是固定后的版本， 在这个尺寸上也有 10 个 VGPR spill， 之前没有人知道。 去掉同一个 kernel 的 occupancy 提示（<code>waves_per_eu</code>、<code>flat_work_group_size</code>）什么都没改变： 两个 dump 的 shape 上 ISA 逐字节相同， 说明 LLVM 的默认值本来就和它们一致。 不起作用的提示没有害处， 但没有任何工具告诉作者或 agent 它不起作用。</p>
+  <h3 lang="en">Two kernels' "scheduling" fences were holding correctness</h3>
+  <h3 lang="zh">两个 kernel 的"调度" fence 其实在撑着正确性</h3>
+  <p lang="en">Removing the schedule fences made the A16W16 GEMM fail 1 of 880 of FlyDSL's tests (a mismatched result) and the dense flash attention fail 28 of 1039 (log-sum-exp off by up to 0.43, and NaN). A repeat of the A16W16 arm in a new job failed the same test with different wrong elements (182 and 31 of 163,840), the signature of a race rather than of rounding. With the hint shim installed and nothing removed, the same evaluator passed all of its tests (null control, 0.998×). A scheduling hint is supposed to change only speed. Here it changes the answer. We did not trace which instruction moved, but the kernels point to the cause: they order asynchronous copies and shared-memory reuse with hand-placed waits and barriers that LLVM does not tie to the loads they guard, and a FlyDSL comment elsewhere names exactly this hazard: "the scheduler may hoist them above s_barrier: a race" (<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/kernels/mega_moe_tp/gemm.py#L948-L951"><code>mega_moe_tp/gemm.py</code></a>). Keeping the full fences and dropping only the interleave groups ran at 0.990× [0.989, 0.991] and stayed correct, so it is the fences, not the groups, that hold the answer. This is the strongest result of the post, and it is not about speed: in today's stack an autotuner, or an agent, cannot safely toggle a scheduling knob, because some of them are correctness constraints in disguise.</p>
+  <p lang="zh">去掉调度 fence 之后， A16W16 GEMM 在 FlyDSL 自己的 880 个测试里失败了 1 个（结果不一致）， dense flash attention 失败了 1039 个里的 28 个（log-sum-exp 最多差 0.43， 还有 NaN）。 在新的作业里重复 A16W16 这个 arm， 失败的是同一个测试， 但错的元素不一样（163,840 个里分别错了 182 个和 31 个）， 这是竞争的特征， 不是舍入误差。 装上提示 shim、 什么都不去掉时， 同一个评测器下它的测试全部通过（空白对照， 0.998×）。 调度提示本应只影响速度， 这里却改变了答案。 我们没有追查具体是哪条指令被移动了， 但 kernel 本身指向了原因： 它们用手工放置的 wait 和 barrier 来安排异步拷贝和共享内存复用的顺序， 而 LLVM 不会把这些 wait 和 barrier 与它们所保护的 load 联系起来。 FlyDSL 另一处注释写的正是这种风险： "调度器可能把它们提到 s_barrier 之前： 这是竞争"（<a href="https://github.com/ROCm/FlyDSL/blob/fe81c40773431335c9f77ccd196a7adc0e3126d7/kernels/mega_moe_tp/gemm.py#L948-L951"><code>mega_moe_tp/gemm.py</code></a>）。 保留全部 fence、 只去掉交错 group 时， 速度是 stock 的 0.990× [0.989, 0.991]， 结果也正确。 所以撑住正确性的是 fence， 不是 group。 这是本文最强的结果， 而且它和速度无关： 在今天的工具链里， autotuner 或 agent 不能放心地切换调度旋钮， 因为其中一些其实是伪装起来的正确性约束。</p>
+  <h3 lang="en">LLVM's free schedule is sometimes better, shape by shape</h3>
+  <h3 lang="zh">按 shape 看， LLVM 的自由调度有时反而更好</h3>
+  <p lang="en">The same preshuffle arm that is 12% slower overall is 3.4% <i>faster</i> at 16384³ and 2.1% faster at 8192³. The author's interleave template is a good fixed policy, not the best one for every shape. Plate V returns to this.</p>
+  <p lang="zh">同一个 preshuffle arm， 整体慢了 12%， 在 16384³ 上却<i>快</i>了 3.4%， 在 8192³ 上快了 2.1%。 作者的交错模板是一个不错的固定策略， 但不是每个 shape 上最好的。 Plate V 会回到这一点。</p>
+  <p lang="en">The other two flash arms are small, and they point the same way. Removing its <code>s_setprio</code> gave 0.998× [0.997, 0.999] overall but cost up to 4.3% on single shapes (5 shapes beyond their noise floor). The kernel's author had switched LLVM's post-RA scheduler off to protect the hand-tuned order (<a href="https://github.com/ROCm/FlyDSL/blob/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7/kernels/attention/flash_attn_gfx950.py#L1027"><code>flash_attn_gfx950.py</code></a>); turning it back on gave 1.006× [1.004, 1.008], with no shape slower beyond noise and the best shape 6.7% faster; the ISA has 22 fewer <code>s_nop</code>s (185 → 163). That gain is about the size of the kernel's 0.5% noise floor, so FlyBench would not count it as an improvement. The author could not see whether that flag helps, and FlyDSL's own notes record that three sibling FMHA kernels disagree on it, with no comment (<a href="https://github.com/ROCm/FlyDSL/blob/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7/.claude/skills/llvm/references/arch-gfx950.md#L147"><code>arch-gfx950.md</code></a>).</p>
+  <p lang="zh">flash 的另外两个 arm 影响很小， 方向和上面一致。 去掉 <code>s_setprio</code> 后整体是 0.998× [0.997, 0.999]， 但在单个 shape 上最多慢 4.3%（5 个 shape 超出噪声范围）。 这个 kernel 的作者为了保护手工调好的顺序， 关掉了 LLVM 的 post-RA 调度器（<a href="https://github.com/ROCm/FlyDSL/blob/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7/kernels/attention/flash_attn_gfx950.py#L1027"><code>flash_attn_gfx950.py</code></a>）； 重新打开后得到 1.006× [1.004, 1.008]， 没有 shape 超出噪声地变慢， 最好的 shape 快了 6.7%； ISA 里少了 22 条 <code>s_nop</code>（185 → 163）。 这个收益和这个 kernel 0.5% 的噪声下限差不多大， 所以 FlyBench 不会把它算作提升。 作者看不到这个开关到底有没有用； FlyDSL 自己的笔记也写着， 三个同系列的 FMHA kernel 在这个开关上取值不一致， 而且没有注释（<a href="https://github.com/ROCm/FlyDSL/blob/cb770e9a96b3454fa9cbbbcdc16dceeda1d8e4e7/.claude/skills/llvm/references/arch-gfx950.md#L147"><code>arch-gfx950.md</code></a>）。</p>
+</section>
+
+<section id="headroom">
+  <h2><span class="n">07</span><span lang="en">Experiment B · knobs nobody tuned</span><span lang="zh">实验 B · 没人调过的旋钮</span></h2>
+  <p lang="en">The normalization, softmax and MoE kernels carry no schedule hints at all: every D4/D5 decision is LLVM's default. Here we try LLVM's other scheduling strategies, and turning its machine schedulers off, which approximates program order.</p>
+  <p lang="zh">normalization、 softmax 和 MoE 这些 kernel 完全没有调度提示： 每个 D4 / D5 决策都是 LLVM 的默认值。 这里我们试 LLVM 的其他调度策略， 以及关掉它的 machine scheduler（近似于按程序顺序）。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate IV · <span lang="en">speed relative to stock under one untuned LLVM knob</span><span lang="zh">换一个没人调过的 LLVM 旋钮后， 相对 stock 的速度</span></div>
+    <svg viewBox="0 0 860 458" role="img" aria-labelledby="p4-t"><title id="p4-t">speed relative to the stock kernel</title>
+<line class="ax-grid" x1="340.0" y1="26" x2="340.0" y2="432"/>
+<text class="ax-lab" x="340.0" y="448" text-anchor="middle">0.85×</text>
+<line class="ax-grid" x1="447.5" y1="26" x2="447.5" y2="432"/>
+<text class="ax-lab" x="447.5" y="448" text-anchor="middle">0.90×</text>
+<line class="ax-grid" x1="555.0" y1="26" x2="555.0" y2="432"/>
+<text class="ax-lab" x="555.0" y="448" text-anchor="middle">0.95×</text>
+<line class="ax-one" x1="662.5" y1="26" x2="662.5" y2="432"/>
+<text class="ax-lab" x="662.5" y="448" text-anchor="middle">1.00×</text>
+<line class="ax-grid" x1="770.0" y1="26" x2="770.0" y2="432"/>
+<text class="ax-lab" x="770.0" y="448" text-anchor="middle">1.05×</text>
+<text class="ax-lab" x="340" y="16" lang="en">← slower than stock</text>
+<text class="ax-lab" x="340" y="16" lang="zh">← 比 stock 慢</text>
+<text class="ax-lab" x="770" y="16" text-anchor="end" lang="en">faster than stock →</text>
+<text class="ax-lab" x="770" y="16" text-anchor="end" lang="zh">比 stock 快 →</text>
+<text class="row-lab" x="330" y="53.0" text-anchor="end" lang="en">rmsnorm-fwd · max-memory-clause</text>
+<text class="row-lab" x="330" y="53.0" text-anchor="end" lang="zh">rmsnorm-fwd · max-memory-clause</text>
+<rect class="bar head" x="662.5" y="42" width="1.5" height="14"/>
+<line class="whisk" x1="648.8" y1="49.0" x2="676.5" y2="49.0"/>
+<text class="val" x="778" y="53.0">1.000×</text>
+<text class="row-lab" x="330" y="83.0" text-anchor="end" lang="en">rmsnorm-fwd · max-ilp</text>
+<text class="row-lab" x="330" y="83.0" text-anchor="end" lang="zh">rmsnorm-fwd · max-ilp</text>
+<rect class="bar head" x="662.5" y="72" width="3.6" height="14"/>
+<line class="whisk" x1="660.2" y1="79.0" x2="672.0" y2="79.0"/>
+<text class="val" x="778" y="83.0">1.002×</text>
+<text class="row-lab" x="330" y="113.0" text-anchor="end" lang="en">rmsnorm-fwd · LLVM scheduler off</text>
+<text class="row-lab" x="330" y="113.0" text-anchor="end" lang="zh">rmsnorm-fwd · 关掉 LLVM 调度器</text>
+<rect class="bar off" x="444.5" y="102" width="218.0" height="14"/>
+<line class="whisk" x1="439.6" y1="109.0" x2="449.4" y2="109.0"/>
+<text class="val" x="778" y="113.0">0.899×</text>
+<text class="row-lab" x="330" y="143.0" text-anchor="end" lang="en">layernorm-fwd · max-memory-clause</text>
+<text class="row-lab" x="330" y="143.0" text-anchor="end" lang="zh">layernorm-fwd · max-memory-clause</text>
+<rect class="bar head" x="661.5" y="132" width="1.5" height="14"/>
+<line class="whisk" x1="652.8" y1="139.0" x2="670.3" y2="139.0"/>
+<text class="val" x="778" y="143.0">1.000×</text>
+<text class="row-lab" x="330" y="173.0" text-anchor="end" lang="en">layernorm-fwd · max-ilp</text>
+<text class="row-lab" x="330" y="173.0" text-anchor="end" lang="zh">layernorm-fwd · max-ilp</text>
+<rect class="bar head" x="662.5" y="162" width="24.8" height="14"/>
+<line class="whisk" x1="675.0" y1="169.0" x2="699.8" y2="169.0"/>
+<text class="val" x="778" y="173.0">1.012×</text>
+<text class="row-lab" x="330" y="203.0" text-anchor="end" lang="en">softmax-fwd · max-memory-clause</text>
+<text class="row-lab" x="330" y="203.0" text-anchor="end" lang="zh">softmax-fwd · max-memory-clause</text>
+<rect class="bar head" x="564.8" y="192" width="97.7" height="14"/>
+<line class="whisk" x1="555.1" y1="199.0" x2="574.6" y2="199.0"/>
+<text class="val" x="778" y="203.0">0.955×</text>
+<text class="row-lab" x="330" y="233.0" text-anchor="end" lang="en">softmax-fwd · max-ilp</text>
+<text class="row-lab" x="330" y="233.0" text-anchor="end" lang="zh">softmax-fwd · max-ilp</text>
+<rect class="bar head" x="556.2" y="222" width="106.3" height="14"/>
+<line class="whisk" x1="552.1" y1="229.0" x2="560.3" y2="229.0"/>
+<text class="val" x="778" y="233.0">0.951×</text>
+<text class="row-lab" x="330" y="263.0" text-anchor="end" lang="en">moe.reduce · max-memory-clause</text>
+<text class="row-lab" x="330" y="263.0" text-anchor="end" lang="zh">moe.reduce · max-memory-clause</text>
+<rect class="bar head" x="662.5" y="252" width="2.4" height="14"/>
+<line class="whisk" x1="651.2" y1="259.0" x2="678.7" y2="259.0"/>
+<text class="val" x="778" y="263.0">1.001×</text>
+<text class="row-lab" x="330" y="293.0" text-anchor="end" lang="en">moe gemm1 · max-memory-clause</text>
+<text class="row-lab" x="330" y="293.0" text-anchor="end" lang="zh">moe gemm1 · max-memory-clause</text>
+<rect class="bar head" x="587.6" y="282" width="74.9" height="14"/>
+<line class="whisk" x1="559.2" y1="289.0" x2="616.4" y2="289.0"/>
+<text class="val" x="778" y="293.0">0.965×</text>
+<text class="row-lab" x="330" y="323.0" text-anchor="end" lang="en">moe gemm1 · max-ilp</text>
+<text class="row-lab" x="330" y="323.0" text-anchor="end" lang="zh">moe gemm1 · max-ilp</text>
+<text class="row-bad" x="656.5" y="323.0" text-anchor="end" lang="en">✕ one wrong output</text>
+<text class="row-bad" x="656.5" y="323.0" text-anchor="end" lang="zh">✕ 一次输出错误</text>
+<text class="row-lab" x="330" y="353.0" text-anchor="end" lang="en">moe gemm1 · max-ilp (repeat)</text>
+<text class="row-lab" x="330" y="353.0" text-anchor="end" lang="zh">moe gemm1 · max-ilp（重复）</text>
+<text class="row-bad" x="656.5" y="353.0" text-anchor="end" lang="en">✕ stock itself failed</text>
+<text class="row-bad" x="656.5" y="353.0" text-anchor="end" lang="zh">✕ stock 自己出错</text>
+<text class="row-lab" x="330" y="383.0" text-anchor="end" lang="en">preshuffle-a8 · max-ilp</text>
+<text class="row-lab" x="330" y="383.0" text-anchor="end" lang="zh">preshuffle-a8 · max-ilp</text>
+<rect class="bar head" x="662.5" y="372" width="38.9" height="14"/>
+<line class="whisk" x1="693.4" y1="379.0" x2="709.3" y2="379.0"/>
+<text class="val" x="778" y="383.0">1.018×</text>
+<text class="row-lab" x="330" y="413.0" text-anchor="end" lang="en">preshuffle-a8 · LLVM scheduler off</text>
+<text class="row-lab" x="330" y="413.0" text-anchor="end" lang="zh">preshuffle-a8 · 关掉 LLVM 调度器</text>
+<rect class="bar off" x="662.5" y="402" width="53.4" height="14"/>
+<line class="whisk" x1="706.8" y1="409.0" x2="724.9" y2="409.0"/>
+<text class="val" x="778" y="413.0">1.025×</text>
+</svg>
+    <p class="caption" lang="en">Teal: a different <code>amdgpu-sched-strategy</code>. Red: machine schedulers off. Crosses: the evaluator rejected an output; in the MoE repeat it was the stock kernel's. Most bars stay inside each kernel's measured noise floor.</p>
+    <p class="caption" lang="zh">青色： 换一个 <code>amdgpu-sched-strategy</code>。 红色： 关掉 machine scheduler。 叉号： 评测器拒绝了某次输出； 在 MoE 的重复实验里， 出错的是 stock kernel。 大多数条都落在各自 kernel 测得的噪声范围以内。</p>
+  </figure>
+  <table>
+    <tr><th lang="en">Kernel</th><th lang="zh">Kernel</th><th lang="en">Knob</th><th lang="zh">旋钮</th><th lang="en">Speed vs stock [95% CI]</th><th lang="zh">相对 stock 的速度 [95% CI]</th><th lang="en">ISA, largest dumped shape</th><th lang="zh">ISA（dump 的最大 shape）</th></tr>
+    <tr><td><code>norm.rmsnorm-fwd</code></td><td><span lang="en"><code>max-memory-clause</code></span><span lang="zh"><code>max-memory-clause</code></span></td><td class="v">1.000× [0.994, 1.006]</td><td class="v"><span lang="en">VGPR 40→40, spills 0→0</span><span lang="zh">VGPR 40→40， spill 0→0</span></td></tr>
+<tr><td><code>norm.rmsnorm-fwd</code></td><td><span lang="en"><code>max-ilp</code></span><span lang="zh"><code>max-ilp</code></span></td><td class="v">1.002× [0.999, 1.004]</td><td class="v"><span lang="en">VGPR 40→39, spills 0→0</span><span lang="zh">VGPR 40→39， spill 0→0</span></td></tr>
+<tr><td><code>norm.rmsnorm-fwd</code></td><td><span lang="en">machine schedulers off</span><span lang="zh">关掉 machine scheduler</span></td><td class="bad">0.899× [0.896, 0.901]</td><td class="v"><span lang="en">VGPR 40→30, spills 0→0</span><span lang="zh">VGPR 40→30， spill 0→0</span></td></tr>
+<tr><td><code>norm.layernorm-fwd</code></td><td><span lang="en"><code>max-memory-clause</code></span><span lang="zh"><code>max-memory-clause</code></span></td><td class="v">1.000× [0.996, 1.004]</td><td class="v"><span lang="en">VGPR 60→60, spills 0→0</span><span lang="zh">VGPR 60→60， spill 0→0</span></td></tr>
+<tr><td><code>norm.layernorm-fwd</code></td><td><span lang="en"><code>max-ilp</code></span><span lang="zh"><code>max-ilp</code></span></td><td class="v">1.012× [1.006, 1.017]</td><td class="v"><span lang="en">VGPR 60→86, spills 0→0</span><span lang="zh">VGPR 60→86， spill 0→0</span></td></tr>
+<tr><td><code>norm.softmax-fwd</code></td><td><span lang="en"><code>max-memory-clause</code></span><span lang="zh"><code>max-memory-clause</code></span></td><td class="bad">0.955× [0.950, 0.959]</td><td class="v"><span lang="en">ISA identical</span><span lang="zh">ISA 完全相同</span></td></tr>
+<tr><td><code>norm.softmax-fwd</code></td><td><span lang="en"><code>max-ilp</code></span><span lang="zh"><code>max-ilp</code></span></td><td class="bad">0.951× [0.949, 0.952]</td><td class="v"><span lang="en">VGPR 45→53, spills 0→0</span><span lang="zh">VGPR 45→53， spill 0→0</span></td></tr>
+<tr><td><code>moe.reduce</code></td><td><span lang="en"><code>max-memory-clause</code></span><span lang="zh"><code>max-memory-clause</code></span></td><td class="v">1.001× [0.995, 1.008]</td><td class="v"><span lang="en">VGPR 65→65, spills 0→0</span><span lang="zh">VGPR 65→65， spill 0→0</span></td></tr>
+<tr><td><code>moe.2stage-gemm1</code></td><td><span lang="en"><code>max-memory-clause</code></span><span lang="zh"><code>max-memory-clause</code></span></td><td class="bad">0.965× [0.952, 0.979]</td><td class="v"><span lang="en">VGPR 70→70, spills 0→0</span><span lang="zh">VGPR 70→70， spill 0→0</span></td></tr>
+<tr><td><code>moe.2stage-gemm1</code></td><td><span lang="en"><code>max-ilp</code></span><span lang="zh"><code>max-ilp</code></span></td><td class="bad">wrong output</td><td class="v"><span lang="en">VGPR 70→70, spills 0→0</span><span lang="zh">VGPR 70→70， spill 0→0</span></td></tr>
+<tr><td><code>moe.2stage-gemm1</code></td><td><span lang="en"><code>max-ilp</code>, repeated</span><span lang="zh"><code>max-ilp</code>， 重复一次</span></td><td class="bad">stock failed</td><td class="v"><span lang="en">VGPR 70→70, spills 0→0</span><span lang="zh">VGPR 70→70， spill 0→0</span></td></tr>
+<tr><td><code>gemm.preshuffle-a8</code></td><td><span lang="en"><code>max-ilp</code></span><span lang="zh"><code>max-ilp</code></span></td><td class="good">1.018× [1.014, 1.022]</td><td class="v"><span lang="en">VGPR 190→198, spills 0→0</span><span lang="zh">VGPR 190→198， spill 0→0</span></td></tr>
+<tr><td><code>gemm.preshuffle-a8</code></td><td><span lang="en">machine schedulers off</span><span lang="zh">关掉 machine scheduler</span></td><td class="good">1.025× [1.021, 1.029]</td><td class="v"><span lang="en">VGPR 190→190, spills 0→0</span><span lang="zh">VGPR 190→190， spill 0→0</span></td></tr>
+  </table>
+  <p lang="en">Three readings. First, for kernels nobody scheduled by hand, LLVM's default is good: no strategy beat it beyond noise on the norms and the MoE reduce, and turning the machine scheduler off cost RMSNorm 10%. An automatic mode needs a real scheduler. Second, on the hand-scheduled preshuffle GEMM the opposite holds: with LLVM's machine schedulers off it ran at 1.025× [1.021, 1.029], faster than stock, and <code>max-ilp</code> gave 1.018×. Neither is a clean win: 3 and 5 shapes got slower beyond noise (worst 0.92× and 0.93×), so FlyBench would reject both as submitted. The heuristic scheduler is costing this kernel time even with the author's hints in place, which is what an explicit, program-order mode predicts. Third, the MoE GEMM failed correctness on one timed call under <code>max-ilp</code> (cosine similarity 0.989 against a 0.99 bound). We repeated the arm, and the repeat caught the <i>stock</i> kernel returning a wrong output (cosine 0.977), so this kernel has an intermittent correctness problem of its own, most likely a race that we did not root-cause, and the knob cannot be blamed for it. It is a lesson of a different kind: a production kernel whose wrong answers the evaluator catches only some of the time is exactly the case a static race check exists for.</p>
+  <p lang="zh">三点解读。 第一， 对没有手工调度的 kernel， LLVM 的默认值是好的： 在 norm 和 MoE reduce 上， 没有哪个策略超出噪声地赢过它， 关掉 machine scheduler 让 RMSNorm 慢了 10%。 自动模式需要一个真正的调度器。 第二， 在手工调度的 preshuffle GEMM 上情况相反： 关掉 LLVM 的 machine scheduler 后， 速度是 1.025× [1.021, 1.029]， 比 stock 快； <code>max-ilp</code> 是 1.018×。 两者都不是干净的胜利： 分别有 3 个和 5 个 shape 超出噪声地变慢（最差 0.92× 和 0.93×）， 所以按提交标准 FlyBench 会拒绝这两个 arm。 即使有作者的提示， 启发式调度器仍在拖慢这个 kernel， 这正是显式、 按程序顺序的模式所预言的。 第三， 在 <code>max-ilp</code> 下， MoE GEMM 的一次计时调用没有通过正确性检查（余弦相似度 0.989， 门限是 0.99）。 我们重复了这个 arm， 结果重复实验抓到了 <i>stock</i> kernel 自己返回错误结果（余弦 0.977）。 所以这个 kernel 本身就有间歇性的正确性问题， 很可能是一个我们没有定位的竞争， 不能怪到这个旋钮头上。 这是另一种教训： 一个生产 kernel 的错误结果只能被评测器偶尔抓到， 这正是静态竞争检查要解决的情况。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate V · <span lang="en">preshuffle-a8, shape by shape: no single schedule wins everywhere</span><span lang="zh">preshuffle-a8 逐个 shape 看： 没有哪种调度处处都赢</span></div>
+    <svg viewBox="0 0 860 330" role="img" aria-labelledby="ps-t"><title id="ps-t">per-shape speed of each arm on preshuffle-a8</title>
+<line class="ax-grid" x1="56" y1="284.0" x2="844" y2="284.0"/>
+<text class="ax-lab" x="50" y="288.0" text-anchor="end">0.75×</text>
+<line class="ax-grid" x1="56" y1="251.0" x2="844" y2="251.0"/>
+<text class="ax-lab" x="50" y="255.0" text-anchor="end">0.80×</text>
+<line class="ax-grid" x1="56" y1="218.0" x2="844" y2="218.0"/>
+<text class="ax-lab" x="50" y="222.0" text-anchor="end">0.85×</text>
+<line class="ax-grid" x1="56" y1="185.0" x2="844" y2="185.0"/>
+<text class="ax-lab" x="50" y="189.0" text-anchor="end">0.90×</text>
+<line class="ax-grid" x1="56" y1="152.0" x2="844" y2="152.0"/>
+<text class="ax-lab" x="50" y="156.0" text-anchor="end">0.95×</text>
+<line class="ax-one" x1="56" y1="119.0" x2="844" y2="119.0"/>
+<text class="ax-lab" x="50" y="123.0" text-anchor="end">1.00×</text>
+<line class="ax-grid" x1="56" y1="86.0" x2="844" y2="86.0"/>
+<text class="ax-lab" x="50" y="90.0" text-anchor="end">1.05×</text>
+<line class="ax-grid" x1="56" y1="53.0" x2="844" y2="53.0"/>
+<text class="ax-lab" x="50" y="57.0" text-anchor="end">1.10×</text>
+<line class="ax-grid" x1="56" y1="20.0" x2="844" y2="20.0"/>
+<text class="ax-lab" x="50" y="24.0" text-anchor="end">1.15×</text>
+<text class="ax-lab" x="68.3" y="300" text-anchor="middle">4</text>
+<text class="ax-lab" x="166.8" y="300" text-anchor="middle">8</text>
+<text class="ax-lab" x="265.3" y="300" text-anchor="middle">13</text>
+<text class="ax-lab" x="363.8" y="300" text-anchor="middle">14</text>
+<text class="ax-lab" x="462.3" y="300" text-anchor="middle">20</text>
+<text class="ax-lab" x="560.8" y="300" text-anchor="middle">39</text>
+<text class="ax-lab" x="659.3" y="300" text-anchor="middle">128</text>
+<text class="ax-lab" x="757.8" y="300" text-anchor="middle">286</text>
+<text class="ax-lab" x="450" y="324" text-anchor="middle" lang="en">public shapes, sorted by stock time (µs)</text>
+<text class="ax-lab" x="450" y="324" text-anchor="middle" lang="zh">公开 shape， 按 stock 耗时排序（µs）</text>
+<circle class="dot s1" cx="63.8" cy="140.2" r="3.2"/>
+<circle class="dot s1" cx="88.4" cy="181.6" r="3.2"/>
+<circle class="dot s1" cx="113.1" cy="218.6" r="3.2"/>
+<circle class="dot s1" cx="137.7" cy="170.4" r="3.2"/>
+<circle class="dot s1" cx="162.3" cy="216.6" r="3.2"/>
+<circle class="dot s1" cx="186.9" cy="194.1" r="3.2"/>
+<circle class="dot s1" cx="211.6" cy="195.5" r="3.2"/>
+<circle class="dot s1" cx="236.2" cy="268.7" r="3.2"/>
+<circle class="dot s1" cx="260.8" cy="266.4" r="3.2"/>
+<circle class="dot s1" cx="285.4" cy="263.9" r="3.2"/>
+<circle class="dot s1" cx="310.1" cy="259.6" r="3.2"/>
+<circle class="dot s1" cx="334.7" cy="259.4" r="3.2"/>
+<circle class="dot s1" cx="359.3" cy="271.1" r="3.2"/>
+<circle class="dot s1" cx="383.9" cy="284.0" r="3.2"/>
+<circle class="dot s1" cx="408.6" cy="240.6" r="3.2"/>
+<circle class="dot s1" cx="433.2" cy="239.5" r="3.2"/>
+<circle class="dot s1" cx="457.8" cy="284.0" r="3.2"/>
+<circle class="dot s1" cx="482.4" cy="284.0" r="3.2"/>
+<circle class="dot s1" cx="507.1" cy="135.2" r="3.2"/>
+<circle class="dot s1" cx="531.7" cy="189.9" r="3.2"/>
+<circle class="dot s1" cx="556.3" cy="104.5" r="3.2"/>
+<circle class="dot s1" cx="580.9" cy="184.4" r="3.2"/>
+<circle class="dot s1" cx="605.6" cy="121.1" r="3.2"/>
+<circle class="dot s1" cx="630.2" cy="99.4" r="3.2"/>
+<circle class="dot s1" cx="654.8" cy="216.6" r="3.2"/>
+<circle class="dot s1" cx="679.4" cy="104.8" r="3.2"/>
+<circle class="dot s1" cx="704.1" cy="105.7" r="3.2"/>
+<circle class="dot s1" cx="728.7" cy="146.8" r="3.2"/>
+<circle class="dot s1" cx="753.3" cy="150.0" r="3.2"/>
+<circle class="dot s1" cx="777.9" cy="84.6" r="3.2"/>
+<circle class="dot s1" cx="802.6" cy="96.3" r="3.2"/>
+<circle class="dot s1" cx="827.2" cy="191.3" r="3.2"/>
+<circle class="dot s2" cx="66.8" cy="247.0" r="3.2"/>
+<circle class="dot s2" cx="91.4" cy="178.6" r="3.2"/>
+<circle class="dot s2" cx="116.1" cy="216.6" r="3.2"/>
+<circle class="dot s2" cx="140.7" cy="148.0" r="3.2"/>
+<circle class="dot s2" cx="165.3" cy="209.2" r="3.2"/>
+<circle class="dot s2" cx="189.9" cy="194.7" r="3.2"/>
+<circle class="dot s2" cx="214.6" cy="192.7" r="3.2"/>
+<circle class="dot s2" cx="239.2" cy="252.8" r="3.2"/>
+<circle class="dot s2" cx="263.8" cy="253.9" r="3.2"/>
+<circle class="dot s2" cx="288.4" cy="249.9" r="3.2"/>
+<circle class="dot s2" cx="313.1" cy="251.8" r="3.2"/>
+<circle class="dot s2" cx="337.7" cy="247.2" r="3.2"/>
+<circle class="dot s2" cx="362.3" cy="284.0" r="3.2"/>
+<circle class="dot s2" cx="386.9" cy="267.9" r="3.2"/>
+<circle class="dot s2" cx="411.6" cy="218.6" r="3.2"/>
+<circle class="dot s2" cx="436.2" cy="228.5" r="3.2"/>
+<circle class="dot s2" cx="460.8" cy="278.9" r="3.2"/>
+<circle class="dot s2" cx="485.4" cy="265.5" r="3.2"/>
+<circle class="dot s2" cx="510.1" cy="126.0" r="3.2"/>
+<circle class="dot s2" cx="534.7" cy="242.9" r="3.2"/>
+<circle class="dot s2" cx="559.3" cy="96.0" r="3.2"/>
+<circle class="dot s2" cx="583.9" cy="215.3" r="3.2"/>
+<circle class="dot s2" cx="608.6" cy="125.9" r="3.2"/>
+<circle class="dot s2" cx="633.2" cy="56.4" r="3.2"/>
+<circle class="dot s2" cx="657.8" cy="169.0" r="3.2"/>
+<circle class="dot s2" cx="682.4" cy="110.0" r="3.2"/>
+<circle class="dot s2" cx="707.1" cy="125.6" r="3.2"/>
+<circle class="dot s2" cx="731.7" cy="161.1" r="3.2"/>
+<circle class="dot s2" cx="756.3" cy="164.5" r="3.2"/>
+<circle class="dot s2" cx="780.9" cy="66.0" r="3.2"/>
+<circle class="dot s2" cx="805.6" cy="101.5" r="3.2"/>
+<circle class="dot s2" cx="830.2" cy="157.9" r="3.2"/>
+<circle class="dot s3" cx="69.8" cy="116.3" r="3.2"/>
+<circle class="dot s3" cx="94.4" cy="78.3" r="3.2"/>
+<circle class="dot s3" cx="119.1" cy="69.5" r="3.2"/>
+<circle class="dot s3" cx="143.7" cy="89.2" r="3.2"/>
+<circle class="dot s3" cx="168.3" cy="67.5" r="3.2"/>
+<circle class="dot s3" cx="192.9" cy="81.0" r="3.2"/>
+<circle class="dot s3" cx="217.6" cy="80.6" r="3.2"/>
+<circle class="dot s3" cx="242.2" cy="88.6" r="3.2"/>
+<circle class="dot s3" cx="266.8" cy="86.6" r="3.2"/>
+<circle class="dot s3" cx="291.4" cy="81.2" r="3.2"/>
+<circle class="dot s3" cx="316.1" cy="87.2" r="3.2"/>
+<circle class="dot s3" cx="340.7" cy="87.3" r="3.2"/>
+<circle class="dot s3" cx="365.3" cy="128.4" r="3.2"/>
+<circle class="dot s3" cx="389.9" cy="91.1" r="3.2"/>
+<circle class="dot s3" cx="414.6" cy="99.7" r="3.2"/>
+<circle class="dot s3" cx="439.2" cy="82.0" r="3.2"/>
+<circle class="dot s3" cx="463.8" cy="88.9" r="3.2"/>
+<circle class="dot s3" cx="488.4" cy="103.1" r="3.2"/>
+<circle class="dot s3" cx="513.1" cy="119.0" r="3.2"/>
+<circle class="dot s3" cx="537.7" cy="124.2" r="3.2"/>
+<circle class="dot s3" cx="562.3" cy="119.7" r="3.2"/>
+<circle class="dot s3" cx="586.9" cy="119.4" r="3.2"/>
+<circle class="dot s3" cx="611.6" cy="123.3" r="3.2"/>
+<circle class="dot s3" cx="636.2" cy="94.1" r="3.2"/>
+<circle class="dot s3" cx="660.8" cy="157.0" r="3.2"/>
+<circle class="dot s3" cx="685.4" cy="112.9" r="3.2"/>
+<circle class="dot s3" cx="710.1" cy="116.4" r="3.2"/>
+<circle class="dot s3" cx="734.7" cy="160.9" r="3.2"/>
+<circle class="dot s3" cx="759.3" cy="161.6" r="3.2"/>
+<circle class="dot s3" cx="783.9" cy="109.7" r="3.2"/>
+<circle class="dot s3" cx="808.6" cy="119.3" r="3.2"/>
+<circle class="dot s3" cx="833.2" cy="165.1" r="3.2"/>
+<circle class="dot s4" cx="72.8" cy="124.6" r="3.2"/>
+<circle class="dot s4" cx="97.4" cy="80.3" r="3.2"/>
+<circle class="dot s4" cx="122.1" cy="76.4" r="3.2"/>
+<circle class="dot s4" cx="146.7" cy="76.3" r="3.2"/>
+<circle class="dot s4" cx="171.3" cy="77.4" r="3.2"/>
+<circle class="dot s4" cx="195.9" cy="57.0" r="3.2"/>
+<circle class="dot s4" cx="220.6" cy="86.7" r="3.2"/>
+<circle class="dot s4" cx="245.2" cy="33.9" r="3.2"/>
+<circle class="dot s4" cx="269.8" cy="80.4" r="3.2"/>
+<circle class="dot s4" cx="294.4" cy="78.1" r="3.2"/>
+<circle class="dot s4" cx="319.1" cy="89.4" r="3.2"/>
+<circle class="dot s4" cx="343.7" cy="90.9" r="3.2"/>
+<circle class="dot s4" cx="368.3" cy="171.6" r="3.2"/>
+<circle class="dot s4" cx="392.9" cy="72.0" r="3.2"/>
+<circle class="dot s4" cx="417.6" cy="109.7" r="3.2"/>
+<circle class="dot s4" cx="442.2" cy="120.8" r="3.2"/>
+<circle class="dot s4" cx="466.8" cy="82.6" r="3.2"/>
+<circle class="dot s4" cx="491.4" cy="109.2" r="3.2"/>
+<circle class="dot s4" cx="516.1" cy="122.3" r="3.2"/>
+<circle class="dot s4" cx="540.7" cy="121.0" r="3.2"/>
+<circle class="dot s4" cx="565.3" cy="120.1" r="3.2"/>
+<circle class="dot s4" cx="589.9" cy="117.6" r="3.2"/>
+<circle class="dot s4" cx="614.6" cy="125.4" r="3.2"/>
+<circle class="dot s4" cx="639.2" cy="85.2" r="3.2"/>
+<circle class="dot s4" cx="663.8" cy="164.0" r="3.2"/>
+<circle class="dot s4" cx="688.4" cy="102.0" r="3.2"/>
+<circle class="dot s4" cx="713.1" cy="107.5" r="3.2"/>
+<circle class="dot s4" cx="737.7" cy="114.7" r="3.2"/>
+<circle class="dot s4" cx="762.3" cy="118.7" r="3.2"/>
+<circle class="dot s4" cx="786.9" cy="86.0" r="3.2"/>
+<circle class="dot s4" cx="811.6" cy="105.3" r="3.2"/>
+<circle class="dot s4" cx="836.2" cy="155.9" r="3.2"/>
+</svg>
+    <p class="legend"><span><i style="background:var(--ink2)"></i><span lang="en">no fences or groups</span><span lang="zh">去掉 fence 和 group</span></span><span><i style="background:var(--red)"></i><span lang="en">no groups</span><span lang="zh">去掉 group</span></span><span><i style="background:var(--teal)"></i>max-ilp</span><span><i style="background:var(--amber)"></i><span lang="en">LLVM schedulers off</span><span lang="zh">关掉 LLVM 调度器</span></span></p>
+    <p class="caption" lang="en">Each dot is one public shape under one arm; 1.0 is the stock kernel. The spread is the headroom: picking the best schedule per shape from these four arms and stock gives 1.041× on the 32 public shapes, or 1.027× if an arm is credited only where its interval clears 1.0, and then only its lower bound.</p>
+    <p class="caption" lang="zh">每个点是一个公开 shape 在一个 arm 下的速度； 1.0 是 stock kernel。 这种分散就是空间： 在这四个 arm 和 stock 之间为每个 shape 选最好的调度， 在 32 个公开 shape 上得到 1.041×； 如果只在区间整体高于 1.0 时才计入某个 arm、 并且只计它的区间下限， 得到 1.027×。</p>
+  </figure>
+  <p lang="en">That per-shape selection is a lower bound on what a search over safe schedule knobs could find in this one kernel, and it is not available today, for the reason A gave: in kernels whose fences carry correctness, the knob space is not safe to search.</p>
+  <p lang="zh">这种按 shape 的选择， 是在这一个 kernel 里搜索安全调度旋钮所能找到的收益的下限。 而它今天用不上， 原因就是 A 说的： 在 fence 撑着正确性的 kernel 里， 这个旋钮空间不能放心搜索。</p>
+</section>
+
+<section id="agents">
+  <h2><span class="n">08</span><span lang="en">Experiment C · what 671 agent runs actually did</span><span lang="zh">实验 C · 671 次 agent 运行到底做了什么</span></h2>
+  <p lang="en">The overlay has already run FlyBench mode A many times: an agent gets one FlyDSL kernel and a time budget and tries to make it faster without changing its results. We read all of it that survives: 98 runs, 676 evaluator receipts, 89 independent reviews of the best patches, and 827 command traces (285,091 commands). Only aggregates are published.</p>
+  <p lang="zh">overlay 已经跑过很多次 FlyBench mode A： agent 拿到一个 FlyDSL kernel 和一段时间预算， 在不改变结果的前提下设法让它变快。 我们读了所有留存下来的记录： 98 次 run、 676 张评测回执、 89 份对最好补丁的独立 review， 以及 827 份命令轨迹（共 285,091 条命令）。 这里只发布汇总数据。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate VI · <span lang="en">where the reviewed speedups came from, and what agents spent their commands on</span><span lang="zh">经过 review 的提速来自哪里， 以及 agent 把命令花在了什么上</span></div>
+    <p class="caption" lang="en">Share of the 39 reviews judged legitimate whose summary credits each source (a patch can credit several).</p>
+    <p class="caption" lang="zh">在 39 份判定为合法的 review 中， 总结里提到某一来源的比例（一个补丁可以有多个来源）。</p>
+    <svg viewBox="0 0 860 178" role="img" aria-labelledby="p6a-t"><title id="p6a-t">bar chart</title>
+<text class="row-lab" x="300" y="27" text-anchor="end" lang="en">vectorize · memory path</text>
+<text class="row-lab" x="300" y="27" text-anchor="end" lang="zh">向量化 · 访存路径</text>
+<rect class="bar d5" x="312" y="15" width="355.6" height="16"/>
+<text class="val" x="673.6" y="27">74%</text>
+<text class="row-lab" x="300" y="53" text-anchor="end" lang="en">dispatch · tiling</text>
+<text class="row-lab" x="300" y="53" text-anchor="end" lang="zh">dispatch · tile 选择</text>
+<rect class="bar d5" x="312" y="41" width="269.6" height="16"/>
+<text class="val" x="587.6" y="53">56%</text>
+<text class="row-lab" x="300" y="79" text-anchor="end" lang="en">algorithm rewrite</text>
+<text class="row-lab" x="300" y="79" text-anchor="end" lang="zh">算法重写</text>
+<rect class="bar d5" x="312" y="67" width="208.4" height="16"/>
+<text class="val" x="526.4" y="79">44%</text>
+<text class="row-lab" x="300" y="105" text-anchor="end" lang="en">split-K · grid fill</text>
+<text class="row-lab" x="300" y="105" text-anchor="end" lang="zh">split-K · 填满 grid</text>
+<rect class="bar d5" x="312" y="93" width="208.4" height="16"/>
+<text class="val" x="526.4" y="105">44%</text>
+<text class="row-lab" x="300" y="131" text-anchor="end" lang="en">schedule · sync knob</text>
+<text class="row-lab" x="300" y="131" text-anchor="end" lang="zh">调度 · 同步旋钮</text>
+<rect class="bar prio" x="312" y="119" width="36.8" height="16"/>
+<text class="val" x="354.8" y="131">8%</text>
+<text class="row-lab" x="300" y="157" text-anchor="end" lang="en">register · occupancy knob</text>
+<text class="row-lab" x="300" y="157" text-anchor="end" lang="zh">寄存器 · occupancy 旋钮</text>
+<rect class="bar d4" x="312" y="145" width="24.4" height="16"/>
+<text class="val" x="342.4" y="157">5%</text>
+</svg>
+    <p class="caption" lang="en">Share of all 285,091 traced commands by purpose (the remainder is mostly running scripts).</p>
+    <p class="caption" lang="zh">全部 285,091 条命令按用途的比例（其余大多是运行脚本）。</p>
+    <svg viewBox="0 0 860 204" role="img" aria-labelledby="p6b-t"><title id="p6b-t">bar chart</title>
+<text class="row-lab" x="300" y="27" text-anchor="end" lang="en">edit code</text>
+<text class="row-lab" x="300" y="27" text-anchor="end" lang="zh">改代码</text>
+<rect class="bar d5" x="312" y="15" width="413.1" height="16"/>
+<text class="val" x="731.1" y="27">25.9%</text>
+<text class="row-lab" x="300" y="53" text-anchor="end" lang="en">read code</text>
+<text class="row-lab" x="300" y="53" text-anchor="end" lang="zh">读代码</text>
+<rect class="bar d5" x="312" y="41" width="197.5" height="16"/>
+<text class="val" x="515.5" y="53">12.4%</text>
+<text class="row-lab" x="300" y="79" text-anchor="end" lang="en">own timing · profiling</text>
+<text class="row-lab" x="300" y="79" text-anchor="end" lang="zh">自己测时 · profile</text>
+<rect class="bar head" x="312" y="67" width="121.6" height="16"/>
+<text class="val" x="439.6" y="79">7.6%</text>
+<text class="row-lab" x="300" y="105" text-anchor="end" lang="en">inspect IR · ISA</text>
+<text class="row-lab" x="300" y="105" text-anchor="end" lang="zh">看 IR · ISA</text>
+<rect class="bar prio" x="312" y="93" width="64.1" height="16"/>
+<text class="val" x="382.1" y="105">4.0%</text>
+<text class="row-lab" x="300" y="131" text-anchor="end" lang="en">run ./evaluate</text>
+<text class="row-lab" x="300" y="131" text-anchor="end" lang="zh">跑 ./evaluate</text>
+<rect class="bar head" x="312" y="119" width="57.3" height="16"/>
+<text class="val" x="375.3" y="131">3.6%</text>
+<text class="row-lab" x="300" y="157" text-anchor="end" lang="en">clear the compile cache</text>
+<text class="row-lab" x="300" y="157" text-anchor="end" lang="zh">清编译缓存</text>
+<rect class="bar off" x="312" y="145" width="53.3" height="16"/>
+<text class="val" x="371.3" y="157">3.3%</text>
+<text class="row-lab" x="300" y="183" text-anchor="end" lang="en">run tests</text>
+<text class="row-lab" x="300" y="183" text-anchor="end" lang="zh">跑测试</text>
+<rect class="bar head" x="312" y="171" width="23.1" height="16"/>
+<text class="val" x="341.1" y="183">1.4%</text>
+</svg>
+  </figure>
+  <p lang="en"><b>Where the wins are.</b> The legitimate speedups (median 1.46× reproduced by the reviewer) come from vectorizing the memory path, choosing tiles per shape, splitting work to fill an under-occupied grid, and rewriting the algorithm: D1–D3, the decisions the author already owns. Schedule and register knobs appear in 8% and 5% of them. So the redesign must keep, not take away, the expressiveness agents use: Python metaprogramming, layout algebra, atoms. Its promise to agents is not a new source of speedups.</p>
+  <p lang="zh"><b>提速在哪里。</b> 合法的提速（review 复现的中位数是 1.46×）来自访存路径向量化、 按 shape 选 tile、 拆分工作以填满占用不足的 grid， 以及重写算法： 都是 D1–D3， 作者本来就掌握的决策。 调度和寄存器旋钮分别只出现在 8% 和 5% 的 review 里。 所以重新设计必须保留、 而不是拿走 agent 用到的表达能力： Python 元编程、 layout algebra、 atom。 它对 agent 的承诺不是一个新的提速来源。</p>
+  <p lang="en"><b>Where the cost is.</b> A median record took 53.5M prompt tokens, 318 turns and 1.3 h. 69% of runs went digging in IR or ISA at least once, and 65% cleared the FlyDSL compile cache at least once (9,531 cache clears in total), the habit of agents that cannot tell whether what ran is what they wrote. The reviews' most common failure was a per-shape regression on shapes the agent did not time (35 of 89); a few broke correctness in ways a compiler could catch statically: a missing barrier, an out-of-bounds read, a spill tier that cut one shape to 0.44×. Nine reviews mention host-side launcher caches that agents added to get around per-call tracing.</p>
+  <p lang="zh"><b>成本在哪里。</b> 一个中位数 record 花了 53.5M prompt token、 318 轮、 1.3 小时。 69% 的运行至少翻过一次 IR 或 ISA， 65% 至少清过一次 FlyDSL 编译缓存（总共 9,531 次）， 这是 agent 无法确认"跑的是不是自己写的那份"时的习惯。 review 里最常见的失败是 agent 没测过的 shape 出现回退（89 份里 35 份）； 也有少数正确性问题是编译器可以静态发现的： 漏掉的 barrier、 越界读、 一个让某个 shape 掉到 0.44× 的 spill 档位。 有 9 份 review 提到 agent 为了绕开每次调用的 trace 而自己加了 host 端 launcher 缓存。</p>
+  <div class="callout">
+    <p lang="en"><b>What the agents need from the compiler</b> is mostly what the redesign's report and checks provide: resources, spills and occupancy per shape before a GPU run; the waits it inserted and why; a race and bounds check on shared memory; a cache that is keyed honestly and a launch path that does not re-trace. None of that needs MLIR or LLVM's heuristics; it needs a compiler that owns its decisions.</p>
+    <p lang="zh"><b>agent 需要编译器提供的</b>， 大多正是重新设计里的报告和检查： 上 GPU 之前就知道每个 shape 的资源、 spill 和 occupancy； 插了哪些 wait、 为什么； 共享内存上的竞争和越界检查； 一个 key 可靠的缓存和一条不重新 trace 的 launch 路径。 这些都不需要 MLIR， 也不需要 LLVM 的启发式， 只需要一个对自己的决定负责的编译器。</p>
+  </div>
+</section>
+
+<section id="overhead">
+  <h2><span class="n">09</span><span lang="en">Experiment D · the front-end tax</span><span lang="zh">实验 D · 前端开销</span></h2>
+  <p lang="en">Measured on the CPU with FlyDSL 0.5.2, compile only, target gfx950, three runs each within 1%.</p>
+  <p lang="zh">在 CPU 上用 FlyDSL 0.5.2 测量， 只编译， 目标 gfx950， 每项跑 3 次， 波动在 1% 以内。</p>
+  <figure class="plate wide">
+    <div class="plate-meta">Plate VII · <span lang="en">where a cold compile goes, and what a cache hit still costs</span><span lang="zh">冷编译的时间去了哪里， 以及命中缓存仍要付多少</span></div>
+    <svg viewBox="0 0 860 258" role="img" aria-labelledby="cc-t"><title id="cc-t">cold compile time by stage</title>
+<line class="ax-grid" x1="222.0" y1="28" x2="222.0" y2="228"/>
+<text class="ax-lab" x="222.0" y="244" text-anchor="middle">0.0 s</text>
+<line class="ax-grid" x1="324.3" y1="28" x2="324.3" y2="228"/>
+<text class="ax-lab" x="324.3" y="244" text-anchor="middle">0.5 s</text>
+<line class="ax-grid" x1="426.7" y1="28" x2="426.7" y2="228"/>
+<text class="ax-lab" x="426.7" y="244" text-anchor="middle">1.0 s</text>
+<line class="ax-grid" x1="529.0" y1="28" x2="529.0" y2="228"/>
+<text class="ax-lab" x="529.0" y="244" text-anchor="middle">1.5 s</text>
+<line class="ax-grid" x1="631.3" y1="28" x2="631.3" y2="228"/>
+<text class="ax-lab" x="631.3" y="244" text-anchor="middle">2.0 s</text>
+<line class="ax-grid" x1="733.7" y1="28" x2="733.7" y2="228"/>
+<text class="ax-lab" x="733.7" y="244" text-anchor="middle">2.5 s</text>
+<line class="ax-grid" x1="836.0" y1="28" x2="836.0" y2="228"/>
+<text class="ax-lab" x="836.0" y="244" text-anchor="middle">3.0 s</text>
+<rect class="seg-trace" x="222" y="8" width="12" height="12"/>
+<text class="ax-lab" x="238" y="18" lang="en">trace + print</text>
+<text class="ax-lab" x="238" y="18" lang="zh">追踪 + 打印</text>
+<rect class="seg-mlir" x="372" y="8" width="12" height="12"/>
+<text class="ax-lab" x="388" y="18" lang="en">MLIR passes</text>
+<text class="ax-lab" x="388" y="18" lang="zh">MLIR pass</text>
+<rect class="seg-llvm" x="522" y="8" width="12" height="12"/>
+<text class="ax-lab" x="538" y="18" lang="en">LLVM backend</text>
+<text class="ax-lab" x="538" y="18" lang="zh">LLVM 后端</text>
+<rect class="seg-warm" x="672" y="8" width="12" height="12"/>
+<text class="ax-lab" x="688" y="18" lang="en">a cached call</text>
+<text class="ax-lab" x="688" y="18" lang="zh">命中缓存的一次调用</text>
+<text class="row-lab" x="210" y="52" text-anchor="end">vectorAdd</text>
+<rect class="seg-trace" x="222.0" y="40" width="3.8" height="16"/>
+<rect class="seg-mlir" x="225.8" y="40" width="1.5" height="16"/>
+<rect class="seg-llvm" x="227.4" y="40" width="3.0" height="16"/>
+<text class="val" x="236.4" y="53">0.06 s</text>
+<rect class="seg-warm" x="222.0" y="60" width="1.7" height="8"/>
+<text class="val small" x="229.7" y="68">8 ms</text>
+<text class="row-lab" x="210" y="98" text-anchor="end">preshuffle FP8 GEMM</text>
+<rect class="seg-trace" x="222.0" y="86" width="4.3" height="16"/>
+<rect class="seg-mlir" x="226.3" y="86" width="8.3" height="16"/>
+<rect class="seg-llvm" x="234.6" y="86" width="19.2" height="16"/>
+<text class="val" x="259.8" y="99">0.18 s</text>
+<rect class="seg-warm" x="222.0" y="106" width="5.0" height="8"/>
+<text class="val small" x="233.0" y="114">24 ms</text>
+<text class="row-lab" x="210" y="144" text-anchor="end">fp8_gemm_4wave 256×256</text>
+<rect class="seg-trace" x="222.0" y="132" width="194.6" height="16"/>
+<rect class="seg-mlir" x="416.6" y="132" width="60.1" height="16"/>
+<rect class="seg-llvm" x="476.7" y="132" width="235.6" height="16"/>
+<text class="val" x="718.3" y="145">2.71 s</text>
+<rect class="seg-warm" x="222.0" y="152" width="197.3" height="8"/>
+<text class="val small" x="425.3" y="160">964 ms</text>
+<text class="row-lab" x="210" y="190" text-anchor="end">flash_attn_gfx950 D128</text>
+<rect class="seg-trace" x="222.0" y="178" width="33.0" height="16"/>
+<rect class="seg-mlir" x="255.0" y="178" width="18.4" height="16"/>
+<rect class="seg-llvm" x="273.4" y="178" width="94.7" height="16"/>
+<text class="val" x="374.1" y="191">0.77 s</text>
+<rect class="seg-warm" x="222.0" y="198" width="33.1" height="8"/>
+<text class="val small" x="261.1" y="206">162 ms</text>
+</svg>
+  </figure>
+  <table>
+    <tr><th lang="en">Kernel</th><th lang="zh">Kernel</th><th lang="en">Cold</th><th lang="zh">冷编译</th><th lang="en">Trace + print</th><th lang="zh">Trace + 打印</th><th lang="en">MLIR passes</th><th lang="zh">MLIR pass</th><th lang="en">LLVM backend</th><th lang="zh">LLVM 后端</th><th lang="en">Cached call</th><th lang="zh">命中缓存的一次调用</th><th lang="en">IR ops built → kept</th><th lang="zh">建出的 op → 留下的</th></tr>
+    <tr><td>examples/01-vectorAdd</td><td class="v">0.06 s</td><td class="v">0.02 s</td><td class="v">0.01 s</td><td class="v">0.01 s</td><td class="v">8 ms</td><td class="v">110 → 109</td></tr>
+<tr><td>preshuffle FP8 GEMM</td><td class="v">0.18 s</td><td class="v">0.02 s</td><td class="v">0.04 s</td><td class="v">0.09 s</td><td class="v">24 ms</td><td class="v">956 → 1,718</td></tr>
+<tr><td>fp8_gemm_4wave 256×256</td><td class="v">2.71 s</td><td class="v">0.95 s</td><td class="v">0.29 s</td><td class="v">1.15 s</td><td class="v">964 ms</td><td class="v">61,989 → 9,907</td></tr>
+<tr><td>flash_attn_gfx950 D128</td><td class="v">0.77 s</td><td class="v">0.16 s</td><td class="v">0.09 s</td><td class="v">0.46 s</td><td class="v">162 ms</td><td class="v">7,508 → 4,317</td></tr>
+  </table>
+  <p lang="en">LLVM's backend is the largest cold cost (41–60% on the GEMM and the attention kernel). MLIR's passes are not the bottleneck. The trace is the tax that matters for an agent, because it is paid on every call, cached or not: 0.96 s per call for the FP8 GEMM, 162 ms for the attention kernel, plus about 0.7 s of <code>import flydsl</code> in every fresh test process.</p>
+  <p lang="zh">LLVM 后端是冷编译里最大的一块（GEMM 和 attention kernel 上占 41–60%）。 MLIR 的 pass 不是瓶颈。 对 agent 真正要紧的是 trace 这笔开销， 因为每次调用都要付， 不管有没有命中缓存： FP8 GEMM 每次调用 0.96 s， attention kernel 162 ms， 另外每个新的测试进程还要付约 0.7 s 的 <code>import flydsl</code>。</p>
+</section>
+
+<section id="verdict">
+  <h2><span class="n">10</span><span lang="en">What the evidence adds up to</span><span lang="zh">证据加起来说明了什么</span></h2>
+  <p lang="en">Premise A held, more strongly than expected: removing an explicit D4/D5 decision cost 5–16% in most of the arms that changed code, LLVM's heuristics did not recover it, and in two of the five kernels whose fences we removed, the "hints" were load-bearing for correctness. Premise B held in its split form: where nobody scheduled by hand, LLVM's default is hard to beat and needed; where an author did, the heuristic scheduler still costs time, and per-shape choice among correct schedules is worth 2.7–4.1% on the one kernel we measured it on. Premise C held with a correction: agents look hard at compiler output and distrust its cache, but their speedups come from the decisions they already own. Premise D held: the trace is paid on every iteration.</p>
+  <p lang="zh">前提 A 成立， 而且比预想的更强： 在大多数改变了代码的 arm 里， 去掉一个显式 D4 / D5 决策要损失 5–16%， LLVM 的启发式拿不回来， 而且在我们去掉 fence 的五个 kernel 里， 有两个的"提示"在承担正确性。 前提 B 以分化的形式成立： 没有手工调度的地方， LLVM 的默认值很难超越， 也是必需的； 有作者调度的地方， 启发式调度器仍在浪费时间， 而在结果正确的调度之间按 shape 选择， 在我们测的这一个 kernel 上值 2.7–4.1%。 前提 C 成立但需要修正： agent 花大力气看编译器输出、 不信任它的缓存， 但它们的提速来自本来就掌握的决策。 前提 D 成立： trace 在每次迭代都要付。</p>
+  <p lang="en">So, can the redesign bring a large performance gain? Not uniformly, and the experiments say where. The large, measured stakes are in expert kernels whose authors already fight LLVM: there, a compiler that honors explicit order, pins and waits by construction protects the 5–16% those decisions are worth, and it makes a per-shape schedule search safe in kernels where today a fence may be carrying correctness. For simple kernels it is a wash on speed; LLVM's scheduler is worth keeping as the automatic mode until a replacement matches it. For agents, the larger gain is in iterations, not peak speed: fewer runs spent decoding ISA and fighting caches, and checks that turn silent wrong answers into compile errors.</p>
+  <p lang="zh">那么， 重新设计能不能带来很大的性能提升？ 不会处处都有， 实验告诉了我们在哪里有。 实测到的大收益在专家 kernel 上， 它们的作者本来就在和 LLVM 对抗： 在那里， 一个从构造上就遵守显式顺序、 pin 和 wait 的编译器， 能保住这些决策值的 5–16%， 也让按 shape 的调度搜索变得安全， 即使在今天 fence 可能承担着正确性的 kernel 里。 对简单 kernel， 速度上不会有明显差别； 在找到能与之匹敌的替代品之前， LLVM 的调度器值得留作自动模式。 对 agent， 更大的收益在迭代次数， 而不在峰值速度： 更少的运行花在解读 ISA 和与缓存斗争上， 也有检查把悄悄算错变成编译错误。</p>
+</section>
+
+<section id="next">
+  <h2><span class="n">11</span><span lang="en">What would change our mind</span><span lang="zh">什么会推翻这个结论</span></h2>
+  <ul>
+    <li lang="en"><b>A program-order backend that loses.</b> Build KIR and the deterministic backend for one GEMM (the FP8 4-wave one, whose decisions are all explicit) and compare it with LLVM's output at identical source decisions. If program order plus honored pins is slower than LLVM, the case for dropping LLVM's scheduler in explicit mode fails.</li>
+    <li lang="zh"><b>按程序顺序的后端输了。</b> 为一个 GEMM（FP8 4-wave， 它的决策全是显式的）实现 KIR 和确定性后端， 在相同的源码决策下和 LLVM 的输出比较。 如果"程序顺序 + 遵守 pin"比 LLVM 慢， 在显式模式下去掉 LLVM 调度器的理由就不成立。</li>
+    <li lang="en"><b>Agents that do not benefit from the report.</b> On the overlay, run the same FlyBench records with two arms that differ only in a <code>report</code> command (resources, spills and occupancy per shape, waits, race and bounds checks). If fast-1.2 counts, regressions and tokens per record do not move, the agent half of the argument fails.</li>
+    <li lang="zh"><b>agent 没有从报告中获益。</b> 在 overlay 上用同样的 FlyBench record 跑两个 arm， 唯一区别是有没有一个 <code>report</code> 命令（每个 shape 的资源、 spill 和 occupancy， wait， 竞争和越界检查）。 如果 fast-1.2 数、 回退和每个 record 的 token 都不变， 论证里关于 agent 的一半就不成立。</li>
+    <li lang="en"><b>Correctness fences that are rare.</b> We found them in two of the five kernels whose fences we removed. A corpus-wide scan that removes fences one by one under the evaluator would say how common they are; if they are rare, token-based synchronization matters less than this post claims.</li>
+    <li lang="zh"><b>撑着正确性的 fence 其实很少。</b> 在我们去掉 fence 的五个 kernel 里发现了两个。 在评测器下对整个语料逐个去掉 fence 扫一遍， 就能知道它们有多常见； 如果很少， 基于 token 的同步就没有本文说的那么重要。</li>
+  </ul>
+</section>
+
+<section id="reproduce">
+  <h2><span class="n">12</span><span lang="en">Reproduce</span><span lang="zh">复现</span></h2>
+  <p lang="en">Everything above is a view of files in <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/flydsl-compiler-redesign"><code>data/flydsl-compiler-redesign</code></a>: <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/arms.csv"><code>arms.csv</code></a> (what each arm changes), <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/results.csv"><code>results.csv</code></a> (verdict, speed, interval), <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/per_shape.csv"><code>per_shape.csv</code></a>, <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/isa.csv"><code>isa.csv</code></a> (stock vs arm ISA at the dumped shapes), <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/compile_breakdown.csv"><code>compile_breakdown.csv</code></a>, <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/agent_mining_summary.json"><code>agent_mining_summary.json</code></a>, <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/failures.json"><code>failures.json</code></a> (the failing tests of each wrong arm), <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/summary.json"><code>summary.json</code></a> (all of it in one file), the 29 patches under <code>patches/</code>, and under <code>scripts/</code> the scripts that built and summarized them and the builder of this page (<code>make_page.py</code>), with internal paths replaced by placeholders. Each patch applies to FlyDSL <code>cb770e9a</code> and is scored with the FlyBench v1 evaluator on one MI355X.</p>
+  <p lang="zh">上面所有内容都来自 <a href="https://github.com/jhinpan/jinnpan.com/tree/main/data/flydsl-compiler-redesign"><code>data/flydsl-compiler-redesign</code></a> 里的文件： <a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/arms.csv"><code>arms.csv</code></a>（每个 arm 改了什么）、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/results.csv"><code>results.csv</code></a>（判定、 速度、 区间）、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/per_shape.csv"><code>per_shape.csv</code></a>、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/isa.csv"><code>isa.csv</code></a>（dump 的 shape 上 stock 与 arm 的 ISA）、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/compile_breakdown.csv"><code>compile_breakdown.csv</code></a>、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/agent_mining_summary.json"><code>agent_mining_summary.json</code></a>、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/failures.json"><code>failures.json</code></a>（每个出错 arm 的失败测试）、<a href="https://github.com/jhinpan/jinnpan.com/blob/main/data/flydsl-compiler-redesign/summary.json"><code>summary.json</code></a>（以上全部合在一个文件里）， <code>patches/</code> 下的 29 个补丁， 以及 <code>scripts/</code> 下构建和汇总它们的脚本和生成本页的脚本（<code>make_page.py</code>）， 内部路径换成了占位符。 每个补丁都可以打到 FlyDSL <code>cb770e9a</code> 上， 用 FlyBench v1 评测器在一张 MI355X 上打分。</p>
+</section>
+
+<section id="epilogue">
+  <h2><span class="n">13</span><span lang="en">Epilogue</span><span lang="zh">结语</span></h2>
+  <p lang="en">I started out expecting to argue that LLVM was the problem. The experiments say something narrower and more useful. LLVM's heuristics are good at the decisions nobody makes; the trouble starts when someone does make them and the compiler cannot tell a preference from a constraint. A compiler for agents should be built around that distinction: every decision has one owner, every constraint is visible as data, and everything the compiler chose is written down where the agent can read it.</p>
+  <p lang="zh">一开始我以为要论证的是"LLVM 是问题所在"。 实验给出的结论更窄， 也更有用。 LLVM 的启发式很擅长做没人去做的决定； 麻烦出在有人做了这些决定， 而编译器分不清哪些是偏好、 哪些是约束。 给 agent 用的编译器应该围绕这个区别来建： 每个决定只有一个主人， 每个约束都以数据的形式可见， 编译器做出的每个选择都写在 agent 读得到的地方。</p>
+</section>
+
+</main>
+<footer class="colophon">
+  <div><span lang="en">Source: FlyDSL <code>cb770e9a</code> (experiments) and <code>fe81c407</code> (code reading); LLVM <code>941a04e69</code>; FlyBench v1 evaluator on the AMD Pilot v2 overlay, 2026-11-22.</span><span lang="zh">来源： FlyDSL <code>cb770e9a</code>（实验）与 <code>fe81c407</code>（读代码）； LLVM <code>941a04e69</code>； AMD Pilot v2 overlay 上的 FlyBench v1 评测器， 2026-11-22。</span></div>
+  <div><span lang="en">Typography: Epilogue · IBM Plex Serif · Victor Mono · Noto Serif SC. Palette: drafting paper, Prussian ink, vermilion for conflict, teal for a single owner.</span><span lang="zh">字体： Epilogue · IBM Plex Serif · Victor Mono · Noto Serif SC。 配色： 绘图纸、 普鲁士蓝墨、 表示冲突的朱红、 表示单一主人的青色。</span></div>
+  <div><span lang="en">Related: <a href="/sources/flydsl-compiler-in-the-loop.html">FlyDSL compiler in the loop</a> · <a href="/sources/together-compiler.html">Together Compiler</a> · <a href="/sources/flydsl.html">FlyDSL source reading</a>.</span><span lang="zh">相关： <a href="/sources/flydsl-compiler-in-the-loop.html">FlyDSL compiler in the loop</a> · <a href="/sources/together-compiler.html">Together Compiler</a> · <a href="/sources/flydsl.html">FlyDSL 源码阅读</a>。</span></div>
+</footer>
+</div>
+</div>
+<script>
+(function() {
+  var KEY = 'flydsl-compiler-redesign-source-lang', body = document.body, stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === 'en' || stored === 'zh') { body.setAttribute('data-lang', stored); }
+  else { var nav = (navigator.language || 'en').toLowerCase(); body.setAttribute('data-lang', nav.indexOf('zh') === 0 ? 'zh' : 'en'); }
+  document.querySelectorAll('.lang-toggle button[data-set]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var v = btn.getAttribute('data-set'); body.setAttribute('data-lang', v);
+      try { localStorage.setItem(KEY, v); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>

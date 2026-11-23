@@ -1,0 +1,12 @@
+diff --git a/kernels/gemm/fp8_gemm_4wave.py b/kernels/gemm/fp8_gemm_4wave.py
+index f4d23404..65bec3a3 100644
+--- a/kernels/gemm/fp8_gemm_4wave.py
++++ b/kernels/gemm/fp8_gemm_4wave.py
+@@ -496,7 +496,6 @@ def compile_fp8_gemm_4w(
+             B_scale,
+             c_m,
+             c_n,
+-            value_attrs={"rocdl.waves_per_eu": 1, "rocdl.flat_work_group_size": "256,256"},
+         ).launch(grid=(grid_x, 1, 1), block=(256, 1, 1), stream=stream)
+ 
+     return launch_gemm

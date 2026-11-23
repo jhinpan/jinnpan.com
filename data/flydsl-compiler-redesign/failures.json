@@ -1,0 +1,74 @@
+{
+ "x02-nosched": {
+  "failed_tests": [
+   "tests/kernels/test_gemm_a16w16_gfx950.py::test_gemm_a16w16_acc_tuned_policies[32-5120-2880-16-32-64-8-1-1-2-1-0-False-nn]"
+  ],
+  "greatest_abs_diff": [
+   "16.375 at index (23, 3092) (up to 0.17787811838447135 allowed)"
+  ],
+  "lse": [],
+  "mismatched": [
+   "182 / 163840 (0.1%)"
+  ]
+ },
+ "x02b-nosched": {
+  "failed_tests": [
+   "tests/kernels/test_gemm_a16w16_gfx950.py::test_gemm_a16w16_acc_tuned_policies[32-5120-2880-16-32-64-8-1-1-2-1-0-False-nn]"
+  ],
+  "greatest_abs_diff": [
+   "3.875 at index (25, 4329) (up to 0.17787811838447135 allowed)"
+  ],
+  "lse": [],
+  "mismatched": [
+   "31 / 163840 (0.0%)"
+  ]
+ },
+ "x04-nosched": {
+  "failed_tests": [
+   "tests/kernels/test_flash_attn_fwd.py::test_alibi_dense[1-384-8-4-64-False-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_alibi_dense[1-384-8-4-64-False-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_alibi_dense[1-384-8-4-64-True-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_alibi_dense[1-384-8-4-64-True-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_bf16_split_kv_writes_every_row[1025-1-64]",
+   "tests/kernels/test_flash_attn_fwd.py::test_bf16_split_kv_writes_every_row[2050-7-128]",
+   "tests/kernels/test_flash_attn_fwd.py::test_bf16_split_kv_writes_every_row[4097-1-128]",
+   "tests/kernels/test_flash_attn_fwd.py::test_bias_dense[2-384-8-4-64-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_bias_dense[2-384-8-4-64-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_lse_dense[1-256-4-1-128-dtype2-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_lse_dense[1-256-4-1-128-dtype2-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_lse_dense[2-256-8-8-128-dtype0-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_lse_dense[2-256-8-8-128-dtype0-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_lse_splitk[64-2-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_lse_splitk[64-2-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[1-512-8-8-128-0.25-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[1-512-8-8-128-0.25-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[1-512-8-8-128-0.9-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[1-512-8-8-128-0.9-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[2-384-8-4-64-0.25-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[2-384-8-4-64-0.25-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[2-384-8-4-64-0.9-False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_dense[2-384-8-4-64-0.9-True]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_splitk_counted_once[2]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_splitk_counted_once[3]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_splitk_counted_once[4]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_varlen[False]",
+   "tests/kernels/test_flash_attn_fwd.py::test_sink_varlen[True]"
+  ],
+  "greatest_abs_diff": [
+   "0.004230499267578125 at index (0, 4096, 0, 107) (up to 0.002 allowed)",
+   "0.00865936279296875 at index (0, 2049, 1, 103) (up to 0.002 allowed)"
+  ],
+  "lse": [
+   "LSE max abs diff 4.304e-01 exceeds atol 8.000e-03",
+   "LSE max abs diff nan exceeds atol 8.000e-03",
+   "LSE max abs diff 2.269e-01 exceeds atol 8.000e-03",
+   "LSE max abs diff nan exceeds atol 8.000e-03",
+   "LSE max abs diff 4.921e-01 exceeds atol 8.000e-03",
+   "LSE max abs diff inf exceeds atol 8.000e-03"
+  ],
+  "mismatched": [
+   "131104 / 524416 (25.0%)",
+   "459200 / 1836800 (25.0%)"
+  ]
+ }
+}

@@ -1,0 +1,30 @@
+label,record,arm,what_changed,patch
+x01-nosched,gemm.preshuffle-a8@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x01-nosched.patch
+x02-nosched,gemm.a16w16@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x02-nosched.patch
+x03-nosched,gemm.mx-preshuffle-a8w8@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x03-nosched.patch
+x04-nosched,attention.flash-fwd-dense@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x04-nosched.patch
+x05-nosched,attention.swa-gqa@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x05-nosched.patch
+x06-noprio,gemm.fp8-rowscale-8wave@A,noprio,D5 order: s_setprio (wave priority) removed,patches/x06-noprio.patch
+x07-noprio,gemm.mxfp8-8wave@A,noprio,D5 order: s_setprio (wave priority) removed,patches/x07-noprio.patch
+x08-noprio,attention.flash-fwd-dense@A,noprio,D5 order: s_setprio (wave priority) removed,patches/x08-noprio.patch
+x09-postmischedon,attention.flash-fwd-dense@A,postmisched_on,D5 order: LLVM post-RA scheduler re-enabled (author had disabled it),patches/x09-postmischedon.patch
+x10-agprllvm,gemm.fp8-rowscale-4wave@A,agpr_llvm,D4 registers: AGPR accumulator pinning (inline asm) replaced by LLVM allocation,patches/x10-agprllvm.patch
+x11-occdefault,gemm.fp8-rowscale-4wave@A,occ_default,D4 occupancy: waves_per_eu / flat_work_group_size hints removed,patches/x11-occdefault.patch
+x12-nosched,norm.rmsnorm-fwd@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x12-nosched.patch
+x13-nogroup,attention.flash-fwd-dense@A,nogroup,"D5 order: interleave groups removed, full fences kept",patches/x13-nogroup.patch
+x14-nogroup,gemm.preshuffle-a8@A,nogroup,"D5 order: interleave groups removed, full fences kept",patches/x14-nogroup.patch
+x02b-nosched,gemm.a16w16@A,nosched,D5 order: author's schedule fences + interleave groups removed,patches/x02b-nosched.patch
+x15-null,gemm.a16w16@A,null,"null control: shim installed, nothing changed",patches/x15-null.patch
+h01-stratmaxmem,norm.rmsnorm-fwd@A,strat_maxmem,headroom: amdgpu-sched-strategy=max-memory-clause,patches/h01-stratmaxmem.patch
+h02-stratmaxilp,norm.rmsnorm-fwd@A,strat_maxilp,headroom: amdgpu-sched-strategy=max-ilp,patches/h02-stratmaxilp.patch
+h03-stratmaxmem,norm.layernorm-fwd@A,strat_maxmem,headroom: amdgpu-sched-strategy=max-memory-clause,patches/h03-stratmaxmem.patch
+h04-stratmaxilp,norm.layernorm-fwd@A,strat_maxilp,headroom: amdgpu-sched-strategy=max-ilp,patches/h04-stratmaxilp.patch
+h05-stratmaxmem,norm.softmax-fwd@A,strat_maxmem,headroom: amdgpu-sched-strategy=max-memory-clause,patches/h05-stratmaxmem.patch
+h06-stratmaxilp,norm.softmax-fwd@A,strat_maxilp,headroom: amdgpu-sched-strategy=max-ilp,patches/h06-stratmaxilp.patch
+h07-stratmaxmem,moe.reduce@A,strat_maxmem,headroom: amdgpu-sched-strategy=max-memory-clause,patches/h07-stratmaxmem.patch
+h08-stratmaxilp,moe.2stage-gemm1@A,strat_maxilp,headroom: amdgpu-sched-strategy=max-ilp,patches/h08-stratmaxilp.patch
+h08b-stratmaxilp,moe.2stage-gemm1@A,strat_maxilp,headroom: amdgpu-sched-strategy=max-ilp,patches/h08b-stratmaxilp.patch
+h09-stratmaxmem,moe.2stage-gemm1@A,strat_maxmem,headroom: amdgpu-sched-strategy=max-memory-clause,patches/h09-stratmaxmem.patch
+h10-stratmaxilp,gemm.preshuffle-a8@A,strat_maxilp,headroom: amdgpu-sched-strategy=max-ilp,patches/h10-stratmaxilp.patch
+h11-mischedoff,gemm.preshuffle-a8@A,misched_off,"headroom: LLVM machine schedulers off (enable-misched=0, enable-post-misched=0)",patches/h11-mischedoff.patch
+h12-mischedoff,norm.rmsnorm-fwd@A,misched_off,"headroom: LLVM machine schedulers off (enable-misched=0, enable-post-misched=0)",patches/h12-mischedoff.patch

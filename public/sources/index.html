@@ -359,14 +359,14 @@
           <rect x="40" y="198" width="15" height="28" fill="#4e744c" /><rect x="59" y="194" width="17" height="32" fill="#4e744c" /><rect x="80" y="200" width="14" height="26" fill="#4e744c" /><rect x="98" y="196" width="16" height="30" fill="#4e744c" /><rect x="118" y="200" width="15" height="26" fill="#4e744c" /><rect x="137" y="196" width="16" height="30" fill="#4e744c" /><rect x="157" y="199" width="15" height="27" fill="#4e744c" />
           <!-- shelf 5 experiments (plum) -->
           <line x1="30" y1="274" x2="290" y2="274" stroke="#22231f" stroke-width="3" />
-          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" /><rect x="118" y="247" width="16" height="27" fill="#6d3f8c" /><rect x="138" y="243" width="15" height="31" fill="#6d3f8c" /><rect x="157" y="245" width="16" height="29" fill="#6d3f8c" />
+          <rect x="40" y="246" width="16" height="28" fill="#6d3f8c" /><rect x="60" y="242" width="15" height="32" fill="#6d3f8c" /><rect x="79" y="248" width="16" height="26" fill="#6d3f8c" /><rect x="99" y="244" width="15" height="30" fill="#6d3f8c" /><rect x="118" y="247" width="16" height="27" fill="#6d3f8c" /><rect x="138" y="243" width="15" height="31" fill="#6d3f8c" /><rect x="157" y="245" width="16" height="29" fill="#6d3f8c" /><rect x="177" y="243" width="15" height="31" fill="#6d3f8c" />
         </g>
         <g font-family="ui-monospace, monospace" font-size="9" fill="#68675f">
           <text x="214" y="74">CODE · 13</text>
           <text x="214" y="122">PAPER · 6</text>
           <text x="214" y="170">TUTORIAL · 8</text>
           <text x="214" y="218">BLOG · 7</text>
-          <text x="214" y="266">EXPERIMENTS · 7</text>
+          <text x="214" y="266">EXPERIMENTS · 8</text>
         </g>
       </svg>
     </figure>
@@ -390,7 +390,7 @@
     <div class="stat" data-c="paper"><span class="num">6</span><span class="label">paper readings</span></div>
     <div class="stat" data-c="tutorial"><span class="num">8</span><span class="label">tutorials</span></div>
     <div class="stat" data-c="blog"><span class="num">7</span><span class="label">blog posts</span></div>
-    <div class="stat" data-c="experiments"><span class="num">7</span><span class="label">experiments</span></div>
+    <div class="stat" data-c="experiments"><span class="num">8</span><span class="label">experiments</span></div>
   </section>
 
   <!-- ============ CODE ============ -->
@@ -802,9 +802,18 @@
         <h2>Experiments</h2>
         <div class="sub"><span class="zh">实验记录</span> · reproducible kernel and system measurements — raw data archived alongside the write-up</div>
       </div>
-      <div class="shelf-count">7 records</div>
+      <div class="shelf-count">8 records</div>
     </div>
     <div class="grid">
+      <article class="entry" data-kind="experiments" data-search="experiment 008 flydsl compiler redesign first principles mlir llvm amdgpu scheduler machine scheduler post-ra register allocation agpr accumulator pinning s_setprio sched_barrier sched_group_barrier waitcnt race correctness fence ablation headroom amdgpu-sched-strategy max-ilp flybench overlay amd pilot mi355x gfx950 agent kernel dsl kir isa compile time trace jit cache">
+        <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 008</span></div>
+        <div class="entry-body">
+          <h3>One decision, one decider: redesigning the FlyDSL compiler for agents</h3>
+          <p>In FlyDSL the kernel author and LLVM's heuristics both decide register placement and instruction order. In 29 overlay runs on MI355X, handing one explicit decision back to LLVM cost 5–16% on six kernels, and removing "scheduling" fences made two kernels compute wrong results. Agents' wins came from tiling and memory decisions. The redesign: one owner per decision, waits as data dependencies, and a compiler that reports what it chose.</p>
+          <div class="tags"><span class="tag">FlyDSL</span><span class="tag">compiler design</span><span class="tag">MI355X</span><span class="tag">FlyBench</span></div>
+        </div>
+        <div class="links"><a class="link primary" href="./flydsl-compiler-redesign.html">Deep dive →</a></div>
+      </article>
       <article class="entry" data-kind="experiments" data-search="experiment 007 glm-5.3 glm53 pd disaggregation prefill decode 1p1d mori rdma roce mi355x gfx950 rocm sglang sgl-amd-mono monokernel decode radix cache router cache_aware health check iso-hardware two nodes replicas inferencex agentx e2e normalized interactivity p90 tilert pareto coverage width 12 rows lds moe gsm8k mcnemar">
         <div class="entry-top"><span class="entry-kind">Experiment</span><span>No. 007</span></div>
         <div class="entry-body">

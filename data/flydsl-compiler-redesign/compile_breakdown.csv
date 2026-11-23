@@ -1,0 +1,5 @@
+kernel,flydsl,target,cold_compile_s,trace_s,verify_print_s,mlir_passes_1_14_s,llvm_backend_s,warm_inmem_hit_call_s,host_engine_jit_s,origin_ir_ops,after_layout_lowering_ops,final_llvm_dialect_ops,origin_ir_chars
+vector_add,0.5.2 (fe81c407),gfx950,0.055,0.017,0.0017,0.0075,0.0146,0.0082,0.022,110,109,112,11711
+preshuffle_fp8,0.5.2 (fe81c407),gfx950,0.177,0.0172,0.0037,0.0405,0.094,0.0242,0.0225,956,1718,1340,81038
+fp8_gemm_4wave,0.5.2 (fe81c407),gfx950,2.713,0.8017,0.1491,0.2936,1.151,0.9639,0.0233,61989,9907,8607,4516279
+flash_attn_gfx950,0.5.2 (fe81c407),gfx950,0.768,0.1418,0.0194,0.09,0.4628,0.1619,0.0323,7508,4317,4626,553988

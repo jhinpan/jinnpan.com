@@ -1,0 +1,41 @@
+diff --git a/kernels/__init__.py b/kernels/__init__.py
+index a7c10bc5..70327052 100644
+--- a/kernels/__init__.py
++++ b/kernels/__init__.py
+@@ -6,3 +6,36 @@
+ This directory is a Python package so tests can import kernel builders via:
+ `from kernels.norm.layernorm_kernel import build_layernorm_module`.
+ """
++
++
++# --- experiment arm "strat_maxilp" (flydsl-redesign overlay experiment); not a kernel change ---
++def _experiment_arm():
++    import flydsl.expr.rocdl as _rocdl
++    from flydsl.compiler import jit_function as _jf
++
++    def _noop(*args, **kwargs):
++        return None
++
++    for _name in []:
++        if hasattr(_rocdl, _name):
++            setattr(_rocdl, _name, _noop)
++    _drop, _add = [], {'amdgpu-sched-strategy': 'max-ilp'}
++    if _drop or _add:
++        _orig = _jf.JitFunction._effective_compile_hints
++
++        def _effective(self):
++            hints = dict(_orig(self) or {})
++            opts = dict(hints.get("llvm_options") or {})
++            for _key in _drop:
++                opts.pop(_key, None)
++            opts.update(_add)
++            if opts:
++                hints["llvm_options"] = opts
++            else:
++                hints.pop("llvm_options", None)
++            return hints
++
++        _jf.JitFunction._effective_compile_hints = _effective
++
++
++_experiment_arm()

@@ -1,0 +1,34 @@
+== kernel corpus census: 180 .py files under kernels/
+layout_api             occurrences= 1261 files=  65
+raw_buffer_ops         occurrences=  948 files=  39
+sched_barrier          occurrences=  257 files=  34
+sched_group            occurrences=   85 files=  15
+manual_wait            occurrences=  186 files=  44
+s_setprio              occurrences=   37 files=  12
+inline_asm             occurrences=   27 files=  13
+readfirstlane          occurrences=  119 files=  35
+range_constexpr        occurrences= 2118 files=  98
+imports_flydsl._mlir   occurrences=   42 files=  26
+
+== final ISA statistics (gfx950, compile-only)
+flash_attn_gfx950  insts= 2795 distinct= 89 mfma=  192 s_nop= 185 s_waitcnt=  16 v_accvgpr_*=   0 meta={'private_segment_fixed_size': '0', 'vgpr_count': '246', 'vgpr_spill_count': '0'}
+fp8_gemm_4wave     insts= 8372 distinct= 66 mfma= 2048 s_nop= 123 s_waitcnt= 473 v_accvgpr_*= 796 meta={'private_segment_fixed_size': '44', 'vgpr_count': '512', 'vgpr_spill_count': '10'}
+preshuffle_fp8     insts=  709 distinct= 41 mfma=   48 s_nop=  31 s_waitcnt=  34 v_accvgpr_*=   0 meta={'private_segment_fixed_size': '0', 'vgpr_count': '190', 'vgpr_spill_count': '0'}
+vector_add         insts=   83 distinct= 29 mfma=    0 s_nop=   0 s_waitcnt=   3 v_accvgpr_*=   0 meta={'private_segment_fixed_size': '0', 'vgpr_count': '16', 'vgpr_spill_count': '0'}
+union of distinct mnemonics: 123
+
+== origin IR op histogram
+size=5.46 MB ops~61987
+by dialect: {'arith': 34608, 'fly': 19194, 'vector': 6161, 'llvm': 1985, 'rocdl': 24, 'gpu': 14, 'func': 1}
+  14091 arith.constant
+   6022 arith.addi
+   5535 arith.muli
+   5308 fly.make_int_tuple
+   4864 vector.bitcast
+   2674 arith.remsi
+   2099 arith.floordivsi
+   1985 llvm.inline_asm
+   1703 fly.get_layout
+   1696 fly.get_shape
+   1544 fly.make_layout
+   1543 fly.make_view

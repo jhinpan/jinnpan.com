@@ -1,0 +1,107 @@
+{
+ "source": "overlay FlyBench v1 mode-A runs (FlyDSL cb770e9a, MI355X); receipts, review bundles and agent traces; aggregated, no job or host identifiers",
+ "runs": 98,
+ "receipts": 676,
+ "verdicts": {
+  "scored": 510,
+  "unscorable": 9,
+  "incorrect": 47,
+  "tests_failed": 22,
+  "compile_failed": 8,
+  "unchanged": 78,
+  "foreign_kernels": 2
+ },
+ "scored": 510,
+ "improved": 405,
+ "improved_ge_1_2x": 245,
+ "distinct_records_improved": 37,
+ "reviews": {
+  "n": 89,
+  "verdicts": {
+   "suspicious": 44,
+   "exploit": 6,
+   "legit": 39
+  },
+  "speedup_source_share_all": {
+   "vectorize_or_memory": 0.64,
+   "algorithm_rewrite": 0.36,
+   "dispatch_or_tiling": 0.573,
+   "split_k_or_grid_fill": 0.404,
+   "schedule_or_sync_knob": 0.067,
+   "register_or_occupancy_knob": 0.034
+  },
+  "speedup_source_share_legit": {
+   "dispatch_or_tiling": 0.564,
+   "vectorize_or_memory": 0.744,
+   "algorithm_rewrite": 0.436,
+   "split_k_or_grid_fill": 0.436,
+   "schedule_or_sync_knob": 0.077,
+   "register_or_occupancy_knob": 0.051
+  },
+  "failed_checklist_items": {
+   "cold-cache-only tricks": 3,
+   "shape-specific dispatch": 6,
+   "tolerance exploitation": 6,
+   "work outside timed window": 1,
+   "changes outside kernel files": 2,
+   "per-shape regressions vs stock": 35
+  },
+  "failure_classes_summary_or_failed_items": {
+   "regresses_off_timed_shapes": 62,
+   "cache_gaming": 6,
+   "race_or_missing_barrier": 3,
+   "numerics": 4,
+   "host_overhead_or_cache": 9,
+   "spill": 3,
+   "out_of_bounds": 1
+  },
+  "legit_reproduced_speedup_median": 1.4616
+ },
+ "agent_cost_per_record": {
+  "n": 671,
+  "median_prompt_tokens": 53503305,
+  "median_turns": 318,
+  "median_wall_s": 4773.099,
+  "by_model": {
+   "DeepSeek-V4.1-Flash-1017": {
+    "n": 620,
+    "median_prompt_tokens": 57070817,
+    "median_turns": 341,
+    "median_wall_s": 5337.664
+   },
+   "Kimi-K3.1-Pro": {
+    "n": 26,
+    "median_prompt_tokens": 18631304,
+    "median_turns": 151,
+    "median_wall_s": 4527.012
+   },
+   "DeepSeek-V4.1-Flash-1017-pd": {
+    "n": 11,
+    "median_prompt_tokens": 64997716,
+    "median_turns": 245,
+    "median_wall_s": 5860.961
+   },
+   "Claude-Opus-5.5": {
+    "n": 14,
+    "median_prompt_tokens": 27537775,
+    "median_turns": 295,
+    "median_wall_s": 8086.871
+   }
+  }
+ },
+ "agent_commands": {
+  "traces": 827,
+  "commands": 285091,
+  "by_purpose": {
+   "read_code": 35339,
+   "own_timing_or_profile": 21757,
+   "edit_code": 73910,
+   "inspect_ir_or_isa": 11470,
+   "evaluate": 10261,
+   "run_tests": 4125,
+   "cache_clear": 9531
+  },
+  "traces_that_inspected_ir_or_isa": 574,
+  "traces_that_cleared_flydsl_cache": 534
+ }
+}

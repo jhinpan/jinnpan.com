@@ -1,0 +1,13 @@
+diff --git a/kernels/gemm/fp8_gemm_4wave.py b/kernels/gemm/fp8_gemm_4wave.py
+index f4d23404..4dc62a71 100644
+--- a/kernels/gemm/fp8_gemm_4wave.py
++++ b/kernels/gemm/fp8_gemm_4wave.py
+@@ -225,7 +225,7 @@ def compile_fp8_gemm_4w(
+                 lds_swz.append(swz)
+             return lds_swz
+ 
+-        mfma = Mfma16x16x128AGPR(N_TILES_A, N_TILES_B)
++        mfma = Mfma16x16x128(N_TILES_A, N_TILES_B)
+ 
+         def _interleaved_cluster(
+             lds_dst,
