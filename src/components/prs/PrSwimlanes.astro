@@ -1,0 +1,56 @@
+---
+import PrCard from "@components/prs/PrCard.astro";
+import { LANES, byUrgency, type Importance, type Lane, type Swimlane } from "@data/pr-board";
+import type { Lang } from "@lib/utils";
+
+type Props = {
+  view: "importance" | "repo";
+  rows: Swimlane[];
+  lang: Lang;
+  laneLabels: Record<Lane, string>;
+  tierLabels: Record<Importance, string>;
+};
+
+const { view, rows, lang, laneLabels, tierLabels } = Astro.props;
+const inLane = (row: Swimlane, lane: Lane) => row.prs.filter((pr) => pr.lane === lane).sort(byUrgency);
+---
+
+<div class="prs-board" data-view={view}>
+  {
+    rows.map((row) => (
+      <details
+        class="prs-swim animate"
+        open={row.open}
+        data-follow-up={inLane(row, "follow-up").length}
+        data-review={inLane(row, "review").length}
+        data-in-progress={inLane(row, "in-progress").length}
+      >
+        <summary>
+          <span class="prs-swim-title">{row.title}</span>
+          {row.tier && <span class={`prs-tier prs-tier-${row.tier}`}>{tierLabels[row.tier]}</span>}
+          {row.note && <span class="prs-swim-note">{row.note}</span>}
+          <span class="prs-swim-counts">
+            {LANES.map((lane) => (
+              <b data-lane={lane} title={laneLabels[lane]}>
+                {inLane(row, lane).length}
+              </b>
+            ))}
+          </span>
+        </summary>
+        <div class="prs-cells">
+          {LANES.map((lane) => (
+            <div class="prs-cell" data-lane={lane}>
+              <p class="prs-cell-label">
+                {laneLabels[lane]} · {inLane(row, lane).length}
+              </p>
+              {inLane(row, lane).map((pr) => (
+                <PrCard pr={pr} lang={lang} showRepo={view === "importance"} />
+              ))}
+              {inLane(row, lane).length === 0 && <p class="prs-empty">&mdash;</p>}
+            </div>
+          ))}
+        </div>
+      </details>
+    ))
+  }
+</div>

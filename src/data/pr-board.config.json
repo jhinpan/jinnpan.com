@@ -1,0 +1,16 @@
+{
+  "login": "jhinpan",
+  "exclude": ["jhinpan/jinnpan.com"],
+  "importance": {
+    "high": [
+      "sgl-project/sglang",
+      "sgl-project/sgl-amd-mono",
+      "ROCm/FlyDSL",
+      "ROCm/aiter",
+      "SemiAnalysisAI/InferenceX"
+    ],
+    "low": ["jhinpan/*"]
+  },
+  "pins": {},
+  "staleDays": { "ready": 14, "draft": 30 }
+}

@@ -1,0 +1,45 @@
+---
+import { daysBeforeRefresh, reasonText, type BoardPr } from "@data/pr-board";
+import type { Lang } from "@lib/utils";
+
+type Props = {
+  pr: BoardPr;
+  lang: Lang;
+  // The repository view names the repository once per row, so the card omits it.
+  showRepo: boolean;
+};
+
+const { pr, lang, showRepo } = Astro.props;
+
+const idle = daysBeforeRefresh(pr.updatedAt);
+const age =
+  lang === "zh"
+    ? idle === 0
+      ? "今天更新"
+      : `${idle} 天前更新`
+    : idle === 0
+      ? "updated today"
+      : `updated ${idle}d ago`;
+const ciLabel = { success: "CI passing", failure: "CI failing", pending: "CI running", none: "" }[pr.ci];
+---
+
+<a class="prs-card" href={pr.url} target="_blank" rel="noopener" data-lane={pr.lane}>
+  <span class="prs-card-top">
+    <span class="prs-ref">
+      {showRepo && <span>{pr.repo}</span>}
+      <b>#{pr.number}</b>
+    </span>
+    {pr.ci !== "none" && <i class={`prs-ci prs-ci-${pr.ci}`} title={ciLabel} aria-label={ciLabel} />}
+  </span>
+  <span class="prs-title">{pr.title}</span>
+  <span class="prs-reasons">
+    {pr.reasons.map((reason) => <span class="prs-reason">{reasonText(reason, lang)}</span>)}
+  </span>
+  <span class="prs-meta">
+    {pr.role === "reviewer" && <span>@{pr.author}</span>}
+    <span>{age}</span>
+    <span>
+      +{pr.additions} &minus;{pr.deletions}
+    </span>
+  </span>
+</a>

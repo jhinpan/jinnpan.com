@@ -46,6 +46,16 @@ As of 2026-06-08 the per-entry "appetizer" markdown for code/paper readings was 
 
 The home page (`src/pages/[lang]/index.astro`) reads its content from `src/data/home.ts`. The counts (`STATS`, chip counts in `THREADS`), the three measurement cards (`MEASUREMENTS`) and the "Latest from the Library" list (`LATEST`) are snapshots dated by `AS_OF`; nothing recomputes them at build time. When a new Library entry ships, add it to `LATEST`, update `STATS`, and move `AS_OF`.
 
+## PR board
+
+`/en/prs` and `/zh/prs` (`src/pages/[lang]/prs.astro`) show every open pull request in a public repository that `jhinpan` wrote or must review, in three lanes: needs follow-up, needs my review, in progress. The page groups them by importance or by repository.
+
+- Data: `src/data/pr-board.json`, written by `scripts/sync-pr-board.mjs` (`npm run sync:prs`) and refreshed nightly by `.github/workflows/sync-pr-board.yml`. Never edit it by hand. Locally the script calls GitHub through the `gh` CLI, so it needs no token in the shell.
+- Lanes are derived from GitHub state only (review decision, CI, merge conflict, who spoke last, idle days). The rules are in the script and are repeated at the bottom of the page; change both together.
+- Editorial input lives in `src/data/pr-board.config.json`: `importance.high` and `importance.low` list repositories (`owner/*` matches an owner), every other repository is medium, `pins` maps `owner/repo#N` to a tier, `staleDays` sets the idle thresholds, `exclude` drops repositories.
+- The site is public, so the script drops every pull request in a private repository. Do not add private titles, branches or counts to this page.
+- This board is separate from the dated tracker entries under `public/sources/daily-sync/`, which keep hand-written commentary for one window.
+
 ## Skills
 
 This repo has a local, **category-aware** skill at `.claude/skills/source2blog/SKILL.md` for turning a source (code repo, paper, concept, or original work) into a polished portfolio artifact routed onto one of the four shelves above. Use it whenever the user wants a new code/paper deep dive, a tutorial primer, a blog post, or anything matching "把 X 做成 portfolio html / blog" / "deep dive on X" / "source-reading NNN" / "write a primer on X". The skill always registers the new entry as a card in the `/sources/` hub. Read the SKILL.md for the category routing table, aesthetic differentiation rules, SVG hand-coding conventions, the EN/ZH toggle pattern, hub-registration step, Vercel deploy verification, and Chinese typography checks.

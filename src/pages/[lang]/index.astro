@@ -35,7 +35,7 @@ const i18n = {
     measureMore: "All experiments",
     threadsTitle: "What I work on",
     threadsDesc: "Three threads. The number on a chip is merged pull requests.",
-    threadsMore: "PR tracker",
+    threadsMore: "PR board",
     latestTitle: "Latest from the Library",
     latestDesc: "Code readings, paper readings, tutorials and experiments. In English and 中文.",
     latestMore: "All entries",
@@ -60,7 +60,7 @@ const i18n = {
     measureMore: "全部实验",
     threadsTitle: "我在做什么",
     threadsDesc: "三条线。 标签上的数字是 merged PR 数。",
-    threadsMore: "PR tracker",
+    threadsMore: "PR 看板",
     latestTitle: "Library 最新内容",
     latestDesc: "代码精读、论文精读、教程和实验。 中英双语。",
     latestMore: "全部条目",
@@ -206,7 +206,7 @@ const latest = LATEST.map((item) => {
           no="02"
           title={t.threadsTitle}
           desc={t.threadsDesc}
-          href="/sources/daily-sync/"
+          href={`/${lang}/prs`}
           more={t.threadsMore}
         />
         <div class="home-threads">

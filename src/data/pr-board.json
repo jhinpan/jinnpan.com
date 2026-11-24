@@ -1,0 +1,1408 @@
+{
+  "generatedAt": "2026-11-24T04:09:54.094Z",
+  "login": "jhinpan",
+  "staleDays": {
+    "ready": 14,
+    "draft": 30
+  },
+  "importance": {
+    "high": [
+      "sgl-project/sglang",
+      "sgl-project/sgl-amd-mono",
+      "ROCm/FlyDSL",
+      "ROCm/aiter",
+      "SemiAnalysisAI/InferenceX"
+    ],
+    "low": [
+      "jhinpan/*"
+    ]
+  },
+  "prs": [
+    {
+      "repo": "AMD-AGI/AgentKernelArena",
+      "number": 151,
+      "title": "Run sanitizers by default on schema-v3 kernel tasks",
+      "url": "https://github.com/AMD-AGI/AgentKernelArena/pull/151",
+      "author": "irvineoy",
+      "role": "reviewer",
+      "importance": "medium",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-11T04:18:37Z",
+      "updatedAt": "2026-11-20T07:38:45Z",
+      "additions": 4506,
+      "deletions": 190,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
+        }
+      ]
+    },
+    {
+      "repo": "amdpilot-org/AMD-Skills",
+      "number": 12,
+      "title": "feat(flydsl): add core 7 FlyDSL skill pack",
+      "url": "https://github.com/amdpilot-org/AMD-Skills/pull/12",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-04-23T06:56:46Z",
+      "updatedAt": "2026-04-23T06:58:22Z",
+      "additions": 1259,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 214
+        }
+      ]
+    },
+    {
+      "repo": "amdpilot-org/AMD-Skills",
+      "number": 18,
+      "title": "feat: add AMDPilot issue probe skill",
+      "url": "https://github.com/amdpilot-org/AMD-Skills/pull/18",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "none",
+      "createdAt": "2026-05-01T20:50:47Z",
+      "updatedAt": "2026-05-01T20:50:47Z",
+      "additions": 373,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 206
+        }
+      ]
+    },
+    {
+      "repo": "carlushuang/gcnasm",
+      "number": 30,
+      "title": "opus_attn_gfx1201: pure-HIP FA-fwd beyond #24 (v153, 94.8 TFLOPS, bit-exact)",
+      "url": "https://github.com/carlushuang/gcnasm/pull/30",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "none",
+      "createdAt": "2026-06-01T04:29:03Z",
+      "updatedAt": "2026-06-01T04:29:03Z",
+      "additions": 308,
+      "deletions": 3,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 175
+        }
+      ]
+    },
+    {
+      "repo": "carlushuang/gcnasm",
+      "number": 31,
+      "title": "opus_attn_gfx1201: pure-HIP FA-fwd beyond #24 (v139, 93.5 TFLOPS, bit-exact)",
+      "url": "https://github.com/carlushuang/gcnasm/pull/31",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "none",
+      "createdAt": "2026-06-01T04:30:46Z",
+      "updatedAt": "2026-06-01T04:30:46Z",
+      "additions": 271,
+      "deletions": 3,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 175
+        }
+      ]
+    },
+    {
+      "repo": "carlushuang/gcnasm",
+      "number": 32,
+      "title": "opus_attn_gfx1201 v201: hand-tuned gfx1201 ASM beyond #24's v88 (bit-exact, WIP/auto-updated)",
+      "url": "https://github.com/carlushuang/gcnasm/pull/32",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "none",
+      "createdAt": "2026-06-02T03:52:44Z",
+      "updatedAt": "2026-06-23T08:27:08Z",
+      "additions": 1115,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 153
+        }
+      ]
+    },
+    {
+      "repo": "Dao-AILab/quack",
+      "number": 190,
+      "title": "feat(rmsnorm): add a FlyDSL forward backend for ROCm gfx950",
+      "url": "https://github.com/Dao-AILab/quack/pull/190",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-08-14T04:56:20Z",
+      "updatedAt": "2026-08-31T21:30:33Z",
+      "additions": 2464,
+      "deletions": 92,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 84
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 2,
+      "title": "[Feature] Extract reusable event-based benchmarking helper",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/2",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "failure",
+      "createdAt": "2026-07-10T15:31:25Z",
+      "updatedAt": "2026-07-10T15:33:13Z",
+      "additions": 233,
+      "deletions": 26,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 136
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 3,
+      "title": "[Feat] softmax bwd: optional per-row dot debug buffer",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/3",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T02:54:18Z",
+      "updatedAt": "2026-08-21T02:55:11Z",
+      "additions": 4,
+      "deletions": 1,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 95
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 4,
+      "title": "[Refactor] add softmax_bwd_operand_count accessor",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/4",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T02:54:20Z",
+      "updatedAt": "2026-08-21T02:55:08Z",
+      "additions": 20,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 95
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 5,
+      "title": "[Perf] softmax bwd: shape-based tile selection",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/5",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T02:54:21Z",
+      "updatedAt": "2026-08-21T02:55:23Z",
+      "additions": 13,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 95
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 6,
+      "title": "[Test] softmax bwd: add unaligned shape coverage",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/6",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T02:54:23Z",
+      "updatedAt": "2026-08-21T02:55:13Z",
+      "additions": 7,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 95
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 7,
+      "title": "[Fix] softmax bwd: normalize row count for grid launch",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/7",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T02:54:24Z",
+      "updatedAt": "2026-08-21T02:55:19Z",
+      "additions": 2,
+      "deletions": 1,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 95
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/FlyDSL-lab",
+      "number": 8,
+      "title": "[Docs] softmax bwd: document the module builder",
+      "url": "https://github.com/jhinpan/FlyDSL-lab/pull/8",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T02:55:07Z",
+      "updatedAt": "2026-08-21T02:55:31Z",
+      "additions": 1,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 95
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 5,
+      "title": "feat(rmsnorm): FlyDSL RMSNorm backend for ROCm (gfx950)",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/5",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-08-03T00:25:25Z",
+      "updatedAt": "2026-08-10T02:49:17Z",
+      "additions": 15051,
+      "deletions": 30,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 9,
+      "title": "[1/7] feat(flydsl): add ROCm layout and import foundation",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/9",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "failure",
+      "createdAt": "2026-08-05T21:55:25Z",
+      "updatedAt": "2026-08-09T07:16:58Z",
+      "additions": 1497,
+      "deletions": 30,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 10,
+      "title": "[2/7] feat(flydsl): add RMSNorm forward kernel",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/10",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "none",
+      "createdAt": "2026-08-05T22:04:03Z",
+      "updatedAt": "2026-08-09T07:16:59Z",
+      "additions": 1204,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 11,
+      "title": "[3/7] feat(flydsl): add RMSNorm forward autotuning",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/11",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "none",
+      "createdAt": "2026-08-05T22:13:53Z",
+      "updatedAt": "2026-08-10T02:48:02Z",
+      "additions": 1973,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 12,
+      "title": "[4/7] feat(flydsl): add deterministic RMSNorm backward kernel",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/12",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "none",
+      "createdAt": "2026-08-05T22:23:37Z",
+      "updatedAt": "2026-08-10T02:48:02Z",
+      "additions": 1603,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 13,
+      "title": "[5/7] feat(flydsl): add RMSNorm backward autotuning",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/13",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "none",
+      "createdAt": "2026-08-05T22:40:44Z",
+      "updatedAt": "2026-08-10T02:48:02Z",
+      "additions": 932,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 14,
+      "title": "[6/7] feat(rmsnorm): expose the FlyDSL ROCm backend",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/14",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "success",
+      "createdAt": "2026-08-05T22:52:01Z",
+      "updatedAt": "2026-08-10T02:48:02Z",
+      "additions": 2304,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 15,
+      "title": "[7/7] feat(bench): add reproducible FlyDSL RMSNorm comparison",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/15",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "success",
+      "createdAt": "2026-08-05T23:00:41Z",
+      "updatedAt": "2026-08-10T02:49:17Z",
+      "additions": 1677,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 16,
+      "title": "[8/8] refactor(rmsnorm): consolidate FlyDSL backend boundaries",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/16",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "success",
+      "createdAt": "2026-08-09T07:17:31Z",
+      "updatedAt": "2026-08-10T02:48:50Z",
+      "additions": 1864,
+      "deletions": 854,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 106
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/quack-FlyDSL",
+      "number": 17,
+      "title": "feat(rmsnorm): add a FlyDSL forward backend for ROCm gfx950",
+      "url": "https://github.com/jhinpan/quack-FlyDSL/pull/17",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-08-10T06:10:12Z",
+      "updatedAt": "2026-08-31T21:30:11Z",
+      "additions": 2508,
+      "deletions": 106,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "stale",
+          "days": 84
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/rocm-KDA-pilot",
+      "number": 9,
+      "title": "docs(model-policy): pin frontier model defaults (issue #5 slice)",
+      "url": "https://github.com/jhinpan/rocm-KDA-pilot/pull/9",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-06-22T07:22:58Z",
+      "updatedAt": "2026-06-22T07:24:25Z",
+      "additions": 100,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 154
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/ROCmKernelWiki",
+      "number": 13,
+      "title": "chore(wiki): evidence refresh 2026-07-24",
+      "url": "https://github.com/jhinpan/ROCmKernelWiki/pull/13",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": true,
+      "ci": "success",
+      "createdAt": "2026-07-24T03:16:18Z",
+      "updatedAt": "2026-07-24T03:16:24Z",
+      "additions": 7679,
+      "deletions": 35,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 123
+        }
+      ]
+    },
+    {
+      "repo": "jhinpan/sglang-fork",
+      "number": 1,
+      "title": "fix(dspark): make verify-time top-k/top-p renorm work off CUDA",
+      "url": "https://github.com/jhinpan/sglang-fork/pull/1",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "low",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-07-28T18:44:31Z",
+      "updatedAt": "2026-07-28T18:45:50Z",
+      "additions": 32,
+      "deletions": 4,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "stale",
+          "days": 118
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/aiter",
+      "number": 6356,
+      "title": "[CK] [Bugfix] Fix gfx1250 grouped MoE tuning and re-tune 6 A8W4 and A4W4 rows",
+      "url": "https://github.com/ROCm/aiter/pull/6356",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-10T04:26:07Z",
+      "updatedAt": "2026-11-23T21:01:31Z",
+      "additions": 18,
+      "deletions": 6,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "TEAM_AITER",
+            "yadaish",
+            "yzhou103"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/aiter",
+      "number": 6358,
+      "title": "[Config] [gfx1250] Select the FlyDSL kernel for 20 BF16 GEMM shapes",
+      "url": "https://github.com/ROCm/aiter/pull/6358",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-10T04:46:30Z",
+      "updatedAt": "2026-11-23T21:01:33Z",
+      "additions": 20,
+      "deletions": 7,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "TEAM_AITER",
+            "coderfeli",
+            "demonsan"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/aiter",
+      "number": 6360,
+      "title": "[FlyDSL] [Bugfix] gfx1250 grouped MoE: read integer config cells that the merge writes as floats",
+      "url": "https://github.com/ROCm/aiter/pull/6360",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-10T05:14:41Z",
+      "updatedAt": "2026-11-23T21:01:34Z",
+      "additions": 140,
+      "deletions": 21,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "TEAM_AITER",
+            "aoli26",
+            "coderfeli",
+            "yadaish"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/aiter",
+      "number": 6397,
+      "title": "Use the FlyDSL BF16 GEMM by default for large untuned gfx1250 shapes",
+      "url": "https://github.com/ROCm/aiter/pull/6397",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-11T09:11:15Z",
+      "updatedAt": "2026-11-17T04:27:18Z",
+      "additions": 173,
+      "deletions": 2,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "reply-needed",
+          "by": [
+            "zufayu"
+          ],
+          "days": 6
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/aiter",
+      "number": 6511,
+      "title": "[CK] [FlyDSL] fix(fused_moe): make the MXFP4 MoE stage2 epilogue deterministic by default",
+      "url": "https://github.com/ROCm/aiter/pull/6511",
+      "author": "Qubitium",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "none",
+      "createdAt": "2026-10-14T01:28:49Z",
+      "updatedAt": "2026-11-21T01:32:53Z",
+      "additions": 988,
+      "deletions": 96,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/aiter",
+      "number": 6968,
+      "title": "[Test] Cover 192x128, 128x64, and 256x256 in the FP8 MHA harnesses.",
+      "url": "https://github.com/ROCm/aiter/pull/6968",
+      "author": "zjin-lcf",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "none",
+      "createdAt": "2026-10-26T22:50:31Z",
+      "updatedAt": "2026-11-24T01:32:42Z",
+      "additions": 58,
+      "deletions": 26,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 924,
+      "title": "Unify benchmark timing contracts and add calibrated CI gates",
+      "url": "https://github.com/ROCm/FlyDSL/pull/924",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-07-30T00:34:52Z",
+      "updatedAt": "2026-08-18T19:27:57Z",
+      "additions": 1892,
+      "deletions": 402,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 97
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1056,
+      "title": "Support vLLM paged KV cache layouts on the gfx950 attention kernel",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1056",
+      "author": "akii96",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-08-21T23:47:09Z",
+      "updatedAt": "2026-11-06T18:46:41Z",
+      "additions": 745,
+      "deletions": 35,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1227,
+      "title": "[Kernel][Perf] Tune RMSNorm for gfx1250: BF16 hardware conversion, early loads, small-N kernel choice",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1227",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-06T17:57:28Z",
+      "updatedAt": "2026-11-06T18:47:03Z",
+      "additions": 197,
+      "deletions": 33,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 17
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1253,
+      "title": "[Bugfix][Test] Round MXFP8 E8M0 scales up in the test quantizers",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1253",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-09T21:44:15Z",
+      "updatedAt": "2026-11-06T18:47:14Z",
+      "additions": 58,
+      "deletions": 37,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "conflict"
+        },
+        {
+          "code": "stale",
+          "days": 17
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1264,
+      "title": "[Bugfix][gfx1250] Reject FP8 and A8W4 GEMM tiles that issue no WMMA",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1264",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-10-11T09:12:14Z",
+      "updatedAt": "2026-11-06T18:47:16Z",
+      "additions": 14,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "stale",
+          "days": 17
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1343,
+      "title": "[Bugfix] Keep every frame of an op's call chain in debug info; skip the standard library",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1343",
+      "author": "hanli0612",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-10-28T21:00:18Z",
+      "updatedAt": "2026-11-07T14:40:01Z",
+      "additions": 300,
+      "deletions": 2,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1395,
+      "title": "[Kernel][Perf] Vectorize LayerNorm backward and reduce dgamma/dbias by column",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1395",
+      "author": "Arist12",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-11T22:40:38Z",
+      "updatedAt": "2026-11-18T04:35:02Z",
+      "additions": 640,
+      "deletions": 58,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1396,
+      "title": "[Kernel][Perf] Add a small-M kernel to the FP8 8-wave GEMM",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1396",
+      "author": "Arist12",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-11T22:40:41Z",
+      "updatedAt": "2026-11-18T04:42:09Z",
+      "additions": 264,
+      "deletions": 7,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "ROCm/FlyDSL",
+      "number": 1397,
+      "title": "[Kernel][Perf] Add a persistent-row RMSNorm SmoothQuant kernel",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1397",
+      "author": "Arist12",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-11T22:40:44Z",
+      "updatedAt": "2026-11-18T04:35:05Z",
+      "additions": 284,
+      "deletions": 8,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "SemiAnalysisAI/InferenceX",
+      "number": 4989,
+      "title": "[AMD][AgentX] Add GLM-5.3-Flash MXFP4 MI355X SGLang MTP AgentX recipe with the AMD monokernel / [AMD][AgentX] 新增 GLM-5.3-Flash MXFP4 MI355X SGLang MTP AgentX 配方（启用 AMD monokernel）",
+      "url": "https://github.com/SemiAnalysisAI/InferenceX/pull/4989",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": true,
+      "ci": "success",
+      "createdAt": "2026-11-10T22:07:04Z",
+      "updatedAt": "2026-11-10T22:09:13Z",
+      "additions": 143,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "conflict"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 129,
+      "title": "[Feat] [MI355X] glm53: Serve GLM-5.3 at TP2 (32 heads a rank), steps of up to 4 rows",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/129",
+      "author": "clintg6",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-11T22:03:28Z",
+      "updatedAt": "2026-11-24T01:12:37Z",
+      "additions": 368,
+      "deletions": 57,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 133,
+      "title": "[Feat] [MI355X] glm53: Run verify steps of up to 16 rows on the monokernel",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/133",
+      "author": "EricKing626",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-12T03:30:51Z",
+      "updatedAt": "2026-11-24T01:17:20Z",
+      "additions": 717,
+      "deletions": 262,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 136,
+      "title": "[Feat] glm53: Enable monokernels for MoRI PD decode",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/136",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": true,
+      "ci": "success",
+      "createdAt": "2026-11-14T23:18:25Z",
+      "updatedAt": "2026-11-14T23:18:25Z",
+      "additions": 45,
+      "deletions": 8,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "conflict"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 138,
+      "title": "[Perf] [MI355X] minimax_m31: Speed up the FFN launch and run the verify attention as three launches (1/2)",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/138",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-16T00:49:29Z",
+      "updatedAt": "2026-11-19T07:14:37Z",
+      "additions": 2980,
+      "deletions": 153,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "HaiShaw",
+            "alexnails",
+            "bingxche",
+            "kevin-mii",
+            "michaelzhang-ai"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 140,
+      "title": "[Perf] [MI355X] minimax_m31: Run the DSpark draft in fewer launches and keep seq_lens on the GPU (2/2)",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/140",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-16T00:50:21Z",
+      "updatedAt": "2026-11-17T22:50:08Z",
+      "additions": 3548,
+      "deletions": 14,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "HaiShaw",
+            "alexnails",
+            "bingxche",
+            "kevin-mii",
+            "michaelzhang-ai"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 141,
+      "title": "[Feat] [MI355X] glm53_flash: Run on a bf16 KDA state",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/141",
+      "author": "Jacob0226",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-16T03:29:52Z",
+      "updatedAt": "2026-11-23T09:48:25Z",
+      "additions": 552,
+      "deletions": 125,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 149,
+      "title": "[Feat] [MI355X] glm53: Serve decode context parallelism (--dcp-size equal to --tp) on the monokernel",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/149",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-18T04:16:57Z",
+      "updatedAt": "2026-11-19T19:44:25Z",
+      "additions": 995,
+      "deletions": 185,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "HaiShaw",
+            "alexnails",
+            "kevin-mii"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 150,
+      "title": "[Perf] [MI355X] glm53: 64-key DCP split tiles and merge-first uv order",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/150",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-18T04:58:44Z",
+      "updatedAt": "2026-11-18T19:07:09Z",
+      "additions": 31,
+      "deletions": 17,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": []
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 152,
+      "title": "[Fix] glm53: Define check_layer.py's --mxfp4 once",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/152",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-18T07:26:00Z",
+      "updatedAt": "2026-11-18T21:16:53Z",
+      "additions": 0,
+      "deletions": 1,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 158,
+      "title": "[Fix] test: Launch the e2e servers with --enable-amd-monokernel",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/158",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-18T22:33:00Z",
+      "updatedAt": "2026-11-19T07:11:40Z",
+      "additions": 57,
+      "deletions": 63,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": [
+            "HaiShaw",
+            "alexnails",
+            "billishyahao",
+            "kevin-mii",
+            "kkHuang-amd",
+            "yichiche",
+            "zijiecode"
+          ]
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 183,
+      "title": "[Fix] [MI355X] glm53: Run a draft extend between kernel widths at the next width",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/183",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-23T20:33:39Z",
+      "updatedAt": "2026-11-23T20:33:39Z",
+      "additions": 31,
+      "deletions": 6,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "waiting-review",
+          "by": []
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sglang",
+      "number": 49643,
+      "title": "[Doc] [AMD] GLM-5.3-Flash: add the MI355X MXFP4 recipe with the AMD monokernel",
+      "url": "https://github.com/sgl-project/sglang/pull/49643",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": true,
+      "ci": "failure",
+      "createdAt": "2026-11-10T22:08:53Z",
+      "updatedAt": "2026-11-10T22:17:58Z",
+      "additions": 48,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sglang",
+      "number": 50665,
+      "title": "[Perf] [AMD] minimax: Let decode and verify steps run without host seq_lens on ROCm",
+      "url": "https://github.com/sgl-project/sglang/pull/50665",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-16T00:50:13Z",
+      "updatedAt": "2026-11-16T20:09:14Z",
+      "additions": 33,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sglang",
+      "number": 51389,
+      "title": "[Fix] [AMD] quantization: Run per-token-group FP8 quant through Triton on ROCm",
+      "url": "https://github.com/sgl-project/sglang/pull/51389",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-19T00:40:18Z",
+      "updatedAt": "2026-11-19T00:41:17Z",
+      "additions": 68,
+      "deletions": 1,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sglang",
+      "number": 52646,
+      "title": "[Doc] [AMD] cookbook: Add the GLM-5.3 MXFP4 MI355X command with the AMD monokernel",
+      "url": "https://github.com/sgl-project/sglang/pull/52646",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-23T20:38:08Z",
+      "updatedAt": "2026-11-23T20:38:50Z",
+      "additions": 29,
+      "deletions": 1,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        }
+      ]
+    },
+    {
+      "repo": "vllm-project/vime",
+      "number": 521,
+      "title": "[CI/Build][Hardware][AMD] Use the CUDA Megatron-LM commit and patch in the ROCm image",
+      "url": "https://github.com/vllm-project/vime/pull/521",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-07T08:16:31Z",
+      "updatedAt": "2026-11-07T08:17:42Z",
+      "additions": 7,
+      "deletions": 7,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        },
+        {
+          "code": "stale",
+          "days": 16
+        }
+      ]
+    },
+    {
+      "repo": "vllm-project/vllm",
+      "number": 67082,
+      "title": "[Bugfix][ROCm] Avoid KFD queue eviction after the first IPC weight update",
+      "url": "https://github.com/vllm-project/vllm/pull/67082",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "medium",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-11T19:07:34Z",
+      "updatedAt": "2026-11-11T19:08:15Z",
+      "additions": 80,
+      "deletions": 0,
+      "lane": "follow-up",
+      "reasons": [
+        {
+          "code": "ci-failing"
+        }
+      ]
+    }
+  ]
+}
