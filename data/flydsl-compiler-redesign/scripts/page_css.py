@@ -42,6 +42,9 @@ a code{color:inherit}
 .callout.note{border-left-color:var(--amber);background:var(--amber-soft)}
 .callout b{color:var(--teal)} .callout.warn b{color:var(--red)} .callout.note b{color:var(--amber)}
 .callout p:last-child{margin-bottom:0}
+.callout.draft{border:1.5px dashed var(--red);border-left:3px solid var(--red);background:var(--red-soft)} .callout.draft b{color:var(--red)}
+.divider{max-width:740px;border-top:1.5px solid var(--ink);margin:0 0 44px;padding-top:12px;font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--red)}
+.divider p{font:15px/1.6 var(--body);letter-spacing:0;text-transform:none;color:var(--dim);margin:8px 0 0}
 table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:14.5px}
 th,td{border-bottom:1px solid var(--hair);padding:7px 8px;text-align:left;vertical-align:top}
 th{font:600 10.5px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim);border-bottom:1.5px solid var(--ink)}

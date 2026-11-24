@@ -1,7 +1,9 @@
-# Experiment 008 · FlyDSL compiler redesign: who decides each part of a kernel
+# Experiment 008 · FlyDSL kernels and the compiler: measurements behind the co-development RFC
 
 Raw data behind `public/sources/flydsl-compiler-redesign.html`. Measured 2026-11-22 and 2026-11-23 (UTC).
 Rebuild the page from this directory alone with `python3 data/flydsl-compiler-redesign/scripts/make_page.py`.
+The author's own text (position, toy example) is `AUTHOR_TEXT` in `scripts/make_page.py`; while an entry is empty,
+the page shows a draft marker there and the build prints `DRAFT`.
 
 ## Protocol
 
@@ -56,7 +58,7 @@ Rebuild the page from this directory alone with `python3 data/flydsl-compiler-re
   and whether the instruction order equals stock.
 - `summary.json`: everything above in one file; the page reads it.
 - `patches/`: the exact patch of every arm.
-- `census_fe81c407.txt`: the source census of FlyDSL `fe81c407` cited in section 03 (pipeline passes, LLVM
+- `census_fe81c407.txt`: the source census of FlyDSL `fe81c407` cited in section 04 (pipeline passes, LLVM
   patches, hint counts).
 - `scripts/`: `build_experiments.py` (patches and evaluator scripts), `isa_compare.py`, `summarize.py`,
   `mine_reviews.py`, `measure_compile.py`, `census_and_isa.py`, and the page builder (`make_page.py`,

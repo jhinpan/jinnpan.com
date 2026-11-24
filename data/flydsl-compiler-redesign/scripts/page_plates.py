@@ -54,81 +54,39 @@ PLATE_DECISIONS = r"""
 </svg>
 """
 
-PLATE_PIPELINES = r"""
-<svg viewBox="0 0 900 380" role="img" aria-labelledby="p2-t"><title id="p2-t">today's pipeline and the redesigned one</title>
+PLATE_LOOP = r"""
+<svg viewBox="0 0 880 250" role="img" aria-labelledby="pl-t"><title id="pl-t">the loop: generate, change the code, teach the compiler</title>
 <defs>
-  <marker id="ah2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#14315c"/></marker>
-  <marker id="ah2r" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c2513a"/></marker>
+  <marker id="lh" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#14315c"/></marker>
 </defs>
-<text class="lane" x="16" y="20" lang="en">TODAY · FLYDSL 0.4 / 0.5</text>
-<text class="lane" x="16" y="20" lang="zh">现在 · FLYDSL 0.4 / 0.5</text>
-<rect class="nd" x="16" y="32" width="118" height="56"/><text class="tx b" x="75" y="56" text-anchor="middle">Python</text>
-<text class="tx dim" x="75" y="74" text-anchor="middle" lang="en">hidden rule</text><text class="tx dim" x="75" y="74" text-anchor="middle" lang="zh">隐藏规则</text>
-<rect class="nd amber" x="148" y="32" width="118" height="56"/><text class="tx b" x="207" y="56" text-anchor="middle">trace</text>
-<text class="tx dim" x="207" y="74" text-anchor="middle" lang="en">every call</text><text class="tx dim" x="207" y="74" text-anchor="middle" lang="zh">每次调用</text>
-<rect class="nd" x="280" y="32" width="118" height="56"/><text class="tx b" x="339" y="56" text-anchor="middle">Fly MLIR</text>
-<text class="tx dim" x="339" y="74" text-anchor="middle" lang="en">layout objects</text><text class="tx dim" x="339" y="74" text-anchor="middle" lang="zh">layout 对象</text>
-<rect class="nd" x="412" y="32" width="118" height="56"/>
-<text class="tx b" x="471" y="56" text-anchor="middle" lang="en">14 steps</text><text class="tx b" x="471" y="56" text-anchor="middle" lang="zh">14 个步骤</text>
-<text class="tx dim" x="471" y="74" text-anchor="middle" lang="en">convert</text><text class="tx dim" x="471" y="74" text-anchor="middle" lang="zh">转换</text>
-<rect class="nd" x="544" y="32" width="80" height="56"/><text class="tx b" x="584" y="65" text-anchor="middle">LLVM IR</text>
-<rect class="nd red" x="638" y="32" width="152" height="56"/><text class="tx b" x="714" y="56" text-anchor="middle">LLVM AMDGPU</text>
-<text class="tx dim" x="714" y="74" text-anchor="middle" lang="en">order · regs · waits</text><text class="tx dim" x="714" y="74" text-anchor="middle" lang="zh">顺序 · 寄存器 · wait</text>
-<rect class="nd" x="804" y="32" width="80" height="56"/>
-<text class="tx b" x="844" y="65" text-anchor="middle" lang="en">binary</text><text class="tx b" x="844" y="65" text-anchor="middle" lang="zh">二进制</text>
-<path class="edge" d="M134,60 L146,60" marker-end="url(#ah2)"/><path class="edge" d="M266,60 L278,60" marker-end="url(#ah2)"/>
-<path class="edge" d="M398,60 L410,60" marker-end="url(#ah2)"/><path class="edge" d="M530,60 L542,60" marker-end="url(#ah2)"/>
-<path class="edge" d="M624,60 L636,60" marker-end="url(#ah2)"/><path class="edge" d="M790,60 L802,60" marker-end="url(#ah2)"/>
-<text class="tx amber" x="148" y="108" lang="en">re-run on every call</text>
-<text class="tx amber" x="148" y="108" lang="zh">每次调用都重跑</text>
-<text class="tx red" x="280" y="124" lang="en">62K objects built, 9.9K kept</text>
-<text class="tx red" x="280" y="124" lang="zh">建 62K 个对象，只留 9.9K</text>
-<text class="tx amber" x="638" y="108" lang="en">{LLVM_SHARE} of cold compile</text>
-<text class="tx amber" x="638" y="108" lang="zh">冷编译的 {LLVM_SHARE}</text>
-<path class="edge red" d="M75,88 C75,175 714,175 714,90" marker-end="url(#ah2r)"/>
-<text class="tx red" x="200" y="176" lang="en">the author overrides register use and order: fences, inline asm, pins, LLVM patches</text>
-<text class="tx red" x="200" y="176" lang="zh">作者覆盖寄存器使用和指令顺序：fence、inline 汇编、pin、LLVM 补丁</text>
-<text class="lane" x="16" y="206" lang="en">REDESIGN · ONE DECIDER PER DECISION</text>
-<text class="lane" x="16" y="206" lang="zh">重新设计 · 每个决策一个决策者</text>
-<text class="tx dim" x="382" y="214" lang="en">machine tables: AMD ISA files · latencies · hazards · atoms</text>
-<text class="tx dim" x="382" y="214" lang="zh">机器描述表：AMD ISA 文件 · 延迟 · hazard · atom</text>
-<rect class="nd teal" x="16" y="222" width="128" height="56"/><text class="tx b" x="80" y="246" text-anchor="middle">Python</text>
-<text class="tx dim" x="80" y="264" text-anchor="middle" lang="en">generates only</text><text class="tx dim" x="80" y="264" text-anchor="middle" lang="zh">只做生成</text>
-<rect class="nd teal" x="158" y="222" width="110" height="56"/><text class="tx b" x="213" y="246" text-anchor="middle">KIR</text>
-<text class="tx dim" x="213" y="264" text-anchor="middle" lang="en">typed · tokens</text><text class="tx dim" x="213" y="264" text-anchor="middle" lang="zh">类型 · token</text>
-<rect class="nd" x="282" y="222" width="86" height="56"/>
-<text class="tx b" x="325" y="255" text-anchor="middle" lang="en">verify</text><text class="tx b" x="325" y="255" text-anchor="middle" lang="zh">检查</text>
-<rect class="nd" x="382" y="222" width="86" height="56"/>
-<text class="tx b" x="425" y="246" text-anchor="middle" lang="en">select</text><text class="tx b" x="425" y="246" text-anchor="middle" lang="zh">选指令</text>
-<text class="tx dim" x="425" y="264" text-anchor="middle" lang="en">by table</text><text class="tx dim" x="425" y="264" text-anchor="middle" lang="zh">查表</text>
-<rect class="nd" x="482" y="222" width="96" height="56"/>
-<text class="tx b" x="530" y="246" text-anchor="middle" lang="en">order</text><text class="tx b" x="530" y="246" text-anchor="middle" lang="zh">排顺序</text>
-<text class="tx dim" x="530" y="264" text-anchor="middle" lang="en">explicit|auto</text><text class="tx dim" x="530" y="264" text-anchor="middle" lang="zh">显式|自动</text>
-<rect class="nd" x="592" y="222" width="96" height="56"/>
-<text class="tx b" x="640" y="246" text-anchor="middle" lang="en">registers</text><text class="tx b" x="640" y="246" text-anchor="middle" lang="zh">分寄存器</text>
-<text class="tx dim" x="640" y="264" text-anchor="middle" lang="en">pins kept</text><text class="tx dim" x="640" y="264" text-anchor="middle" lang="zh">保留 pin</text>
-<rect class="nd" x="702" y="222" width="86" height="56"/>
-<text class="tx b" x="745" y="246" text-anchor="middle" lang="en">waits</text><text class="tx b" x="745" y="246" text-anchor="middle" lang="zh">插 wait</text>
-<text class="tx dim" x="745" y="264" text-anchor="middle" lang="en">from tokens</text><text class="tx dim" x="745" y="264" text-anchor="middle" lang="zh">由 token 推出</text>
-<rect class="nd" x="802" y="222" width="82" height="56"/>
-<text class="tx b" x="843" y="246" text-anchor="middle" lang="en">encode</text><text class="tx b" x="843" y="246" text-anchor="middle" lang="zh">编码</text>
-<text class="tx dim" x="843" y="264" text-anchor="middle" lang="en">→ binary</text><text class="tx dim" x="843" y="264" text-anchor="middle" lang="zh">→ 二进制</text>
-<path class="edge" d="M144,250 L156,250" marker-end="url(#ah2)"/><path class="edge" d="M268,250 L280,250" marker-end="url(#ah2)"/>
-<path class="edge" d="M368,250 L380,250" marker-end="url(#ah2)"/><path class="edge" d="M468,250 L480,250" marker-end="url(#ah2)"/>
-<path class="edge" d="M578,250 L590,250" marker-end="url(#ah2)"/><path class="edge" d="M688,250 L700,250" marker-end="url(#ah2)"/>
-<path class="edge" d="M788,250 L800,250" marker-end="url(#ah2)"/>
-<rect class="nd amber" x="282" y="318" width="506" height="46"/>
-<text class="tx b" x="535" y="338" text-anchor="middle" lang="en">report: resources · pressure · waits · checks · settings</text>
-<text class="tx b" x="535" y="338" text-anchor="middle" lang="zh">报告：资源 · 压力 · wait 来源 · 检查 · 设置</text>
-<text class="tx dim" x="535" y="355" text-anchor="middle" lang="en">each step writes one section; no decision is hidden</text>
-<text class="tx dim" x="535" y="355" text-anchor="middle" lang="zh">每个步骤写一节；没有隐藏的决定</text>
-<path class="edge dash" d="M325,278 L325,316"/><path class="edge dash" d="M530,278 L530,316"/>
-<path class="edge dash" d="M640,278 L640,316"/><path class="edge dash" d="M745,278 L745,316"/>
-<rect class="nd teal" x="16" y="318" width="252" height="46"/>
-<text class="tx b" x="142" y="338" text-anchor="middle" lang="en">interpret(): KIR on the CPU</text>
-<text class="tx b" x="142" y="338" text-anchor="middle" lang="zh">interpret()：在 CPU 上跑 KIR</text>
-<text class="tx dim" x="142" y="355" text-anchor="middle" lang="en">per-thread run · race checks</text>
-<text class="tx dim" x="142" y="355" text-anchor="middle" lang="zh">逐线程执行 · 检查竞争</text>
-<path class="edge dash" d="M213,278 L213,316"/>
+<text class="lane" x="16" y="20" lang="en">ONE KERNEL · COMPILER VERSION n</text>
+<text class="lane" x="16" y="20" lang="zh">一个 KERNEL · 第 n 版编译器</text>
+<rect class="nd" x="16" y="34" width="252" height="104"/>
+<text class="tx b" x="30" y="60" lang="en">1 · Generate</text>
+<text class="tx b" x="30" y="60" lang="zh">1 · 生成</text>
+<text class="tx" x="30" y="84" lang="en">compile the kernel source</text>
+<text class="tx" x="30" y="84" lang="zh">编译 kernel 源码</text>
+<text class="tx dim" x="30" y="118">code(n) = f(llvm(n))</text>
+<rect class="nd teal" x="314" y="34" width="252" height="104"/>
+<text class="tx b" x="328" y="60" lang="en">2 · Change the code</text>
+<text class="tx b" x="328" y="60" lang="zh">2 · 改代码</text>
+<text class="tx" x="328" y="84" lang="en">edit the final code, measure</text>
+<text class="tx" x="328" y="84" lang="zh">直接改最终代码，再测量</text>
+<text class="tx dim" x="328" y="118">code(n+1) = agent(code(n))</text>
+<rect class="nd amber" x="612" y="34" width="252" height="104"/>
+<text class="tx b" x="626" y="60" lang="en">3 · Teach the compiler</text>
+<text class="tx b" x="626" y="60" lang="zh">3 · 教会编译器</text>
+<text class="tx" x="626" y="84" lang="en">it produces the same code</text>
+<text class="tx" x="626" y="84" lang="zh">让它生成同样的代码</text>
+<text class="tx dim" x="626" y="118">llvm(n+1) = f⁻¹(code(n+1))</text>
+<path class="edge" d="M268,86 L312,86" marker-end="url(#lh)"/>
+<path class="edge" d="M566,86 L610,86" marker-end="url(#lh)"/>
+<text class="tx teal" x="589" y="162" text-anchor="middle" lang="en">only if correct and faster</text>
+<text class="tx teal" x="589" y="162" text-anchor="middle" lang="zh">只在正确而且更快时</text>
+<path class="edge" d="M738,138 L738,204 L142,204 L142,140" marker-end="url(#lh)"/>
+<text class="tx" x="440" y="196" text-anchor="middle" lang="en">back to step 1: next kernel, compiler version n+1</text>
+<text class="tx" x="440" y="196" text-anchor="middle" lang="zh">回到第 1 步：下一个 kernel，第 n+1 版编译器</text>
+<text class="tx red" x="440" y="232" text-anchor="middle" lang="en">open question: this change must not slow other kernels (section 05)</text>
+<text class="tx red" x="440" y="232" text-anchor="middle" lang="zh">未解决的问题：这个改动不能让其他 kernel 变慢（第 05 节）</text>
 </svg>
 """
