@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T04:09:54.094Z",
+  "generatedAt": "2026-11-24T05:10:19.385Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -101,7 +101,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 175
+          "days": 176
         }
       ]
     },
@@ -123,7 +123,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 175
+          "days": 176
         }
       ]
     },
@@ -666,7 +666,6 @@
         {
           "code": "waiting-review",
           "by": [
-            "TEAM_AITER",
             "yadaish",
             "yzhou103"
           ]
@@ -692,7 +691,6 @@
         {
           "code": "waiting-review",
           "by": [
-            "TEAM_AITER",
             "coderfeli",
             "demonsan"
           ]
@@ -718,7 +716,6 @@
         {
           "code": "waiting-review",
           "by": [
-            "TEAM_AITER",
             "aoli26",
             "coderfeli",
             "yadaish"
@@ -747,7 +744,7 @@
           "by": [
             "zufayu"
           ],
-          "days": 6
+          "days": 7
         }
       ]
     },
@@ -1271,6 +1268,27 @@
         {
           "code": "waiting-review",
           "by": []
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 184,
+      "title": "[Fix] ci: Keep the tests and specs working on current SGLang",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/184",
+      "author": "michaelzhang-ai",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "pending",
+      "createdAt": "2026-11-24T01:45:31Z",
+      "updatedAt": "2026-11-24T04:52:25Z",
+      "additions": 51,
+      "deletions": 53,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
         }
       ]
     },
