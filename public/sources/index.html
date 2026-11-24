@@ -80,7 +80,7 @@
     font-weight: 700;
   }
   .topbar nav a { margin-left: 14px; text-decoration: none; color: var(--muted); }
-  .topbar nav a:hover { color: var(--ink); }
+  .topbar nav a:hover, .topbar nav a[aria-current] { color: var(--ink); }
 
   /* ---- hero ---- */
   .hero {
@@ -322,10 +322,13 @@
       <span class="home-mark">J</span>
       <span>jinnpan.com</span>
     </a>
+    <!-- Same sections, same order as src/components/Header.astro. -->
     <nav aria-label="Site">
-      <a href="/en/blog">blog</a>
-      <a href="/en/projects">projects</a>
-      <a href="/en/about">about</a>
+      <a href="/en/projects">Work</a>
+      <a href="/sources/" aria-current="page">Library</a>
+      <a href="/en/blog">Blog</a>
+      <a href="/en/prs">PRs</a>
+      <a href="/en/about">About</a>
     </nav>
   </nav>
 

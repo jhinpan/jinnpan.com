@@ -177,7 +177,22 @@
 }
 
 .site-nav {
-  @apply flex items-center gap-x-5 gap-y-2 font-mono text-[13px];
+  @apply ml-auto flex items-center gap-x-6 font-mono text-[13px];
+}
+
+.site-tools {
+  @apply flex items-center gap-2.5 font-mono;
+}
+
+/* On a phone the section links take their own full-width row under the brand. */
+@media (max-width: 640px) {
+  .site-nav {
+    @apply order-3 ml-0 w-full justify-between gap-x-2;
+  }
+
+  .site-tools {
+    @apply ml-auto;
+  }
 }
 
 .site-nav-link {

@@ -538,6 +538,19 @@ html[lang='zh'] .prs-rules h2 {
   overflow-wrap: anywhere;
 }
 
+.prs-archive {
+  margin-top: 26px;
+  font-size: 14.5px;
+  color: var(--color-ink-2);
+}
+
+.prs-archive a {
+  margin-left: 6px;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- narrow screens ---------- */
 
 @media (max-width: 920px) {

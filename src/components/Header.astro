@@ -16,9 +16,12 @@ const currentPath = Astro.url.pathname;
 const pathWithoutLang = currentPath.replace(new RegExp(`^/${lang}(/|$)`), '/');
 const switchedPath = `/${otherLang}${pathWithoutLang === '/' ? '/' : pathWithoutLang}`;
 
+// Every top-level section has a link here; nothing is reachable only through another page.
+// The Library header (public/sources/index.html) repeats this list by hand.
 const nav = [
   { href: `/${lang}/projects`, label: lang === "zh" ? "项目" : "Work" },
   { href: "/sources/", label: lang === "zh" ? "文库" : "Library" },
+  { href: `/${lang}/blog`, label: lang === "zh" ? "博客" : "Blog" },
   { href: `/${lang}/prs`, label: "PRs" },
   { href: `/${lang}/about`, label: lang === "zh" ? "关于" : "About" },
 ];
@@ -43,6 +46,8 @@ const nav = [
             </a>
           ))
         }
+      </nav>
+      <div class="site-tools">
         <a
           href={switchedPath}
           class="lang-toggle rounded-sm border border-black/15 px-2 py-1 text-xs transition-colors duration-300 ease-in-out dark:border-white/20"
@@ -68,7 +73,7 @@ const nav = [
           >
           <span class="hidden sm:inline">&nbsp;Search</span>
         </button>
-      </nav>
+      </div>
     </div>
   </Container>
 </header>
