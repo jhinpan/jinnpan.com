@@ -2,9 +2,10 @@
 import { getCollection } from "astro:content";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import ArrowCard from "@components/ArrowCard.astro";
 import { PROJECTS } from "@consts";
+import { BOARD_DATE, mergedCount, mergedUrl } from "@data/pr-board";
 import type { Lang } from "@lib/utils";
+import "@styles/pages.css";
 
 export function getStaticPaths() {
   return [
@@ -15,28 +16,138 @@ export function getStaticPaths() {
 
 const { lang } = Astro.params as { lang: Lang };
 
-const projects = (await getCollection("projects"))
-  .filter((project) => !project.data.draft)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const i18n = {
+  en: {
+    kicker: "Work",
+    heading: "What I build and where I contribute",
+    lead: "Current work first. Each project links to its repository, to my merged pull requests there, and to what I wrote about it.",
+    now: "Now",
+    nowNote: `Merged pull request counts as of ${BOARD_DATE}`,
+    earlier: "Earlier",
+    merged: (count: number) => (count === 1 ? "merged PR" : "merged PRs"),
+    reading: "Reading",
+    notes: "Notes",
+    repo: "Repository",
+    since: "since",
+    private: "private repositories",
+  },
+  zh: {
+    kicker: "项目",
+    heading: "我在做的项目和参与的开源",
+    lead: "当前的工作排在前面。 每个项目都链接到它的仓库、我在那里的 merged PR， 以及我写过的相关文章。",
+    now: "现在",
+    nowNote: `merged PR 数截至 ${BOARD_DATE}`,
+    earlier: "更早",
+    merged: (_count: number) => "个 merged PR",
+    reading: "精读",
+    notes: "说明",
+    repo: "仓库",
+    since: "始于",
+    private: "私有仓库",
+  },
+};
+
+const t = i18n[lang];
+
+const projects = (await getCollection("projects")).filter((project) => !project.data.draft);
+const byDate = (a: (typeof projects)[number], b: (typeof projects)[number]) =>
+  b.data.date.valueOf() - a.data.date.valueOf();
+const now = projects
+  .filter((project) => project.data.group === "now")
+  .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99) || byDate(a, b));
+const earlier = projects.filter((project) => project.data.group === "earlier").sort(byDate);
 ---
 
 <Layout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION} lang={lang}>
-  <Container>
-    <aside data-pagefind-ignore>
-      <div class="space-y-10">
-        <div class="animate font-semibold text-black dark:text-white">
-          {lang === "zh" ? "项目" : "Work"}
+  <Container size="wide">
+    <div class="page" data-pagefind-ignore>
+      <p class="page-kicker animate">
+        <span class="page-dot" aria-hidden="true"></span>
+        <b>{t.kicker}</b>
+      </p>
+      <h1 class="page-heading animate">{t.heading}</h1>
+      <p class="page-lead animate">{t.lead}</p>
+
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.now}</h2>
+          <p>{t.nowNote}</p>
         </div>
-        <ul class="animate not-prose flex flex-col gap-4">
+        <div class="work-grid">
           {
-            projects.map((project) => (
-              <li>
-                <ArrowCard entry={project} />
-              </li>
+            now.map((project) => (
+              <div class="animate">
+                <div class="work-card">
+                  <div class="work-card-top">
+                    <h3>{project.data.title}</h3>
+                    {project.data.role && <span class="work-role">{project.data.role}</span>}
+                  </div>
+                  <p>{project.data.description}</p>
+                  <div class="work-links">
+                    {project.data.repo && mergedCount(project.data.repo) > 0 && (
+                      <a class="page-link" href={mergedUrl(project.data.repo)} target="_blank" rel="noopener">
+                        <b>{mergedCount(project.data.repo)}</b> {t.merged(mergedCount(project.data.repo))}
+                      </a>
+                    )}
+                    {project.data.reading && (
+                      <a class="page-link" href={project.data.reading}>
+                        {t.reading} &rarr;
+                      </a>
+                    )}
+                    <a class="page-link" href={`/${lang}/projects/${project.id}`}>
+                      {t.notes} &rarr;
+                    </a>
+                    {project.data.repoURL ? (
+                      <a class="page-link" href={project.data.repoURL} target="_blank" rel="noopener">
+                        {t.repo} &nearr;
+                      </a>
+                    ) : (
+                      <span class="work-role">{t.private}</span>
+                    )}
+                    <span class="work-since">
+                      {t.since} {project.data.date.getUTCFullYear()}
+                    </span>
+                  </div>
+                </div>
+              </div>
             ))
           }
-        </ul>
-      </div>
-    </aside>
+        </div>
+      </section>
+
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.earlier}</h2>
+        </div>
+        <div class="work-rows">
+          {
+            earlier.map((project) => (
+              <div class="work-row animate">
+                <h3>
+                  {project.data.title}
+                  <span>{project.data.date.getUTCFullYear()}</span>
+                </h3>
+                <p>{project.data.description}</p>
+                <div class="work-row-links">
+                  {project.data.repo && mergedCount(project.data.repo) > 0 && (
+                    <a class="page-link" href={mergedUrl(project.data.repo)} target="_blank" rel="noopener">
+                      <b>{mergedCount(project.data.repo)}</b> {t.merged(mergedCount(project.data.repo))}
+                    </a>
+                  )}
+                  <a class="page-link" href={`/${lang}/projects/${project.id}`}>
+                    {t.notes} &rarr;
+                  </a>
+                  {project.data.repoURL && (
+                    <a class="page-link" href={project.data.repoURL} target="_blank" rel="noopener">
+                      {t.repo} &nearr;
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+    </div>
   </Container>
 </Layout>

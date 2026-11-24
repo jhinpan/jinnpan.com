@@ -1,9 +1,10 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import Link from "@components/Link.astro";
 import { ABOUT, SOCIALS, SITE } from "@consts";
+import { THREADS } from "@data/home";
 import type { Lang } from "@lib/utils";
+import "@styles/pages.css";
 
 export function getStaticPaths() {
   return [
@@ -16,45 +17,89 @@ const { lang } = Astro.params as { lang: Lang };
 
 const i18n = {
   zh: {
-    title: "关于我",
-    intro: "我是潘劲（Jin Pan）， 在 AMD 做 ML Systems： 让大模型在 AMD GPU 上跑得更快。",
-    current: "当前工作",
-    currentText: "我在 AMD 的 AIG Codesign 团队做 GPU kernel 和 LLM serving， 平台是 MI355X 和 MI455X。 具体来说： 用 FlyDSL 写 kernel， 在 SGLang 里做模型级性能， 并构建自动优化 GPU kernel 的 agent 系统。",
-    research: "研究兴趣",
-    researchItems: [
-      "ML Systems： LLM 推理优化、serving 框架（SGLang）、GPU 编程",
-      "RL Infrastructure： 大模型后训练（SFT / RLHF / GRPO）系统设计和扩展",
-      "Kernel Optimization： Triton / CK 核函数自动生成与优化、AMD ROCm 生态",
+    kicker: "关于",
+    place: "AMD · AIG Codesign · San Jose",
+    heading: "全栈的 ML systems： 从 RL 训练到硬件",
+    intro: [
+      "我是潘劲（Jin Pan）， 在 AMD 的 AIG Codesign 团队做 ML systems。",
+      "我的工作覆盖整个栈： 模型怎么用 RL 训练、数据准备、推理， 到底层的 DSL、compiler、kernel， 再到硬件的 co-design。 我想解决的是跨越这些层的问题。",
     ],
-    education: "教育背景",
-    eduItems: [
-      { degree: "MS, Computer Sciences", school: "University of Wisconsin-Madison", year: "2024 — 2026" },
-      { degree: "BSE, Computer Science Engineering", school: "University of Michigan", year: "2022 — 2024" },
-      { degree: "BE, Electrical and Computer Engineering", school: "Shanghai Jiao Tong University", year: "2020 — 2024" },
+    work: "我在做什么",
+    workLink: "PR 看板",
+    measure: "我怎么做测量",
+    rules: [
+      {
+        title: "先复现基线",
+        text: "做跨平台比较之前， 我先用作者自己的 commit 复现公开的数字。 基线配错了， 测出来的差距就没有意义。",
+        link: "Experiment 005",
+        href: "/sources/dsv41-gb300-vs-mi355x.html",
+      },
+      {
+        title: "原始数据随文提交",
+        text: "每个实验都带着它的 CSV、运行日志和完整命令一起提交。 之后别人可以核对这些数字， 也可以引用。",
+        link: "GitHub 上的 data/",
+        href: "https://github.com/jhinpan/jinnpan.com/tree/main/data",
+      },
+      {
+        title: "写下没成功的部分",
+        text: "和预期相反的结果也留在文章里。 Experiment 007 把每用户 decode 速度提高到两倍以上， 但仍然输给两个普通副本。",
+        link: "Experiment 007",
+        href: "/sources/glm53-pd-monokernel-mi355x.html",
+      },
     ],
-    oss: "开源贡献",
-    ossText: "我是 SGLang 社区的活跃贡献者， 也参与了 slime、TritonForge、APRIL 等项目。",
+    path: "经历",
+    stages: [
+      { years: "2026 —", place: "AMD · AIG Codesign", detail: "RL systems、GPU kernel、LLM serving · San Jose" },
+      { years: "2024 — 2026", place: "威斯康星大学麦迪逊分校", detail: "MS, Computer Sciences" },
+      { years: "2022 — 2024", place: "密歇根大学", detail: "BSE, Computer Science Engineering" },
+      { years: "2020 — 2024", place: "上海交通大学", detail: "BE, Electrical and Computer Engineering" },
+    ],
+    oss: "开源",
+    ossText: "我现在主要给 SGLang、FlyDSL 和 AITER 提交代码， 更早参与过 slime、SpecForge 和 Awesome-ML-SYS-Tutorial。",
+    ossLink: "全部项目",
     connect: "联系方式",
   },
   en: {
-    title: "About Me",
-    intro: "I'm Jin Pan. I work on ML systems at AMD: making large models run fast on AMD GPUs.",
-    current: "Current Work",
-    currentText: "On the AIG Codesign team at AMD I work on GPU kernels and LLM serving for MI355X and MI455X. Specifically: kernels written in FlyDSL, model-level performance in SGLang, and agent systems that optimize GPU kernels automatically.",
-    research: "Research Interests",
-    researchItems: [
-      "ML Systems: LLM inference optimization, serving frameworks (SGLang), GPU programming",
-      "RL Infrastructure: LLM post-training (SFT / RLHF / GRPO) system design and scaling",
-      "Kernel Optimization: Triton / CK kernel auto-generation and optimization, AMD ROCm ecosystem",
+    kicker: "About",
+    place: "AMD · AIG Codesign · San Jose",
+    heading: "Full-stack ML systems, from RL training to hardware",
+    intro: [
+      "I'm Jin Pan. I work on ML systems on the AIG Codesign team at AMD.",
+      "My work covers the whole stack: how a model is trained with RL, data preparation, inference, the DSL underneath, the compiler, the kernels, and hardware co-design. The problems I want to solve are the ones that cross those layers.",
     ],
-    education: "Education",
-    eduItems: [
-      { degree: "MS, Computer Sciences", school: "University of Wisconsin-Madison", year: "2024 — 2026" },
-      { degree: "BSE, Computer Science Engineering", school: "University of Michigan", year: "2022 — 2024" },
-      { degree: "BE, Electrical and Computer Engineering", school: "Shanghai Jiao Tong University", year: "2020 — 2024" },
+    work: "What I work on",
+    workLink: "PR board",
+    measure: "How I measure",
+    rules: [
+      {
+        title: "Reproduce the baseline first",
+        text: "Before a cross-platform comparison, I reproduce the published numbers with the author's own commit. A gap against a misconfigured baseline means nothing.",
+        link: "Experiment 005",
+        href: "/sources/dsv41-gb300-vs-mi355x.html",
+      },
+      {
+        title: "Commit the raw data",
+        text: "Each experiment ships with its CSVs, run logs and exact commands. Anyone can check the numbers later, or cite them.",
+        link: "data/ on GitHub",
+        href: "https://github.com/jhinpan/jinnpan.com/tree/main/data",
+      },
+      {
+        title: "Report what did not work",
+        text: "A result that goes against the plan stays in the write-up. Experiment 007 more than doubles per-user decode speed and still loses to two plain replicas.",
+        link: "Experiment 007",
+        href: "/sources/glm53-pd-monokernel-mi355x.html",
+      },
     ],
-    oss: "Open Source",
-    ossText: "I'm an active contributor to the SGLang community, and also contribute to slime, TritonForge, APRIL, and other projects.",
+    path: "Path",
+    stages: [
+      { years: "2026 —", place: "AMD · AIG Codesign", detail: "RL systems, GPU kernels, LLM serving · San Jose" },
+      { years: "2024 — 2026", place: "University of Wisconsin-Madison", detail: "MS, Computer Sciences" },
+      { years: "2022 — 2024", place: "University of Michigan", detail: "BSE, Computer Science Engineering" },
+      { years: "2020 — 2024", place: "Shanghai Jiao Tong University", detail: "BE, Electrical and Computer Engineering" },
+    ],
+    oss: "Open source",
+    ossText: "Today I contribute mostly to SGLang, FlyDSL and AITER. Earlier I worked on slime, SpecForge and Awesome-ML-SYS-Tutorial.",
+    ossLink: "All projects",
     connect: "Contact",
   },
 };
@@ -63,76 +108,108 @@ const t = i18n[lang];
 ---
 
 <Layout title={ABOUT.TITLE} description={ABOUT.DESCRIPTION} lang={lang}>
-  <Container>
-    <div class="space-y-10" data-pagefind-ignore>
-      <h1 class="animate font-semibold text-black dark:text-white">
-        {t.title}
-      </h1>
+  <Container size="wide">
+    <div class="page" data-pagefind-ignore>
+      <div class="about-intro">
+        <div>
+          <p class="page-kicker animate">
+            <span class="page-dot" aria-hidden="true"></span>
+            <b>{t.kicker}</b>
+            <i aria-hidden="true">/</i>
+            {t.place}
+          </p>
+          <h1 class="page-heading animate">{t.heading}</h1>
+          {t.intro.map((paragraph) => <p class="page-lead animate">{paragraph}</p>)}
+        </div>
+        <img class="about-photo animate" src="/profile.jpg" alt="Jin Pan" width="168" height="168" />
+      </div>
 
-      <section class="animate space-y-4">
-        <img
-          src="/profile.jpg"
-          alt="Jin Pan"
-          class="float-right ml-6 mb-4 w-36 rounded-full"
-          width="144"
-          height="144"
-        />
-        <p>{t.intro}</p>
-      </section>
-
-      <section class="animate space-y-4">
-        <h2 class="font-semibold text-black dark:text-white">{t.current}</h2>
-        <p>{t.currentText}</p>
-      </section>
-
-      <section class="animate space-y-4">
-        <h2 class="font-semibold text-black dark:text-white">{t.research}</h2>
-        <ul class="list-disc space-y-1 pl-5">
-          {t.researchItems.map((item) => <li>{item}</li>)}
-        </ul>
-      </section>
-
-      <section class="animate space-y-4">
-        <h2 class="font-semibold text-black dark:text-white">{t.education}</h2>
-        <ul class="space-y-3">
-          {t.eduItems.map((edu) => (
-            <li>
-              <div class="font-medium">{edu.degree}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">
-                {edu.school} &middot; {edu.year}
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.work}</h2>
+          <a class="page-link" href={`/${lang}/prs`}>{t.workLink} &rarr;</a>
+        </div>
+        <div class="about-threads">
+          {
+            THREADS.map((thread) => (
+              <div class="about-thread animate">
+                <span>{thread.tag}</span>
+                <h3>{thread.title[lang]}</h3>
+                <p>{thread.body[lang]}</p>
               </div>
-            </li>
-          ))}
-        </ul>
+            ))
+          }
+        </div>
       </section>
 
-      <section class="animate space-y-4">
-        <h2 class="font-semibold text-black dark:text-white">{t.oss}</h2>
-        <p>{t.ossText}</p>
-        <p>
-          <Link href={`/${lang}/projects`}>
-            {lang === "zh" ? "查看全部项目 →" : "See all projects →"}
-          </Link>
-        </p>
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.measure}</h2>
+        </div>
+        <div class="about-rules">
+          {
+            t.rules.map((rule, index) => (
+              <div class="about-rule animate">
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{rule.title}</h3>
+                <p>{rule.text}</p>
+                <a
+                  class="page-link"
+                  href={rule.href}
+                  target={rule.href.startsWith("http") ? "_blank" : undefined}
+                  rel={rule.href.startsWith("http") ? "noopener" : undefined}
+                >
+                  {rule.link} &rarr;
+                </a>
+              </div>
+            ))
+          }
+        </div>
       </section>
 
-      <section class="animate space-y-4">
-        <h2 class="font-semibold text-black dark:text-white">{t.connect}</h2>
-        <ul class="not-prose flex flex-wrap gap-2">
-          {SOCIALS.map((SOCIAL) => (
-            <li class="flex gap-x-2 text-nowrap">
-              <Link href={SOCIAL.HREF} external aria-label={`${SITE.TITLE} on ${SOCIAL.NAME}`}>
-                {SOCIAL.NAME}
-              </Link>
-              {"/"}
-            </li>
-          ))}
-          <li class="line-clamp-1">
-            <Link href={`mailto:${SITE.EMAIL}`} aria-label={`Email ${SITE.TITLE}`}>
-              {SITE.EMAIL}
-            </Link>
-          </li>
-        </ul>
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.path}</h2>
+        </div>
+        <ol class="about-timeline">
+          {
+            t.stages.map((stage) => (
+              <li class="animate">
+                <time>{stage.years}</time>
+                <div>
+                  <b>{stage.place}</b>
+                  <span>{stage.detail}</span>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.oss}</h2>
+          <a class="page-link" href={`/${lang}/projects`}>{t.ossLink} &rarr;</a>
+        </div>
+        <p class="page-lead animate">{t.ossText}</p>
+      </section>
+
+      <section class="page-sec">
+        <div class="page-sec-head animate">
+          <h2>{t.connect}</h2>
+        </div>
+        <div class="about-contact animate">
+          {
+            SOCIALS.map((SOCIAL) => (
+              <a class="page-link" href={SOCIAL.HREF} target="_blank" rel="noopener" aria-label={`${SITE.TITLE} on ${SOCIAL.NAME}`}>
+                {SOCIAL.NAME} &nearr;
+              </a>
+            ))
+          }
+          <a class="page-link" href={`mailto:${SITE.EMAIL}`} aria-label={`Email ${SITE.TITLE}`}>
+            {SITE.EMAIL}
+          </a>
+        </div>
       </section>
     </div>
   </Container>

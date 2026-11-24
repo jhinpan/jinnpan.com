@@ -3,6 +3,7 @@ title: "TritonForge"
 description: "LLM-powered GPU kernel synthesis: Train models to convert PyTorch ops into optimized Triton kernels via SFT+RL."
 date: "2025-02-01"
 repoURL: "https://github.com/RLsys-Foundation/TritonForge"
+repo: "RLsys-Foundation/TritonForge"
 ---
 
 TritonForge is an LLM-powered GPU kernel synthesis framework. It trains models to convert PyTorch operations into optimized Triton kernels through SFT and RL.

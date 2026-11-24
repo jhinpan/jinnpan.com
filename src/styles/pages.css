@@ -1,0 +1,353 @@
+/* About and Work pages. Colors and fonts come from the tokens in global.css. */
+
+.page {
+  color: var(--color-ink);
+}
+
+/* ---------- head ---------- */
+
+.page-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.page-kicker b {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.page-kicker i {
+  font-style: normal;
+  color: var(--color-line-2);
+}
+
+.page-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.page-heading {
+  font-family: var(--font-serif);
+  font-size: clamp(34px, 4.4vw, 54px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.page-lead {
+  max-width: 40em;
+  margin-top: 18px;
+  font-size: 19px;
+  line-height: 1.62;
+  color: var(--color-ink-2);
+}
+
+.page-lead + .page-lead {
+  margin-top: 12px;
+}
+
+/* ---------- sections ---------- */
+
+.page-sec {
+  margin-top: 64px;
+  padding-top: 22px;
+  border-top: 1px solid var(--color-ink);
+}
+
+.page-sec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 26px;
+}
+
+.page-sec-head h2 {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.page-sec-head p {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+html[lang='zh'] :is(.page-heading, .page-sec-head h2, .work-card h3, .about-rule h3, .about-thread h3) {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.page-link {
+  padding-bottom: 3px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition:
+    background-size 0.3s var(--ease-out),
+    color 0.2s;
+}
+
+.page-link:hover,
+.page-link:focus-visible {
+  color: var(--color-ink);
+  background-size: 100% 1px;
+}
+
+.page-link b {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+/* ---------- Work: current projects ---------- */
+
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.work-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 22px 22px 18px;
+  border: 1px solid var(--color-ink);
+  background: var(--color-card);
+}
+
+.work-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.work-card h3 {
+  font-family: var(--font-serif);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.work-role {
+  flex: none;
+  padding: 1px 7px;
+  border: 1px solid var(--color-line-2);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.work-card p {
+  margin: 10px 0 18px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--color-ink-2);
+}
+
+.work-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px dashed var(--color-line);
+}
+
+.work-since {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-line-2);
+}
+
+/* ---------- Work: earlier projects ---------- */
+
+.work-rows {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.work-row {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) auto;
+  gap: 8px 24px;
+  align-items: baseline;
+  padding: 16px 8px;
+  border-top: 1px solid var(--color-line);
+}
+
+.work-row h3 {
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.work-row h3 span {
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--color-line-2);
+}
+
+.work-row p {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--color-ink-2);
+}
+
+.work-row-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+/* ---------- About ---------- */
+
+.about-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  gap: 48px;
+  align-items: start;
+}
+
+.about-photo {
+  width: 168px;
+  height: 168px;
+  border: 1px solid var(--color-ink);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.about-threads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 30px 56px;
+}
+
+.about-thread span,
+.about-rule span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.about-thread h3,
+.about-rule h3 {
+  margin: 8px 0;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.about-thread p,
+.about-rule p {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--color-ink-2);
+}
+
+.about-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.about-rule .page-link {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.about-timeline {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.about-timeline li {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 24px;
+  align-items: baseline;
+  padding: 14px 8px;
+  border-top: 1px solid var(--color-line);
+}
+
+.about-timeline time {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--color-muted);
+}
+
+.about-timeline b {
+  display: block;
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.about-timeline span {
+  font-size: 14.5px;
+  color: var(--color-ink-2);
+}
+
+.about-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+}
+
+.about-contact .page-link {
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 860px) {
+  .work-grid,
+  .about-threads,
+  .about-rules {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-intro {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .about-photo {
+    width: 120px;
+    height: 120px;
+  }
+
+  .about-timeline li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

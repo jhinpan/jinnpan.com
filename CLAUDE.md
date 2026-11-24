@@ -44,13 +44,15 @@ As of 2026-06-08 the per-entry "appetizer" markdown for code/paper readings was 
 
 ## Home page data
 
-The home page (`src/pages/[lang]/index.astro`) reads its content from `src/data/home.ts`. The counts (`STATS`, chip counts in `THREADS`), the three measurement cards (`MEASUREMENTS`) and the "Latest from the Library" list (`LATEST`) are snapshots dated by `AS_OF`; nothing recomputes them at build time. When a new Library entry ships, add it to `LATEST`, update `STATS`, and move `AS_OF`.
+The home page (`src/pages/[lang]/index.astro`) reads its content from `src/data/home.ts`. The two Library counts in `STATS`, the three measurement cards (`MEASUREMENTS`) and the "Latest from the Library" list (`LATEST`) are snapshots dated by `AS_OF`; nothing recomputes them at build time. When a new Library entry ships, add it to `LATEST`, update `STATS`, and move `AS_OF`. Merged pull request counts on the home, About and Work pages are not typed anywhere: they come from `merged` in `src/data/pr-board.json`.
+
+The Work page (`src/pages/[lang]/projects/index.astro`) lists the `projects` collection. Frontmatter `group: "now"` puts an entry in the current-work grid in `order`; everything else is listed under Earlier by date. `repo` (owner/name) adds the merged pull request count, `reading` links a Library page, `role` shows a tag. The About page reuses `THREADS` from `src/data/home.ts`, so the work threads are written once.
 
 ## PR board
 
 `/en/prs` and `/zh/prs` (`src/pages/[lang]/prs.astro`) show every open pull request in a public repository that `jhinpan` wrote or must review, in three lanes: needs follow-up, needs my review, in progress. The page groups them by importance or by repository.
 
-- Data: `src/data/pr-board.json`, written by `scripts/sync-pr-board.mjs` (`npm run sync:prs`) and refreshed nightly by `.github/workflows/sync-pr-board.yml`. Never edit it by hand. Locally the script calls GitHub through the `gh` CLI, so it needs no token in the shell.
+- Data: `src/data/pr-board.json` (open pull requests, plus `merged` counts per public repository), written by `scripts/sync-pr-board.mjs` (`npm run sync:prs`) and refreshed nightly by `.github/workflows/sync-pr-board.yml`. Never edit it by hand. Locally the script calls GitHub through the `gh` CLI, so it needs no token in the shell.
 - Lanes are derived from GitHub state only (review decision, CI, merge conflict, who spoke last, idle days). The rules are in the script and are repeated at the bottom of the page; change both together.
 - Editorial input lives in `src/data/pr-board.config.json`: `importance.high` and `importance.low` list repositories (`owner/*` matches an owner), every other repository is medium, `pins` maps `owner/repo#N` to a tier, `staleDays` sets the idle thresholds, `exclude` drops repositories.
 - The site is public, so the script drops every pull request in a private repository. Do not add private titles, branches or counts to this page.

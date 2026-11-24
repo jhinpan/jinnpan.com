@@ -23,6 +23,14 @@ const projects = defineCollection({
     draft: z.boolean().optional(),
     demoURL: z.string().optional(),
     repoURL: z.string().optional(),
+    // Work page: "now" entries are current work, listed by `order`.
+    group: z.enum(["now", "earlier"]).default("earlier"),
+    order: z.number().optional(),
+    role: z.string().optional(),
+    // owner/name on GitHub; the Work page shows its merged pull request count.
+    repo: z.string().optional(),
+    // A Library page about this project.
+    reading: z.string().optional(),
   }),
 });
 
