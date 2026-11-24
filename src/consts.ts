@@ -2,14 +2,14 @@ import type { Metadata, Site, Socials } from "@types";
 
 export const SITE: Site = {
   TITLE: "Jin Pan",
-  DESCRIPTION: "ML Systems / GPU Kernels / LLM Serving",
+  DESCRIPTION: "RL Systems / GPU Kernels / LLM Serving",
   EMAIL: "panjin1221@gmail.com",
 };
 
 export const HOME: Metadata = {
   TITLE: "Jin Pan · ML Systems",
   DESCRIPTION:
-    "Jin Pan works on ML systems at AMD: GPU kernels in FlyDSL, LLM serving in SGLang, and measurements published with their raw data.",
+    "Jin Pan works on ML systems at AMD across the full stack: RL training, GPU kernels and LLM serving, down to the compiler and hardware co-design.",
 };
 
 export const BLOG: Metadata = {

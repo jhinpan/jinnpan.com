@@ -20,17 +20,19 @@ export const STATS: { value: number; label: Text }[] = [
   },
 ];
 
-// Top to bottom is the path of one request. Each layer links to a reading of that layer.
+// The full stack, top to bottom: training, serving, then DSL to compiler to kernel to
+// hardware. Each layer links to a reading of that layer; {lang} becomes the page language.
 export const STACK: { name: string; items: string; href: string }[] = [
   {
-    name: "MODEL",
-    items: "GLM-5.3 · DeepSeek-V4.1 Flash · Kimi-K3",
-    href: "/sources/kimi-k3-kda-time-share.html",
+    name: "TRAINING",
+    items: "RL post-training · data",
+    href: "/{lang}/blog/long-sequence-moe-rl/",
   },
   { name: "SERVING", items: "SGLang · sgl-amd-mono", href: "/sources/sglang.html" },
-  { name: "KERNEL", items: "FlyDSL · AITER", href: "/sources/flydsl.html" },
+  { name: "DSL", items: "FlyDSL", href: "/sources/flydsl.html" },
   { name: "COMPILER", items: "MLIR · LLVM", href: "/sources/flydsl-compiler-redesign.html" },
-  { name: "SILICON", items: "MI355X · MI455X", href: "/sources/gcnasm.html" },
+  { name: "KERNEL", items: "AITER · monokernels", href: "/sources/aiter.html" },
+  { name: "HARDWARE", items: "MI355X · MI455X co-design", href: "/sources/gcnasm.html" },
 ];
 
 export type BarTone = "accent" | "teal" | "teal-soft" | "muted" | "hatch";
@@ -141,13 +143,29 @@ export type Chip = { label: Text; count?: number; href?: string };
 const mergedBy = (repo: string) =>
   `https://github.com/${repo}/pulls?q=is%3Apr+author%3Ajhinpan+is%3Amerged`;
 
+// Training and serving, the kernels between them, and the agents that write those kernels.
 export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] = [
   {
-    tag: "A · Kernels",
+    tag: "A · RL systems",
+    title: { en: "Train on the engine you serve with", zh: "用 serving 引擎来训练" },
+    body: {
+      en: "RL post-training on AMD GPUs with Miles and slime, from data preparation to the training run. Rollouts use SGLang, so training and serving share one engine.",
+      zh: "在 AMD GPU 上用 Miles 和 slime 做 RL 后训练， 从数据准备到训练本身。 rollout 用的是 SGLang， 所以训练和推理共用同一个引擎。",
+    },
+    chips: [
+      { label: { en: "THUDM/slime", zh: "THUDM/slime" }, count: 7, href: mergedBy("THUDM/slime") },
+      {
+        label: { en: "Long-sequence MoE RL", zh: "Long-sequence MoE RL" },
+        href: "/{lang}/blog/long-sequence-moe-rl/",
+      },
+    ],
+  },
+  {
+    tag: "B · GPU kernels",
     title: { en: "Write the kernel, then prove it", zh: "先写 kernel， 再证明它是对的" },
     body: {
-      en: "GPU kernels in FlyDSL for MI355X and MI455X, and the reviews that gate them before they reach a serving backend.",
-      zh: "用 FlyDSL 为 MI355X 和 MI455X 写 GPU kernel， 并在它们进入 serving 后端之前做 review 把关。",
+      en: "GPU kernels are the bridge between training and serving. I write them in FlyDSL for MI355X and MI455X, and review the ones that reach a serving backend.",
+      zh: "GPU kernel 是训练和推理之间的桥。 我用 FlyDSL 为 MI355X 和 MI455X 写 kernel， 并在它们进入 serving 后端之前做 review 把关。",
     },
     chips: [
       {
@@ -159,7 +177,7 @@ export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] 
     ],
   },
   {
-    tag: "B · Serving",
+    tag: "C · LLM serving",
     title: { en: "Measure the model, not the kernel", zh: "测模型， 不只测 kernel" },
     body: {
       en: "Model-level performance in SGLang on AMD: GLM-5.3, DeepSeek-V4.1 Flash and Kimi-K3, from one request to a loaded server.",
@@ -179,11 +197,11 @@ export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] 
     ],
   },
   {
-    tag: "C · Agents for kernels",
+    tag: "D · Agents for kernels",
     title: { en: "Let agents write, let a harness judge", zh: "让 agent 写， 让 harness 判" },
     body: {
-      en: "A fleet that schedules agent kernel-optimization jobs on MI355X nodes, and a deterministic validator for the pull requests they open.",
-      zh: "一个把 agent 的 kernel 优化任务调度到 MI355X 节点上的集群， 以及一个对它们提交的 PR 做确定性验证的 validator。",
+      en: "A pipeline that lets agents write and optimize GPU kernels. It schedules their jobs on MI355X nodes and judges every pull request they open with a deterministic validator.",
+      zh: "一条让 agent 写 kernel、优化 kernel 的 pipeline。 它把任务调度到 MI355X 节点上， 并用确定性的 validator 评判 agent 提交的每个 PR。",
     },
     chips: [
       { label: { en: "private repositories", zh: "私有仓库" } },
@@ -255,11 +273,11 @@ export const TIMELINE: { year: string; place: Text; detail: string }[] = [
   {
     year: "2024",
     place: { en: "UW–Madison", zh: "威斯康星大学麦迪逊分校" },
-    detail: "MS / PhD, Computer Sciences",
+    detail: "MS, Computer Sciences",
   },
   {
     year: "2026",
     place: { en: "AMD AIG Codesign", zh: "AMD AIG Codesign" },
-    detail: "GPU kernels and LLM serving",
+    detail: "RL systems, GPU kernels, LLM serving",
   },
 ];

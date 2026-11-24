@@ -480,17 +480,14 @@ html[lang='zh'] .home-sec-head h2 {
 
 .home-threads {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 36px 56px;
 }
 
 .home-thread {
   height: 100%;
-  padding: 2px 28px 2px 0;
-}
-
-.home-threads > div + div .home-thread {
-  padding-left: 28px;
-  border-left: 1px solid var(--color-line);
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
 }
 
 .home-thread-tag {
@@ -718,14 +715,6 @@ span.home-chip {
     grid-template-columns: 1fr;
   }
 
-  .home-threads > div + div .home-thread {
-    margin-top: 20px;
-    padding-top: 20px;
-    padding-left: 0;
-    border-top: 1px solid var(--color-line);
-    border-left: 0;
-  }
-
   .home-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -826,18 +815,18 @@ span.home-chip {
     opacity: 1;
   }
 
-  /* Timing assumes the five layers of STACK: 4 s of travel at one layer per second, then 2 s of rest.
-     Each layer lights up as the pulse reaches it. */
+  /* The pulse falls one layer per second and each layer lights up as it arrives.
+     StackFigure.astro sets --loop and --travel from the number of layers. */
   .home-stack.show .home-pulse {
-    animation: home-fall 6s linear 1.9s infinite;
+    animation: home-fall var(--loop) linear 1.9s infinite;
   }
 
   .home-stack.show .home-layer:not(:hover):not(:focus-visible) rect {
-    animation: home-glow 6s linear calc(1.9s + var(--i) * 1s) infinite;
+    animation: home-glow var(--loop) linear calc(1.9s + var(--i) * 1s) infinite;
   }
 
   .home-stack.show .home-layer .home-node {
-    animation: home-node-glow 6s linear calc(1.9s + var(--i) * 1s) infinite;
+    animation: home-node-glow var(--loop) linear calc(1.9s + var(--i) * 1s) infinite;
   }
 
   /* Section rule, bars and timeline draw from the left. */
@@ -896,26 +885,20 @@ span.home-chip {
 }
 
 @keyframes home-fall {
-  0% {
+  from {
     transform: translateY(0);
-    opacity: 0;
-  }
-
-  3%,
-  63% {
     opacity: 1;
   }
 
-  66.66%,
-  100% {
+  to {
     transform: translateY(var(--travel));
-    opacity: 0;
+    opacity: 1;
   }
 }
 
 @keyframes home-glow {
   0%,
-  11% {
+  10% {
     fill: var(--color-accent-soft);
     stroke: var(--color-accent);
   }

@@ -1,46 +1,50 @@
 ---
 import { STACK } from "@data/home";
+import type { Lang } from "@lib/utils";
 
 type Props = {
   title: string;
+  lang: Lang;
 };
 
-const { title } = Astro.props;
+const { title, lang } = Astro.props;
 
-// Geometry in SVG units. home.css moves the pulse by one PITCH per second.
-const PITCH = 82;
-const BOX_HEIGHT = 62;
+// Geometry in SVG units. The pulse moves one PITCH per second (see --travel and --loop),
+// so layer i lights up i seconds into each loop, for any number of layers.
+const PITCH = 72;
+const BOX_HEIGHT = 54;
 const SPINE_X = 24;
 const BOX_X = 56;
 const BOX_WIDTH = 374;
-const center = (index: number) => 41 + index * PITCH;
-const height = center(STACK.length - 1) + BOX_HEIGHT / 2 + 10;
+const PULSE_RADIUS = 6;
+const center = (index: number) => 10 + BOX_HEIGHT / 2 + index * PITCH;
+const last = STACK.length - 1;
+const height = center(last) + BOX_HEIGHT / 2 + 10;
 ---
 
 <svg
   viewBox={`0 0 440 ${height}`}
   role="img"
   aria-labelledby="home-stack-title"
-  style={`--travel: ${(STACK.length - 1) * PITCH}px`}
+  style={`--travel: ${(STACK.length + 1) * PITCH}px; --loop: ${STACK.length + 1}s`}
 >
   <title id="home-stack-title">{title}</title>
-  <line
-    class="home-spine"
-    x1={SPINE_X}
-    y1={center(0)}
-    x2={SPINE_X}
-    y2={center(STACK.length - 1)}
-    pathLength="1"></line>
+  <defs>
+    {/* The pulse keeps falling for two more beats; the clip hides it below the last layer. */}
+    <clipPath id="home-stack-clip">
+      <rect
+        x={SPINE_X - PULSE_RADIUS - 2}
+        y={center(0) - PULSE_RADIUS - 2}
+        width={2 * PULSE_RADIUS + 4}
+        height={last * PITCH + 2 * PULSE_RADIUS + 4}
+      />
+    </clipPath>
+  </defs>
+  <line class="home-spine" x1={SPINE_X} y1={center(0)} x2={SPINE_X} y2={center(last)} pathLength="1"></line>
   {
     STACK.map((layer, index) => (
-      <a class="home-layer" href={layer.href} style={`--i: ${index}`}>
-        <line
-          class="home-tick"
-          x1={SPINE_X}
-          y1={center(index)}
-          x2={BOX_X}
-          y2={center(index)}
-        />
+      <a class="home-layer" href={layer.href.replace("{lang}", lang)} style={`--i: ${index}`}>
+        <line class="home-tick" x1={SPINE_X} y1={center(index)} x2={BOX_X} y2={center(index)} />
         <circle class="home-node" cx={SPINE_X} cy={center(index)} r="4.5" />
         <rect
           x={BOX_X}
@@ -50,17 +54,19 @@ const height = center(STACK.length - 1) + BOX_HEIGHT / 2 + 10;
           rx="3"
           pathLength="1"
         />
-        <text class="home-layer-name" x={BOX_X + 18} y={center(index) - 7}>
+        <text class="home-layer-name" x={BOX_X + 18} y={center(index) - 6}>
           {layer.name}
         </text>
-        <text class="home-layer-index" x={BOX_X + BOX_WIDTH - 16} y={center(index) - 7} text-anchor="end">
+        <text class="home-layer-index" x={BOX_X + BOX_WIDTH - 16} y={center(index) - 6} text-anchor="end">
           {String(index + 1).padStart(2, "0")}
         </text>
-        <text class="home-layer-items" x={BOX_X + 18} y={center(index) + 16}>
+        <text class="home-layer-items" x={BOX_X + 18} y={center(index) + 15}>
           {layer.items}
         </text>
       </a>
     ))
   }
-  <circle class="home-pulse" cx={SPINE_X} cy={center(0)} r="6"></circle>
+  <g clip-path="url(#home-stack-clip)">
+    <circle class="home-pulse" cx={SPINE_X} cy={center(0)} r={PULSE_RADIUS}></circle>
+  </g>
 </svg>

@@ -22,19 +22,20 @@ const i18n = {
   en: {
     role: "ML Systems",
     headline: [["I make large"], ["models run fast"], ["on ", "AMD GPUs."]],
-    lead: "From the kernel to the serving stack: I write GPU kernels in FlyDSL, tune them inside SGLang, and publish each measurement with its raw data.",
+    lead: "I work across the full stack, from RL training to LLM serving. GPU kernels are the bridge between the two. I write them in FlyDSL, and I build the pipeline that lets agents write them too.",
     ctaLibrary: "Read the experiments",
     ctaAbout: "About me",
-    stackTitle: "The stack I work on: model, serving, kernel, compiler, silicon",
+    stackTitle: "The stack I work on: training, serving, DSL, compiler, kernel, hardware",
     stackCaption:
-      "Fig. 1 · The stack I work on. A request falls through every layer. Each layer links to a reading.",
+      "Fig. 1 · The stack I work on, from RL training to hardware co-design. Each layer links to a reading.",
     asOf: `Numbers as of ${AS_OF}`,
     measureTitle: "Selected measurements",
     measureDesc:
       "Each card opens the full write-up: the method, the raw data, and what did not work.",
     measureMore: "All experiments",
     threadsTitle: "What I work on",
-    threadsDesc: "Three threads. The number on a chip is merged pull requests.",
+    threadsDesc:
+      "Four threads. Training and serving meet at the kernels. The number on a chip is merged pull requests.",
     threadsMore: "PR board",
     latestTitle: "Latest from the Library",
     latestDesc: "Code readings, paper readings, tutorials and experiments. In English and 中文.",
@@ -42,24 +43,24 @@ const i18n = {
     aboutTitle: "About",
     aboutMore: "More",
     about: [
-      "I work on ML systems: the path a token takes from a Python call to a GPU instruction.",
-      "I like the cases where the unit test is green and the model is still wrong. I write down how I found out.",
+      "I work on ML systems across the full stack: how a model is trained with RL, data preparation, inference, the DSL underneath, the compiler, the kernels, and hardware co-design.",
+      "The problems I want to solve are the ones that cross those layers.",
     ],
   },
   zh: {
     role: "ML Systems",
     headline: [["让大模型"], ["在 ", "AMD GPU", " 上"], ["跑得更快。"]],
-    lead: "从 kernel 到 serving： 我用 FlyDSL 写 GPU kernel， 在 SGLang 里调模型级性能， 并把每次测量连同原始数据一起发布。",
+    lead: "我做全栈： 从 RL 训练到 LLM serving。 GPU kernel 是训练和推理之间的桥。 我用 FlyDSL 写 kernel， 也在搭一条让 agent 写 kernel 的 pipeline。",
     ctaLibrary: "看实验记录",
     ctaAbout: "关于我",
-    stackTitle: "我工作的软件栈： model、serving、kernel、compiler、silicon",
-    stackCaption: "图 1 · 我工作的软件栈。 一个请求会穿过每一层。 每一层都链接到一篇精读。",
+    stackTitle: "我工作的软件栈： training、serving、DSL、compiler、kernel、hardware",
+    stackCaption: "图 1 · 我工作的软件栈： 从 RL 训练到硬件 co-design。 每一层都链接到一篇精读。",
     asOf: `数字截至 ${AS_OF}`,
     measureTitle: "精选测量",
     measureDesc: "每张卡片都通向完整记录： 方法、原始数据， 以及没有成功的部分。",
     measureMore: "全部实验",
     threadsTitle: "我在做什么",
-    threadsDesc: "三条线。 标签上的数字是 merged PR 数。",
+    threadsDesc: "四条线。 训练和推理在 kernel 这一层交汇。 标签上的数字是 merged PR 数。",
     threadsMore: "PR 看板",
     latestTitle: "Library 最新内容",
     latestDesc: "代码精读、论文精读、教程和实验。 中英双语。",
@@ -67,8 +68,8 @@ const i18n = {
     aboutTitle: "关于",
     aboutMore: "更多",
     about: [
-      "我做 ML systems： 一个 token 从 Python 调用走到 GPU 指令的整条路径。",
-      "我喜欢单元测试是绿的、模型却还是错的那类问题。 我会把查明原因的过程写下来。",
+      "我做全栈的 ML systems： 从模型怎么用 RL 训练、数据准备、推理， 到底层的 DSL、compiler、kernel， 再到硬件的 co-design。",
+      "我想解决的是跨越这些层的全栈问题。",
     ],
   },
 };
@@ -135,7 +136,7 @@ const latest = LATEST.map((item) => {
             </p>
           </div>
           <figure class="home-stack" data-reveal>
-            <StackFigure title={t.stackTitle} />
+            <StackFigure title={t.stackTitle} lang={lang} />
             <figcaption>{t.stackCaption}</figcaption>
           </figure>
         </div>
@@ -222,7 +223,7 @@ const latest = LATEST.map((item) => {
                       chip.href ? (
                         <a
                           class="home-chip"
-                          href={chip.href}
+                          href={chip.href.replace("{lang}", lang)}
                           target={chip.href.startsWith("http") ? "_blank" : undefined}
                           rel={chip.href.startsWith("http") ? "noopener" : undefined}
                         >
