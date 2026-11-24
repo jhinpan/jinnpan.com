@@ -257,5 +257,9 @@ export const TIMELINE: { year: string; place: Text; detail: string }[] = [
     place: { en: "UW–Madison", zh: "威斯康星大学麦迪逊分校" },
     detail: "MS / PhD, Computer Sciences",
   },
-  { year: "2026", place: { en: "AMD GenAI", zh: "AMD GenAI" }, detail: "GPU kernels and LLM serving" },
+  {
+    year: "2026",
+    place: { en: "AMD AIG Codesign", zh: "AMD AIG Codesign" },
+    detail: "GPU kernels and LLM serving",
+  },
 ];
