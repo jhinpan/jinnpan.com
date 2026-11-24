@@ -6,6 +6,7 @@ import StackFigure from "@components/home/StackFigure.astro";
 import SectionHead from "@components/home/SectionHead.astro";
 import { HOME, SOCIALS } from "@consts";
 import { AS_OF, STATS, MEASUREMENTS, THREADS, LATEST, TIMELINE } from "@data/home";
+import { BOARD_DATE } from "@data/pr-board";
 import type { Lang } from "@lib/utils";
 import "@styles/home.css";
 
@@ -28,7 +29,7 @@ const i18n = {
     stackTitle: "The stack I work on: training, serving, DSL, compiler, kernel, hardware",
     stackCaption:
       "Fig. 1 · The stack I work on, from RL training to hardware co-design. Each layer links to a reading.",
-    asOf: `Numbers as of ${AS_OF}`,
+    asOf: `Library counts as of ${AS_OF}. Pull request counts as of ${BOARD_DATE}.`,
     measureTitle: "Selected measurements",
     measureDesc:
       "Each card opens the full write-up: the method, the raw data, and what did not work.",
@@ -55,7 +56,7 @@ const i18n = {
     ctaAbout: "关于我",
     stackTitle: "我工作的软件栈： training、serving、DSL、compiler、kernel、hardware",
     stackCaption: "图 1 · 我工作的软件栈： 从 RL 训练到硬件 co-design。 每一层都链接到一篇精读。",
-    asOf: `数字截至 ${AS_OF}`,
+    asOf: `Library 数字截至 ${AS_OF}； PR 数字截至 ${BOARD_DATE}。`,
     measureTitle: "精选测量",
     measureDesc: "每张卡片都通向完整记录： 方法、原始数据， 以及没有成功的部分。",
     measureMore: "全部实验",

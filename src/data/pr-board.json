@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T05:10:19.385Z",
+  "generatedAt": "2026-11-24T05:12:40.055Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -16,6 +16,39 @@
     "low": [
       "jhinpan/*"
     ]
+  },
+  "merged": {
+    "AMD-AGI/AgentKernelArena": 1,
+    "amdpilot-org/AMD-Skills": 10,
+    "amdpilot-org/amdpilot-evals": 7,
+    "amdpilot-org/kimi-cli": 9,
+    "fzyzcjy/torch_memory_saver": 1,
+    "ISEEKYAN/mbridge": 1,
+    "jhinpan/flydsl-kernel-profiling-lib": 6,
+    "jhinpan/jinnpan.com": 2,
+    "jhinpan/rocm-flashinfer-contest": 1,
+    "jhinpan/rocm-KDA-pilot": 7,
+    "jhinpan/rocm-report-skill": 2,
+    "jhinpan/rocm-SOL-ExecBench": 5,
+    "jhinpan/ROCmKernelWiki": 12,
+    "jhinpan/sglang-amd-cookbook": 4,
+    "jinzijian/Mimie": 1,
+    "lightseekorg/tokenspeed": 1,
+    "MoonshotAI/kimi-cli": 1,
+    "NVIDIA-NeMo/RL": 1,
+    "radixark/miles": 1,
+    "ROCm/aiter": 6,
+    "ROCm/FlyDSL": 48,
+    "SemiAnalysisAI/InferenceX": 1,
+    "sgl-project/sgl-amd-mono": 9,
+    "sgl-project/sgl-project.github.io": 1,
+    "sgl-project/sglang": 11,
+    "sgl-project/SpecForge": 2,
+    "THUDM/slime": 7,
+    "verl-project/verl": 1,
+    "vllm-project/vime": 3,
+    "williamqwu/sol-execbench-rocm": 3,
+    "zhaochenyang20/Awesome-ML-SYS-Tutorial": 14
   },
   "prs": [
     {
@@ -666,6 +699,7 @@
         {
           "code": "waiting-review",
           "by": [
+            "TEAM_AITER",
             "yadaish",
             "yzhou103"
           ]
@@ -691,6 +725,7 @@
         {
           "code": "waiting-review",
           "by": [
+            "TEAM_AITER",
             "coderfeli",
             "demonsan"
           ]
@@ -716,6 +751,7 @@
         {
           "code": "waiting-review",
           "by": [
+            "TEAM_AITER",
             "aoli26",
             "coderfeli",
             "yadaish"

@@ -1,10 +1,10 @@
 import type { Lang } from "@lib/utils";
+import { mergedCount, mergedUrl } from "./pr-board";
 
 type Text = Record<Lang, string>;
 
-// Every count on the home page is a snapshot taken on this date.
-// Library counts: the cards in public/sources/index.html.
-// Pull request counts: gh search prs --author jhinpan --merged --repo <owner/repo>
+// The two Library counts are a snapshot of the cards in public/sources/index.html, taken
+// on this date. Pull request counts come from pr-board.json, which refreshes every night.
 export const AS_OF = "2026-11-23";
 
 export const STATS: { value: number; label: Text }[] = [
@@ -13,9 +13,12 @@ export const STATS: { value: number; label: Text }[] = [
     value: 8,
     label: { en: "experiments, raw data committed", zh: "个实验， 原始数据随文提交" },
   },
-  { value: 48, label: { en: "merged PRs · ROCm/FlyDSL", zh: "merged PR · ROCm/FlyDSL" } },
   {
-    value: 11,
+    value: mergedCount("ROCm/FlyDSL"),
+    label: { en: "merged PRs · ROCm/FlyDSL", zh: "merged PR · ROCm/FlyDSL" },
+  },
+  {
+    value: mergedCount("sgl-project/sglang"),
     label: { en: "merged PRs · sgl-project/sglang", zh: "merged PR · sgl-project/sglang" },
   },
 ];
@@ -140,8 +143,12 @@ export const MEASUREMENTS: Measurement[] = [
 
 export type Chip = { label: Text; count?: number; href?: string };
 
-const mergedBy = (repo: string) =>
-  `https://github.com/${repo}/pulls?q=is%3Apr+author%3Ajhinpan+is%3Amerged`;
+// A repository with its count of merged pull requests, linked to that list on GitHub.
+const repoChip = (repo: string, label = repo): Chip => ({
+  label: { en: label, zh: label },
+  count: mergedCount(repo),
+  href: mergedUrl(repo),
+});
 
 // Training and serving, the kernels between them, and the agents that write those kernels.
 export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] = [
@@ -153,7 +160,7 @@ export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] 
       zh: "在 AMD GPU 上用 Miles 和 slime 做 RL 后训练， 从数据准备到训练本身。 rollout 用的是 SGLang， 所以训练和推理共用同一个引擎。",
     },
     chips: [
-      { label: { en: "THUDM/slime", zh: "THUDM/slime" }, count: 7, href: mergedBy("THUDM/slime") },
+      repoChip("THUDM/slime"),
       {
         label: { en: "Long-sequence MoE RL", zh: "Long-sequence MoE RL" },
         href: "/{lang}/blog/long-sequence-moe-rl/",
@@ -167,14 +174,7 @@ export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] 
       en: "GPU kernels are the bridge between training and serving. I write them in FlyDSL for MI355X and MI455X, and review the ones that reach a serving backend.",
       zh: "GPU kernel 是训练和推理之间的桥。 我用 FlyDSL 为 MI355X 和 MI455X 写 kernel， 并在它们进入 serving 后端之前做 review 把关。",
     },
-    chips: [
-      {
-        label: { en: "ROCm/FlyDSL", zh: "ROCm/FlyDSL" },
-        count: 48,
-        href: mergedBy("ROCm/FlyDSL"),
-      },
-      { label: { en: "ROCm/aiter", zh: "ROCm/aiter" }, count: 6, href: mergedBy("ROCm/aiter") },
-    ],
+    chips: [repoChip("ROCm/FlyDSL"), repoChip("ROCm/aiter")],
   },
   {
     tag: "C · LLM serving",
@@ -183,18 +183,7 @@ export const THREADS: { tag: string; title: Text; body: Text; chips: Chip[] }[] 
       en: "Model-level performance in SGLang on AMD: GLM-5.3, DeepSeek-V4.1 Flash and Kimi-K3, from one request to a loaded server.",
       zh: "在 AMD 上做 SGLang 的模型级性能： GLM-5.3、DeepSeek-V4.1 Flash 和 Kimi-K3， 从单个请求到满载的服务。",
     },
-    chips: [
-      {
-        label: { en: "sgl-project/sglang", zh: "sgl-project/sglang" },
-        count: 11,
-        href: mergedBy("sgl-project/sglang"),
-      },
-      {
-        label: { en: "sgl-amd-mono", zh: "sgl-amd-mono" },
-        count: 9,
-        href: mergedBy("sgl-project/sgl-amd-mono"),
-      },
-    ],
+    chips: [repoChip("sgl-project/sglang"), repoChip("sgl-project/sgl-amd-mono", "sgl-amd-mono")],
   },
   {
     tag: "D · Agents for kernels",

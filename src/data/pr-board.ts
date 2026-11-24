@@ -43,6 +43,8 @@ export type Board = {
   login: string;
   staleDays: { ready: number; draft: number };
   importance: { high?: string[]; low?: string[] };
+  // Merged pull requests by `login`, per public repository.
+  merged: Record<string, number>;
   prs: BoardPr[];
 };
 
@@ -56,6 +58,14 @@ export type Swimlane = {
 };
 
 export const BOARD = raw as Board;
+
+// The day of the last refresh, for "as of" captions.
+export const BOARD_DATE = BOARD.generatedAt.slice(0, 10);
+
+export const mergedCount = (repo: string) => BOARD.merged[repo] ?? 0;
+
+export const mergedUrl = (repo: string) =>
+  `https://github.com/${repo}/pulls?q=is%3Apr+author%3A${BOARD.login}+is%3Amerged`;
 
 export const LANES: Lane[] = ["follow-up", "review", "in-progress"];
 export const IMPORTANCE: Importance[] = ["high", "medium", "low"];

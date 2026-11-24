@@ -126,6 +126,30 @@ async function searchPullRequests(query) {
   return found;
 }
 
+// Merged pull requests per public repository. The home and Work pages show these counts.
+async function countMergedByRepo(query) {
+  const counts = {};
+  let after = null;
+  for (let page = 0; page < 10; page += 1) {
+    const data = await graphql(
+      `query ($q: String!, $after: String) {
+         search(type: ISSUE, query: $q, first: 100, after: $after) {
+           pageInfo { hasNextPage endCursor }
+           nodes { ... on PullRequest { repository { nameWithOwner isPrivate } } }
+         }
+       }`,
+      { q: query, after },
+    );
+    for (const node of data.search.nodes) {
+      if (!node?.repository || node.repository.isPrivate !== false) continue;
+      counts[node.repository.nameWithOwner] = (counts[node.repository.nameWithOwner] || 0) + 1;
+    }
+    if (!data.search.pageInfo.hasNextPage) break;
+    after = data.search.pageInfo.endCursor;
+  }
+  return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
+}
+
 /* ---------- classification ---------- */
 
 const CI_STATES = { SUCCESS: "success", FAILURE: "failure", ERROR: "failure", PENDING: "pending", EXPECTED: "pending" };
@@ -252,10 +276,11 @@ const scope = `is:pr is:open is:public archived:false ${(config.exclude || []).m
 console.log(`Building the PR board for ${login}${dryRun ? " (dry run)" : ""} via ${token ? "GITHUB_TOKEN" : "gh"}…`);
 
 // Write nothing unless every search resolved.
-const [authored, requested, reviewed] = await Promise.all([
+const [authored, requested, reviewed, merged] = await Promise.all([
   searchPullRequests(`${scope} author:${login}`),
   searchPullRequests(`${scope} review-requested:${login}`),
   searchPullRequests(`${scope} reviewed-by:${login} -author:${login}`),
+  countMergedByRepo(`is:pr is:merged is:public author:${login}`),
 ]);
 
 const key = (node) => `${node.repository.nameWithOwner}#${node.number}`;
@@ -278,11 +303,12 @@ const prs = [...records.values()].sort((a, b) => a.repo.localeCompare(b.repo) ||
 const count = (lane) => prs.filter((pr) => pr.lane === lane).length;
 console.log(
   `${prs.length} open pull requests in ${new Set(prs.map((pr) => pr.repo)).size} public repositories: ` +
-    `${count("follow-up")} follow-up, ${count("review")} to review, ${count("in-progress")} in progress.`,
+    `${count("follow-up")} follow-up, ${count("review")} to review, ${count("in-progress")} in progress. ` +
+    `${Object.values(merged).reduce((a, b) => a + b, 0)} merged in ${Object.keys(merged).length} public repositories.`,
 );
 
 if (dryRun) process.exit(0);
 
-const board = { generatedAt: now, login, staleDays: config.staleDays, importance: config.importance, prs };
+const board = { generatedAt: now, login, staleDays: config.staleDays, importance: config.importance, merged, prs };
 await writeFile(OUTPUT_FILE, `${JSON.stringify(board, null, 2)}\n`);
 console.log(`Wrote ${OUTPUT_FILE}`);
