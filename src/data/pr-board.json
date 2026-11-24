@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T05:12:40.055Z",
+  "generatedAt": "2026-11-24T05:31:27.357Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -699,7 +699,6 @@
         {
           "code": "waiting-review",
           "by": [
-            "TEAM_AITER",
             "yadaish",
             "yzhou103"
           ]
@@ -725,7 +724,6 @@
         {
           "code": "waiting-review",
           "by": [
-            "TEAM_AITER",
             "coderfeli",
             "demonsan"
           ]
@@ -751,7 +749,6 @@
         {
           "code": "waiting-review",
           "by": [
-            "TEAM_AITER",
             "aoli26",
             "coderfeli",
             "yadaish"
@@ -1318,7 +1315,7 @@
       "draft": false,
       "ci": "pending",
       "createdAt": "2026-11-24T01:45:31Z",
-      "updatedAt": "2026-11-24T04:52:25Z",
+      "updatedAt": "2026-11-24T05:18:50Z",
       "additions": 51,
       "deletions": 53,
       "lane": "review",
