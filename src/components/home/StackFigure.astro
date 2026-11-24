@@ -1,0 +1,66 @@
+---
+import { STACK } from "@data/home";
+
+type Props = {
+  title: string;
+};
+
+const { title } = Astro.props;
+
+// Geometry in SVG units. home.css moves the pulse by one PITCH per second.
+const PITCH = 82;
+const BOX_HEIGHT = 62;
+const SPINE_X = 24;
+const BOX_X = 56;
+const BOX_WIDTH = 374;
+const center = (index: number) => 41 + index * PITCH;
+const height = center(STACK.length - 1) + BOX_HEIGHT / 2 + 10;
+---
+
+<svg
+  viewBox={`0 0 440 ${height}`}
+  role="img"
+  aria-labelledby="home-stack-title"
+  style={`--travel: ${(STACK.length - 1) * PITCH}px`}
+>
+  <title id="home-stack-title">{title}</title>
+  <line
+    class="home-spine"
+    x1={SPINE_X}
+    y1={center(0)}
+    x2={SPINE_X}
+    y2={center(STACK.length - 1)}
+    pathLength="1"></line>
+  {
+    STACK.map((layer, index) => (
+      <a class="home-layer" href={layer.href} style={`--i: ${index}`}>
+        <line
+          class="home-tick"
+          x1={SPINE_X}
+          y1={center(index)}
+          x2={BOX_X}
+          y2={center(index)}
+        />
+        <circle class="home-node" cx={SPINE_X} cy={center(index)} r="4.5" />
+        <rect
+          x={BOX_X}
+          y={center(index) - BOX_HEIGHT / 2}
+          width={BOX_WIDTH}
+          height={BOX_HEIGHT}
+          rx="3"
+          pathLength="1"
+        />
+        <text class="home-layer-name" x={BOX_X + 18} y={center(index) - 7}>
+          {layer.name}
+        </text>
+        <text class="home-layer-index" x={BOX_X + BOX_WIDTH - 16} y={center(index) - 7} text-anchor="end">
+          {String(index + 1).padStart(2, "0")}
+        </text>
+        <text class="home-layer-items" x={BOX_X + 18} y={center(index) + 16}>
+          {layer.items}
+        </text>
+      </a>
+    ))
+  }
+  <circle class="home-pulse" cx={SPINE_X} cy={center(0)} r="6"></circle>
+</svg>

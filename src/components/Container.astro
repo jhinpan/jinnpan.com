@@ -1,5 +1,17 @@
 ---
+type Props = {
+  // "sm" is the reading column; "wide" is the header, footer and home page.
+  size?: "sm" | "wide";
+};
 
+const { size = "sm" } = Astro.props;
 ---
 
-<div class="mx-auto max-w-(--breakpoint-sm) px-3"><slot /></div>
+<div
+  class:list={[
+    "mx-auto",
+    size === "wide" ? "max-w-[1120px] px-4 sm:px-8" : "max-w-(--breakpoint-sm) px-3",
+  ]}
+>
+  <slot />
+</div>

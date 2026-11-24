@@ -1,0 +1,26 @@
+---
+type Props = {
+  no: string;
+  title: string;
+  desc?: string;
+  href?: string;
+  more?: string;
+};
+
+const { no, title, desc, href, more } = Astro.props;
+---
+
+<div class="home-sec-head animate">
+  <span class="home-sec-no" aria-hidden="true">{no}</span>
+  <div>
+    <h2>{title}</h2>
+    {desc && <p>{desc}</p>}
+  </div>
+  {
+    href && more && (
+      <a class="home-tlink" href={href}>
+        {more} <span aria-hidden="true">&rarr;</span>
+      </a>
+    )
+  }
+</div>

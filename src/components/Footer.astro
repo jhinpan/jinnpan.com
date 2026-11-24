@@ -1,18 +1,37 @@
 ---
 import Container from "@components/Container.astro";
-import { SITE } from "@consts";
+import { SITE, SOCIALS } from "@consts";
 import BackToTop from "@components/BackToTop.astro";
+import type { Lang } from "@lib/utils";
+
+type Props = {
+  lang?: Lang;
+};
+
+const { lang = "en" } = Astro.props;
 ---
 
-<footer class="animate">
-  <Container>
+<footer class="site-footer animate">
+  <Container size="wide">
     <div class="relative">
-      <div class="absolute -top-12 right-0">
+      <div class="absolute -top-[4.5rem] right-0">
         <BackToTop />
       </div>
     </div>
-    <div class="flex items-center justify-between">
-      <div>&copy; {new Date().getFullYear()} • {SITE.TITLE} 🔬</div>
+    <div class="site-footer-row">
+      <p class="site-motto">Hinc itur ad astra.</p>
+      <div class="site-footer-meta">
+        <span>&copy; {new Date().getFullYear()} {SITE.TITLE}</span>
+        {
+          SOCIALS.map((SOCIAL) => (
+            <a class="site-nav-link" href={SOCIAL.HREF} target="_blank" rel="noopener">
+              {SOCIAL.NAME}
+            </a>
+          ))
+        }
+        <a class="site-nav-link" href={`mailto:${SITE.EMAIL}`}>
+          {lang === "zh" ? "邮箱" : "Email"}
+        </a>
       <div class="flex flex-wrap items-center gap-1.5">
         <button
           id="light-theme-button"
@@ -84,6 +103,7 @@ import BackToTop from "@components/BackToTop.astro";
             <line x1="12" y1="17" x2="12" y2="21"></line>
           </svg>
         </button>
+      </div>
       </div>
     </div>
   </Container>

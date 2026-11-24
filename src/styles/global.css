@@ -4,11 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme {
+/* static: page stylesheets outside this file read these variables, so always emit them. */
+@theme static {
   --font-sans: Geist Sans, ui-sans-serif, system-ui, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  /* The CJK sans fonts keep Chinese labels out of the system's serif monospace fallback. */
   --font-mono: Geist Mono, ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, 'Liberation Mono', 'Courier New', monospace;
+    Consolas, 'Liberation Mono', 'Courier New', 'PingFang SC',
+    'Microsoft YaHei', 'Noto Sans SC', monospace;
+  /* Same serif stack as the Library (public/sources). */
+  --font-serif: Georgia, 'Noto Serif SC', 'Songti SC', serif;
 }
 
 /*
@@ -30,22 +35,54 @@
 }
 
 @layer utilities {
+  /* Paper, ink and shelf colors match the Library (public/sources/index.html). */
   html {
     overflow-y: auto;
     color-scheme: light;
     scroll-padding-top: 100px;
-    --color-accent: #C96B4F;
+    --color-accent: #C2573A;
     --color-accent-light: #D4876F;
-    --color-bg: #FAF8F5;
-    --color-bg-glass: rgba(250, 248, 245, 0.75);
+    --color-accent-soft: #F3DDD3;
+    --color-bg: #F6F3EA;
+    --color-bg-glass: rgba(246, 243, 234, 0.82);
+    --color-card: #FFFAF0;
+    --color-ink: #171714;
+    --color-ink-2: #3A3934;
+    --color-muted: #68675F;
+    --color-line: #C7C0AD;
+    --color-line-2: #9F998A;
+    --color-teal: #126B68;
+    --color-teal-soft: #C4DCD9;
+    --color-grid: rgba(23, 23, 20, 0.05);
+    --shelf-code: #126B68;
+    --shelf-paper: #A24036;
+    --shelf-tutorial: #315D92;
+    --shelf-blog: #4E744C;
+    --shelf-experiments: #6D3F8C;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   html.dark {
     color-scheme: dark;
-    --color-accent: #D4876F;
+    --color-accent: #E08A6D;
     --color-accent-light: #E0A08A;
+    --color-accent-soft: #44291F;
     --color-bg: #1A1816;
-    --color-bg-glass: rgba(26, 24, 22, 0.75);
+    --color-bg-glass: rgba(26, 24, 22, 0.82);
+    --color-card: #211E1B;
+    --color-ink: #F1ECE0;
+    --color-ink-2: #D6D0C2;
+    --color-muted: #A19B8D;
+    --color-line: #3B3732;
+    --color-line-2: #5D584F;
+    --color-teal: #6FBDB7;
+    --color-teal-soft: #24403E;
+    --color-grid: rgba(241, 236, 224, 0.045);
+    --shelf-code: #6FBDB7;
+    --shelf-paper: #E08A7D;
+    --shelf-tutorial: #8FB3E0;
+    --shelf-blog: #9CC299;
+    --shelf-experiments: #C29BE0;
   }
 
   html,
@@ -60,18 +97,25 @@
     @apply text-black/75 dark:text-white/75;
   }
 
-  header {
-    @apply fixed left-0 right-0 top-0 z-50 py-6;
+  .site-header {
+    @apply fixed left-0 right-0 top-0 z-50;
     background-color: var(--color-bg-glass);
-    @apply saturate-200 backdrop-blur-xs;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+    @apply backdrop-blur-md;
+  }
+
+  html.scrolled .site-header {
+    border-bottom-color: var(--color-line);
   }
 
   main {
     @apply flex-1 py-32;
   }
 
-  footer {
-    @apply py-6 text-sm;
+  .site-footer {
+    @apply pb-8 pt-7 text-sm;
+    border-top: 1px solid var(--color-ink);
   }
 
   article {
@@ -115,13 +159,73 @@
   border-color: var(--color-accent);
 }
 
-.animate {
-  @apply -translate-y-3 opacity-0;
-  @apply transition-all duration-300 ease-out;
+/* Site header and footer */
+.site-header-row {
+  @apply flex flex-wrap items-center justify-between gap-x-5 gap-y-2 py-4;
+  min-height: 72px;
 }
 
-.animate.show {
-  @apply translate-y-0 opacity-100;
+.site-brand {
+  @apply inline-flex items-center gap-2.5 text-[15px] font-semibold;
+  color: var(--color-ink);
+}
+
+.site-mark {
+  @apply grid size-6 place-items-center rounded-xs font-serif text-[13px] font-bold leading-none;
+  background-color: var(--color-ink);
+  color: var(--color-bg);
+}
+
+.site-nav {
+  @apply flex items-center gap-x-5 gap-y-2 font-mono text-[13px];
+}
+
+.site-nav-link {
+  @apply pb-[3px];
+  color: var(--color-muted);
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition:
+    background-size 0.3s var(--ease-out),
+    color 0.2s;
+}
+
+.site-nav-link:hover,
+.site-nav-link:focus-visible,
+.site-nav-link[aria-current='page'] {
+  color: var(--color-ink);
+  background-size: 100% 1px;
+}
+
+.site-footer-row {
+  @apply flex flex-wrap items-center justify-between gap-x-8 gap-y-4;
+}
+
+.site-motto {
+  @apply font-serif text-xl italic;
+  color: var(--color-ink);
+}
+
+.site-footer-meta {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs;
+  color: var(--color-muted);
+}
+
+/* Entrance motion. Head.astro adds .show when an element scrolls into view.
+   The hidden start state applies only on screen, with scripting and allowed motion,
+   so print, no-JS and reduced-motion readers always get the full page. */
+@media screen and (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .animate {
+    opacity: 0;
+    translate: 0 16px;
+    transition:
+      opacity 0.6s var(--ease-out),
+      translate 0.6s var(--ease-out);
+  }
+
+  .animate.show {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 
 html #back-to-top {

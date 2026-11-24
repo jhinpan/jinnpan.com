@@ -1,46 +1,53 @@
 ---
 import Container from "@components/Container.astro";
-import Link from "@components/Link.astro";
 import { SITE } from "@consts";
+import type { Lang } from "@lib/utils";
 
 type Props = {
-  lang?: "zh" | "en";
+  lang?: Lang;
 };
 
 const { lang = "en" } = Astro.props;
 const otherLang = lang === "zh" ? "en" : "zh";
-const otherLangLabel = lang === "zh" ? "EN" : "ZH";
+const otherLangLabel = lang === "zh" ? "EN" : "中文";
 
 // Build the language-switched URL
 const currentPath = Astro.url.pathname;
 const pathWithoutLang = currentPath.replace(new RegExp(`^/${lang}(/|$)`), '/');
 const switchedPath = `/${otherLang}${pathWithoutLang === '/' ? '/' : pathWithoutLang}`;
+
+const nav = [
+  { href: `/${lang}/projects`, label: lang === "zh" ? "项目" : "Work" },
+  { href: "/sources/", label: lang === "zh" ? "文库" : "Library" },
+  { href: `/${lang}/about`, label: lang === "zh" ? "关于" : "About" },
+];
 ---
 
-<header>
-  <Container>
-    <div class="flex flex-wrap justify-between gap-y-2">
-      <Link href={`/${lang}/`} underline={false}>
-        <div class="font-semibold">
-          {SITE.TITLE}
-        </div>
-      </Link>
-      <nav class="flex items-center gap-1 text-sm">
-        <Link href={`/${lang}/about`}>about</Link>
-        <span>{`/`}</span>
-        <Link href={`/${lang}/blog`}>blog</Link>
-        <span>{`/`}</span>
-        <Link href="/sources/">sources</Link>
-        <span>{`/`}</span>
-        <Link href={`/${lang}/projects`}>projects</Link>
-        <span>{`/`}</span>
+<header class="site-header">
+  <Container size="wide">
+    <div class="site-header-row">
+      <a href={`/${lang}/`} class="site-brand">
+        <span class="site-mark" aria-hidden="true">J</span>
+        {SITE.TITLE}
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        {
+          nav.map((item) => (
+            <a
+              href={item.href}
+              class="site-nav-link"
+              aria-current={currentPath.startsWith(item.href) ? "page" : undefined}
+            >
+              {item.label}
+            </a>
+          ))
+        }
         <a
           href={switchedPath}
           class="lang-toggle rounded-sm border border-black/15 px-2 py-1 text-xs transition-colors duration-300 ease-in-out dark:border-white/20"
         >
           {otherLangLabel}
         </a>
-        <span>{`/`}</span>
         <button
           id="magnifying-glass"
           aria-label="Search"
@@ -58,7 +65,7 @@ const switchedPath = `/${otherLang}${pathWithoutLang === '/' ? '/' : pathWithout
               d="M3.5 7C3.5 5.067 5.067 3.5 7 3.5C8.933 3.5 10.5 5.067 10.5 7C10.5 7.88461 10.1718 8.69256 9.63058 9.30876L9.30876 9.63058C8.69256 10.1718 7.88461 10.5 7 10.5C5.067 10.5 3.5 8.933 3.5 7ZM9.96544 11.0261C9.13578 11.6382 8.11014 12 7 12C4.23858 12 2 9.76142 2 7C2 4.23858 4.23858 2 7 2C9.76142 2 12 4.23858 12 7C12 8.11014 11.6382 9.13578 11.0261 9.96544L14.0303 12.9697L14.5607 13.5L13.5 14.5607L12.9697 14.0303L9.96544 11.0261Z"
               fill="currentColor"></path></svg
           >
-          &nbsp;Search
+          <span class="hidden sm:inline">&nbsp;Search</span>
         </button>
       </nav>
     </div>

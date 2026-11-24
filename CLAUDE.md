@@ -42,6 +42,10 @@ All published writing sorts into six shelves, surfaced by the categorized hub at
 
 As of 2026-06-08 the per-entry "appetizer" markdown for code/paper readings was pruned — the HTML deep dive is the canonical artifact, discovered via the `/sources/` hub. Do not recreate appetizer markdown for code/paper entries.
 
+## Home page data
+
+The home page (`src/pages/[lang]/index.astro`) reads its content from `src/data/home.ts`. The counts (`STATS`, chip counts in `THREADS`), the three measurement cards (`MEASUREMENTS`) and the "Latest from the Library" list (`LATEST`) are snapshots dated by `AS_OF`; nothing recomputes them at build time. When a new Library entry ships, add it to `LATEST`, update `STATS`, and move `AS_OF`.
+
 ## Skills
 
 This repo has a local, **category-aware** skill at `.claude/skills/source2blog/SKILL.md` for turning a source (code repo, paper, concept, or original work) into a polished portfolio artifact routed onto one of the four shelves above. Use it whenever the user wants a new code/paper deep dive, a tutorial primer, a blog post, or anything matching "把 X 做成 portfolio html / blog" / "deep dive on X" / "source-reading NNN" / "write a primer on X". The skill always registers the new entry as a card in the `/sources/` hub. Read the SKILL.md for the category routing table, aesthetic differentiation rules, SVG hand-coding conventions, the EN/ZH toggle pattern, hub-registration step, Vercel deploy verification, and Chinese typography checks.

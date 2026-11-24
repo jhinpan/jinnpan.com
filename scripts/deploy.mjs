@@ -147,9 +147,12 @@ async function takeScreenshots(outputDir) {
 
   const { chromium } = await import("@playwright/test");
   const browser = await chromium.launch();
+  // Reduced motion shows every section without scrolling and stops the looping
+  // hero animation, so full-page screenshots are complete and repeatable.
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
     deviceScaleFactor: 2,
+    reducedMotion: "reduce",
   });
 
   mkdirSync(outputDir, { recursive: true });

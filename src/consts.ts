@@ -1,16 +1,15 @@
 import type { Metadata, Site, Socials } from "@types";
 
 export const SITE: Site = {
-  TITLE: "Jinn's Hub",
-  DESCRIPTION: "ML Systems / LLM Inference / RL Infrastructure",
-  EMAIL: "jpan236@wisc.edu",
-  NUM_POSTS_ON_HOMEPAGE: 5,
-  NUM_PROJECTS_ON_HOMEPAGE: 5,
+  TITLE: "Jin Pan",
+  DESCRIPTION: "ML Systems / GPU Kernels / LLM Serving",
+  EMAIL: "panjin1221@gmail.com",
 };
 
 export const HOME: Metadata = {
-  TITLE: "Home",
-  DESCRIPTION: "ML Systems / LLM Inference / RL Infrastructure",
+  TITLE: "Jin Pan · ML Systems",
+  DESCRIPTION:
+    "Jin Pan works on ML systems at AMD: GPU kernels in FlyDSL, LLM serving in SGLang, and measurements published with their raw data.",
 };
 
 export const BLOG: Metadata = {
@@ -19,7 +18,7 @@ export const BLOG: Metadata = {
 };
 
 export const PROJECTS: Metadata = {
-  TITLE: "Projects",
+  TITLE: "Work",
   DESCRIPTION: "A collection of my projects with links to repositories and demos.",
 };
 

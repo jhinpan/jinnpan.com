@@ -1,13 +1,13 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import { SITE, HOME, SOCIALS, ABOUT } from "@consts";
-import ArrowCard from "@components/ArrowCard.astro";
-import Link from "@components/Link.astro";
-import { getCollection } from "astro:content";
-import type { CollectionEntry } from "astro:content";
-import { getPostLang } from "@lib/utils";
+import StackFigure from "@components/home/StackFigure.astro";
+import SectionHead from "@components/home/SectionHead.astro";
+import { HOME, SOCIALS } from "@consts";
+import { AS_OF, STATS, MEASUREMENTS, THREADS, LATEST, TIMELINE } from "@data/home";
 import type { Lang } from "@lib/utils";
+import "@styles/home.css";
 
 export function getStaticPaths() {
   return [
@@ -18,136 +18,276 @@ export function getStaticPaths() {
 
 const { lang } = Astro.params as { lang: Lang };
 
-const blog = (await getCollection("blog"))
-  .filter((post) => !post.data.draft && getPostLang(post.id) === lang)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, SITE.NUM_POSTS_ON_HOMEPAGE);
-
-const projects: CollectionEntry<"projects">[] = (
-  await getCollection("projects")
-)
-  .filter((project) => !project.data.draft)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, SITE.NUM_PROJECTS_ON_HOMEPAGE);
-
 const i18n = {
-  zh: {
-    greeting: "Jin Pan",
-    tagline: "ML Systems / LLM Inference / RL Infrastructure",
-    bio: "威斯康星大学麦迪逊分校计算机科学二年级 MS/PhD 学生，研究方向为 ML Systems。SGLang 社区贡献者，目前在 AMD GenAI 团队实习，专注 RL 系统和 GPU 核函数优化。",
-    moreAbout: "更多关于我",
-    latestPosts: "最新文章",
-    seeAll: "查看全部",
-    recentProjects: "近期项目",
-    seeAllProjects: "查看全部项目",
-    connect: "联系方式",
-    connectText: "通过社交媒体或邮件联系我。",
-  },
   en: {
-    greeting: "Jin Pan",
-    tagline: "ML Systems / LLM Inference / RL Infrastructure",
-    bio: "Second-year MS/PhD student in Computer Sciences at UW-Madison, working on ML Systems. SGLang community contributor. Currently interning at AMD GenAI, focusing on RL systems and GPU kernel optimization.",
-    moreAbout: "More about me",
-    latestPosts: "Recent Posts",
-    seeAll: "See all posts",
-    recentProjects: "Recent Projects",
-    seeAllProjects: "See all projects",
-    connect: "Contact",
-    connectText: "Find me on social media or send an email.",
+    role: "ML Systems",
+    headline: [["I make large"], ["models run fast"], ["on ", "AMD GPUs."]],
+    lead: "From the kernel to the serving stack: I write GPU kernels in FlyDSL, tune them inside SGLang, and publish each measurement with its raw data.",
+    ctaLibrary: "Read the experiments",
+    ctaAbout: "About me",
+    stackTitle: "The stack I work on: model, serving, kernel, compiler, silicon",
+    stackCaption:
+      "Fig. 1 · The stack I work on. A request falls through every layer. Each layer links to a reading.",
+    asOf: `Numbers as of ${AS_OF}`,
+    measureTitle: "Selected measurements",
+    measureDesc:
+      "Each card opens the full write-up: the method, the raw data, and what did not work.",
+    measureMore: "All experiments",
+    threadsTitle: "What I work on",
+    threadsDesc: "Three threads. The number on a chip is merged pull requests.",
+    threadsMore: "PR tracker",
+    latestTitle: "Latest from the Library",
+    latestDesc: "Code readings, paper readings, tutorials and experiments. In English and 中文.",
+    latestMore: "All entries",
+    aboutTitle: "About",
+    aboutMore: "More",
+    about: [
+      "I work on ML systems: the path a token takes from a Python call to a GPU instruction.",
+      "I like the cases where the unit test is green and the model is still wrong. I write down how I found out.",
+    ],
+  },
+  zh: {
+    role: "ML Systems",
+    headline: [["让大模型"], ["在 ", "AMD GPU", " 上"], ["跑得更快。"]],
+    lead: "从 kernel 到 serving： 我用 FlyDSL 写 GPU kernel， 在 SGLang 里调模型级性能， 并把每次测量连同原始数据一起发布。",
+    ctaLibrary: "看实验记录",
+    ctaAbout: "关于我",
+    stackTitle: "我工作的软件栈： model、serving、kernel、compiler、silicon",
+    stackCaption: "图 1 · 我工作的软件栈。 一个请求会穿过每一层。 每一层都链接到一篇精读。",
+    asOf: `数字截至 ${AS_OF}`,
+    measureTitle: "精选测量",
+    measureDesc: "每张卡片都通向完整记录： 方法、原始数据， 以及没有成功的部分。",
+    measureMore: "全部实验",
+    threadsTitle: "我在做什么",
+    threadsDesc: "三条线。 标签上的数字是 merged PR 数。",
+    threadsMore: "PR tracker",
+    latestTitle: "Library 最新内容",
+    latestDesc: "代码精读、论文精读、教程和实验。 中英双语。",
+    latestMore: "全部条目",
+    aboutTitle: "关于",
+    aboutMore: "更多",
+    about: [
+      "我做 ML systems： 一个 token 从 Python 调用走到 GPU 指令的整条路径。",
+      "我喜欢单元测试是绿的、模型却还是错的那类问题。 我会把查明原因的过程写下来。",
+    ],
   },
 };
 
 const t = i18n[lang];
+
+// The accent phrase is the second part of a two-part line, or the middle of a three-part line.
+const accentIndex = 1;
+
+const posts = await getCollection("blog");
+const latest = LATEST.map((item) => {
+  if (item.kind === "source") return item;
+  const post = posts.find((entry) => entry.id === `${lang}/${item.slug}`);
+  if (!post) throw new Error(`LATEST in src/data/home.ts: no ${lang} blog post "${item.slug}"`);
+  return {
+    ...item,
+    date: post.data.date.toISOString().slice(0, 10),
+    title: post.data.title,
+    href: `/${lang}/blog/${item.slug}/`,
+  };
+});
 ---
 
-<Layout title={HOME.TITLE} description={HOME.DESCRIPTION} lang={lang}>
-  <Container>
-    <aside data-pagefind-ignore>
-      <h1 class="font-semibold text-black dark:text-white">
-        {t.greeting}
-      </h1>
-      <div class="space-y-16">
-        <section>
-          <article class="space-y-4">
-            <p class="animate">
-              {t.tagline}
+<Layout title={HOME.TITLE} description={HOME.DESCRIPTION} lang={lang} bareTitle>
+  <div class="home" data-pagefind-ignore>
+    <section class="home-hero">
+      <Container size="wide">
+        <div class="home-hero-grid">
+          <div>
+            <p class="home-kicker animate">
+              <span class="home-dot" aria-hidden="true"></span>
+              <b>Jin Pan · 潘劲</b>
+              <i aria-hidden="true">/</i>
+              {t.role}
+              <i aria-hidden="true">/</i>
+              AMD · San Jose
             </p>
-            <p class="animate">
-              {t.bio}
+            <h1 class="home-display" data-reveal>
+              {
+                t.headline.map((parts, index) => (
+                  <span class="home-line">
+                    <span style={`--i: ${index}`}>
+                      {parts.map((part, partIndex) =>
+                        parts.length > 1 && partIndex === accentIndex ? <em>{part}</em> : part,
+                      )}
+                    </span>
+                  </span>
+                ))
+              }
+            </h1>
+            <p class="home-lead animate">{t.lead}</p>
+            <p class="home-cta animate">
+              <a class="home-btn home-btn-primary" href="/sources/">
+                {t.ctaLibrary} <span aria-hidden="true">&rarr;</span>
+              </a>
+              <a class="home-btn" href={`/${lang}/about`}>{t.ctaAbout}</a>
+              {
+                SOCIALS.map((SOCIAL) => (
+                  <a class="home-tlink" href={SOCIAL.HREF} target="_blank" rel="noopener">
+                    {SOCIAL.NAME}
+                  </a>
+                ))
+              }
             </p>
-            <p class="animate">
-              <Link href={`/${lang}/about`}>{t.moreAbout} &rarr;</Link>
-            </p>
-          </article>
-        </section>
+          </div>
+          <figure class="home-stack" data-reveal>
+            <StackFigure title={t.stackTitle} />
+            <figcaption>{t.stackCaption}</figcaption>
+          </figure>
+        </div>
+      </Container>
+    </section>
 
-        {blog.length > 0 && (
-          <section class="animate space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-y-2">
-              <h2 class="font-semibold text-black dark:text-white">
-                {t.latestPosts}
-              </h2>
-              <Link href={`/${lang}/blog`}>{t.seeAll}</Link>
-            </div>
-            <ul class="not-prose flex flex-col gap-4">
-              {blog.map((post) => (
-                <li>
-                  <ArrowCard entry={post} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {projects.length > 0 && (
-          <section class="animate space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-y-2">
-              <h2 class="font-semibold text-black dark:text-white">
-                {t.recentProjects}
-              </h2>
-              <Link href={`/${lang}/projects`}>{t.seeAllProjects}</Link>
-            </div>
-            <ul class="not-prose flex flex-col gap-4">
-              {projects.map((project) => (
-                <li>
-                  <ArrowCard entry={project} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <section class="animate space-y-4">
-          <h2 class="font-semibold text-black dark:text-white">
-            {t.connect}
-          </h2>
-          <article>
-            <p>{t.connectText}</p>
-          </article>
-          <ul class="not-prose flex flex-wrap gap-2">
-            {SOCIALS.map((SOCIAL) => (
-              <li class="flex gap-x-2 text-nowrap">
-                <Link
-                  href={SOCIAL.HREF}
-                  external
-                  aria-label={`${SITE.TITLE} on ${SOCIAL.NAME}`}
-                >
-                  {SOCIAL.NAME}
-                </Link>
-                {"/"}
-              </li>
-            ))}
-            <li class="line-clamp-1">
-              <Link
-                href={`mailto:${SITE.EMAIL}`}
-                aria-label={`Email ${SITE.TITLE}`}
-              >
-                {SITE.EMAIL}
-              </Link>
-            </li>
-          </ul>
-        </section>
+    <Container size="wide">
+      <div class="animate">
+        <div class="home-stats">
+          {
+            STATS.map((stat) => (
+              <div class="home-stat">
+                <b data-count={stat.value}>{stat.value}</b>
+                <span>{stat.label[lang]}</span>
+              </div>
+            ))
+          }
+        </div>
+        <p class="home-asof">{t.asOf}</p>
       </div>
-    </aside>
-  </Container>
+
+      <section class="home-sec" id="work">
+        <SectionHead
+          no="01"
+          title={t.measureTitle}
+          desc={t.measureDesc}
+          href="/sources/"
+          more={t.measureMore}
+        />
+        <div class="home-cards">
+          {
+            MEASUREMENTS.map((item) => (
+              <div class="animate">
+                <a class="home-card" href={item.href}>
+                  <div class="home-card-meta">
+                    <span>{item.kicker}</span>
+                    <span>{item.model}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <div class="home-plate">
+                    {item.rows.map((row, rowIndex) => (
+                      <div class="home-row">
+                        <span>{row.label[lang]}</span>
+                        <span class="home-track">
+                          {row.bars.map((bar) => (
+                            <i
+                              class={`home-fill home-fill-${bar.tone}`}
+                              style={`--w: ${bar.width}%; --j: ${rowIndex}`}
+                            />
+                          ))}
+                        </span>
+                        <span class="home-row-value">{row.value}</span>
+                      </div>
+                    ))}
+                    <p class="home-note">
+                      {item.note[lang]} <b>{item.takeaway[lang]}</b>
+                    </p>
+                  </div>
+                </a>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="home-sec">
+        <SectionHead
+          no="02"
+          title={t.threadsTitle}
+          desc={t.threadsDesc}
+          href="/sources/daily-sync/"
+          more={t.threadsMore}
+        />
+        <div class="home-threads">
+          {
+            THREADS.map((thread) => (
+              <div class="animate">
+                <div class="home-thread">
+                  <span class="home-thread-tag">{thread.tag}</span>
+                  <h3>{thread.title[lang]}</h3>
+                  <p>{thread.body[lang]}</p>
+                  <div class="home-chips">
+                    {thread.chips.map((chip) =>
+                      chip.href ? (
+                        <a
+                          class="home-chip"
+                          href={chip.href}
+                          target={chip.href.startsWith("http") ? "_blank" : undefined}
+                          rel={chip.href.startsWith("http") ? "noopener" : undefined}
+                        >
+                          {chip.label[lang]}
+                          {chip.count !== undefined && <b>{chip.count}</b>}
+                        </a>
+                      ) : (
+                        <span class="home-chip">{chip.label[lang]}</span>
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="home-sec">
+        <SectionHead
+          no="03"
+          title={t.latestTitle}
+          desc={t.latestDesc}
+          href="/sources/"
+          more={t.latestMore}
+        />
+        <div class="home-rows">
+          {
+            latest.map((item) => (
+              <div class="animate">
+                <a class="home-rowlink" href={item.href}>
+                  <time datetime={item.date}>{item.date}</time>
+                  <span class="home-shelf" style={`--shelf: var(--shelf-${item.shelf})`}>
+                    {item.label}
+                  </span>
+                  <span class="home-rowlink-title">{item.title}</span>
+                  <span class="home-rowlink-go" aria-hidden="true">
+                    &rarr;
+                  </span>
+                </a>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="home-sec">
+        <SectionHead no="04" title={t.aboutTitle} href={`/${lang}/about`} more={t.aboutMore} />
+        <div class="home-about">
+          <div class="animate">
+            {t.about.map((paragraph) => <p>{paragraph}</p>)}
+          </div>
+          <ol class="home-timeline" data-reveal>
+            {
+              TIMELINE.map((stage, index) => (
+                <li style={`--j: ${index}`}>
+                  <b>{stage.year}</b>
+                  <span>{stage.place[lang]}</span>
+                  <small>{stage.detail}</small>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+      </section>
+    </Container>
+  </div>
 </Layout>

@@ -17,9 +17,9 @@ const { lang } = Astro.params as { lang: Lang };
 const i18n = {
   zh: {
     title: "关于我",
-    intro: "我是潘劲（Jin Pan）， 威斯康星大学麦迪逊分校计算机科学系二年级 MS / PhD 学生。 我的研究方向是 ML Systems —— 让大模型跑得更快、训练更高效。",
+    intro: "我是潘劲（Jin Pan）， 在 AMD 做 ML Systems： 让大模型在 AMD GPU 上跑得更快。",
     current: "当前工作",
-    currentText: "我目前在 AMD GenAI 团队实习（2026 Spring）， 做 RL 基础设施和 GPU 核函数优化方面的工作。 具体来说， 我在 MI300X / MI355X 上构建多智能体系统（MAS）来自动优化 GPU 内核。",
+    currentText: "我在 AMD GenAI 团队做 GPU kernel 和 LLM serving， 平台是 MI355X 和 MI455X。 具体来说： 用 FlyDSL 写 kernel， 在 SGLang 里做模型级性能， 并构建自动优化 GPU kernel 的 agent 系统。",
     research: "研究兴趣",
     researchItems: [
       "ML Systems： LLM 推理优化、serving 框架（SGLang）、GPU 编程",
@@ -34,15 +34,13 @@ const i18n = {
     ],
     oss: "开源贡献",
     ossText: "我是 SGLang 社区的活跃贡献者， 也参与了 slime、TritonForge、APRIL 等项目。",
-    motto: "座右铭",
-    mottoText: "Hinc itur ad astra.",
     connect: "联系方式",
   },
   en: {
     title: "About Me",
-    intro: "I'm Jin Pan, a second-year MS / PhD student in Computer Sciences at the University of Wisconsin-Madison. My research focuses on ML Systems — making large models run faster and train more efficiently.",
+    intro: "I'm Jin Pan. I work on ML systems at AMD: making large models run fast on AMD GPUs.",
     current: "Current Work",
-    currentText: "I'm currently interning at AMD GenAI (Spring 2026), working on RL infrastructure and GPU kernel optimization. Specifically, I'm building multi-agent systems (MAS) to automatically optimize GPU kernels on MI300X / MI355X.",
+    currentText: "At AMD GenAI I work on GPU kernels and LLM serving for MI355X and MI455X. Specifically: kernels written in FlyDSL, model-level performance in SGLang, and agent systems that optimize GPU kernels automatically.",
     research: "Research Interests",
     researchItems: [
       "ML Systems: LLM inference optimization, serving frameworks (SGLang), GPU programming",
@@ -57,8 +55,6 @@ const i18n = {
     ],
     oss: "Open Source",
     ossText: "I'm an active contributor to the SGLang community, and also contribute to slime, TritonForge, APRIL, and other projects.",
-    motto: "Motto",
-    mottoText: "Hinc itur ad astra.",
     connect: "Contact",
   },
 };
@@ -118,10 +114,6 @@ const t = i18n[lang];
             {lang === "zh" ? "查看全部项目 →" : "See all projects →"}
           </Link>
         </p>
-      </section>
-
-      <section class="animate space-y-4">
-        <h2 class="font-semibold text-black dark:text-white italic">{t.mottoText}</h2>
       </section>
 
       <section class="animate space-y-4">
