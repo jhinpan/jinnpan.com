@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-24T05:31:27.357Z",
+  "generatedAt": "2026-11-25T00:34:17.823Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -52,27 +52,6 @@
   },
   "prs": [
     {
-      "repo": "AMD-AGI/AgentKernelArena",
-      "number": 151,
-      "title": "Run sanitizers by default on schema-v3 kernel tasks",
-      "url": "https://github.com/AMD-AGI/AgentKernelArena/pull/151",
-      "author": "irvineoy",
-      "role": "reviewer",
-      "importance": "medium",
-      "draft": false,
-      "ci": "success",
-      "createdAt": "2026-11-11T04:18:37Z",
-      "updatedAt": "2026-11-20T07:38:45Z",
-      "additions": 4506,
-      "deletions": 190,
-      "lane": "review",
-      "reasons": [
-        {
-          "code": "review-requested"
-        }
-      ]
-    },
-    {
       "repo": "amdpilot-org/AMD-Skills",
       "number": 12,
       "title": "feat(flydsl): add core 7 FlyDSL skill pack",
@@ -90,7 +69,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 214
+          "days": 215
         }
       ]
     },
@@ -112,7 +91,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 206
+          "days": 207
         }
       ]
     },
@@ -178,7 +157,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 153
+          "days": 154
         }
       ]
     },
@@ -206,7 +185,7 @@
         },
         {
           "code": "stale",
-          "days": 84
+          "days": 85
         }
       ]
     },
@@ -234,7 +213,7 @@
         },
         {
           "code": "stale",
-          "days": 136
+          "days": 137
         }
       ]
     },
@@ -422,7 +401,7 @@
         },
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -444,7 +423,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -604,7 +583,7 @@
         },
         {
           "code": "stale",
-          "days": 84
+          "days": 85
         }
       ]
     },
@@ -626,7 +605,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 154
+          "days": 155
         }
       ]
     },
@@ -676,7 +655,7 @@
         },
         {
           "code": "stale",
-          "days": 118
+          "days": 119
         }
       ]
     },
@@ -811,9 +790,9 @@
       "role": "reviewer",
       "importance": "high",
       "draft": false,
-      "ci": "none",
+      "ci": "failure",
       "createdAt": "2026-10-26T22:50:31Z",
-      "updatedAt": "2026-11-24T01:32:42Z",
+      "updatedAt": "2026-11-24T14:41:20Z",
       "additions": 58,
       "deletions": 26,
       "lane": "review",
@@ -844,7 +823,7 @@
         },
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -887,7 +866,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 17
+          "days": 18
         }
       ]
     },
@@ -912,7 +891,7 @@
         },
         {
           "code": "stale",
-          "days": 17
+          "days": 18
         }
       ]
     },
@@ -934,7 +913,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 17
+          "days": 18
         }
       ]
     },
@@ -949,7 +928,7 @@
       "draft": false,
       "ci": "failure",
       "createdAt": "2026-10-28T21:00:18Z",
-      "updatedAt": "2026-11-07T14:40:01Z",
+      "updatedAt": "2026-11-24T19:57:04Z",
       "additions": 300,
       "deletions": 2,
       "lane": "review",
@@ -1045,48 +1024,6 @@
     },
     {
       "repo": "sgl-project/sgl-amd-mono",
-      "number": 129,
-      "title": "[Feat] [MI355X] glm53: Serve GLM-5.3 at TP2 (32 heads a rank), steps of up to 4 rows",
-      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/129",
-      "author": "clintg6",
-      "role": "reviewer",
-      "importance": "high",
-      "draft": false,
-      "ci": "success",
-      "createdAt": "2026-11-11T22:03:28Z",
-      "updatedAt": "2026-11-24T01:12:37Z",
-      "additions": 368,
-      "deletions": 57,
-      "lane": "review",
-      "reasons": [
-        {
-          "code": "re-review"
-        }
-      ]
-    },
-    {
-      "repo": "sgl-project/sgl-amd-mono",
-      "number": 133,
-      "title": "[Feat] [MI355X] glm53: Run verify steps of up to 16 rows on the monokernel",
-      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/133",
-      "author": "EricKing626",
-      "role": "reviewer",
-      "importance": "high",
-      "draft": false,
-      "ci": "success",
-      "createdAt": "2026-11-12T03:30:51Z",
-      "updatedAt": "2026-11-24T01:17:20Z",
-      "additions": 717,
-      "deletions": 262,
-      "lane": "review",
-      "reasons": [
-        {
-          "code": "re-review"
-        }
-      ]
-    },
-    {
-      "repo": "sgl-project/sgl-amd-mono",
       "number": 136,
       "title": "[Feat] glm53: Enable monokernels for MoRI PD decode",
       "url": "https://github.com/sgl-project/sgl-amd-mono/pull/136",
@@ -1159,27 +1096,6 @@
             "kevin-mii",
             "michaelzhang-ai"
           ]
-        }
-      ]
-    },
-    {
-      "repo": "sgl-project/sgl-amd-mono",
-      "number": 141,
-      "title": "[Feat] [MI355X] glm53_flash: Run on a bf16 KDA state",
-      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/141",
-      "author": "Jacob0226",
-      "role": "reviewer",
-      "importance": "high",
-      "draft": false,
-      "ci": "success",
-      "createdAt": "2026-11-16T03:29:52Z",
-      "updatedAt": "2026-11-23T09:48:25Z",
-      "additions": 552,
-      "deletions": 125,
-      "lane": "review",
-      "reasons": [
-        {
-          "code": "review-requested"
         }
       ]
     },
@@ -1284,6 +1200,27 @@
     },
     {
       "repo": "sgl-project/sgl-amd-mono",
+      "number": 177,
+      "title": "[Chore] flydsl: Use FlyDSL's stable APIs instead of its internals",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/177",
+      "author": "coderfeli",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "pending",
+      "createdAt": "2026-11-23T05:46:43Z",
+      "updatedAt": "2026-11-25T00:18:06Z",
+      "additions": 57,
+      "deletions": 241,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
       "number": 183,
       "title": "[Fix] [MI355X] glm53: Run a draft extend between kernel widths at the next width",
       "url": "https://github.com/sgl-project/sgl-amd-mono/pull/183",
@@ -1293,7 +1230,7 @@
       "draft": false,
       "ci": "success",
       "createdAt": "2026-11-23T20:33:39Z",
-      "updatedAt": "2026-11-23T20:33:39Z",
+      "updatedAt": "2026-11-24T21:34:35Z",
       "additions": 31,
       "deletions": 6,
       "lane": "in-progress",
@@ -1301,27 +1238,6 @@
         {
           "code": "waiting-review",
           "by": []
-        }
-      ]
-    },
-    {
-      "repo": "sgl-project/sgl-amd-mono",
-      "number": 184,
-      "title": "[Fix] ci: Keep the tests and specs working on current SGLang",
-      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/184",
-      "author": "michaelzhang-ai",
-      "role": "reviewer",
-      "importance": "high",
-      "draft": false,
-      "ci": "pending",
-      "createdAt": "2026-11-24T01:45:31Z",
-      "updatedAt": "2026-11-24T05:18:50Z",
-      "additions": 51,
-      "deletions": 53,
-      "lane": "review",
-      "reasons": [
-        {
-          "code": "review-requested"
         }
       ]
     },
@@ -1430,7 +1346,7 @@
         },
         {
           "code": "stale",
-          "days": 16
+          "days": 17
         }
       ]
     },
