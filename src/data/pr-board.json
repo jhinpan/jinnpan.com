@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-25T00:34:17.823Z",
+  "generatedAt": "2026-11-26T00:11:15.231Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -69,7 +69,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 215
+          "days": 216
         }
       ]
     },
@@ -91,7 +91,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 207
+          "days": 208
         }
       ]
     },
@@ -113,7 +113,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 176
+          "days": 177
         }
       ]
     },
@@ -135,7 +135,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 176
+          "days": 177
         }
       ]
     },
@@ -157,7 +157,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 154
+          "days": 155
         }
       ]
     },
@@ -185,7 +185,7 @@
         },
         {
           "code": "stale",
-          "days": 85
+          "days": 86
         }
       ]
     },
@@ -213,7 +213,7 @@
         },
         {
           "code": "stale",
-          "days": 137
+          "days": 138
         }
       ]
     },
@@ -235,7 +235,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 95
+          "days": 96
         }
       ]
     },
@@ -257,7 +257,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 95
+          "days": 96
         }
       ]
     },
@@ -279,7 +279,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 95
+          "days": 96
         }
       ]
     },
@@ -301,7 +301,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 95
+          "days": 96
         }
       ]
     },
@@ -323,7 +323,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 95
+          "days": 96
         }
       ]
     },
@@ -345,7 +345,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 95
+          "days": 96
         }
       ]
     },
@@ -373,7 +373,7 @@
         },
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -401,7 +401,7 @@
         },
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -423,7 +423,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -445,7 +445,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -467,7 +467,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -489,7 +489,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -511,7 +511,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -533,7 +533,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -558,7 +558,7 @@
         },
         {
           "code": "stale",
-          "days": 106
+          "days": 107
         }
       ]
     },
@@ -583,7 +583,7 @@
         },
         {
           "code": "stale",
-          "days": 85
+          "days": 86
         }
       ]
     },
@@ -605,7 +605,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 155
+          "days": 156
         }
       ]
     },
@@ -630,7 +630,7 @@
         },
         {
           "code": "stale",
-          "days": 123
+          "days": 124
         }
       ]
     },
@@ -655,7 +655,7 @@
         },
         {
           "code": "stale",
-          "days": 119
+          "days": 120
         }
       ]
     },
@@ -756,7 +756,7 @@
           "by": [
             "zufayu"
           ],
-          "days": 7
+          "days": 8
         }
       ]
     },
@@ -823,7 +823,7 @@
         },
         {
           "code": "stale",
-          "days": 98
+          "days": 99
         }
       ]
     },
@@ -866,7 +866,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 18
+          "days": 19
         }
       ]
     },
@@ -891,7 +891,7 @@
         },
         {
           "code": "stale",
-          "days": 18
+          "days": 19
         }
       ]
     },
@@ -913,7 +913,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 18
+          "days": 19
         }
       ]
     },
@@ -1113,15 +1113,10 @@
       "updatedAt": "2026-11-19T19:44:25Z",
       "additions": 995,
       "deletions": 185,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "waiting-review",
-          "by": [
-            "HaiShaw",
-            "alexnails",
-            "kevin-mii"
-          ]
+          "code": "conflict"
         }
       ]
     },
@@ -1165,6 +1160,9 @@
       "reasons": [
         {
           "code": "ci-failing"
+        },
+        {
+          "code": "conflict"
         }
       ]
     },
@@ -1182,19 +1180,10 @@
       "updatedAt": "2026-11-19T07:11:40Z",
       "additions": 57,
       "deletions": 63,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "waiting-review",
-          "by": [
-            "HaiShaw",
-            "alexnails",
-            "billishyahao",
-            "kevin-mii",
-            "kkHuang-amd",
-            "yichiche",
-            "zijiecode"
-          ]
+          "code": "conflict"
         }
       ]
     },
@@ -1207,9 +1196,9 @@
       "role": "reviewer",
       "importance": "high",
       "draft": false,
-      "ci": "pending",
+      "ci": "failure",
       "createdAt": "2026-11-23T05:46:43Z",
-      "updatedAt": "2026-11-25T00:18:06Z",
+      "updatedAt": "2026-11-26T00:08:44Z",
       "additions": 57,
       "deletions": 241,
       "lane": "review",
@@ -1230,7 +1219,7 @@
       "draft": false,
       "ci": "success",
       "createdAt": "2026-11-23T20:33:39Z",
-      "updatedAt": "2026-11-24T21:34:35Z",
+      "updatedAt": "2026-11-25T03:53:30Z",
       "additions": 31,
       "deletions": 6,
       "lane": "in-progress",
@@ -1238,6 +1227,69 @@
         {
           "code": "waiting-review",
           "by": []
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 188,
+      "title": "[Perf] [MI355X] glm53_flash: Split a row's sparse-attention pool select across CTAs",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/188",
+      "author": "Jacob0226",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-24T06:46:15Z",
+      "updatedAt": "2026-11-25T09:03:48Z",
+      "additions": 1096,
+      "deletions": 132,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 189,
+      "title": "[Perf] [MI355X] glm53_flash: Run a KDA verify task's draft rows together",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/189",
+      "author": "Jacob0226",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "success",
+      "createdAt": "2026-11-24T06:46:17Z",
+      "updatedAt": "2026-11-25T09:03:51Z",
+      "additions": 667,
+      "deletions": 167,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 209,
+      "title": "[CI] ci: Fit a PR test into about an hour: smoke by default, a serve tier for broad changes",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/209",
+      "author": "michaelzhang-ai",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-25T22:30:22Z",
+      "updatedAt": "2026-11-25T23:59:43Z",
+      "additions": 195,
+      "deletions": 104,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
         }
       ]
     },
@@ -1346,7 +1398,7 @@
         },
         {
           "code": "stale",
-          "days": 17
+          "days": 18
         }
       ]
     },
@@ -1368,6 +1420,10 @@
       "reasons": [
         {
           "code": "ci-failing"
+        },
+        {
+          "code": "stale",
+          "days": 14
         }
       ]
     }
