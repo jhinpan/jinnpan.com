@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T00:11:15.231Z",
+  "generatedAt": "2026-11-27T00:30:28.966Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -60,7 +60,7 @@
       "role": "author",
       "importance": "medium",
       "draft": false,
-      "ci": "success",
+      "ci": "none",
       "createdAt": "2026-04-23T06:56:46Z",
       "updatedAt": "2026-04-23T06:58:22Z",
       "additions": 1259,
@@ -69,7 +69,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 216
+          "days": 217
         }
       ]
     },
@@ -91,7 +91,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 208
+          "days": 209
         }
       ]
     },
@@ -113,7 +113,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 177
+          "days": 178
         }
       ]
     },
@@ -135,7 +135,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 177
+          "days": 178
         }
       ]
     },
@@ -157,7 +157,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 155
+          "days": 156
         }
       ]
     },
@@ -185,7 +185,7 @@
         },
         {
           "code": "stale",
-          "days": 86
+          "days": 87
         }
       ]
     },
@@ -213,7 +213,7 @@
         },
         {
           "code": "stale",
-          "days": 138
+          "days": 139
         }
       ]
     },
@@ -235,7 +235,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 96
+          "days": 97
         }
       ]
     },
@@ -257,7 +257,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 96
+          "days": 97
         }
       ]
     },
@@ -279,7 +279,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 96
+          "days": 97
         }
       ]
     },
@@ -301,7 +301,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 96
+          "days": 97
         }
       ]
     },
@@ -323,7 +323,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 96
+          "days": 97
         }
       ]
     },
@@ -345,7 +345,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 96
+          "days": 97
         }
       ]
     },
@@ -373,7 +373,7 @@
         },
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -401,7 +401,7 @@
         },
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -423,7 +423,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -445,7 +445,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -467,7 +467,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -489,7 +489,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -511,7 +511,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -533,7 +533,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -558,7 +558,7 @@
         },
         {
           "code": "stale",
-          "days": 107
+          "days": 108
         }
       ]
     },
@@ -583,7 +583,7 @@
         },
         {
           "code": "stale",
-          "days": 86
+          "days": 87
         }
       ]
     },
@@ -605,7 +605,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 156
+          "days": 157
         }
       ]
     },
@@ -630,7 +630,7 @@
         },
         {
           "code": "stale",
-          "days": 124
+          "days": 125
         }
       ]
     },
@@ -655,7 +655,7 @@
         },
         {
           "code": "stale",
-          "days": 120
+          "days": 121
         }
       ]
     },
@@ -756,7 +756,7 @@
           "by": [
             "zufayu"
           ],
-          "days": 8
+          "days": 9
         }
       ]
     },
@@ -823,7 +823,7 @@
         },
         {
           "code": "stale",
-          "days": 99
+          "days": 100
         }
       ]
     },
@@ -866,7 +866,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 19
+          "days": 20
         }
       ]
     },
@@ -887,11 +887,8 @@
       "lane": "follow-up",
       "reasons": [
         {
-          "code": "conflict"
-        },
-        {
           "code": "stale",
-          "days": 19
+          "days": 20
         }
       ]
     },
@@ -913,7 +910,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 19
+          "days": 20
         }
       ]
     },
@@ -1002,6 +999,27 @@
       ]
     },
     {
+      "repo": "ROCm/FlyDSL",
+      "number": 1537,
+      "title": "[Coop][Perf] Sort integer keys alone with the bitonic network in warp_merge_sort",
+      "url": "https://github.com/ROCm/FlyDSL/pull/1537",
+      "author": "jhinpan",
+      "role": "author",
+      "importance": "high",
+      "draft": false,
+      "ci": "pending",
+      "createdAt": "2026-11-27T00:20:38Z",
+      "updatedAt": "2026-11-27T00:20:38Z",
+      "additions": 105,
+      "deletions": 4,
+      "lane": "in-progress",
+      "reasons": [
+        {
+          "code": "ci-running"
+        }
+      ]
+    },
+    {
       "repo": "SemiAnalysisAI/InferenceX",
       "number": 4989,
       "title": "[AMD][AgentX] Add GLM-5.3-Flash MXFP4 MI355X SGLang MTP AgentX recipe with the AMD monokernel / [AMD][AgentX] 新增 GLM-5.3-Flash MXFP4 MI355X SGLang MTP AgentX 配方（启用 AMD monokernel）",
@@ -1015,10 +1033,31 @@
       "updatedAt": "2026-11-10T22:09:13Z",
       "additions": 143,
       "deletions": 0,
-      "lane": "follow-up",
+      "lane": "in-progress",
       "reasons": [
         {
-          "code": "conflict"
+          "code": "draft"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 133,
+      "title": "[Feat] [MI355X] glm53: Run verify steps of up to 16 rows on the monokernel",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/133",
+      "author": "EricKing626",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-12T03:30:51Z",
+      "updatedAt": "2026-11-26T16:15:46Z",
+      "additions": 740,
+      "deletions": 263,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "re-review"
         }
       ]
     },
@@ -1036,10 +1075,10 @@
       "updatedAt": "2026-11-14T23:18:25Z",
       "additions": 45,
       "deletions": 8,
-      "lane": "follow-up",
+      "lane": "in-progress",
       "reasons": [
         {
-          "code": "conflict"
+          "code": "draft"
         }
       ]
     },
@@ -1113,10 +1152,15 @@
       "updatedAt": "2026-11-19T19:44:25Z",
       "additions": 995,
       "deletions": 185,
-      "lane": "follow-up",
+      "lane": "in-progress",
       "reasons": [
         {
-          "code": "conflict"
+          "code": "waiting-review",
+          "by": [
+            "HaiShaw",
+            "alexnails",
+            "kevin-mii"
+          ]
         }
       ]
     },
@@ -1144,46 +1188,22 @@
     },
     {
       "repo": "sgl-project/sgl-amd-mono",
-      "number": 152,
-      "title": "[Fix] glm53: Define check_layer.py's --mxfp4 once",
-      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/152",
-      "author": "jhinpan",
-      "role": "author",
-      "importance": "high",
-      "draft": false,
-      "ci": "failure",
-      "createdAt": "2026-11-18T07:26:00Z",
-      "updatedAt": "2026-11-18T21:16:53Z",
-      "additions": 0,
-      "deletions": 1,
-      "lane": "follow-up",
-      "reasons": [
-        {
-          "code": "ci-failing"
-        },
-        {
-          "code": "conflict"
-        }
-      ]
-    },
-    {
-      "repo": "sgl-project/sgl-amd-mono",
       "number": 158,
-      "title": "[Fix] test: Launch the e2e servers with --enable-amd-monokernel",
+      "title": "[Fix] docs: Name --enable-amd-monokernel in the READMEs, draft errors and e2e recipe comments",
       "url": "https://github.com/sgl-project/sgl-amd-mono/pull/158",
       "author": "jhinpan",
       "role": "author",
       "importance": "high",
       "draft": false,
-      "ci": "success",
+      "ci": "failure",
       "createdAt": "2026-11-18T22:33:00Z",
-      "updatedAt": "2026-11-19T07:11:40Z",
-      "additions": 57,
-      "deletions": 63,
+      "updatedAt": "2026-11-26T00:46:51Z",
+      "additions": 16,
+      "deletions": 16,
       "lane": "follow-up",
       "reasons": [
         {
-          "code": "conflict"
+          "code": "ci-failing"
         }
       ]
     },
@@ -1198,7 +1218,7 @@
       "draft": false,
       "ci": "failure",
       "createdAt": "2026-11-23T05:46:43Z",
-      "updatedAt": "2026-11-26T00:08:44Z",
+      "updatedAt": "2026-11-26T02:54:38Z",
       "additions": 57,
       "deletions": 241,
       "lane": "review",
@@ -1217,16 +1237,36 @@
       "role": "author",
       "importance": "high",
       "draft": false,
-      "ci": "success",
+      "ci": "failure",
       "createdAt": "2026-11-23T20:33:39Z",
-      "updatedAt": "2026-11-25T03:53:30Z",
+      "updatedAt": "2026-11-26T10:46:51Z",
       "additions": 31,
       "deletions": 6,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "waiting-review",
-          "by": []
+          "code": "ci-failing"
+        }
+      ]
+    },
+    {
+      "repo": "sgl-project/sgl-amd-mono",
+      "number": 186,
+      "title": "[Feat] [MI355X] glm53_flash: Run wide MTP verify steps on one launch a layer",
+      "url": "https://github.com/sgl-project/sgl-amd-mono/pull/186",
+      "author": "Jacob0226",
+      "role": "reviewer",
+      "importance": "high",
+      "draft": false,
+      "ci": "failure",
+      "createdAt": "2026-11-24T05:41:55Z",
+      "updatedAt": "2026-11-26T05:32:05Z",
+      "additions": 7168,
+      "deletions": 122,
+      "lane": "review",
+      "reasons": [
+        {
+          "code": "review-requested"
         }
       ]
     },
@@ -1280,10 +1320,10 @@
       "author": "michaelzhang-ai",
       "role": "reviewer",
       "importance": "high",
-      "draft": false,
+      "draft": true,
       "ci": "failure",
       "createdAt": "2026-11-25T22:30:22Z",
-      "updatedAt": "2026-11-25T23:59:43Z",
+      "updatedAt": "2026-11-26T23:26:02Z",
       "additions": 195,
       "deletions": 104,
       "lane": "review",
@@ -1398,7 +1438,7 @@
         },
         {
           "code": "stale",
-          "days": 18
+          "days": 19
         }
       ]
     },
@@ -1423,7 +1463,7 @@
         },
         {
           "code": "stale",
-          "days": 14
+          "days": 15
         }
       ]
     }
