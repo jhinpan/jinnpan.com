@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-27T00:30:28.966Z",
+  "generatedAt": "2026-11-27T23:59:42.380Z",
   "login": "jhinpan",
   "staleDays": {
     "ready": 14,
@@ -69,7 +69,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 217
+          "days": 218
         }
       ]
     },
@@ -91,7 +91,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 209
+          "days": 210
         }
       ]
     },
@@ -113,7 +113,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 178
+          "days": 179
         }
       ]
     },
@@ -135,7 +135,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 178
+          "days": 179
         }
       ]
     },
@@ -157,7 +157,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 156
+          "days": 157
         }
       ]
     },
@@ -185,7 +185,7 @@
         },
         {
           "code": "stale",
-          "days": 87
+          "days": 88
         }
       ]
     },
@@ -213,7 +213,7 @@
         },
         {
           "code": "stale",
-          "days": 139
+          "days": 140
         }
       ]
     },
@@ -235,7 +235,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -257,7 +257,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -279,7 +279,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -301,7 +301,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -323,7 +323,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -345,7 +345,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 97
+          "days": 98
         }
       ]
     },
@@ -373,7 +373,7 @@
         },
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -401,7 +401,7 @@
         },
         {
           "code": "stale",
-          "days": 109
+          "days": 110
         }
       ]
     },
@@ -423,7 +423,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 109
+          "days": 110
         }
       ]
     },
@@ -445,7 +445,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -467,7 +467,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -489,7 +489,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -511,7 +511,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -533,7 +533,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -558,7 +558,7 @@
         },
         {
           "code": "stale",
-          "days": 108
+          "days": 109
         }
       ]
     },
@@ -583,7 +583,7 @@
         },
         {
           "code": "stale",
-          "days": 87
+          "days": 88
         }
       ]
     },
@@ -605,7 +605,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 157
+          "days": 158
         }
       ]
     },
@@ -630,7 +630,7 @@
         },
         {
           "code": "stale",
-          "days": 125
+          "days": 126
         }
       ]
     },
@@ -655,7 +655,7 @@
         },
         {
           "code": "stale",
-          "days": 121
+          "days": 122
         }
       ]
     },
@@ -756,7 +756,7 @@
           "by": [
             "zufayu"
           ],
-          "days": 9
+          "days": 10
         }
       ]
     },
@@ -823,7 +823,7 @@
         },
         {
           "code": "stale",
-          "days": 100
+          "days": 101
         }
       ]
     },
@@ -866,7 +866,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 20
+          "days": 21
         }
       ]
     },
@@ -887,8 +887,11 @@
       "lane": "follow-up",
       "reasons": [
         {
+          "code": "conflict"
+        },
+        {
           "code": "stale",
-          "days": 20
+          "days": 21
         }
       ]
     },
@@ -910,7 +913,7 @@
       "reasons": [
         {
           "code": "stale",
-          "days": 20
+          "days": 21
         }
       ]
     },
@@ -1001,21 +1004,24 @@
     {
       "repo": "ROCm/FlyDSL",
       "number": 1537,
-      "title": "[Coop][Perf] Sort integer keys alone with the bitonic network in warp_merge_sort",
+      "title": "[Coop] Add warp_sort: the call picks the bitonic network or the merge",
       "url": "https://github.com/ROCm/FlyDSL/pull/1537",
       "author": "jhinpan",
       "role": "author",
       "importance": "high",
       "draft": false,
-      "ci": "pending",
+      "ci": "success",
       "createdAt": "2026-11-27T00:20:38Z",
-      "updatedAt": "2026-11-27T00:20:38Z",
-      "additions": 105,
-      "deletions": 4,
+      "updatedAt": "2026-11-27T21:58:35Z",
+      "additions": 413,
+      "deletions": 0,
       "lane": "in-progress",
       "reasons": [
         {
-          "code": "ci-running"
+          "code": "waiting-review",
+          "by": [
+            "sjfeng1999"
+          ]
         }
       ]
     },
@@ -1033,10 +1039,10 @@
       "updatedAt": "2026-11-10T22:09:13Z",
       "additions": 143,
       "deletions": 0,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "draft"
+          "code": "conflict"
         }
       ]
     },
@@ -1051,7 +1057,7 @@
       "draft": false,
       "ci": "failure",
       "createdAt": "2026-11-12T03:30:51Z",
-      "updatedAt": "2026-11-26T16:15:46Z",
+      "updatedAt": "2026-11-27T02:08:20Z",
       "additions": 740,
       "deletions": 263,
       "lane": "review",
@@ -1075,10 +1081,10 @@
       "updatedAt": "2026-11-14T23:18:25Z",
       "additions": 45,
       "deletions": 8,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "draft"
+          "code": "conflict"
         }
       ]
     },
@@ -1096,17 +1102,10 @@
       "updatedAt": "2026-11-19T07:14:37Z",
       "additions": 2980,
       "deletions": 153,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "waiting-review",
-          "by": [
-            "HaiShaw",
-            "alexnails",
-            "bingxche",
-            "kevin-mii",
-            "michaelzhang-ai"
-          ]
+          "code": "conflict"
         }
       ]
     },
@@ -1152,15 +1151,10 @@
       "updatedAt": "2026-11-19T19:44:25Z",
       "additions": 995,
       "deletions": 185,
-      "lane": "in-progress",
+      "lane": "follow-up",
       "reasons": [
         {
-          "code": "waiting-review",
-          "by": [
-            "HaiShaw",
-            "alexnails",
-            "kevin-mii"
-          ]
+          "code": "conflict"
         }
       ]
     },
@@ -1260,9 +1254,9 @@
       "draft": false,
       "ci": "failure",
       "createdAt": "2026-11-24T05:41:55Z",
-      "updatedAt": "2026-11-26T05:32:05Z",
-      "additions": 7168,
-      "deletions": 122,
+      "updatedAt": "2026-11-27T08:21:22Z",
+      "additions": 6839,
+      "deletions": 21,
       "lane": "review",
       "reasons": [
         {
@@ -1279,11 +1273,11 @@
       "role": "reviewer",
       "importance": "high",
       "draft": false,
-      "ci": "success",
+      "ci": "failure",
       "createdAt": "2026-11-24T06:46:15Z",
-      "updatedAt": "2026-11-25T09:03:48Z",
-      "additions": 1096,
-      "deletions": 132,
+      "updatedAt": "2026-11-27T01:36:38Z",
+      "additions": 550,
+      "deletions": 9,
       "lane": "review",
       "reasons": [
         {
@@ -1300,11 +1294,11 @@
       "role": "reviewer",
       "importance": "high",
       "draft": false,
-      "ci": "success",
+      "ci": "failure",
       "createdAt": "2026-11-24T06:46:17Z",
-      "updatedAt": "2026-11-25T09:03:51Z",
-      "additions": 667,
-      "deletions": 167,
+      "updatedAt": "2026-11-27T01:36:40Z",
+      "additions": 125,
+      "deletions": 48,
       "lane": "review",
       "reasons": [
         {
@@ -1372,6 +1366,9 @@
       "reasons": [
         {
           "code": "ci-failing"
+        },
+        {
+          "code": "conflict"
         }
       ]
     },
@@ -1438,7 +1435,7 @@
         },
         {
           "code": "stale",
-          "days": 19
+          "days": 20
         }
       ]
     },
@@ -1463,7 +1460,7 @@
         },
         {
           "code": "stale",
-          "days": 15
+          "days": 16
         }
       ]
     }
